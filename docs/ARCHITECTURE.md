@@ -20,7 +20,7 @@ src/
 │  ├─ Game.ts                 組裝所有系統、主迴圈、區域切換、死亡復活、擊殺獎勵、存檔時機
 │  ├─ EventBus.ts             型別化事件匯流排（GameEvents 登記所有事件）
 │  ├─ GameState.ts            存檔結構 v2、新遊戲預設、副本解鎖判斷
-│  └─ SaveSystem.ts           SaveBackend 介面 + LocalSave + 版本遷移
+│  └─ SaveSystem.ts           5 格存檔 SaveSlots、LocalSave（使用中欄位）、版本遷移
 ├─ data/                      ★ 遊戲內容（純資料）
 │  ├─ types.ts                所有資料型別
 │  ├─ zones.ts                主城、新手草原、三層副本（地形、高台、生怪、傳送、商店入口）
@@ -136,7 +136,9 @@ raw  = atk × 技能倍率
 - v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）。舊存檔讀入時自動遷移。
 
 
-- `GameState` 經 `SaveBackend` 存取，目前是 `LocalSave`（localStorage `little-mage.save.v1`）。
+- 多存檔：`SaveSlots` 管 5 格（localStorage `little-mage.save.slot1`~`slot5`），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。
+- 舊版單一存檔 `little-mage.save.v1` 第一次啟動時自動搬到第 1 格。
+- `GameState` 經 `SaveBackend` 存取，`LocalSave` 讀寫使用中的那一格；雲端存檔上傳 / 下載的也是使用中的那一格。
 - 物品只存「底材 id、稀有度、強化等級」，屬性即時計算 → 調整平衡不會讓舊存檔失真。
 - v1 → v2 遷移：補背包欄位與新手法杖。
 - 時機：每 10 秒、切換區域、撿到 / 買賣 / 強化裝備、死亡復活、分頁隱藏。

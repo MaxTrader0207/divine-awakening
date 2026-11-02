@@ -8,6 +8,8 @@ import { rollDrop } from '@/systems/LootTable';
 import { addItem, itemName } from '@/systems/Inventory';
 import { renderCloudCard, renderLeaderboard, type CloudContext } from './CloudTabs';
 import type { Cloud } from '@/net/Cloud';
+import type { SlotInfo } from '@/core/SaveSystem';
+import { CLASSES } from '@/data/classes';
 
 /** 開發模式或網址帶 ?debug 才顯示開發工具 */
 const DEV = import.meta.env.DEV || new URLSearchParams(location.search).has('debug');
@@ -19,6 +21,7 @@ const TABS: { id: MenuTab; label: string }[] = [
   { id: 'quests', label: '任務' },
   { id: 'rank', label: '排行' },
   { id: 'map', label: '地圖' },
+  { id: 'saves', label: '存檔' },
   { id: 'settings', label: '設定' },
 ];
 
@@ -40,6 +43,18 @@ export interface MenuActions {
   getQualityLabel(): string;
   cloud: Cloud;
   applyCloudSave(data: GameState): void;
+  /** 多存檔欄位 */
+  saves: {
+    active(): number;
+    list(): SlotInfo[];
+    /** 存到第 n 格（目前欄位 = 立即存檔；其他欄位 = 複製一份過去） */
+    saveTo(n: number): boolean;
+    /** 切換到第 n 格（重新載入頁面） */
+    load(n: number): void;
+    /** 在空的第 n 格開新遊戲（重新載入、選職業） */
+    newGame(n: number): void;
+    remove(n: number): void;
+  };
 }
 
 export class Menu {
@@ -94,6 +109,7 @@ export class Menu {
     if (tab === 'quests') return this.renderQuests();
     if (tab === 'rank') return renderLeaderboard(this.cloudCtx());
     if (tab === 'settings') return this.renderSettings();
+    if (tab === 'saves') return this.renderSaves();
     const ctx: InvContext = {
       state: this.state,
       changed: () => this.actions.onInventoryChanged(),
@@ -301,9 +317,91 @@ export class Menu {
     return out;
   }
 
+  /* ======================= 存檔 ======================= */
+
+  private renderSaves(): HTMLElement[] {
+    const sv = this.actions.saves;
+    const active = sv.active();
+    const rerender = () => {
+      const top = this.body.scrollTop;
+      this.show('saves');
+      this.body.scrollTop = top;
+    };
+    const toast = (text: string) => bus.emit('toast', { text });
+    const out: HTMLElement[] = [
+      h('div', { class: 'card' }, [
+        h('h4', {}, '💾 存檔'),
+        h('p', {}, `共 ${sv.list().length} 格。遊戲每 10 秒、換地圖、撿裝備時自動存到「使用中」的那一格；也可以把目前進度另存到其他格當備份，或在空格開一個新角色。`),
+      ]),
+    ];
+    for (const info of sv.list()) {
+      const n = info.slot;
+      const isActive = n === active;
+      const title = h('div', { class: 'slot-head' }, [
+        h('b', {}, `存檔 ${n}`),
+        isActive ? h('span', { class: 'pill on' }, '使用中') : info.empty ? h('span', { class: 'pill locked' }, '空') : h('span', {}, ''),
+      ]);
+      const body: HTMLElement[] = [title];
+      if (info.corrupt) body.push(h('p', { class: 'cloud-status bad' }, '這格存檔已損壞，無法讀取。'));
+      else if (!info.empty) {
+        const cls = CLASSES[info.heroClass ?? 'mage'];
+        const zone = ZONES[info.zoneId as keyof typeof ZONES];
+        const mins = Math.floor((info.playTime ?? 0) / 60);
+        body.push(
+          h('div', { class: 'slot-main' }, [
+            h('span', { class: 'slot-ico' }, cls.icon),
+            h('div', {}, [
+              h('div', { class: 'slot-name' }, `${info.playerName ?? cls.name}・${cls.name} Lv.${info.level}`),
+              h('p', {}, `${zone?.name ?? '主城'}・首領 ${info.bosses ?? 0}/${DUNGEON_ORDER.length}・遊戲 ${Math.floor(mins / 60)} 小時 ${mins % 60} 分`),
+              h('p', {}, info.updatedAt ? `最後存檔 ${new Date(info.updatedAt).toLocaleString('zh-TW', { hour12: false })}` : ''),
+            ]),
+          ]),
+        );
+      }
+      const row = h('div', { class: 'card-row' });
+      if (isActive) {
+        row.append(h('button', { class: 'go small', onclick: () => { sv.saveTo(n); toast(`已存到存檔 ${n}`); rerender(); } }, '立即存檔'));
+      } else if (info.empty) {
+        row.append(
+          h('button', { class: 'go ghost small', onclick: () => { if (sv.saveTo(n)) toast(`目前進度已另存到存檔 ${n}`); else toast('存檔失敗（瀏覽器可能封鎖了儲存空間）'); rerender(); } }, '把目前進度存到這格'),
+          h('button', { class: 'go ghost small', onclick: () => sv.newGame(n) }, '在這格開新遊戲'),
+        );
+      } else {
+        row.append(
+          info.corrupt ? h('span', {}, '') : this.confirmBtn('讀取', '再按一次切換到這格', 'go small', () => sv.load(n)),
+          this.confirmBtn('覆蓋存到這格', '再按一次覆蓋', 'go ghost small', () => { if (sv.saveTo(n)) toast(`目前進度已覆蓋存檔 ${n}`); rerender(); }),
+          this.confirmBtn('刪除', '再按一次刪除', 'go danger small', () => { sv.remove(n); toast(`已刪除存檔 ${n}`); rerender(); }),
+        );
+      }
+      body.push(row);
+      out.push(h('div', { class: `card slot${isActive ? ' active' : ''}`, 'data-slot': n }, body));
+    }
+    out.push(h('p', { class: 'version' }, '存檔存在這台裝置的瀏覽器裡。換裝置請用「設定 → 雲端存檔」（上傳的是使用中的那一格）。'));
+    return out;
+  }
+
+  /** 需要按兩次的按鈕（artifact 環境不能用 confirm()） */
+  private confirmBtn(label: string, armedLabel: string, cls: string, run: () => void): HTMLElement {
+    const btn = h('button', { class: cls }, label);
+    let armed = false;
+    btn.addEventListener('click', () => {
+      if (!armed) {
+        armed = true;
+        btn.textContent = armedLabel;
+        setTimeout(() => {
+          armed = false;
+          btn.textContent = label;
+        }, 3000);
+        return;
+      }
+      run();
+    });
+    return btn;
+  }
+
   /** 重置存檔：按兩次確認（artifact 環境不能用 confirm()） */
   private renderReset(): HTMLElement {
-    const btn = h('button', { class: 'go danger' }, '重置存檔');
+    const btn = h('button', { class: 'go danger' }, `重置存檔 ${this.actions.saves.active()}`);
     let armed = false;
     btn.addEventListener('click', () => {
       if (!armed) {
@@ -311,7 +409,7 @@ export class Menu {
         btn.textContent = '再按一次確認刪除進度';
         setTimeout(() => {
           armed = false;
-          btn.textContent = '重置存檔';
+          btn.textContent = `重置存檔 ${this.actions.saves.active()}`;
         }, 3000);
         return;
       }

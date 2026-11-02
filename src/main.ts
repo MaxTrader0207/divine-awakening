@@ -45,7 +45,7 @@ function pickClass(): Promise<HeroClass> {
   return new Promise((resolve) => {
     const el = document.createElement('div');
     el.className = 'class-pick';
-    el.innerHTML = `<div class="cp-box"><h2>選擇你的職業</h2><p>之後可以在「設定 → 重置存檔」重新選擇</p><div class="cp-list"></div></div>`;
+    el.innerHTML = `<div class="cp-box"><h2>選擇你的職業</h2><p>想玩另一個職業，可以到「選單 → 存檔」在空格開新遊戲</p><div class="cp-list"></div></div>`;
     const list = el.querySelector('.cp-list')!;
     for (const id of CLASS_LIST) {
       const c = CLASSES[id];

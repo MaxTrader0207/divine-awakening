@@ -39,7 +39,7 @@ export interface GameEvents {
   'skill:cast': { slot: string };
 }
 
-export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'rank' | 'map' | 'settings';
+export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'rank' | 'map' | 'saves' | 'settings';
 
 type Handler<T> = (payload: T) => void;
 

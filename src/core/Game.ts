@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { bus } from './EventBus';
 import { newGameState, type GameState } from './GameState';
-import { LocalSave, type SaveBackend } from './SaveSystem';
+import { LocalSave } from './SaveSystem';
 import type { ZoneId } from '@/data/types';
 import { ZONES, DUNGEON_ORDER } from '@/data/zones';
 import { Player } from '@/entities/Player';
@@ -69,7 +69,7 @@ export class Game {
   readonly cloud = new Cloud();
   state: GameState;
 
-  private save: SaveBackend = new LocalSave();
+  private save = new LocalSave();
   private sun: THREE.DirectionalLight;
   private timer = new THREE.Timer();
   private saveTimer = 0;
@@ -201,6 +201,32 @@ export class Game {
       },
       getQualityLabel: () => this.quality.label,
       cloud: this.cloud,
+      saves: {
+        active: () => this.save.slot,
+        list: () => this.save.slots.list(),
+        saveTo: (n) => {
+          this.persist();
+          if (n === this.save.slot) return true;
+          return this.save.slots.write(n, JSON.parse(JSON.stringify(this.state)) as GameState);
+        },
+        load: (n) => {
+          if (n === this.save.slot || this.save.slots.info(n).empty) return;
+          this.persist();
+          this.resetting = true; // 重新載入前不要再把目前進度寫到新欄位
+          this.save.slots.setActive(n);
+          location.reload();
+        },
+        newGame: (n) => {
+          if (!this.save.slots.info(n).empty) return;
+          this.persist();
+          this.resetting = true;
+          this.save.slots.setActive(n);
+          location.reload(); // 空欄位 → 進入選職業畫面
+        },
+        remove: (n) => {
+          if (n !== this.save.slot) this.save.slots.delete(n);
+        },
+      },
       applyCloudSave: (data) => {
         this.resetting = true; // 不要讓離開頁面時把舊進度存回去
         this.save.save({ ...data, updatedAt: Date.now() });
