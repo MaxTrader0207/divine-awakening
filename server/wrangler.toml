@@ -5,7 +5,7 @@ compatibility_date = "2025-09-01"
 
 [vars]
 # 允許呼叫 API 的網頁來源（GitHub Pages 網址、本機開發）。逗號分隔，* = 全部
-ALLOWED_ORIGINS = "https://maxtrader0207.github.io,http://localhost:5173,http://localhost:4173"
+ALLOWED_ORIGINS = "https://maxtrader0207.github.io,https://localhost,capacitor://localhost,http://localhost:5173,http://localhost:4173"
 
 [[d1_databases]]
 binding = "DB"
