@@ -12,7 +12,8 @@ export type ZoneId =
   | 'grassland'
   | 'dungeon_1'
   | 'dungeon_2'
-  | 'dungeon_3';
+  | 'dungeon_3'
+  | 'mistwood';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
 
@@ -141,6 +142,14 @@ export interface ZoneDef {
   spawns?: SpawnDef[];
   /** 走進去會開啟選單分頁（主城商店門口） */
   triggers?: { x: number; z: number; radius: number; tab: 'shop' | 'enhance'; label: string }[];
+  /** 進入需要的等級（未達到時傳送點與地圖會擋下） */
+  minLevel?: number;
+  /** 掉落裝備的階級（預設：副本層數，野外 1） */
+  lootTier?: number;
+  /** 霧的起訖距離（預設 60 / 130） */
+  fogRange?: [number, number];
+  /** 飄動的霧氣 */
+  mist?: boolean;
   /** 副本專用 */
   dungeon?: {
     floor: number;

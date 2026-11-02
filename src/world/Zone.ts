@@ -75,6 +75,7 @@ export class Zone {
 
     for (const portal of def.portals) this.group.add(this.buildPortal(portal));
     this.mergeStatic();
+    if (def.mist) this.buildMist();
     for (const t of def.triggers ?? []) {
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(t.radius - 0.18, t.radius, 32),
@@ -133,6 +134,31 @@ export class Zone {
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       this.group.add(mesh);
+    }
+  }
+
+  /** 飄動的霧：幾片大型半透明貼圖，緩慢漂移（只是氛圍，不影響玩法） */
+  private mist: THREE.Mesh[] = [];
+  private buildMist() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d')!;
+    const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(255,255,255,0.55)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 128, 128);
+    const tex = new THREE.CanvasTexture(c);
+    const matl = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, color: this.def.fogColor, opacity: 0.55 });
+    const { w, d } = this.def.size;
+    for (let i = 0; i < 14; i++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), matl);
+      m.rotation.x = -Math.PI / 2;
+      m.position.set((Math.random() - 0.5) * w, 1.2 + Math.random() * 1.5, (Math.random() - 0.5) * d);
+      m.userData.speed = 0.4 + Math.random() * 0.6;
+      m.renderOrder = 6;
+      this.group.add(m);
+      this.mist.push(m);
     }
   }
 
@@ -250,6 +276,11 @@ export class Zone {
 
   update(dt: number) {
     this.t += dt;
+    const hw = this.def.size.w / 2 + 7;
+    for (const m of this.mist) {
+      m.position.x += m.userData.speed * dt;
+      if (m.position.x > hw) m.position.x = -hw;
+    }
     for (const a of this.animated) {
       if (a.kind === 'spin') {
         a.obj.rotation.y += dt * 1.2;

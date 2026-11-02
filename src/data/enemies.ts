@@ -107,4 +107,42 @@ export const ENEMIES: Record<string, EnemyDef> = {
     exp: 2600, gold: [900, 1200], gems: 12,
     bossSkills: ['leap', 'lava_spit'],
   },
+
+  /* ---------- 迷霧森林 Lv.11-25（KayKit 骷髏模型）---------- */
+  skeleton_minion: {
+    id: 'skeleton_minion', name: '骷髏小兵', level: 14, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_minion',
+    radius: 0.55, respawn: 12, scale: 1, color: 0xe8e2d0,
+    stats: { maxHp: 1100, atk: 112, def: 30, moveSpeed: 2.8 },
+    attack: melee(1.4, 0.55, 1.6),
+    exp: 220, gold: [30, 46],
+  },
+  skeleton_rogue: {
+    id: 'skeleton_rogue', name: '骷髏盜賊', level: 16, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_rogue',
+    radius: 0.55, respawn: 12, scale: 1, color: 0xe8e2d0,
+    stats: { maxHp: 1000, atk: 126, def: 30, moveSpeed: 4.2 },
+    attack: melee(1.3, 0.4, 1.3),
+    exp: 260, gold: [34, 52],
+  },
+  skeleton_warrior: {
+    id: 'skeleton_warrior', name: '骷髏戰士', level: 19, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior',
+    radius: 0.6, respawn: 12, scale: 1.1, color: 0xe8e2d0,
+    stats: { maxHp: 1750, atk: 148, def: 46, moveSpeed: 2.6 },
+    attack: melee(1.5, 0.6, 1.7),
+    exp: 340, gold: [42, 64],
+  },
+  skeleton_mage: {
+    id: 'skeleton_mage', name: '骷髏法師', level: 21, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
+    radius: 0.55, respawn: 12, scale: 1, color: 0xe8e2d0,
+    stats: { maxHp: 1300, atk: 162, def: 34, moveSpeed: 2.4 },
+    attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+    exp: 380, gold: [46, 70],
+  },
+  skeleton_lord: {
+    id: 'skeleton_lord', name: '骷髏騎士長', level: 24, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior', boss: true,
+    radius: 0.62, respawn: 120, scale: 1.7, color: 0xe8e2d0,
+    stats: { maxHp: 60000, atk: 230, def: 55, moveSpeed: 2.8 },
+    attack: melee(2.2, 0.6, 1.6),
+    exp: 4200, gold: [1500, 2000], gems: 10,
+    bossSkills: ['charge', 'ground_slam'],
+  },
 };

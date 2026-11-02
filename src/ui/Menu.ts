@@ -116,6 +116,11 @@ export class Menu {
         h('div', { class: 'card-row' }, [
           here === 'town' ? h('span', { class: 'pill' }, '目前位置') : h('button', { class: 'go', onclick: () => this.travel('town') }, '回到主城'),
           here === 'grassland' ? h('span', { class: 'pill' }, '目前位置') : h('button', { class: 'go ghost', onclick: () => this.travel('grassland') }, '新手草原'),
+          here === 'mistwood'
+            ? h('span', { class: 'pill' }, '目前位置')
+            : s.level < (ZONES.mistwood.minLevel ?? 0)
+              ? h('span', { class: 'pill locked' }, `🔒 迷霧森林 Lv.${ZONES.mistwood.minLevel}`)
+              : h('button', { class: 'go ghost', onclick: () => this.travel('mistwood') }, '迷霧森林'),
         ]),
       ]),
       h('div', { class: 'section-title' }, '副本（原本的地區）'),
@@ -251,7 +256,7 @@ export class Menu {
     return h('div', { class: 'card' }, [h('h4', {}, '傷害測試'), stats, row]);
   }
 
-  private travel(id: (typeof DUNGEON_ORDER)[number] | 'town' | 'grassland') {
+  private travel(id: (typeof DUNGEON_ORDER)[number] | 'town' | 'grassland' | 'mistwood') {
     this.close();
     bus.emit('zone:request', { zoneId: id });
   }

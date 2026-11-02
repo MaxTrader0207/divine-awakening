@@ -11,7 +11,7 @@ import type { EquipSlot, Rarity, Stats } from './types';
 export interface ItemBase {
   id: string;
   slot: EquipSlot;
-  tier: 1 | 2 | 3;
+  tier: 1 | 2 | 3 | 4;
   name: string;
   icon: string;
   stats: Partial<Stats>;
@@ -48,22 +48,22 @@ const T1: Record<EquipSlot, Partial<Stats>> = {
 };
 
 /** 平坦數值與百分比數值的 tier 成長不同，避免百分比爆掉 */
-const FLAT_SCALE = [1, 2.2, 3.6];
-const PCT_SCALE = [1, 1.6, 2.2];
+const FLAT_SCALE = [1, 2.2, 3.6, 5.4];
+const PCT_SCALE = [1, 1.6, 2.2, 2.8];
 const PCT_KEYS: (keyof Stats)[] = ['pen', 'critRate', 'critDmg', 'moveSpeed'];
 
-const NAMES: Record<EquipSlot, [string, string, string]> = {
-  weapon: ['見習法杖', '珊瑚法杖', '熔心法杖'],
-  hat: ['見習尖帽', '潮汐尖帽', '熔岩尖帽'],
-  robe: ['見習法袍', '珊瑚法袍', '熔心法袍'],
-  gloves: ['布手套', '潮風手套', '焰紋手套'],
-  boots: ['布靴', '浪行靴', '焦土靴'],
-  ring: ['銅戒', '珍珠戒', '火紋戒'],
+const NAMES: Record<EquipSlot, [string, string, string, string]> = {
+  weapon: ['見習法杖', '珊瑚法杖', '熔心法杖', '霧森法杖'],
+  hat: ['見習尖帽', '潮汐尖帽', '熔岩尖帽', '霧影尖帽'],
+  robe: ['見習法袍', '珊瑚法袍', '熔心法袍', '冥霧法袍'],
+  gloves: ['布手套', '潮風手套', '焰紋手套', '骨紋手套'],
+  boots: ['布靴', '浪行靴', '焦土靴', '霧行靴'],
+  ring: ['銅戒', '珍珠戒', '火紋戒', '冥火戒'],
 };
 
 const ICONS: Record<EquipSlot, string> = { weapon: '🪄', hat: '🎩', robe: '🥻', gloves: '🧤', boots: '🥾', ring: '💍' };
 
-function scaled(slot: EquipSlot, tier: 1 | 2 | 3): Partial<Stats> {
+function scaled(slot: EquipSlot, tier: 1 | 2 | 3 | 4): Partial<Stats> {
   const out: Partial<Stats> = {};
   for (const [k, v] of Object.entries(T1[slot]) as [keyof Stats, number][]) {
     const f = PCT_KEYS.includes(k) ? PCT_SCALE[tier - 1] : FLAT_SCALE[tier - 1];
@@ -74,7 +74,7 @@ function scaled(slot: EquipSlot, tier: 1 | 2 | 3): Partial<Stats> {
 
 export const ITEM_BASES: Record<string, ItemBase> = {};
 for (const slot of SLOT_ORDER) {
-  for (const tier of [1, 2, 3] as const) {
+  for (const tier of [1, 2, 3, 4] as const) {
     const id = `${slot}_t${tier}`;
     ITEM_BASES[id] = { id, slot, tier, name: NAMES[slot][tier - 1], icon: ICONS[slot], stats: scaled(slot, tier) };
   }
@@ -96,7 +96,7 @@ export function sellPrice(tier: number, rarity: Rarity, plus: number): number {
 
 /** 商店販售的普通裝備價格 */
 export function shopPrice(tier: number): number {
-  return [80, 450, 1800][tier - 1];
+  return [80, 450, 1800, 6000][tier - 1];
 }
 
 export const POTION_PRICE = { hp: 20, mp: 20 };

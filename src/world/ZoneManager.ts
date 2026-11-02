@@ -21,7 +21,8 @@ export class ZoneManager {
     const zone = new Zone(def);
     this.scene.add(zone.group);
     this.scene.background = new THREE.Color(def.skyColor);
-    this.scene.fog = new THREE.Fog(def.fogColor, 60, 130);
+    const [near, far] = def.fogRange ?? [60, 130];
+    this.scene.fog = new THREE.Fog(def.fogColor, near, far);
     this.current = zone;
     this.portalArmed.clear();
     this.triggerArmed.clear();

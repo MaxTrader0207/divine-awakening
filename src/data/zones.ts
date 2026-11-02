@@ -70,6 +70,7 @@ const grassland: ZoneDef = {
   patches: [
     { x: 0, z: -18, w: 8, d: 24, color: 0xc9b98f },
     { x: 8, z: 4, w: 30, d: 6, color: 0xc9b98f },
+    { x: 28, z: 4, w: 14, d: 5, color: 0xc9b98f },
   ],
   props: [
     ...row('fence', -30, -6, 4, 0, 6, { rot: 0 }),
@@ -90,7 +91,10 @@ const grassland: ZoneDef = {
     { kind: 'decor', x: 19.5, z: -12, h: 1.0, model: 'barrel' },
     { kind: 'decor', x: 2, z: -14, h: 1.4, model: 'weaponrack' },
   ],
-  portals: [{ x: 0, z: -28, radius: 2.6, to: 'town', arrive: { x: 0, z: 26 }, label: '主城艾爾芙', style: 'edge' }],
+  portals: [
+    { x: 0, z: -28, radius: 2.6, to: 'town', arrive: { x: 0, z: 26 }, label: '主城艾爾芙', style: 'edge' },
+    { x: 33, z: 4, radius: 2.4, to: 'mistwood', arrive: { x: -29, z: 20 }, label: '迷霧森林 Lv.11', style: 'edge' },
+  ],
   spawn: { x: 0, z: -24 },
   tips: ['訓練木樁在草原東側，可以測試不同防禦下的傷害', '敵人防禦越高越需要穿透', '按住普攻鍵可以連續攻擊'],
   spawns: [
@@ -262,19 +266,100 @@ const dungeon3: ZoneDef = {
   dungeon: { floor: 3, bossName: '熔心巨蛙', enemyDefense: 40, unlockAfter: 'dungeon_2' },
 };
 
+/* ---------------- 迷霧森林 ----------------
+ * 新手草原東側出口進入，需要 Lv.11。大片樹林（隨機但固定的配置）、濃霧、骷髏群，北邊石圈有菁英首領。
+ */
+function scatterTrees(seed: number, n: number, w: number, d: number, avoid: { x: number; z: number; r: number }[]): PropDef[] {
+  let s = seed;
+  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const out: PropDef[] = [];
+  let tries = 0;
+  while (out.length < n && tries++ < n * 20) {
+    const x = (rnd() - 0.5) * (w - 4);
+    const z = (rnd() - 0.5) * (d - 4);
+    if (avoid.some((a) => Math.hypot(a.x - x, a.z - z) < a.r)) continue;
+    if (out.some((t) => Math.hypot(t.x - x, t.z - z) < 3.2)) continue;
+    out.push({ kind: 'tree', x, z, h: 4 + rnd() * 2.5, color: 0x2f6b46 });
+  }
+  return out;
+}
+
+const MIST_CLEAR = [
+  { x: -30, z: 20, r: 7 }, // 入口
+  { x: -14, z: 14, r: 7 },
+  { x: 8, z: 18, r: 7 },
+  { x: 14, z: -2, r: 7 },
+  { x: -12, z: -8, r: 7 },
+  { x: 0, z: -24, r: 9 }, // 首領石圈
+  { x: -22, z: 6, r: 4 },
+  { x: -4, z: 4, r: 5 },
+  { x: 4, z: -12, r: 4 },
+];
+
+const mistwood: ZoneDef = {
+  id: 'mistwood',
+  kind: 'field',
+  name: '迷霧森林',
+  subtitle: '迷霧森林・Lv.11-25',
+  region: '艾爾芙大陸',
+  levelRange: [11, 25],
+  minLevel: 11,
+  lootTier: 4,
+  safe: false,
+  size: { w: 70, d: 64 },
+  groundColor: 0x4f7a52,
+  skyColor: 0x8fa8a0,
+  fogColor: 0xb7c8c0,
+  fogRange: [38, 78],
+  mist: true,
+  patches: [
+    { x: -20, z: 20, w: 24, d: 5, color: 0x6e6450 },
+    { x: -4, z: 8, w: 5, d: 26, color: 0x6e6450 },
+    { x: 6, z: -6, w: 24, d: 5, color: 0x6e6450 },
+    { x: 0, z: -18, w: 5, d: 18, color: 0x6e6450 },
+    { x: 24, z: 22, w: 10, d: 8, color: 0x3a6a8a, water: true },
+  ],
+  props: [
+    ...scatterTrees(20261102, 62, 70, 64, MIST_CLEAR.concat([{ x: -20, z: 20, r: 3 }, { x: -4, z: 8, r: 3 }, { x: 6, z: -6, r: 3 }, { x: 0, z: -14, r: 3 }])),
+    { kind: 'stonering', x: 0, z: -24, w: 11, d: 11, color: 0x8a9a90 },
+    ...pillarRing(0, -24, 6.2, 8, 0x7a8a80),
+    { kind: 'decor', x: -27, z: 16, h: 1.6, model: 'torch', solid: false },
+    { kind: 'decor', x: -27, z: 24, h: 1.6, model: 'torch', solid: false },
+    { kind: 'rock', x: -8, z: 0, color: 0x7a8a80 },
+    { kind: 'rock', x: 18, z: 4, color: 0x7a8a80 },
+    { kind: 'pillar', x: -16, z: -4, h: 1.8, color: 0x7a8a80 },
+    { kind: 'pillar', x: 10, z: 14, h: 2.4, color: 0x7a8a80 },
+    { kind: 'decor', x: 12, z: -26, h: 1.3, model: 'chest_gold' },
+    { kind: 'decor', x: -12, z: 18, h: 1.0, model: 'rubble', solid: false },
+  ],
+  portals: [{ x: -33, z: 20, radius: 2.6, to: 'grassland', arrive: { x: 29, z: 4 }, label: '新手草原', style: 'edge' }],
+  spawn: { x: -29, z: 20 },
+  tips: ['迷霧森林需要 Lv.11', '骷髏法師會從遠處施法，看到腳下紅圈就移動', '北邊石圈的骷髏騎士長非常強，建議 Lv.22 以上', '這裡掉落第 4 階裝備'],
+  spawns: [
+    { enemy: 'skeleton_minion', x: -14, z: 14, count: 4, spread: 4 },
+    { enemy: 'skeleton_rogue', x: 8, z: 18, count: 3, spread: 4 },
+    { enemy: 'skeleton_minion', x: -4, z: 4, count: 2, spread: 3 },
+    { enemy: 'skeleton_warrior', x: 14, z: -2, count: 3, spread: 4 },
+    { enemy: 'skeleton_mage', x: -12, z: -8, count: 3, spread: 4 },
+    { enemy: 'skeleton_warrior', x: 4, z: -12, count: 2, spread: 3 },
+    { enemy: 'skeleton_lord', x: 0, z: -24 },
+  ],
+};
+
 export const ZONES: Record<ZoneId, ZoneDef> = {
   town,
   grassland,
   dungeon_1: dungeon1,
   dungeon_2: dungeon2,
   dungeon_3: dungeon3,
+  mistwood,
 };
 
 /** 世界地圖上的野外區域（含尚未實作者，僅供地圖頁顯示） */
 export const WORLD_FIELDS: { name: string; range: string; zone?: ZoneId }[] = [
   { name: '主城（安全區）', range: '', zone: 'town' },
   { name: '新手草原', range: 'Lv.1-10', zone: 'grassland' },
-  { name: '迷霧森林', range: 'Lv.11-25' },
+  { name: '迷霧森林', range: 'Lv.11-25', zone: 'mistwood' },
   { name: '黑暗山谷', range: 'Lv.26-45' },
   { name: '魔王領地', range: 'Lv.46-60' },
 ];

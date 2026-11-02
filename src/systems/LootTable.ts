@@ -25,6 +25,6 @@ export function rollDrop(tier: number, boss: boolean, rng: () => number = Math.r
     }
   }
   const slot = SLOT_ORDER[Math.floor(rng() * SLOT_ORDER.length)];
-  const t = Math.max(1, Math.min(3, tier));
+  const t = Math.max(1, Math.min(4, tier));
   return { base: `${slot}_t${t}`, rarity };
 }

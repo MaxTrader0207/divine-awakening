@@ -140,7 +140,7 @@ export class Game {
       this.state,
       this.player,
       this.effects,
-      () => this.zones.current?.def.dungeon?.floor ?? 1,
+      () => this.zones.current?.def.lootTier ?? this.zones.current?.def.dungeon?.floor ?? 1,
       () => this.onInventoryChanged(),
       (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
     );
@@ -208,6 +208,14 @@ export class Game {
       player: this.player,
       collision: this.zones.current?.collision as never,
       hitPlayer: (e, power) => this.hitPlayer(e, power),
+      rangedAttack: (e, windup) => {
+        const { x, z } = this.player.pos;
+        this.telegraphs.add({ kind: 'circle', x, z, r: 1.6 }, windup, (inside) => {
+          this.effects.pillar(x, z, 0.7, 0xb48cff, 0.45);
+          this.effects.disc(x, z, 1.6, 0x8a5aff, 0.35, 0.6);
+          if (inside(this.player.pos.x, this.player.pos.z, this.player.radius)) this.hitPlayer(e, 1.2);
+        });
+      },
     };
 
     // ---- Events ----
@@ -418,10 +426,11 @@ export class Game {
     const zoneId = this.state.zoneId;
     const first = !this.state.bossesDefeated.includes(zoneId);
     if (first) this.state.bossesDefeated.push(zoneId);
-    const next = DUNGEON_ORDER[DUNGEON_ORDER.indexOf(zoneId) + 1];
+    const idx = DUNGEON_ORDER.indexOf(zoneId);
+    const next = idx >= 0 ? DUNGEON_ORDER[idx + 1] : undefined;
     if (first && next) bus.emit('banner', { text: `擊敗${name}！解鎖${ZONES[next].name}` });
-    else if (first) bus.emit('banner', { text: `擊敗${name}！完成全部副本` });
-    else bus.emit('banner', { text: `擊敗${name}` });
+    else if (first && idx === DUNGEON_ORDER.length - 1) bus.emit('banner', { text: `擊敗${name}！完成全部副本` });
+    else bus.emit('banner', { text: `擊敗${name}！` });
     bus.emit('boss:defeated', { zoneId, first });
     this.persist();
   }
@@ -480,6 +489,11 @@ export class Game {
   /** 有淡入淡出的區域切換 */
   private async changeZone(id: ZoneId, arrive?: { x: number; z: number }, force = false) {
     if (this.transitioning) return;
+    const need = ZONES[id].minLevel ?? 0;
+    if (!force && this.state.level < need) {
+      bus.emit('toast', { text: `${ZONES[id].name}需要 Lv.${need}（目前 Lv.${this.state.level}）` });
+      return;
+    }
     if (id === this.state.zoneId && !arrive && !force) return;
     if (!this.player.alive && !force) return;
     this.transitioning = true;

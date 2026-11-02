@@ -25,6 +25,8 @@ export interface AiContext {
   collision: CollisionWorld;
   /** 敵人普攻命中玩家 */
   hitPlayer: (e: Enemy, power: number) => void;
+  /** 遠程怪（骷髏法師）出手：在玩家腳下放預警，前搖結束時結算 */
+  rangedAttack?: (e: Enemy, windup: number) => void;
 }
 
 export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
@@ -78,6 +80,7 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
         if (e.attackCd <= 0) {
           e.ai = 'attack';
           e.windup = atk.windup;
+          if (e.def.ranged) ctx.rangedAttack?.(e, atk.windup);
         }
       } else {
         moveToward(e, p.pos.x, p.pos.z, speed, dt, ctx.collision, reach * 0.85);
@@ -90,7 +93,7 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
       if (e.windup <= 0) {
         e.windup = 0;
         // 出手時玩家還在範圍內（+0.6 容錯）才算命中：玩家可以靠走位閃開
-        if (p.alive && dist <= reach + 0.6) ctx.hitPlayer(e, 1);
+        if (!e.def.ranged && p.alive && dist <= reach + 0.6) ctx.hitPlayer(e, 1);
         e.attackCd = atk.cooldown;
         e.ai = 'chase';
       }
