@@ -201,6 +201,7 @@ export class Game {
         return this.quality.label;
       },
       getQualityLabel: () => this.quality.label,
+      getNowPlaying: () => this.audio.nowPlaying,
       cloud: this.cloud,
       saves: {
         active: () => this.save.slot,
@@ -372,7 +373,10 @@ export class Game {
     this.damageNumbers.update(dt, this.rig.camera);
     const boss = this.enemies.engagedBoss();
     this.hud.setBoss(boss);
-    this.audio.setZoneMusic(boss ? 'boss' : zoneNow.def.kind);
+    if (boss) {
+      this.audio.setMusic('boss');
+      this.audio.setBossIntensity(boss.hp < boss.def.stats.maxHp * 0.5 ? 1 : 0);
+    } else this.audio.setMusic(zoneNow.def.music ?? ({ town: 'town', field: 'grassland', dungeon: 'dungeon' } as const)[zoneNow.def.kind]);
     if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・畫質${this.quality.label}`;
     this.hud.update(dt);
     this.input.endFrame();

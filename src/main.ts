@@ -1,6 +1,7 @@
 import './ui/style.css';
 import { Game } from './core/Game';
 import * as Inventory from './systems/Inventory';
+import { renderTrack } from './audio/Music';
 import { Assets } from './assets/Assets';
 import { SaveSlots } from './core/SaveSystem';
 import { shouldShowTitle, showTitleScreen } from './ui/TitleScreen';
@@ -85,4 +86,6 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator && !inFrame && (locatio
 if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __game: Game; __inv: typeof Inventory }).__game = game;
   (window as unknown as { __inv: typeof Inventory }).__inv = Inventory;
+  // 離線輸出背景音樂（試聽、音量檢查）：await __renderMusic('boss', 30, 1)
+  (window as unknown as { __renderMusic: typeof renderTrack }).__renderMusic = renderTrack;
 }

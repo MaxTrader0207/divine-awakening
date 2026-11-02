@@ -41,6 +41,8 @@ export interface MenuActions {
   /** 回傳目前實際畫質（高 / 中 / 低） */
   onQuality(q: 'auto' | 'high' | 'medium' | 'low'): string;
   getQualityLabel(): string;
+  /** 目前播放的背景音樂名稱 */
+  getNowPlaying(): string;
   cloud: Cloud;
   applyCloudSave(data: GameState): void;
   /** 多存檔欄位 */
@@ -203,6 +205,7 @@ export class Menu {
       renderCloudCard(this.cloudCtx()),
       this.renderQuality(),
       vol('music', '音樂音量', s.musicVolume),
+      h('p', { class: 'version now-playing' }, `♪ 正在播放：${this.actions.getNowPlaying()}`),
       vol('sfx', '音效音量', s.sfxVolume),
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '顯示 FPS'), fps])]),
       ...(DEV

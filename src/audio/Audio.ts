@@ -1,28 +1,26 @@
 import { bus } from '@/core/EventBus';
 import type { Settings } from '@/core/GameState';
 import type { ZoneKind } from '@/data/types';
+import { MusicPlayer, type TrackId } from './Music';
+import { SONGS } from './songs';
 
 /**
  * 音效與音樂（Web Audio 即時合成，不需要任何音檔）
  * ------------------------------------------------------------
  * - 瀏覽器規定要使用者互動後才能出聲：第一次觸控 / 按鍵時 unlock()。
  * - 音效：短促的合成音（振盪器 + 包絡 + 濾波）。
- * - 音樂：每種區域一段簡單的循環（和弦墊音 + 琶音），用 lookahead 排程，切區域時淡入淡出。
- * 之後換成正式音檔時，只要保留 play(id) / setZoneMusic(kind) 這兩個介面即可。
+ * - 音樂：Music.ts 的合成引擎播 songs.ts 的曲譜（主城、草原、森林、副本、魔王戰、勝利）。
+ * 之後換成正式音檔時，只要保留 play(id) / setMusic(id) / setBossIntensity() 這幾個介面即可。
  */
 export type SfxId =
   | 'bolt' | 'fireball' | 'frost' | 'flame' | 'blink' | 'hit' | 'crit' | 'hurt' | 'kill'
   | 'levelup' | 'pickup' | 'coin' | 'potion' | 'warn' | 'boss' | 'ui' | 'enhance' | 'fail';
 
-type MusicKind = ZoneKind | 'boss';
+/** 區域種類 → 預設曲子（區域資料沒指定 music 時） */
+const KIND_MUSIC: Record<ZoneKind, TrackId> = { town: 'town', field: 'grassland', dungeon: 'dungeon' };
 
-/** 每種音樂：BPM、根音（MIDI）、和弦進行（相對根音的音程陣列）、琶音音型 */
-const SONGS: Record<MusicKind, { bpm: number; root: number; chords: number[][]; arp: number[]; wave: OscillatorType }> = {
-  town: { bpm: 84, root: 60, chords: [[0, 4, 7], [5, 9, 12], [7, 11, 14], [5, 9, 12]], arp: [0, 1, 2, 1], wave: 'triangle' },
-  field: { bpm: 108, root: 62, chords: [[0, 4, 7], [7, 11, 14], [9, 12, 16], [5, 9, 12]], arp: [0, 2, 1, 2], wave: 'triangle' },
-  dungeon: { bpm: 96, root: 57, chords: [[0, 3, 7], [5, 8, 12], [3, 7, 10], [7, 10, 14]], arp: [0, 1, 2, 1, 0, 2], wave: 'sine' },
-  boss: { bpm: 132, root: 52, chords: [[0, 3, 7], [1, 5, 8], [0, 3, 7], [-2, 2, 5]], arp: [0, 2, 1, 2], wave: 'sawtooth' },
-};
+/** 音樂匯流排音量倍率（乘上設定的音樂音量） */
+const MUSIC_GAIN = 0.55;
 
 const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 
@@ -31,10 +29,9 @@ export class AudioSystem {
   private master!: GainNode;
   private sfxBus!: GainNode;
   private musicBus!: GainNode;
-  private song: MusicKind | null = null;
-  private wantSong: MusicKind = 'town';
-  private nextNote = 0;
-  private step = 0;
+  private music: MusicPlayer | null = null;
+  private wantSong: TrackId = 'town';
+  private bossIntensity = 0;
   private timer: number | null = null;
   private lastPlay = new Map<SfxId, number>();
 
@@ -67,6 +64,8 @@ export class AudioSystem {
         this.sfxBus.connect(this.master);
         this.musicBus.connect(this.master);
         this.master.connect(this.ctx.destination);
+        this.music = new MusicPlayer(this.ctx, this.musicBus);
+        this.music.setTrack(this.wantSong);
         this.applyVolume();
         this.startSequencer();
       }
@@ -80,11 +79,31 @@ export class AudioSystem {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     this.sfxBus.gain.setTargetAtTime(this.settings.sfxVolume * 0.55, t, 0.05);
-    this.musicBus.gain.setTargetAtTime(this.settings.musicVolume * 0.16, t, 0.3);
+    this.musicBus.gain.setTargetAtTime(this.settings.musicVolume * MUSIC_GAIN, t, 0.3);
   }
 
-  setZoneMusic(kind: MusicKind) {
-    this.wantSong = kind;
+  /** 指定曲子（區域音樂 / 魔王戰）；同一首重複呼叫不會重播 */
+  setMusic(id: string) {
+    const tid = (id in SONGS ? id : 'town') as TrackId;
+    this.wantSong = tid;
+    this.music?.setTrack(tid);
+  }
+
+  /** 舊介面：依區域種類選曲 */
+  setZoneMusic(kind: ZoneKind | 'boss') {
+    this.setMusic(kind === 'boss' ? 'boss' : KIND_MUSIC[kind]);
+  }
+
+  /** 魔王戰強度：0 = 一般，1 = 二階段（血量低於一半，加入更多聲部） */
+  setBossIntensity(v: number) {
+    this.bossIntensity = v;
+    if (this.music) this.music.intensity = v;
+  }
+
+  /** 目前播放的曲名（設定頁顯示） */
+  get nowPlaying(): string {
+    const id = this.music?.playing ?? this.wantSong;
+    return SONGS[id].name;
   }
 
   /** 事件 → 音效 */
@@ -100,6 +119,7 @@ export class AudioSystem {
     bus.on('float:text', (f) => f.kind === 'gold' && this.play('coin'));
     bus.on('menu:open', () => this.play('ui'));
     bus.on('boss:cast', () => this.play('warn'));
+    bus.on('boss:defeated', () => this.music?.playJingle('victory'));
   }
 
   play(id: SfxId) {
@@ -168,39 +188,11 @@ export class AudioSystem {
 
   private startSequencer() {
     if (this.timer !== null) return;
-    this.nextNote = this.ctx!.currentTime + 0.1;
-    this.timer = window.setInterval(() => this.schedule(), 100);
-  }
-
-  private schedule() {
-    const ctx = this.ctx;
-    if (!ctx || ctx.state !== 'running') return;
-    if (this.song !== this.wantSong) {
-      // 換曲：音樂匯流排淡出再淡入
-      const t = ctx.currentTime;
-      this.musicBus.gain.cancelScheduledValues(t);
-      this.musicBus.gain.setTargetAtTime(0, t, 0.15);
-      this.musicBus.gain.setTargetAtTime(this.settings.musicVolume * 0.16, t + 0.6, 0.4);
-      this.song = this.wantSong;
-      this.step = 0;
-      this.nextNote = t + 0.6;
-    }
-    const song = SONGS[this.song];
-    const stepDur = 60 / song.bpm / 2; // 八分音符
-    while (this.nextNote < ctx.currentTime + 0.3) {
-      const bar = Math.floor(this.step / 8) % song.chords.length;
-      const chord = song.chords[bar];
-      const inBar = this.step % 8;
-      if (inBar === 0) {
-        // 和弦墊音（整小節）
-        for (const n of chord) this.tone('sine', midi(song.root - 12 + n), midi(song.root - 12 + n), this.nextNote, stepDur * 8, 0.12, this.musicBus);
-        this.tone('triangle', midi(song.root - 24 + chord[0]), midi(song.root - 24 + chord[0]), this.nextNote, stepDur * 4, 0.22, this.musicBus);
-      }
-      const idx = song.arp[this.step % song.arp.length];
-      const note = song.root + chord[idx % chord.length] + (inBar >= 4 ? 12 : 0);
-      this.tone(song.wave, midi(note), midi(note), this.nextNote, stepDur * 0.9, this.song === 'boss' ? 0.06 : 0.1, this.musicBus);
-      this.nextNote += stepDur;
-      this.step++;
-    }
+    this.timer = window.setInterval(() => {
+      const ctx = this.ctx;
+      if (!ctx || ctx.state !== 'running' || !this.music) return;
+      this.music.intensity = this.bossIntensity;
+      this.music.scheduleUntil(ctx.currentTime + 0.5);
+    }, 100);
   }
 }

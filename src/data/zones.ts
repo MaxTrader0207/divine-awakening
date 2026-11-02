@@ -7,6 +7,7 @@ function row(kind: PropDef['kind'], x0: number, z0: number, dx: number, dz: numb
 
 const town: ZoneDef = {
   id: 'town',
+  music: 'town',
   kind: 'town',
   name: '艾爾芙大陸',
   subtitle: '主城艾爾芙・安全區',
@@ -57,6 +58,7 @@ const town: ZoneDef = {
 
 const grassland: ZoneDef = {
   id: 'grassland',
+  music: 'grassland',
   kind: 'field',
   name: '艾爾芙大陸',
   subtitle: '新手草原・Lv.1-10',
@@ -298,6 +300,7 @@ const MIST_CLEAR = [
 
 const mistwood: ZoneDef = {
   id: 'mistwood',
+  music: 'forest',
   kind: 'field',
   name: '迷霧森林',
   subtitle: '迷霧森林・Lv.11-25',

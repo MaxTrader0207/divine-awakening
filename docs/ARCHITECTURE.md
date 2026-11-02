@@ -51,7 +51,10 @@ src/
 │  ├─ LootSystem.ts           地上掉落物、自動拾取
 │  ├─ DailyQuests.ts          每日任務（純函式）
 │  └─ Quality.ts              畫質分級與自動降級
-├─ audio/Audio.ts             Web Audio 合成音效與各區域音樂（無音檔）
+├─ audio/
+│  ├─ Audio.ts                Web Audio 合成音效、音樂匯流排、選曲（區域 / 魔王戰 / 勝利）
+│  ├─ Music.ts                背景音樂引擎：16 分音符排程、樂器合成、鼓組、淡入淡出、魔王二階段、離線輸出
+│  └─ songs.ts                曲譜資料（和弦、旋律、貝斯、鼓組、段落）
 ├─ assets/
 │  ├─ Assets.ts               載入 KayKit 模型（meshopt）、Lambert 材質、靜態複製 / 骨架複製、蒙皮網格合併
 │  └─ models/*.glb            由 scripts/build-assets.mjs 產生
@@ -145,3 +148,18 @@ raw  = atk × 技能倍率
 - v1 → v2 遷移：補背包欄位與新手法杖。
 - 時機：每 10 秒、切換區域、撿到 / 買賣 / 強化裝備、死亡復活、分頁隱藏。
 - 雲端存檔：實作 `CloudSave implements SaveBackend`（Cloudflare Workers + D1）即可替換。
+
+## 背景音樂
+
+| 曲子 id | 曲名 | 用在 | 速度 | 特色 |
+|---|---|---|---|---|
+| `town` | 艾爾芙的午後 | 主城 | 96 | C 大調、木管旋律、撥弦琶音、沙鈴 |
+| `grassland` | 草原小冒險 | 新手草原 | 128 | G 大調、8-bit 方波旋律、跳躍貝斯 |
+| `forest` | 霧中小徑 | 迷霧森林 | 112 | D 多利安、木管＋鈴聲 16 分琶音，輕快帶點神秘 |
+| `dungeon` | 古道探險 | 三層副本 | 120 | A 小調冒險感、推進貝斯 |
+| `boss` | 巨影來襲 | 首領進入戰鬥 | 152 | E 弗里吉安、16 分音符降二度低音、太鼓、銅管重音；血量 < 50% 加 16 分踩鈸、弦樂顫音、更多銅管 |
+| `victory` | 勝利 | 擊敗首領（不循環） | 132 | 播完自動回到區域音樂 |
+
+- `Game.tick()`：有交戰中的首領 → `setMusic('boss')`＋`setBossIntensity(血量<50% ? 1 : 0)`；否則播 `ZoneDef.music`（沒填依 kind）。
+- 換曲：一般 0.7 秒淡出淡入；進魔王戰 0.25 秒快速切換。
+- 排程落後（手機卡頓）時跳過錯過的拍子，保持節拍。

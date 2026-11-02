@@ -124,6 +124,8 @@ export interface ZoneDef {
   subtitle: string;
   /** 大區域名稱，例如「艾爾芙大陸」 */
   region: string;
+  /** 背景音樂（audio/songs.ts 的曲子 id）；沒填時依 kind 決定 */
+  music?: string;
   levelRange?: [number, number];
   safe: boolean;
   /** 地圖大小（x 寬 × z 深），原點在中心 */

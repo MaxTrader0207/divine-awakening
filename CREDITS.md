@@ -33,3 +33,6 @@ node scripts/build-assets.mjs <素材資料夾>
 - 作者：Quaternius（https://quaternius.com）
 - 授權：CC0 1.0（公眾領域）
 - 使用：`frog.glb`（泡咪潮蛙、火山蛙、熔心巨蛙）。原檔為 FBX，用 FBX2glTF 轉成 glb 後經 `scripts/build-assets.mjs` 壓縮。
+
+## 背景音樂
+- 6 首背景音樂（艾爾芙的午後、草原小冒險、霧中小徑、古道探險、巨影來襲、勝利）為本專案原創，以 Web Audio 即時合成（`src/audio/songs.ts`），無第三方音檔。
