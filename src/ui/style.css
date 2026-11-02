@@ -15,6 +15,7 @@
   --exp: #f4d35e;
   --radius: 12px;
   --gutter: max(10px, env(safe-area-inset-left));
+  color-scheme: dark;
   --font: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
 }
 
@@ -28,7 +29,7 @@ button { font-family: inherit; color: inherit; border: 0; background: none; padd
 
 /* 直式畫框：手機全螢幕；桌機置中顯示成手機比例 */
 #app {
-  position: relative; margin: 0 auto; height: 100vh; height: 100dvh;
+  position: relative; margin: 0 auto; height: 100%;
   width: min(100vw, calc(100dvh * 0.5625)); overflow: hidden; background: #1b2433;
 }
 @media (max-aspect-ratio: 3/4) { #app { width: 100vw; } }
