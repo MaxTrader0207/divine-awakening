@@ -41,6 +41,12 @@ const town: ZoneDef = {
     { x: 0, z: 1.5, radius: 1.6, to: 'dungeon_1', arrive: { x: 0, z: 20 }, label: '傳送石', style: 'stone' },
   ],
   spawn: { x: 0, z: 14 },
+  triggers: [
+    { x: -12, z: -12.6, radius: 1.4, tab: 'shop', label: '武器店' },
+    { x: 12, z: -12.6, radius: 1.4, tab: 'shop', label: '防具店' },
+    { x: -22, z: -12.6, radius: 1.2, tab: 'shop', label: '道具店' },
+    { x: 22, z: -12.6, radius: 1.2, tab: 'enhance', label: '強化屋' },
+  ],
   tips: ['主城中央的傳送石可以前往海岸古道等副本地區', '商店街就在主城的東西大街上', '往南走可以進入新手草原'],
 };
 

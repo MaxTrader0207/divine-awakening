@@ -66,6 +66,16 @@ export class Zone {
     }
 
     for (const portal of def.portals) this.group.add(this.buildPortal(portal));
+    for (const t of def.triggers ?? []) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(t.radius - 0.18, t.radius, 32),
+        new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0.85, depthWrite: false }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(t.x, 0.04, t.z);
+      this.group.add(ring);
+      this.animated.push({ obj: ring, kind: 'pulse', phase: 2 });
+    }
   }
 
   private buildPortal(p: PortalDef): THREE.Object3D {

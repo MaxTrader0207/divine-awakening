@@ -239,3 +239,49 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .dmg.txt.gold { color: var(--gold); }
 .dmg.txt.exp { color: #b7f08a; }
 .dmg.txt.info { color: #9fe0ff; }
+
+/* ---------------- 撿寶訊息 ---------------- */
+.loot-feed { position: absolute; left: var(--gutter); top: 52%; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+.feed-line { background: rgba(14, 19, 28, 0.78); border-left: 3px solid var(--rc); padding: 4px 10px; border-radius: 0 8px 8px 0; font-size: 12px; transition: opacity 0.5s; animation: feedIn 0.25s ease-out; }
+.feed-line b { color: var(--rc); }
+.feed-line.out { opacity: 0; }
+@keyframes feedIn { from { transform: translateX(-12px); opacity: 0; } }
+
+/* ---------------- 裝備 / 強化 / 商城 ---------------- */
+.stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.stat { background: rgba(0, 0, 0, 0.22); border-radius: 8px; padding: 5px 6px; display: grid; gap: 1px; }
+.stat span { font-size: 10px; color: var(--muted); }
+.stat b { font-size: 13px; font-variant-numeric: tabular-nums; }
+.slot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.slot { background: var(--panel-2); border: 2px solid var(--rc, var(--line)); border-radius: 12px; padding: 8px 4px; display: grid; justify-items: center; gap: 3px; min-width: 0; }
+.slot.empty { border-style: dashed; opacity: 0.6; }
+.slot.sel, .inv-item.sel { box-shadow: 0 0 0 2px #fff; }
+.slot-ico { font-size: 22px; }
+.slot small { font-size: 10px; color: var(--rc, var(--muted)); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inv-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.inv-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.inv-item { position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 10px; background: rgba(0, 0, 0, 0.25); border: 2px solid var(--rc); font-size: 20px; display: flex; align-items: center; justify-content: center; }
+.inv-item .plus { position: absolute; right: 2px; bottom: 1px; font: 800 9px/1 var(--font); font-style: normal; color: var(--gold); }
+.inv-item .up { position: absolute; left: 3px; top: 2px; font: 800 9px/1 var(--font); font-style: normal; color: #6fd36a; }
+.empty-note { grid-column: 1 / -1; font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0; }
+.item-detail, .enh { border-color: var(--rc); }
+.detail-head { display: flex; gap: 10px; align-items: center; }
+.detail-head > div { min-width: 0; }
+.detail-head h4 { color: var(--rc); }
+.big-ico { font-size: 28px; width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.25); border-radius: 10px; }
+.lines { display: grid; gap: 3px; }
+.line { display: grid; grid-template-columns: 70px auto 1fr; gap: 8px; font-size: 13px; align-items: baseline; }
+.line span { color: var(--muted); }
+.line em { font-style: normal; font-size: 12px; justify-self: end; }
+.line em.pos { color: #6fd36a; }
+.line em.neg { color: #ff7a6a; }
+.cmp-note { font-size: 11px !important; }
+.go.small { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+.wallet-line { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.wallet-line b { margin-right: 10px; }
+.shop-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.shop-row:last-child { border-bottom: 0; }
+.shop-ico { font-size: 20px; width: 32px; text-align: center; flex: none; }
+.shop-main { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.shop-main b { font-size: 13px; }
+.shop-main small { font-size: 11px; color: var(--muted); }

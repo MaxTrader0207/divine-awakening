@@ -118,6 +118,8 @@ export interface ZoneDef {
   tips: string[];
   /** 敵人出生點（第 2 週起） */
   spawns?: SpawnDef[];
+  /** 走進去會開啟選單分頁（主城商店門口） */
+  triggers?: { x: number; z: number; radius: number; tab: 'shop' | 'enhance'; label: string }[];
   /** 副本專用 */
   dungeon?: {
     floor: number;

@@ -24,6 +24,9 @@ export interface GameEvents {
   'player:hurt': { amount: number; source: unknown };
   'player:died': void;
   'player:levelup': { level: number };
+  'loot:picked': { name: string; rarity: string };
+  'settings:changed': void;
+  'boss:defeated': { zoneId: ZoneId; first: boolean };
   /** 漂浮文字（+金幣、+經驗、升級） */
   'float:text': { x: number; y: number; z: number; text: string; kind: 'gold' | 'exp' | 'info' };
   /** 技能施放（音效、教學用） */

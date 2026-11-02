@@ -53,12 +53,19 @@ function migrate(data: Partial<GameState>): GameState | null {
     ...data,
     potions: { ...base.potions, ...(data.potions ?? {}) },
     settings: { ...base.settings, ...(data.settings ?? {}) },
+    stats: { ...base.stats, ...(data.stats ?? {}) },
     version: SAVE_VERSION,
   };
+  // v1 → v2：沒有背包欄位，補上新手法杖
+  if ((data.version ?? 1) < 2 || !Array.isArray(data.inventory)) {
+    merged.inventory = [];
+    merged.equipment = base.equipment;
+    merged.nextUid = base.nextUid;
+  }
   if (!ZONES[merged.zoneId]) {
     merged.zoneId = 'town';
     merged.pos = { ...ZONES.town.spawn };
   }
-  // 未來版本：if ((data.version ?? 0) < 2) { ... }
+  // 未來版本：if ((data.version ?? 0) < 3) { ... }
   return merged;
 }

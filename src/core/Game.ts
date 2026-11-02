@@ -21,7 +21,8 @@ import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
 import { AutoBattle } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
-import { statsForLevel } from '@/data/player';
+import { computeStats } from '@/systems/Inventory';
+import { LootSystem } from '@/systems/LootSystem';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -51,6 +52,7 @@ export class Game {
   readonly effects: Effects;
   readonly skills: SkillSystem;
   readonly auto: AutoBattle;
+  readonly loot: LootSystem;
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -100,7 +102,7 @@ export class Game {
     this.effects = new Effects(this.scene);
     this.scene.add(this.player.object);
 
-    this.player.setLevel(this.state.level);
+    this.player.stats = computeStats(this.state);
     this.player.hp = this.state.hp < 0 ? this.player.stats.maxHp : this.state.hp;
     this.player.mp = this.state.mp < 0 ? this.player.stats.maxMp : this.state.mp;
 
@@ -114,12 +116,20 @@ export class Game {
       collision: () => this.zones.current!.collision,
       moveInput: () => this.input.move,
     });
+    this.loot = new LootSystem(
+      this.scene,
+      this.state,
+      this.player,
+      this.effects,
+      () => this.zones.current?.def.dungeon?.floor ?? 1,
+      () => this.onInventoryChanged(),
+    );
     this.auto = new AutoBattle({
       player: this.player,
       enemies: this.enemies,
       targets: this.targets,
       skills: this.skills,
-      nearestLoot: () => null,
+      nearestLoot: () => this.loot.nearest(),
       dangerEscape: () => null,
       collision: () => this.zones.current!.collision,
     });
@@ -144,6 +154,17 @@ export class Game {
         this.devPen = pen;
         this.player.stats.pen = pen;
         bus.emit('toast', { text: `穿透設為 ${Math.round(pen * 100)}%（測試用，重新整理後還原）` });
+      },
+      onInventoryChanged: () => this.onInventoryChanged(),
+      onCelebrate: () => {
+        const { x, z } = this.player.pos;
+        this.effects.pillar(x, z, 1, 0xffd36b, 0.9);
+        this.effects.ring(x, z, 0.4, 2.6, 0xffe9a0, 0.6);
+      },
+      onVolume: (kind, v) => {
+        if (kind === 'music') this.state.settings.musicVolume = v;
+        else this.state.settings.sfxVolume = v;
+        bus.emit('settings:changed');
       },
       getStatsText: () => {
         const s = this.player.stats;
@@ -224,6 +245,7 @@ export class Game {
       const move = this.auto.on && !manual ? this.auto.move : this.input.move;
       this.player.update(dt, move, collision, pushOut);
       this.zones.checkPortals(this.player.pos.x, this.player.pos.z);
+      this.zones.checkTriggers(this.player.pos.x, this.player.pos.z);
     } else {
       this.player.update(dt, { x: 0, z: 0 }, collision, pushOut);
     }
@@ -231,6 +253,8 @@ export class Game {
     this.aiCtx.collision = collision;
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
     this.effects.update(dt);
+    this.loot.update(dt);
+    this.state.stats.playTime += dt;
     this.projectiles.update(dt, this.rig.camera);
     this.targets.update(dt);
     this.zones.update(dt);
@@ -300,7 +324,7 @@ export class Game {
     const p = this.player;
     const hpR = p.stats.maxHp > 0 ? p.hp / p.stats.maxHp : 1;
     const mpR = p.stats.maxMp > 0 ? p.mp / p.stats.maxMp : 1;
-    p.stats = statsForLevel(this.state.level);
+    p.stats = computeStats(this.state);
     if (this.devPen !== null) p.stats.pen = this.devPen;
     p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
     p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));
@@ -309,9 +333,18 @@ export class Game {
 
   private devPen: number | null = null;
 
+  /** 背包、裝備、金錢變動後：重算屬性、刷新、存檔 */
+  onInventoryChanged() {
+    this.recalcStats();
+    this.menu.refreshIfOpen();
+    this.persist();
+  }
+
   /** 擊殺獎勵：經驗、金幣、鑽石、升級 */
-  private onEnemyKilled(k: { x: number; z: number; level: number; exp: number; gold: [number, number]; gems: number; boss: boolean }) {
+  private onEnemyKilled(k: { x: number; z: number; level: number; exp: number; gold: [number, number]; gems: number; boss: boolean; name: string }) {
     const s = this.state;
+    s.stats.kills++;
+    if (k.boss) this.onBossDefeated(k.name);
     const exp = expForKill(k.exp, s.level, k.level);
     const gold = rollGold(k.gold);
     if (exp <= 0 && gold <= 0) return;
@@ -336,6 +369,19 @@ export class Game {
     bus.emit('player:changed');
   }
 
+  /** 首領首次擊敗：記錄並解鎖下一層 */
+  private onBossDefeated(name: string) {
+    const zoneId = this.state.zoneId;
+    const first = !this.state.bossesDefeated.includes(zoneId);
+    if (first) this.state.bossesDefeated.push(zoneId);
+    const next = DUNGEON_ORDER[DUNGEON_ORDER.indexOf(zoneId) + 1];
+    if (first && next) bus.emit('banner', { text: `擊敗${name}！解鎖${ZONES[next].name}` });
+    else if (first) bus.emit('banner', { text: `擊敗${name}！完成全部副本` });
+    else bus.emit('banner', { text: `擊敗${name}` });
+    bus.emit('boss:defeated', { zoneId, first });
+    this.persist();
+  }
+
   /** 敵人攻擊命中玩家 */
   private hitPlayer(e: Enemy, power: number) {
     const p = this.player;
@@ -349,6 +395,7 @@ export class Game {
 
   /** 玩家死亡：倒地 1.6 秒（遊戲時間）→ 損失 10% 金幣 → 主城復活 */
   private onPlayerDied() {
+    this.state.stats.deaths++;
     this.counterTimer = 0;
     this.targets.clear();
     this.deathTimer = 1.6;
@@ -404,6 +451,7 @@ export class Game {
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
     this.projectiles.clear();
     this.effects.clear();
+    this.loot?.clear();
     this.damageNumbers.clear();
     this.targets.clear();
     this.counterTimer = 0;

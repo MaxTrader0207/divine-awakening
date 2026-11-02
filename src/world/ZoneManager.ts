@@ -11,6 +11,7 @@ export class ZoneManager {
   current: Zone | null = null;
   /** 剛抵達時站在傳送點上，要先離開才會再次觸發 */
   private portalArmed = new Set<PortalDef>();
+  private triggerArmed = new Set<object>();
 
   constructor(private scene: THREE.Scene) {}
 
@@ -23,6 +24,7 @@ export class ZoneManager {
     this.scene.fog = new THREE.Fog(def.fogColor, 60, 130);
     this.current = zone;
     this.portalArmed.clear();
+    this.triggerArmed.clear();
     return zone;
   }
 
@@ -43,6 +45,22 @@ export class ZoneManager {
       } else {
         bus.emit('zone:request', { zoneId: p.to, arrive: p.arrive });
       }
+    }
+  }
+
+  /** 商店門口：走進去打開對應分頁（與傳送點同樣需要先離開再進入） */
+  checkTriggers(x: number, z: number) {
+    const zone = this.current;
+    if (!zone?.def.triggers) return;
+    for (const t of zone.def.triggers) {
+      const inside = Math.hypot(x - t.x, z - t.z) < t.radius;
+      if (!inside) {
+        this.triggerArmed.add(t);
+        continue;
+      }
+      if (!this.triggerArmed.has(t)) continue;
+      this.triggerArmed.delete(t);
+      bus.emit('menu:open', { tab: t.tab });
     }
   }
 

@@ -23,14 +23,14 @@ export const ENEMIES: Record<string, EnemyDef> = {
   /* ---------- 新手草原 Lv.1-10 ---------- */
   green_slime: {
     id: 'green_slime', name: '草原史萊姆', level: 2, aggro: 'aggressive', shape: 'slime',
-    radius: 0.6, respawn: 8, scale: 1, color: 0x6fd36a,
+    radius: 0.6, respawn: 12, scale: 1, color: 0x6fd36a,
     stats: { maxHp: 70, atk: 16, def: 0, moveSpeed: 2.6 },
     attack: melee(1.1, 0.5, 1.6),
     exp: 14, gold: [3, 6],
   },
   meadow_mushroom: {
     id: 'meadow_mushroom', name: '草原蘑菇', level: 4, aggro: 'passive', shape: 'mushroom',
-    radius: 0.6, respawn: 10, scale: 1.1, color: 0xd9584a,
+    radius: 0.6, respawn: 12, scale: 1.1, color: 0xd9584a,
     stats: { maxHp: 130, atk: 22, def: 3, moveSpeed: 2.4 },
     attack: melee(1.2, 0.6, 1.8),
     exp: 24, gold: [5, 9],
@@ -39,14 +39,14 @@ export const ENEMIES: Record<string, EnemyDef> = {
   /* ---------- 第一層 海岸古道 Lv.1-5，防禦 0 ---------- */
   hermit_crab: {
     id: 'hermit_crab', name: '寄居蟹', level: 3, aggro: 'aggressive', shape: 'crab',
-    radius: 0.6, respawn: 9, scale: 1, color: 0xe2703a,
+    radius: 0.6, respawn: 12, scale: 1, color: 0xe2703a,
     stats: { maxHp: 100, atk: 19, def: 0, moveSpeed: 2.8 },
     attack: melee(1.2, 0.45, 1.5),
     exp: 18, gold: [4, 8],
   },
   bubble_frog: {
     id: 'bubble_frog', name: '泡咪潮蛙', level: 4, aggro: 'passive', shape: 'frog',
-    radius: 0.6, respawn: 10, scale: 1, color: 0x4fc3c9,
+    radius: 0.6, respawn: 12, scale: 1, color: 0x4fc3c9,
     stats: { maxHp: 140, atk: 23, def: 0, moveSpeed: 3.2 },
     attack: melee(1.3, 0.5, 1.6),
     exp: 26, gold: [5, 10],
@@ -63,14 +63,14 @@ export const ENEMIES: Record<string, EnemyDef> = {
   /* ---------- 第二層 珊瑚洞窟 Lv.5-10，防禦 18 ---------- */
   coral_slime: {
     id: 'coral_slime', name: '珊瑚史萊姆', level: 6, aggro: 'aggressive', shape: 'slime',
-    radius: 0.65, respawn: 9, scale: 1.15, color: 0xf08a9a,
+    radius: 0.65, respawn: 12, scale: 1.15, color: 0xf08a9a,
     stats: { maxHp: 230, atk: 34, def: 18, moveSpeed: 2.6 },
     attack: melee(1.2, 0.5, 1.6),
     exp: 42, gold: [10, 16],
   },
   cave_bat: {
     id: 'cave_bat', name: '洞窟蝙蝠', level: 7, aggro: 'aggressive', shape: 'bat',
-    radius: 0.5, respawn: 9, scale: 1, color: 0x5a4a7a,
+    radius: 0.5, respawn: 12, scale: 1, color: 0x5a4a7a,
     stats: { maxHp: 180, atk: 38, def: 18, moveSpeed: 4 },
     attack: melee(1.1, 0.35, 1.3),
     exp: 46, gold: [10, 18],
@@ -87,14 +87,14 @@ export const ENEMIES: Record<string, EnemyDef> = {
   /* ---------- 第三層 熔心火山口 Lv.10-15，防禦 40 ---------- */
   lava_slime: {
     id: 'lava_slime', name: '熔岩史萊姆', level: 11, aggro: 'aggressive', shape: 'slime',
-    radius: 0.7, respawn: 9, scale: 1.25, color: 0xff6a2a,
+    radius: 0.7, respawn: 12, scale: 1.25, color: 0xff6a2a,
     stats: { maxHp: 430, atk: 58, def: 40, moveSpeed: 2.6 },
     attack: melee(1.3, 0.5, 1.6),
     exp: 95, gold: [22, 34],
   },
   ember_frog: {
     id: 'ember_frog', name: '火山蛙', level: 12, aggro: 'aggressive', shape: 'frog',
-    radius: 0.65, respawn: 9, scale: 1.15, color: 0xc9442a,
+    radius: 0.65, respawn: 12, scale: 1.15, color: 0xc9442a,
     stats: { maxHp: 390, atk: 64, def: 40, moveSpeed: 3.4 },
     attack: melee(1.3, 0.45, 1.5),
     exp: 105, gold: [24, 38],

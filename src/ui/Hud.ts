@@ -7,6 +7,7 @@ import type { InputManager, ActionKey } from '@/input/InputManager';
 import type { SkillSlot } from '@/data/types';
 import type { SkillSystem } from '@/systems/SkillSystem';
 import { Minimap } from './Minimap';
+import { RARITY } from '@/data/items';
 import { h } from './dom';
 
 /**
@@ -71,6 +72,7 @@ export class Hud {
     this.root.appendChild((this.els.toast = h('div', { class: 'toast' })));
     this.root.appendChild((this.els.fps = h('div', { class: 'fps' })));
     this.root.appendChild((this.els.hurt = h('div', { class: 'hurt-vignette' })));
+    this.root.appendChild((this.els.feed = h('div', { class: 'loot-feed' })));
 
     // ---- 左下藥水 ----
     const potions = h('div', { class: 'potions' }, [
@@ -103,6 +105,13 @@ export class Hud {
     bus.on('toast', ({ text, duration }) => this.toast(text, duration));
     bus.on('banner', ({ text }) => this.banner(text));
     bus.on('player:changed', () => this.refresh());
+    bus.on('loot:picked', ({ name, rarity }) => {
+      const line = h('div', { class: 'feed-line', style: `--rc:${RARITY[rarity as keyof typeof RARITY].color}` }, [h('span', {}, '獲得 '), h('b', {}, name)]);
+      this.els.feed.prepend(line);
+      while (this.els.feed.children.length > 3) this.els.feed.lastElementChild!.remove();
+      setTimeout(() => line.classList.add('out'), 3200);
+      setTimeout(() => line.remove(), 3700);
+    });
     bus.on('combat:hit', (e) => {
       if (!e.targetIsPlayer) return;
       const v = this.els.hurt;

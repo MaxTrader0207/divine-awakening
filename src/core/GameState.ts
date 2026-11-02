@@ -1,4 +1,5 @@
-import type { ZoneId } from '@/data/types';
+import type { EquipSlot, ZoneId } from '@/data/types';
+import type { ItemInstance } from '@/systems/Inventory';
 import { DUNGEON_ORDER, ZONES } from '@/data/zones';
 
 /**
@@ -7,7 +8,7 @@ import { DUNGEON_ORDER, ZONES } from '@/data/zones';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -32,6 +33,12 @@ export interface GameState {
   /** 已擊敗首領的副本 */
   bossesDefeated: ZoneId[];
   potions: { hp: number; mp: number };
+  /** v2：背包與裝備 */
+  inventory: ItemInstance[];
+  equipment: Partial<Record<EquipSlot, ItemInstance>>;
+  nextUid: number;
+  /** 統計（結算畫面、平衡用） */
+  stats: { kills: number; deaths: number; playTime: number };
   settings: Settings;
 }
 
@@ -52,7 +59,12 @@ export function newGameState(): GameState {
     pos: { ...ZONES.town.spawn },
     bossesDefeated: [],
     potions: { hp: 5, mp: 5 },
-    settings: { zoom: 1.1, showFps: false, musicVolume: 0.6, sfxVolume: 0.8 },
+    // 新手裝：見習法杖
+    inventory: [],
+    equipment: { weapon: { uid: 1, base: 'weapon_t1', rarity: 'common', plus: 0 } },
+    nextUid: 2,
+    stats: { kills: 0, deaths: 0, playTime: 0 },
+    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8 },
   };
 }
 

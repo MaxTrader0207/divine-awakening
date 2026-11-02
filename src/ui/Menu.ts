@@ -2,6 +2,7 @@ import { bus, type MenuTab } from '@/core/EventBus';
 import { isZoneUnlocked, type GameState } from '@/core/GameState';
 import { DUNGEON_ORDER, WORLD_FIELDS, ZONES } from '@/data/zones';
 import { h } from './dom';
+import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
 
 const TABS: { id: MenuTab; label: string }[] = [
   { id: 'equip', label: '裝備' },
@@ -11,12 +12,6 @@ const TABS: { id: MenuTab; label: string }[] = [
   { id: 'settings', label: '設定' },
 ];
 
-/** 尚未實作的分頁：顯示預計週次，方便追蹤進度 */
-const PLANNED: Partial<Record<MenuTab, string>> = {
-  equip: '裝備欄（6 格）、背包、稀有度 —— 預計第 6 週實作',
-  enhance: '裝備強化（成功率 / 消耗）—— 預計第 7 週實作',
-  shop: '金幣商店、藥水補給 —— 預計第 7 週實作',
-};
 
 export interface MenuActions {
   onResetSave(): void;
@@ -26,6 +21,10 @@ export interface MenuActions {
   /** 開發用：直接設定穿透，驗證防禦公式 */
   onSetPen(pen: number): void;
   getStatsText(): string;
+  /** 背包 / 金錢變動 */
+  onInventoryChanged(): void;
+  onCelebrate(): void;
+  onVolume(kind: 'music' | 'sfx', v: number): void;
 }
 
 export class Menu {
@@ -78,7 +77,26 @@ export class Menu {
   private render(tab: MenuTab): HTMLElement[] {
     if (tab === 'map') return this.renderMap();
     if (tab === 'settings') return this.renderSettings();
-    return [h('div', { class: 'placeholder' }, [h('div', { class: 'ph-icon' }, '🛠'), h('p', {}, PLANNED[tab] ?? '')])];
+    const ctx: InvContext = {
+      state: this.state,
+      changed: () => this.actions.onInventoryChanged(),
+      toast: (text) => bus.emit('toast', { text }),
+      rerender: () => {
+        const top = this.body.scrollTop;
+        this.show(this.tab);
+        this.body.scrollTop = top;
+      },
+      goTab: (t) => this.show(t),
+      celebrate: () => this.actions.onCelebrate(),
+    };
+    if (tab === 'equip') return renderEquip(ctx);
+    if (tab === 'enhance') return renderEnhance(ctx);
+    return renderShop(ctx);
+  }
+
+  /** 選單開著時資料變了（撿到東西）就重畫 */
+  refreshIfOpen() {
+    if (this.isOpen && this.tab !== 'settings') this.show(this.tab);
   }
 
   private renderMap(): HTMLElement[] {
@@ -127,12 +145,23 @@ export class Menu {
       this.actions.onZoomSet(Number(slider.value) / 100);
       zoomVal.textContent = `${slider.value}%`;
     });
+    const vol = (kind: 'music' | 'sfx', label: string, value: number) => {
+      const out = h('b', {}, `${Math.round(value * 100)}%`);
+      const sl = h('input', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(value * 100), id: `vol-${kind}` });
+      sl.addEventListener('input', () => {
+        this.actions.onVolume(kind, Number(sl.value) / 100);
+        out.textContent = `${sl.value}%`;
+      });
+      return h('div', { class: 'card' }, [h('label', { class: 'set-row', for: `vol-${kind}` }, [h('span', {}, label), out]), sl]);
+    };
     const fps = h('input', { type: 'checkbox' });
     fps.checked = s.showFps;
     fps.addEventListener('change', () => this.actions.onToggleFps(fps.checked));
 
     return [
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '鏡頭縮放'), zoomVal]), slider]),
+      vol('music', '音樂音量', s.musicVolume),
+      vol('sfx', '音效音量', s.sfxVolume),
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '顯示 FPS'), fps])]),
       h('div', { class: 'section-title' }, '開發工具'),
       this.renderPenTester(),
