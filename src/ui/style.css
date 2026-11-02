@@ -340,3 +340,18 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .rank.r2 { background: linear-gradient(#eef1f6, #aab3c2); color: #1b2433; }
 .rank.r3 { background: linear-gradient(#f0b07a, #b0652a); color: #2a1404; }
 .menu-tab { font-size: 12px; padding: 10px 0; }
+/* 選職業 */
+.class-pick { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 20px var(--gutter); background: radial-gradient(circle at 50% 30%, #2a3550, #0e131c 75%); transition: opacity 0.35s; }
+.class-pick.done { opacity: 0; pointer-events: none; }
+.cp-box { width: 100%; max-width: 420px; display: grid; gap: 12px; text-align: center; }
+.cp-box h2 { margin: 0; font-size: 22px; letter-spacing: 2px; color: #fff2c4; }
+.cp-box p { margin: 0; font-size: 12px; color: var(--muted); }
+.cp-list { display: grid; gap: 12px; }
+.cp-card { display: grid; justify-items: center; gap: 6px; padding: 16px 14px; border-radius: 16px; background: var(--panel-2); border: 2px solid var(--line); text-align: center; transition: border-color 0.15s, transform 0.1s; }
+.cp-card:hover, .cp-card:focus-visible { border-color: var(--gold); outline: none; }
+.cp-card:active { transform: scale(0.98); }
+.cp-ico { font-size: 34px; }
+.cp-card b { font-size: 18px; }
+.cp-card small { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.cp-card em { font-style: normal; font-size: 12px; color: #cfe6ff; }
+.cp-card i { font-style: normal; font-size: 11px; color: var(--gold); font-variant-numeric: tabular-nums; }

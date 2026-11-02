@@ -17,6 +17,17 @@ export interface ItemBase {
   stats: Partial<Stats>;
 }
 
+/** 依職業改寫武器欄的名稱與圖示（遊戲啟動時呼叫一次） */
+export function applyClassWeaponNames(names: [string, string, string, string], icon: string) {
+  for (const tier of [1, 2, 3, 4] as const) {
+    const b = ITEM_BASES[`weapon_t${tier}`];
+    if (!b) continue;
+    b.name = names[tier - 1];
+    b.icon = icon;
+  }
+  SLOT_NAMES.weapon = icon === '🏹' ? '弩' : '法杖';
+}
+
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '法杖',
   hat: '帽子',

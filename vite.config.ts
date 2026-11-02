@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import { fileURLToPath, URL } from 'node:url';
 import { viteSingleFile } from 'vite-plugin-singlefile';
@@ -12,6 +13,10 @@ export default defineConfig(({ mode }) => ({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   plugins: mode === 'single' ? [viteSingleFile()] : [],
+  test: {
+    // server/ 是 Cloudflare Worker 的整合測試，需要另外啟動本機 API，不在這裡跑
+    exclude: ['node_modules/**', 'server/**', 'dist/**'],
+  },
   build: {
     outDir: mode === 'single' ? 'dist-single' : 'dist',
     target: 'es2022',

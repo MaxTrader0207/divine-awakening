@@ -1,6 +1,7 @@
 import type { EquipSlot, ZoneId } from '@/data/types';
 import type { ItemInstance } from '@/systems/Inventory';
 import type { DailyState } from '@/systems/DailyQuests';
+import { CLASSES, type HeroClass } from '@/data/classes';
 import { DUNGEON_ORDER, ZONES } from '@/data/zones';
 
 /**
@@ -9,7 +10,7 @@ import { DUNGEON_ORDER, ZONES } from '@/data/zones';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -25,6 +26,8 @@ export interface GameState {
   createdAt: number;
   updatedAt: number;
   playerName: string;
+  /** v4：職業 */
+  heroClass: HeroClass;
   level: number;
   exp: number;
   hp: number;
@@ -47,13 +50,14 @@ export interface GameState {
   settings: Settings;
 }
 
-export function newGameState(): GameState {
+export function newGameState(heroClass: HeroClass = 'mage'): GameState {
   const now = Date.now();
   return {
+    heroClass,
     version: SAVE_VERSION,
     createdAt: now,
     updatedAt: now,
-    playerName: '小法師',
+    playerName: heroClass === 'mage' ? '小法師' : `小${CLASSES[heroClass].name}`,
     level: 1,
     exp: 0,
     hp: -1, // -1 = 滿血（載入時依屬性補滿）

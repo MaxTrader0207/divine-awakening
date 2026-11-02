@@ -21,6 +21,7 @@ export interface InventoryState {
   gold: number;
   gems: number;
   level: number;
+  heroClass?: import('@/data/classes').HeroClass;
 }
 
 export const INVENTORY_SIZE = 40;
@@ -41,7 +42,7 @@ export function itemStats(it: ItemInstance): Partial<Stats> {
 
 /** 等級屬性 + 所有裝備 */
 export function computeStats(s: InventoryState): Stats {
-  const st = statsForLevel(s.level);
+  const st = statsForLevel(s.level, s.heroClass ?? 'mage');
   for (const slot of SLOT_ORDER) {
     const it = s.equipment[slot];
     if (!it) continue;

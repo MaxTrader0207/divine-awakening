@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { bus } from '@/core/EventBus';
 import type { GameState } from '@/core/GameState';
-import { MAGE_SKILLS } from '@/data/player';
+import { CLASSES, type HeroClass } from '@/data/classes';
 import type { SkillDef, SkillSlot } from '@/data/types';
 import type { Player } from '@/entities/Player';
 import type { CollisionWorld } from '@/world/Collision';
@@ -12,14 +12,21 @@ import type { Effects } from './Effects';
 import { damageArea } from './Damage';
 
 /**
- * 技能系統：普攻 + Q/W/E/R、藥水。
+ * 技能系統：普攻 + Q/W/E/R、藥水。技能清單依職業（data/classes.ts），效果依 skill.id 分派。
  * 所有冷卻都在這裡，HUD 只讀 cooldownRatio() / remaining()。
  *
+ * 法師
  *  普攻  魔彈       追蹤單體
  *  Q     火球術     追蹤投射物，命中範圍爆炸 r=2.2
  *  W     冰霜新星   以自身為中心 r=4，附加緩速 50% 2.5 秒
  *  E     烈焰爆發   目標腳下 0.35 秒預警後爆炸 r=3
  *  R     閃現       往搖桿方向（無輸入則面向）瞬移 6m，0.3 秒無敵
+ * 弓手
+ *  普攻  射擊       快速追蹤箭
+ *  Q     多重箭     扇形 5 支箭（不追蹤）
+ *  W     貫穿箭     直線穿透所有敵人
+ *  E     箭雨       目標區域 3 波傷害
+ *  R     後跳       往後（或搖桿方向）跳開 6m，附近敵人緩速
  */
 export const POTION_COOLDOWN = 2;
 export const POTION_HEAL_RATIO = 0.35;
@@ -42,18 +49,21 @@ interface Delayed {
   run: () => void;
 }
 
-const BY_SLOT = Object.fromEntries(MAGE_SKILLS.map((s) => [s.slot, s])) as Record<SkillSlot, SkillDef>;
-
 export class SkillSystem {
+  readonly list: SkillDef[];
+  private bySlot: Record<SkillSlot, SkillDef>;
   private cd: Record<SkillSlot, number> = { basic: 0, Q: 0, W: 0, E: 0, R: 0 };
   potionCd = 0;
   private delayed: Delayed[] = [];
   private tmp = new THREE.Vector3();
 
-  constructor(private ctx: SkillContext) {}
+  constructor(private ctx: SkillContext, heroClass: HeroClass = 'mage') {
+    this.list = CLASSES[heroClass].skills;
+    this.bySlot = Object.fromEntries(this.list.map((s) => [s.slot, s])) as Record<SkillSlot, SkillDef>;
+  }
 
   def(slot: SkillSlot): SkillDef {
-    return BY_SLOT[slot];
+    return this.bySlot[slot];
   }
 
   remaining(slot: SkillSlot): number {
@@ -61,13 +71,13 @@ export class SkillSystem {
   }
 
   cooldownRatio(slot: SkillSlot): number {
-    const total = BY_SLOT[slot].cooldown;
+    const total = this.bySlot[slot].cooldown;
     return total > 0 ? this.cd[slot] / total : 0;
   }
 
   /** MP 足夠且冷卻完成 */
   canCast(slot: SkillSlot): boolean {
-    return this.cd[slot] <= 0 && this.ctx.player.mp >= BY_SLOT[slot].mpCost && this.ctx.player.alive;
+    return this.cd[slot] <= 0 && this.ctx.player.mp >= this.bySlot[slot].mpCost && this.ctx.player.alive;
   }
 
   reset() {
@@ -94,7 +104,7 @@ export class SkillSystem {
    * 回傳是否成功。
    */
   cast(slot: SkillSlot, silent = false): boolean {
-    const sk = BY_SLOT[slot];
+    const sk = this.bySlot[slot];
     const p = this.ctx.player;
     if (!p.alive) return false;
     if (this.cd[slot] > 0) return false;
@@ -103,21 +113,36 @@ export class SkillSystem {
       return false;
     }
     let ok = false;
-    switch (slot) {
-      case 'basic':
+    switch (sk.id) {
+      case 'magic_bolt':
         ok = this.castBolt(sk, false);
         break;
-      case 'Q':
+      case 'fireball':
         ok = this.castBolt(sk, true);
         break;
-      case 'W':
+      case 'frost_nova':
         ok = this.castFrostNova(sk);
         break;
-      case 'E':
+      case 'flame_burst':
         ok = this.castFlameBurst(sk);
         break;
-      case 'R':
+      case 'blink':
         ok = this.castBlink(sk);
+        break;
+      case 'arrow':
+        ok = this.castArrow(sk);
+        break;
+      case 'multishot':
+        ok = this.castMultishot(sk);
+        break;
+      case 'pierce':
+        ok = this.castPierce(sk);
+        break;
+      case 'arrow_rain':
+        ok = this.castArrowRain(sk);
+        break;
+      case 'backstep':
+        ok = this.castBackstep(sk);
         break;
     }
     if (!ok) return false;
@@ -258,6 +283,93 @@ export class SkillSystem {
     p.invulnerable = Math.max(p.invulnerable, 0.3);
     fx.ring(p.pos.x, p.pos.z, 1.6, 0.3, sk.color, 0.3);
     fx.pillar(p.pos.x, p.pos.z, 0.8, sk.color, 0.4);
+    return true;
+  }
+
+  /* ---------------- 弓手 ---------------- */
+
+  private fireFrom(dx: number, dz: number) {
+    const p = this.ctx.player;
+    return this.tmp.set(p.pos.x + dx * 0.6, 1.4 + p.groundY, p.pos.z + dz * 0.6);
+  }
+
+  private castArrow(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { target, dx, dz } = this.aim(sk.range);
+    p.cast(dx, dz);
+    return this.ctx.projectiles.fire({ from: this.fireFrom(dx, dz), dirX: dx, dirZ: dz, target, attacker: p.stats, power: sk.power, range: sk.range, color: sk.color, speed: 28, size: 0.7, arrow: true });
+  }
+
+  private castMultishot(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.aim(sk.range);
+    p.cast(dx, dz);
+    const n = sk.count ?? 5;
+    const spread = 0.7; // 總扇形角（弧度）
+    const base = Math.atan2(dx, dz);
+    for (let i = 0; i < n; i++) {
+      const a = base - spread / 2 + (spread * i) / (n - 1);
+      const ax = Math.sin(a);
+      const az = Math.cos(a);
+      this.ctx.projectiles.fire({ from: this.fireFrom(ax, az), dirX: ax, dirZ: az, target: null, attacker: p.stats, power: sk.power, range: sk.range, color: sk.color, speed: 24, size: 0.7, arrow: true });
+    }
+    return true;
+  }
+
+  private castPierce(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.aim(sk.range);
+    p.cast(dx, dz);
+    p.castBig();
+    this.ctx.effects.ring(p.pos.x, p.pos.z, 0.4, 1.6, sk.color, 0.3);
+    return this.ctx.projectiles.fire({ from: this.fireFrom(dx, dz), dirX: dx, dirZ: dz, target: null, attacker: p.stats, power: sk.power, range: sk.range, color: sk.color, speed: 34, size: 1.6, arrow: true, pierce: true });
+  }
+
+  private castArrowRain(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const r = sk.radius ?? 3.6;
+    const { target, dx, dz } = this.aim(sk.range);
+    const x = target ? target.pos.x : p.pos.x + dx * 5;
+    const z = target ? target.pos.z : p.pos.z + dz * 5;
+    p.cast(dx, dz);
+    p.castBig();
+    const fx = this.ctx.effects;
+    fx.ring(x, z, r * 1.3, r, sk.color, 0.4);
+    const stats = { ...p.stats };
+    const waves = sk.waves ?? 3;
+    for (let w = 0; w < waves; w++) {
+      this.delayed.push({
+        t: 0.35 + w * 0.35,
+        run: () => {
+          fx.disc(x, z, r, 0x6aa8d8, 0.3, 0.45);
+          for (let k = 0; k < 4; k++) fx.pillar(x + (Math.random() - 0.5) * r * 1.4, z + (Math.random() - 0.5) * r * 1.4, 0.12, 0xd8f0ff, 0.25);
+          damageArea(this.ctx.enemies.enemies, x, z, r, stats, sk.power);
+        },
+      });
+    }
+    return true;
+  }
+
+  private castBackstep(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const mv = this.ctx.moveInput();
+    const l = Math.hypot(mv.x, mv.z);
+    // 有推搖桿就往搖桿方向，否則往面向的反方向跳
+    const dx = l > 0.1 ? mv.x / l : -Math.sin(p.facing);
+    const dz = l > 0.1 ? mv.z / l : -Math.cos(p.facing);
+    const fx = this.ctx.effects;
+    fx.ring(p.pos.x, p.pos.z, 0.4, 3, sk.color, 0.4);
+    // 起跳點的敵人緩速
+    for (const e of this.ctx.enemies.enemies) if (e.alive && Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z) < 3) e.applySlow(2, 0.5);
+    const col = this.ctx.collision();
+    for (let i = 0; i < 24; i++) {
+      p.pos.x += (dx * sk.range) / 24;
+      p.pos.z += (dz * sk.range) / 24;
+      col.resolve(p.pos, p.radius);
+    }
+    p.dodge();
+    p.invulnerable = Math.max(p.invulnerable, 0.3);
+    fx.pillar(p.pos.x, p.pos.z, 0.6, sk.color, 0.35);
     return true;
   }
 }

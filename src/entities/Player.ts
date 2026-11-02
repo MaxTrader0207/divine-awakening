@@ -5,31 +5,11 @@ import type { CollisionWorld } from '@/world/Collision';
 import { mat } from '@/world/Props';
 import { Assets } from '@/assets/Assets';
 import { CharacterRig } from './CharacterRig';
+import { CLASSES, type HeroAnimSet } from '@/data/classes';
 
-/** 各職業模型的動畫名稱對應（KayKit 動畫名） */
-export interface HeroAnimSet {
-  model: string;
-  idle: string;
-  run: string;
-  cast: string;
-  castBig: string;
-  hit: string;
-  death: string;
-  dodge: string;
-  cheer: string;
-}
-
-export const MAGE_ANIMS: HeroAnimSet = {
-  model: 'mage',
-  idle: 'Idle',
-  run: 'Running_A',
-  cast: 'Spellcast_Shoot',
-  castBig: 'Spellcast_Long',
-  hit: 'Hit_A',
-  death: 'Death_A',
-  dodge: 'Dodge_Forward',
-  cheer: 'Cheer',
-};
+export type { HeroAnimSet } from '@/data/classes';
+/** 相容舊程式 */
+export const MAGE_ANIMS: HeroAnimSet = CLASSES.mage.anims;
 
 /** 角色目標身高（公尺），模型依原始高度自動縮放 */
 const HERO_HEIGHT = 2.9;

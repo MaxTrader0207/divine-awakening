@@ -29,6 +29,8 @@ import { AudioSystem } from '@/audio/Audio';
 import { Quality, type QualitySetting } from '@/systems/Quality';
 import { ensureToday, progressQuests, questText, type QuestEvent } from '@/systems/DailyQuests';
 import { Cloud } from '@/net/Cloud';
+import { CLASSES, type HeroClass } from '@/data/classes';
+import { applyClassWeaponNames } from '@/data/items';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -48,7 +50,7 @@ export class Game {
   readonly scene = new THREE.Scene();
   readonly rig: CameraRig;
   readonly input: InputManager;
-  readonly player = new Player();
+  readonly player: Player;
   readonly zones: ZoneManager;
   readonly hud: Hud;
   readonly menu: Menu;
@@ -81,8 +83,11 @@ export class Game {
   private aiCtx!: AiContext;
   private fadeEl: HTMLElement;
 
-  constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement) {
-    this.state = this.save.load() ?? newGameState();
+  constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement, initialClass: HeroClass = 'mage') {
+    this.state = this.save.load() ?? newGameState(initialClass);
+    const cls = CLASSES[this.state.heroClass] ?? CLASSES.mage;
+    applyClassWeaponNames(cls.weaponNames, cls.weaponIcon);
+    this.player = new Player(cls.anims);
 
     // ---- Renderer ----
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -139,7 +144,7 @@ export class Game {
       effects: this.effects,
       collision: () => this.zones.current!.collision,
       moveInput: () => this.input.move,
-    });
+    }, this.state.heroClass);
     this.loot = new LootSystem(
       this.scene,
       this.state,

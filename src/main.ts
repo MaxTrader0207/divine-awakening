@@ -2,6 +2,8 @@ import './ui/style.css';
 import { Game } from './core/Game';
 import * as Inventory from './systems/Inventory';
 import { Assets } from './assets/Assets';
+import { LocalSave } from './core/SaveSystem';
+import { CLASSES, CLASS_LIST, type HeroClass } from './data/classes';
 
 /**
  * 進入點：只負責找 DOM、建立 Game、啟動。
@@ -28,10 +30,39 @@ await Assets.loadAll((done, total) => {
   bar.style.width = `${(done / total) * 100}%`;
   label.textContent = `載入中… ${done}/${total}`;
 });
-game = new Game(canvas, app, uiRoot);
-game.start();
 loading.classList.add('done');
 setTimeout(() => loading.remove(), 500);
+
+// 新玩家：先選職業（已有存檔就直接進遊戲；?class=archer 可略過畫面，測試用）
+let heroClass: HeroClass = 'mage';
+if (!new LocalSave().load()) heroClass = await pickClass();
+game = new Game(canvas, app, uiRoot, heroClass);
+game.start();
+
+function pickClass(): Promise<HeroClass> {
+  const forced = new URLSearchParams(location.search).get('class');
+  if (forced === 'mage' || forced === 'archer') return Promise.resolve(forced);
+  return new Promise((resolve) => {
+    const el = document.createElement('div');
+    el.className = 'class-pick';
+    el.innerHTML = `<div class="cp-box"><h2>選擇你的職業</h2><p>之後可以在「設定 → 重置存檔」重新選擇</p><div class="cp-list"></div></div>`;
+    const list = el.querySelector('.cp-list')!;
+    for (const id of CLASS_LIST) {
+      const c = CLASSES[id];
+      const b = document.createElement('button');
+      b.className = 'cp-card';
+      const sk = c.skills.filter((s) => s.slot !== 'basic').map((s) => `${s.icon} ${s.name}`).join('　');
+      b.innerHTML = `<span class="cp-ico">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small><em>${sk}</em><i>HP ${c.base.maxHp}・攻擊 ${c.base.atk}・移速 ${c.base.moveSpeed}・爆擊 ${Math.round(c.base.critRate * 100)}%</i>`;
+      b.addEventListener('click', () => {
+        el.classList.add('done');
+        setTimeout(() => el.remove(), 350);
+        resolve(id);
+      });
+      list.appendChild(b);
+    }
+    app.appendChild(el);
+  });
+}
 
 // PWA：正式版、https（或 localhost）、不在 iframe 內時註冊離線快取
 const inFrame = (() => {

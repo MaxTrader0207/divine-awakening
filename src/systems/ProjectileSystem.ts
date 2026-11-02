@@ -25,6 +25,10 @@ export interface FireOptions {
   aoe?: number;
   /** 命中後呼叫（特效、狀態） */
   onImpact?: (x: number, z: number) => void;
+  /** 箭的外型（細長、朝飛行方向） */
+  arrow?: boolean;
+  /** 穿透：命中後不消失，每個敵人只打一次 */
+  pierce?: boolean;
 }
 
 interface Projectile {
@@ -39,6 +43,9 @@ interface Projectile {
   life: number;
   aoe: number;
   onImpact?: (x: number, z: number) => void;
+  arrow: boolean;
+  pierce: boolean;
+  hit: Set<Enemy>;
 }
 
 interface Spark {
@@ -67,7 +74,7 @@ export class ProjectileSystem {
       mesh.add(glow);
       mesh.visible = false;
       scene.add(mesh);
-      this.projectiles.push({ mesh, glow, active: false, vel: new THREE.Vector3(), target: null, attacker: { atk: 0, pen: 0, critRate: 0, critDmg: 1 }, power: 1, speed: 18, life: 0, aoe: 0 });
+      this.projectiles.push({ mesh, glow, active: false, vel: new THREE.Vector3(), target: null, attacker: { atk: 0, pen: 0, critRate: 0, critDmg: 1 }, power: 1, speed: 18, life: 0, aoe: 0, arrow: false, pierce: false, hit: new Set() });
     }
     const ringGeo = new THREE.RingGeometry(0.2, 0.42, 20);
     for (let i = 0; i < SPARK_POOL; i++) {
@@ -89,6 +96,11 @@ export class ProjectileSystem {
     p.speed = speed;
     p.aoe = o.aoe ?? 0;
     p.onImpact = o.onImpact;
+    p.arrow = !!o.arrow;
+    p.pierce = !!o.pierce;
+    p.hit.clear();
+    // 箭：拉長成細棒；魔彈：圓球
+    if (p.arrow) p.mesh.scale.set(0.35 * (o.size ?? 1), 0.35 * (o.size ?? 1), 3.2 * (o.size ?? 1));
     p.life = (o.range ?? 10) / speed + 0.25;
     p.mesh.position.copy(o.from);
     p.mesh.scale.setScalar(o.size ?? 1);
@@ -123,8 +135,11 @@ export class ProjectileSystem {
       } else p.target = null;
 
       p.mesh.position.addScaledVector(p.vel, dt);
-      p.mesh.rotation.x += dt * 12;
-      p.mesh.rotation.y += dt * 9;
+      if (p.arrow) p.mesh.lookAt(this.tmp.copy(p.mesh.position).add(p.vel));
+      else {
+        p.mesh.rotation.x += dt * 12;
+        p.mesh.rotation.y += dt * 9;
+      }
 
       const hit = this.findHit(p);
       if (hit) this.resolveHit(p, hit);
@@ -150,7 +165,7 @@ export class ProjectileSystem {
     // 追蹤中的目標優先
     const candidates = p.target ? [p.target] : this.enemies.enemies;
     for (const e of candidates) {
-      if (!e.alive) continue;
+      if (!e.alive || p.hit.has(e)) continue;
       if (Math.hypot(e.pos.x - pos.x, e.pos.z - pos.z) < e.radius + HIT_PAD) return e;
     }
     return null;
@@ -162,6 +177,10 @@ export class ProjectileSystem {
     else crit = !!damageEnemy(e, p.attacker, p.power)?.crit;
     p.onImpact?.(e.pos.x, e.pos.z);
     this.spawnSpark(p.mesh.position, (p.mesh.material as THREE.MeshBasicMaterial).color.getHex(), crit || p.aoe > 0);
+    if (p.pierce) {
+      p.hit.add(e);
+      return;
+    }
     this.kill(p);
   }
 

@@ -1,7 +1,7 @@
 import { bus } from '@/core/EventBus';
 import type { GameState } from '@/core/GameState';
 import type { ZoneDef } from '@/data/types';
-import { MAGE_SKILLS, expToNext } from '@/data/player';
+import { expToNext } from '@/data/player';
 import type { Player } from '@/entities/Player';
 import type { InputManager, ActionKey } from '@/input/InputManager';
 import type { SkillSlot } from '@/data/types';
@@ -96,7 +96,7 @@ export class Hud {
     // ---- 右下技能 ----
     const skillArea = h('div', { class: 'skills' });
     skillArea.appendChild((this.els.auto = h('button', { class: 'auto-btn', onclick: () => this.input.trigger('auto') }, [h('b', {}, 'AUTO'), h('small', {}, '自動戰鬥')])));
-    for (const sk of MAGE_SKILLS) {
+    for (const sk of this.skills.list) {
       const btn = this.actionButton(`skill slot-${sk.slot}`, sk.slot as ActionKey, sk.slot === 'basic' ? '' : sk.slot);
       btn.querySelector('.ico')!.textContent = sk.icon;
       if (sk.slot === 'basic') btn.appendChild(h('small', { class: 'basic-label' }, '普攻'));

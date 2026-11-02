@@ -10,7 +10,7 @@ import type { CollisionWorld } from '@/world/Collision';
  * 每幀決定：喝藥 → 撿東西 → 選目標 → 放技能 → 移動方向。
  * 玩家推搖桿時以手動移動為優先（AUTO 仍保持開啟，放開搖桿後繼續）。
  *
- * 技能優先序：
+ * 技能優先序（依 SkillDef.auto）：
  *   E 烈焰爆發  目標周圍 3m 有 2 隻以上，或目標是首領
  *   W 冰霜新星  自己周圍 4m 有 2 隻以上，或有敵人貼身（< 2.5m）
  *   Q 火球術    有目標就放
@@ -92,12 +92,19 @@ export class AutoBattle {
       return;
     }
 
-    // 5. 技能
+    // 5. 技能：依 SkillDef.auto 規則，E → W → Q 的順序找第一個該放的
     const around = (x: number, z: number, r: number) => enemies.enemies.filter((e) => e.alive && e.def.aggro !== 'none' && Math.hypot(e.pos.x - x, e.pos.z - z) < r).length;
-    if (skills.canCast('E') && (target.def.boss || around(target.pos.x, target.pos.z, 3) >= 2)) skills.cast('E', true);
-    else if (skills.canCast('W') && (around(p.pos.x, p.pos.z, 4) >= 2 || around(p.pos.x, p.pos.z, 2.5) >= 1)) skills.cast('W', true);
-    else if (skills.canCast('Q')) skills.cast('Q', true);
-    else skills.cast('basic', true);
+    for (const slot of ['E', 'W', 'Q'] as const) {
+      const sk = skills.def(slot);
+      if (!skills.canCast(slot)) continue;
+      const r = sk.radius ?? 3;
+      const want =
+        sk.auto === 'target-aoe' ? target.def.boss || around(target.pos.x, target.pos.z, r) >= 2
+        : sk.auto === 'self-aoe' ? around(p.pos.x, p.pos.z, r) >= 2 || around(p.pos.x, p.pos.z, 2.5) >= 1
+        : sk.auto === 'single';
+      if (want && skills.cast(slot, true)) return;
+    }
+    skills.cast('basic', true);
   }
 
   /** 最近的敵人；還沒開打、而且等級比玩家高的首領會略過（避免 AUTO 把低等玩家帶去送死） */

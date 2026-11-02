@@ -67,6 +67,8 @@ function migrate(data: Partial<GameState>): GameState | null {
     merged.pos = { ...ZONES.town.spawn };
   }
   // v2 → v3：新增 daily（選填，進遊戲時自動產生），不需轉換
+  // v3 → v4：新增職業，舊存檔都是法師
+  if (!merged.heroClass) merged.heroClass = 'mage';
   // 未來版本：if ((data.version ?? 0) < 4) { ... }
   return merged;
 }

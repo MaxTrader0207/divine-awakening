@@ -190,6 +190,12 @@ export interface SkillDef {
   radius?: number;
   icon: string;
   color: number;
+  /** AUTO 施放規則：target-aoe 目標附近多隻或首領、self-aoe 自身附近多隻、single 有目標就放、none 不自動 */
+  auto?: 'target-aoe' | 'self-aoe' | 'single' | 'none';
+  /** 多重箭的箭數 */
+  count?: number;
+  /** 箭雨的波數 */
+  waves?: number;
 }
 
 export type Rarity = 'common' | 'fine' | 'rare' | 'epic';
