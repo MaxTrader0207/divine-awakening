@@ -215,7 +215,7 @@ export class Menu {
           ]
         : []),
       this.renderReset(),
-      h('p', { class: 'version' }, `小法師 v${__APP_VERSION__}・Wei Studio`),
+      h('p', { class: 'version' }, `戰鬥法師 v${__APP_VERSION__}・Wei Studio`),
     ];
   }
 
