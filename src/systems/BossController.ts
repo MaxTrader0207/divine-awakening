@@ -149,7 +149,8 @@ export class BossController {
         return t;
       }
       case 'leap': {
-        const t = 1.2;
+        // 跳到玩家位置：遠程職業躲不掉距離，所以預警給長一點、傷害低一點（v1.16）
+        const t = 1.5;
         const tx = p.pos.x;
         const tz = p.pos.z;
         const r = 3.4;
@@ -157,7 +158,7 @@ export class BossController {
           e.pos.x = tx;
           e.pos.z = tz;
           this.ctx.collision().resolve(e.pos, e.radius);
-          hit(2.2)(inside);
+          hit(1.8)(inside);
           fx.ring(tx, tz, 1, r * 1.2, 0xff8a3c, 0.5);
           fx.disc(tx, tz, r, 0xff5a1a, 0.4, 0.6);
         });
@@ -171,7 +172,7 @@ export class BossController {
           const x = e.pos.x + Math.sin(dir) * d;
           const z = e.pos.z + Math.cos(dir) * d;
           tg.add({ kind: 'circle', x, z, r: 1.7 }, t + i * 0.15, (inside) => {
-            hit(1.4)(inside);
+            hit(1.2)(inside);
             fx.disc(x, z, 1.7, 0xff5a1a, 0.35, 0.7);
           });
         }

@@ -102,7 +102,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   magma_frog: {
     id: 'magma_frog', name: '熔心巨蛙', level: 15, aggro: 'aggressive', shape: 'frog', model: 'frog', boss: true,
     radius: 0.7, respawn: 90, scale: 2.8, color: 0xb8321e,
-    stats: { maxHp: 51200, atk: 200, def: 40, moveSpeed: 3 },
+    stats: { maxHp: 46000, atk: 185, def: 40, moveSpeed: 3 },
     attack: melee(2.6, 0.6, 1.8),
     exp: 2600, gold: [900, 1200], gems: 12,
     bossSkills: ['leap', 'lava_spit'],
