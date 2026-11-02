@@ -213,6 +213,7 @@ export class SkillSystem {
     const x = target ? target.pos.x : p.pos.x + dx * 4;
     const z = target ? target.pos.z : p.pos.z + dz * 4;
     p.cast(dx, dz);
+    p.castBig();
     const fx = this.ctx.effects;
     fx.ring(x, z, r * 1.5, r, 0xff9a3c, FLAME_DELAY);
     const stats = { ...p.stats };
@@ -242,6 +243,7 @@ export class SkillSystem {
       dz /= l;
     }
     const fx = this.ctx.effects;
+    p.dodge();
     fx.pillar(p.pos.x, p.pos.z, 0.8, sk.color, 0.4);
     fx.ring(p.pos.x, p.pos.z, 0.3, 1.6, sk.color, 0.35);
     // 分段前進，每段都做碰撞，不會穿牆

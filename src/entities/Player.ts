@@ -3,11 +3,42 @@ import type { Stats } from '@/data/types';
 import { statsForLevel } from '@/data/player';
 import type { CollisionWorld } from '@/world/Collision';
 import { mat } from '@/world/Props';
+import { Assets } from '@/assets/Assets';
+import { CharacterRig } from './CharacterRig';
+
+/** 各職業模型的動畫名稱對應（KayKit 動畫名） */
+export interface HeroAnimSet {
+  model: string;
+  idle: string;
+  run: string;
+  cast: string;
+  castBig: string;
+  hit: string;
+  death: string;
+  dodge: string;
+  cheer: string;
+}
+
+export const MAGE_ANIMS: HeroAnimSet = {
+  model: 'mage',
+  idle: 'Idle',
+  run: 'Running_A',
+  cast: 'Spellcast_Shoot',
+  castBig: 'Spellcast_Long',
+  hit: 'Hit_A',
+  death: 'Death_A',
+  dodge: 'Dodge_Forward',
+  cheer: 'Cheer',
+};
+
+/** 角色目標身高（公尺），模型依原始高度自動縮放 */
+const HERO_HEIGHT = 2.9;
 
 /**
- * 玩家角色（小法師）
- * - 模型：灰盒低多邊形（帽子＋法袍＋法杖），第 8 週替換成 glTF。
- * - 只負責移動、朝向、動畫；戰鬥由 CombatSystem（第 2 週）處理。
+ * 玩家角色
+ * - 有 KayKit 模型時用骨架動畫（idle / 跑 / 施法 / 受擊 / 倒下 / 閃避 / 歡呼）；
+ *   模型沒載入時退回程式產生的低多邊形法師（帽子＋法袍＋法杖）。
+ * - 只負責移動、朝向、動畫；戰鬥由各 system 處理。
  */
 export class Player {
   readonly object = new THREE.Group();
@@ -34,8 +65,12 @@ export class Player {
   /** 鎖定方向（施法時強制面向目標），null = 跟移動方向 */
   private lockFacing: number | null = null;
   private lockTimer = 0;
+  /** 骨架動畫（有模型時） */
+  rig: CharacterRig | null = null;
+  private anims: HeroAnimSet;
 
-  constructor() {
+  constructor(anims: HeroAnimSet = MAGE_ANIMS) {
+    this.anims = anims;
     this.body = new THREE.Group();
     this.object.add(this.body);
 
@@ -62,6 +97,37 @@ export class Player {
       m.castShadow = true;
       this.body.add(m);
     }
+    this.useModel();
+  }
+
+  /** 換成 glTF 模型（成功回傳 true） */
+  private useModel(): boolean {
+    const inst = Assets.cloneRig(this.anims.model);
+    if (!inst) return false;
+    this.body.clear();
+    const s = HERO_HEIGHT / Assets.height(this.anims.model);
+    inst.root.scale.setScalar(s);
+    this.body.add(inst.root);
+    // 法杖頂端改成隱形的定位點（投射物出生點、施法光效）
+    this.staffTip.visible = false;
+    this.staffTip.position.set(0.45, 1.6, 0.35);
+    this.body.add(this.staffTip);
+    this.rig = new CharacterRig(inst);
+    this.rig.setLoop(this.anims.idle, 0);
+    return true;
+  }
+
+  /** 大招施法（烈焰爆發）、閃避、歡呼：只有模型時有動作 */
+  castBig() {
+    this.rig?.playOnce(this.anims.castBig, { timeScale: 1.6 });
+  }
+
+  dodge() {
+    this.rig?.playOnce(this.anims.dodge, { timeScale: 1.4 });
+  }
+
+  cheer() {
+    this.rig?.playOnce(this.anims.cheer, { priority: false });
   }
 
   get alive() {
@@ -74,6 +140,8 @@ export class Player {
     this.hp = Math.max(0, this.hp - amount);
     this.sinceHurt = 0;
     this.hurtT = 0.3;
+    if (this.hp <= 0) this.rig?.die(this.anims.death);
+    else if (this.rig && !this.rig.busy) this.rig.playOnce(this.anims.hit, { priority: false, timeScale: 1.3 });
     return amount;
   }
 
@@ -85,6 +153,8 @@ export class Player {
     this.sinceHurt = 99;
     this.object.visible = true;
     this.body.rotation.set(0, 0, 0);
+    this.body.position.y = 0;
+    this.rig?.revive(this.anims.idle);
   }
 
   setLevel(level: number) {
@@ -104,6 +174,7 @@ export class Player {
     this.lockFacing = Math.atan2(dirX, dirZ);
     this.lockTimer = 0.35;
     this.castT = 0.22;
+    this.rig?.playOnce(this.anims.cast, { timeScale: 2.2 });
   }
 
   /** 法杖頂端的世界座標（投射物出生點） */
@@ -115,7 +186,9 @@ export class Player {
   update(dt: number, move: { x: number; z: number }, collision: CollisionWorld, pushOut?: (pos: { x: number; z: number }, r: number) => void) {
     if (this.invulnerable > 0) this.invulnerable = Math.max(0, this.invulnerable - dt);
     this.sinceHurt += dt;
+    this.rig?.update(dt);
     if (!this.alive) {
+      if (this.rig) return; // 模型播死亡動畫
       // 倒地動畫
       this.body.rotation.z += (Math.PI / 2 - this.body.rotation.z) * Math.min(1, dt * 8);
       this.body.position.y = Math.max(-0.3, this.body.position.y - dt);
@@ -143,6 +216,13 @@ export class Player {
 
     this.object.position.set(this.pos.x, this.groundY, this.pos.z);
     this.object.rotation.y = this.facing;
+    this.object.visible = this.invulnerable > 0.05 ? Math.floor(this.invulnerable * 12) % 2 === 0 : true;
+    if (this.rig) {
+      // 有模型：跑步動畫速度跟著移動速度
+      if (this.moveAmount > 0.3) this.rig.setLoop(this.anims.run, 0.15, 0.8 + 0.4 * Math.min(1.5, this.stats.moveSpeed / 6.5));
+      else this.rig.setLoop(this.anims.idle, 0.2);
+      return;
+    }
     // 走路：上下彈跳＋前傾；待機：呼吸
     this.body.position.y = Math.abs(Math.sin(this.bobT)) * 0.12 * this.moveAmount + Math.sin(this.bobT * 0.5) * 0.02;
     this.body.rotation.x = 0.12 * this.moveAmount;

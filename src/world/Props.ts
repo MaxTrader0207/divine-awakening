@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import type { PropDef } from '@/data/types';
 import { makeLabelSprite } from './Label';
+import { Assets } from '@/assets/Assets';
 
 /**
- * 低多邊形「灰盒」物件工廠。
- * 第 8 週換正式美術時，只要把這裡每個 kind 的工廠換成載入 glTF 模型即可，
- * 碰撞尺寸（PROP_DEFAULTS）保持不變。
+ * 場景物件工廠
+ * - 有對應的 KayKit 模型（p.model 或下面的預設對應）就用模型，依碰撞尺寸自動縮放；
+ * - 沒有模型或載入失敗就用程式產生的低多邊形。
+ * 碰撞尺寸（PROP_DEFAULTS / p.w / p.d）與外觀無關，換美術不影響玩法。
  */
 export const PROP_DEFAULTS: Record<PropDef['kind'], { w: number; d: number; h: number; solid: boolean; round: boolean }> = {
   house: { w: 8, d: 8, h: 5, solid: true, round: false },
@@ -21,7 +23,56 @@ export const PROP_DEFAULTS: Record<PropDef['kind'], { w: number; d: number; h: n
   pillar: { w: 1.4, d: 1.4, h: 3, solid: true, round: true },
   stonering: { w: 9, d: 9, h: 0.1, solid: false, round: true },
   crystal: { w: 1.2, d: 1.2, h: 2.2, solid: true, round: true },
+  decor: { w: 1, d: 1, h: 1, solid: true, round: true },
 };
+
+/** kind → 預設模型（多個時依座標固定挑一個，看起來不會全部一樣） */
+const DEFAULT_MODELS: Partial<Record<PropDef['kind'], string[]>> = {
+  tree: ['tree_A', 'tree_B', 'trees_medium'],
+  rock: ['rock_A', 'rock_C'],
+  fence: ['fence_wood'],
+};
+
+/** 模型縮放方式：依高度或依寬度對齊碰撞尺寸 */
+const FIT: Partial<Record<PropDef['kind'], 'height' | 'width'>> = { tree: 'height', house: 'width', rock: 'width', fence: 'width', decor: 'height' };
+
+function pickModel(p: PropDef): string | null {
+  if (p.model) return Assets.has(p.model) ? p.model : null;
+  if (p.color !== undefined && p.kind === 'rock') return null; // 指定顏色的石頭（珊瑚、熔岩）保留程式模型
+  const list = DEFAULT_MODELS[p.kind];
+  if (!list) return null;
+  const id = list[Math.abs(Math.floor(p.x * 7 + p.z * 13)) % list.length];
+  return Assets.has(id) ? id : null;
+}
+
+function buildModelProp(p: PropDef, id: string, w: number, d: number, h: number): THREE.Object3D | null {
+  const obj = Assets.cloneStatic(id);
+  if (!obj) return null;
+  let size = Assets.size(id);
+  // 柵欄 / 牆：模型長邊在 z 軸時轉 90°，讓長邊對齊 x（與碰撞盒一致）
+  if ((p.kind === 'fence' || p.kind === 'wall') && size.z > size.x) {
+    const inner = new THREE.Group();
+    inner.add(obj);
+    obj.rotation.y = Math.PI / 2;
+    size = new THREE.Vector3(size.z, size.y, size.x);
+    return finishModel(p, inner, size, w, d, h);
+  }
+  return finishModel(p, obj, size, w, d, h);
+}
+
+function finishModel(p: PropDef, obj: THREE.Object3D, size: THREE.Vector3, w: number, d: number, h: number): THREE.Object3D {
+  const fit = FIT[p.kind] ?? 'height';
+  const s = fit === 'height' ? h / Math.max(0.01, size.y) : Math.max(w, d) / Math.max(0.01, Math.max(size.x, size.z));
+  obj.scale.setScalar(s);
+  const g = new THREE.Group();
+  g.add(obj);
+  if (p.sign) {
+    const label = makeLabelSprite(p.sign, { fontSize: 44, color: '#fff7d6', bg: 'rgba(30,36,52,0.75)', scale: 1.2 });
+    label.position.set(0, size.y * s + 0.6, d / 2);
+    g.add(label);
+  }
+  return g;
+}
 
 const matCache = new Map<number, THREE.MeshLambertMaterial>();
 export function mat(color: number): THREE.MeshLambertMaterial {
@@ -47,9 +98,21 @@ export function buildProp(p: PropDef): THREE.Object3D {
   const w = p.w ?? def.w;
   const d = p.d ?? def.d;
   const h = p.h ?? def.h;
+  const modelId = pickModel(p);
+  if (modelId) {
+    const mg = buildModelProp(p, modelId, w, d, h);
+    if (mg) {
+      mg.position.set(p.x, 0, p.z);
+      if (p.rot) mg.rotation.y = p.rot;
+      return mg;
+    }
+  }
   const g = new THREE.Group();
 
   switch (p.kind) {
+    case 'decor':
+      g.add(mesh(new THREE.BoxGeometry(w, h, d), p.color ?? 0x9a6a3a, h / 2));
+      break;
     case 'house': {
       const wallH = h * 0.55;
       g.add(mesh(new THREE.BoxGeometry(w, wallH, d), 0xf1e6cf, wallH / 2));

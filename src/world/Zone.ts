@@ -101,16 +101,28 @@ export class Zone {
       if (!m.isMesh || animated.has(m) || Array.isArray(m.material)) return;
       const mat = m.material as THREE.Material;
       if (!mat.userData.shared) return;
-      const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld);
-      for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+      const src = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      // 量化（meshopt）的屬性轉回 Float32，才能跟其他網格合併
+      const g = new THREE.BufferGeometry();
+      const textured = !!(mat as THREE.MeshLambertMaterial).map;
+      for (const name of textured ? ['position', 'normal', 'uv'] : ['position', 'normal']) {
+        const a = src.getAttribute(name) as THREE.BufferAttribute | undefined;
+        if (!a) continue;
+        const out = new Float32Array(a.count * a.itemSize);
+        for (let i = 0; i < a.count; i++) for (let c = 0; c < a.itemSize; c++) out[i * a.itemSize + c] = a.getComponent(i, c);
+        g.setAttribute(name, new THREE.BufferAttribute(out, a.itemSize));
+      }
+      src.dispose();
+      g.applyMatrix4(m.matrixWorld);
       if (!g.attributes.normal) g.computeVertexNormals();
+      if (textured && !g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
       let list = byMat.get(mat);
       if (!list) byMat.set(mat, (list = []));
       list.push(g);
       remove.push(m);
     });
     for (const m of remove) {
-      m.geometry.dispose();
+      if (!m.geometry.userData.shared) m.geometry.dispose(); // 模型庫的幾何是共用的，不能釋放
       m.removeFromParent();
     }
     for (const [mat, geos] of byMat) {
@@ -252,7 +264,7 @@ export class Zone {
   dispose() {
     this.group.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.geometry) m.geometry.dispose();
+      if (m.geometry && !m.geometry.userData.shared) m.geometry.dispose();
       // 共用材質（mat()）不 dispose；Sprite / 個別材質才 dispose
       const material = (m as { material?: THREE.Material | THREE.Material[] }).material;
       if (material && !Array.isArray(material) && !material.userData.shared) {

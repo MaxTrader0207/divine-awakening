@@ -297,3 +297,13 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .boss-track i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #6a5ae0, #8f7aff); transition: width 0.15s; }
 .boss-bar.enraged .boss-track i { background: linear-gradient(90deg, #c6331f, #ff6a3c); }
 .boss-track span { position: absolute; right: 8px; top: 0; font: 700 10px/14px var(--font); text-shadow: 0 1px 2px #000; }
+
+/* ---------------- 載入畫面 ---------------- */
+.loading { position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #2a3550, #0e131c 70%); transition: opacity 0.45s; }
+.loading.done { opacity: 0; pointer-events: none; }
+.loading-box { display: grid; justify-items: center; gap: 10px; }
+.loading-box b { font-size: 34px; letter-spacing: 6px; color: #fff2c4; text-shadow: 0 2px 12px rgba(244, 198, 78, 0.5); }
+.loading-box span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.loading-box i { width: 180px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.loading-box em { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f4c64e, #ffe08a); transition: width 0.2s; }
+.loading-box small { margin-top: 18px; font-size: 11px; color: var(--muted); letter-spacing: 2px; }

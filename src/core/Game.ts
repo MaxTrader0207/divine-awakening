@@ -396,6 +396,7 @@ export class Game {
       this.effects.pillar(x, z, 1.2, 0xffd36b, 1.2);
       this.effects.ring(x, z, 0.5, 3.5, 0xffe9a0, 0.8);
       bus.emit('banner', { text: `升級！ Lv.${s.level}` });
+      this.player.cheer();
       bus.emit('player:levelup', { level: s.level });
     }
     bus.emit('player:changed');

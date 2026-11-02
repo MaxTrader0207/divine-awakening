@@ -35,7 +35,9 @@ export type PropKind =
   | 'stairs'
   | 'pillar'
   | 'stonering'
-  | 'crystal';
+  | 'crystal'
+  /** 純裝飾模型（桶子、箱子、火把、帳篷…），一定要指定 model */
+  | 'decor';
 
 export interface PropDef {
   kind: PropKind;
@@ -54,6 +56,8 @@ export interface PropDef {
   sign?: string;
   /** 是否阻擋移動，預設依 kind */
   solid?: boolean;
+  /** 使用 KayKit 模型 id（src/assets/models/<id>.glb）；沒載入時退回程式模型 */
+  model?: string;
 }
 
 /** 地面上不同材質的色塊（道路、沙地、水面…） */
@@ -194,7 +198,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton';
 
 export type BossSkillId = 'claw_slam' | 'charge' | 'ground_slam' | 'tide_rain' | 'leap' | 'lava_spit';
 
@@ -215,6 +219,10 @@ export interface EnemyDef {
   gems?: number;
   boss?: boolean;
   bossSkills?: BossSkillId[];
+  /** KayKit 骨架模型 id（shape = 'skeleton' 時使用） */
+  model?: string;
+  /** 遠程攻擊（骷髏法師）：在距離內放魔法彈，而不是近戰 */
+  ranged?: boolean;
   /** 近戰攻擊：距離、出手前搖（秒）、冷卻 */
   attack?: { range: number; windup: number; cooldown: number };
   color: number;

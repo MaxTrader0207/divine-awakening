@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { EnemyDef, SpawnDef } from '@/data/types';
 import { makeLabelSprite } from '@/world/Label';
+import { Assets } from '@/assets/Assets';
+import { CharacterRig } from './CharacterRig';
+
+/** KayKit 骷髏的動畫名稱 */
+const SKEL = { idle: 'Idle', walk: 'Walking_D_Skeletons', attack: '1H_Melee_Attack_Chop', cast: 'Spellcast_Shoot', hit: 'Hit_A', death: 'Death_C_Skeletons' };
 
 export type EnemyState = 'alive' | 'dying' | 'dead';
 /** AI 狀態（見 systems/EnemyAI.ts） */
@@ -58,6 +63,9 @@ export class Enemy {
   private hpBarTimer = 0;
   private animT = Math.random() * 10;
   private wing: THREE.Object3D[] = [];
+  /** 骨架動畫（骷髏） */
+  rig: CharacterRig | null = null;
+  private wasWinding = false;
 
   constructor(def: EnemyDef, spawn: SpawnDef) {
     this.def = def;
@@ -70,8 +78,8 @@ export class Enemy {
     this.hp = def.stats.maxHp;
     this.facing = Math.random() * Math.PI * 2;
 
-    this.height = this.buildBody() * def.scale;
-    this.mergeBody();
+    this.height = this.buildRig() ?? this.buildBody() * def.scale;
+    if (!this.rig) this.mergeBody();
     this.body.scale.setScalar(def.scale);
     this.object.add(this.body);
 
@@ -135,10 +143,27 @@ export class Enemy {
     if (this.def.aggro !== 'none') this.provoked = true;
     if (this.hp <= 0) {
       this.state = 'dying';
-      this.stateTimer = DYING_TIME;
+      this.stateTimer = this.rig ? 1.1 : DYING_TIME;
+      this.rig?.die(SKEL.death);
       return true;
     }
+    if (this.rig && !this.rig.busy) this.rig.playOnce(SKEL.hit, { priority: false, timeScale: 1.4 });
     return false;
+  }
+
+  /** 骷髏模型：回傳模型高度；沒有模型回傳 null */
+  private buildRig(): number | null {
+    const id = this.def.model;
+    if (this.def.shape !== 'skeleton' || !id) return null;
+    const inst = Assets.cloneRig(id);
+    if (!inst) return null;
+    const h = 2.3;
+    inst.root.scale.setScalar(h / Assets.height(id));
+    this.body.add(inst.root);
+    this.rig = new CharacterRig(inst);
+    this.materials.push(...inst.materials);
+    this.rig.setLoop(SKEL.idle, 0);
+    return h * this.def.scale;
   }
 
   /** 前搖中（出手前），身體會變紅並後仰，讓玩家看得出要攻擊了 */
@@ -148,11 +173,17 @@ export class Enemy {
 
   update(dt: number, camera: THREE.Camera) {
     this.animT += dt;
+    this.rig?.update(dt);
     if (this.state === 'dying') {
       this.stateTimer -= dt;
-      const t = Math.max(0, this.stateTimer / DYING_TIME);
-      this.body.scale.setScalar(this.def.scale * (0.2 + 0.8 * t));
-      this.body.position.y = (1 - t) * 0.6;
+      if (this.rig) {
+        // 骷髏：播完散架動畫，最後 0.25 秒沉入地面
+        if (this.stateTimer < 0.25) this.body.position.y = -(0.25 - this.stateTimer) * 4;
+      } else {
+        const t = Math.max(0, this.stateTimer / DYING_TIME);
+        this.body.scale.setScalar(this.def.scale * (0.2 + 0.8 * t));
+        this.body.position.y = (1 - t) * 0.6;
+      }
       if (this.stateTimer <= 0) {
         this.state = 'dead';
         this.object.visible = false;
@@ -177,7 +208,7 @@ export class Enemy {
       for (const m of this.materials) m.emissive.setRGB(f + wind, f + slow * 0.4, f + slow);
       this.tinted = this.flash > 0 || slow > 0 || wind > 0;
     }
-    if (this.shake > 0) {
+    if (this.shake > 0 && !this.rig) {
       this.shake = Math.max(0, this.shake - dt * 5);
       this.body.rotation.z = Math.sin(this.shake * 30) * 0.15 * this.shake;
     }
@@ -198,6 +229,15 @@ export class Enemy {
     const s = this.def.scale;
     this.object.rotation.y = this.facing;
     const lean = this.windup > 0 ? -0.25 : 0;
+    if (this.rig) {
+      // 骷髏：前搖開始時播攻擊（遠程播施法），其餘依移動切換走路 / 待機
+      if (this.windup > 0 && !this.wasWinding) this.rig.playOnce(this.def.ranged ? SKEL.cast : SKEL.attack, { timeScale: 1.2 });
+      this.wasWinding = this.windup > 0;
+      if (this.moving > 0.05) this.rig.setLoop(SKEL.walk, 0.15, this.def.stats.moveSpeed / 2.4);
+      else this.rig.setLoop(SKEL.idle, 0.2);
+      this.moving = Math.max(0, this.moving - dt * 4);
+      return;
+    }
     switch (this.def.shape) {
       case 'slime':
       case 'frog': {
@@ -238,6 +278,7 @@ export class Enemy {
     this.body.position.y = 0;
     this.object.visible = true;
     this.hpBarTimer = 0;
+    this.rig?.revive(SKEL.idle);
     this.slowTimer = 0;
     this.slowMul = 1;
     this.ai = 'idle';
@@ -388,6 +429,16 @@ export class Enemy {
         this.add(new THREE.SphereGeometry(0.06, 6, 4), 0xff4a4a, 0.12, 0.08, 0.3);
         return 1.6;
       }
+      case 'skeleton': {
+        // 模型沒載入時的程式版骷髏
+        this.add(new THREE.BoxGeometry(0.5, 0.7, 0.3), 0xe8e2d0, 0, 1.15);
+        this.add(new THREE.IcosahedronGeometry(0.3, 1), 0xf1ecdf, 0, 1.75);
+        this.add(new THREE.BoxGeometry(0.14, 0.8, 0.14), 0xe8e2d0, -0.15, 0.4);
+        this.add(new THREE.BoxGeometry(0.14, 0.8, 0.14), 0xe8e2d0, 0.15, 0.4);
+        this.add(new THREE.SphereGeometry(0.06, 6, 4), 0x1b2433, -0.1, 1.78, 0.26);
+        this.add(new THREE.SphereGeometry(0.06, 6, 4), 0x1b2433, 0.1, 1.78, 0.26);
+        return 2.1;
+      }
       case 'golem': {
         this.add(new THREE.BoxGeometry(1, 0.9, 0.7), c, 0, 1.05);
         this.add(new THREE.BoxGeometry(0.6, 0.5, 0.55), dark, 0, 1.75);
@@ -408,12 +459,13 @@ export class Enemy {
   }
 
   dispose() {
+    this.rig?.dispose();
     this.object.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      mesh.geometry?.dispose();
+      if (mesh.geometry && !mesh.geometry.userData.shared) mesh.geometry.dispose(); // 模型庫的幾何共用
       const mat = (mesh as { material?: THREE.Material }).material;
-      if (mat) {
-        (mat as THREE.SpriteMaterial).map?.dispose();
+      if (mat && !mat.userData.shared) {
+        if ((mat as THREE.SpriteMaterial).isSpriteMaterial) (mat as THREE.SpriteMaterial).map?.dispose(); // 模型貼圖共用，不能釋放
         mat.dispose();
       }
     });

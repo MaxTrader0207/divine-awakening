@@ -1,6 +1,7 @@
 import './ui/style.css';
 import { Game } from './core/Game';
 import * as Inventory from './systems/Inventory';
+import { Assets } from './assets/Assets';
 
 /**
  * 進入點：只負責找 DOM、建立 Game、啟動。
@@ -14,8 +15,23 @@ const uiRoot = document.getElementById('ui-root') as HTMLElement;
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-const game = new Game(canvas, app, uiRoot);
+// 載入畫面：模型載完（或失敗）才開始遊戲；失敗的模型會自動改用程式模型
+const loading = document.createElement('div');
+loading.className = 'loading';
+loading.innerHTML = '<div class="loading-box"><b>小法師</b><span>載入中…</span><i><em></em></i><small>Wei Studio</small></div>';
+app.appendChild(loading);
+const bar = loading.querySelector('em') as HTMLElement;
+const label = loading.querySelector('span') as HTMLElement;
+
+let game!: Game;
+await Assets.loadAll((done, total) => {
+  bar.style.width = `${(done / total) * 100}%`;
+  label.textContent = `載入中… ${done}/${total}`;
+});
+game = new Game(canvas, app, uiRoot);
 game.start();
+loading.classList.add('done');
+setTimeout(() => loading.remove(), 500);
 
 // PWA：正式版、https（或 localhost）、不在 iframe 內時註冊離線快取
 const inFrame = (() => {
