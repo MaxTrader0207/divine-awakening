@@ -89,6 +89,10 @@ export interface SpawnDef {
   tag?: string;
   /** 死亡後幾秒重生，預設用 EnemyDef.respawn */
   respawn?: number;
+  /** 一次生成幾隻（預設 1） */
+  count?: number;
+  /** 散佈半徑，生成與重生都在此範圍內隨機（預設 0） */
+  spread?: number;
 }
 
 export interface ZoneDef {
@@ -171,7 +175,9 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat';
+
+export type BossSkillId = 'claw_slam' | 'charge' | 'ground_slam' | 'tide_rain' | 'leap' | 'lava_spit';
 
 export interface EnemyDef {
   id: string;
@@ -186,7 +192,12 @@ export interface EnemyDef {
   stats: Pick<Stats, 'maxHp' | 'atk' | 'def' | 'moveSpeed'>;
   exp: number;
   gold: [number, number];
+  /** 擊殺給的鑽石（首領） */
+  gems?: number;
   boss?: boolean;
+  bossSkills?: BossSkillId[];
+  /** 近戰攻擊：距離、出手前搖（秒）、冷卻 */
+  attack?: { range: number; windup: number; cooldown: number };
   color: number;
   scale: number;
 }

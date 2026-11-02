@@ -20,6 +20,7 @@ export function damageEnemy(e: Enemy, attacker: AttackerStats, power: number): D
       level: e.def.level,
       exp: e.def.exp,
       gold: e.def.gold,
+      gems: e.def.gems ?? 0,
       boss: !!e.def.boss,
     });
   }

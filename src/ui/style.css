@@ -229,3 +229,7 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .act .cd-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 900 15px/1 var(--font); text-shadow: 0 1px 3px #000; pointer-events: none; }
 .act.no-mp .ico { filter: grayscale(1) brightness(0.6); }
 .act.no-mp { border-color: rgba(47, 143, 232, 0.6); }
+.hurt-vignette { position: absolute; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 70px 20px rgba(229, 60, 40, 0.75); }
+.hurt-vignette.on { animation: hurt 0.45s ease-out; }
+@keyframes hurt { 0% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hurt-vignette.on { animation-duration: 0.2s; } }

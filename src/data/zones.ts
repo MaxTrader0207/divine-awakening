@@ -83,6 +83,10 @@ const grassland: ZoneDef = {
     { enemy: 'training_dummy', x: 6, z: -16, def: 0, tag: '防禦 0' },
     { enemy: 'training_dummy', x: 11, z: -16, def: 18, tag: '防禦 18' },
     { enemy: 'training_dummy', x: 16, z: -16, def: 40, tag: '防禦 40' },
+    { enemy: 'green_slime', x: -18, z: 8, count: 4, spread: 5 },
+    { enemy: 'green_slime', x: 20, z: 12, count: 3, spread: 4 },
+    { enemy: 'meadow_mushroom', x: -6, z: 20, count: 3, spread: 4 },
+    { enemy: 'meadow_mushroom', x: -22, z: -16, count: 2, spread: 3 },
   ],
 };
 
@@ -117,6 +121,12 @@ const dungeon1: ZoneDef = {
   portals: [{ x: 0, z: 26, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 20 },
   tips: ['首領巨鉗蟹王在高台東北的石圈', '被攻擊時會自動反擊最近的敵人', '留意主動怪：泡咪潮蛙受到攻擊才會反擊'],
+  spawns: [
+    { enemy: 'hermit_crab', x: -8, z: 10, count: 3, spread: 4 },
+    { enemy: 'bubble_frog', x: -2, z: -2, count: 3, spread: 4 },
+    { enemy: 'hermit_crab', x: -16, z: -4, count: 2, spread: 3 },
+    { enemy: 'crab_king', x: -10, z: -20 },
+  ],
   dungeon: { floor: 1, bossName: '巨鉗蟹王', enemyDefense: 0 },
 };
 
@@ -137,6 +147,12 @@ const dungeon2: ZoneDef = {
     { kind: 'pillar', x: -4, z: -14 },
   ],
   tips: ['這層敵人有防禦 18，記得堆穿透'],
+  spawns: [
+    { enemy: 'coral_slime', x: 4, z: 10, count: 3, spread: 4 },
+    { enemy: 'cave_bat', x: -2, z: -6, count: 3, spread: 4 },
+    { enemy: 'coral_slime', x: 10, z: -2, count: 2, spread: 3 },
+    { enemy: 'tide_golem', x: 6, z: -20 },
+  ],
   dungeon: { floor: 2, bossName: '潮汐古魔像', enemyDefense: 18, unlockAfter: 'dungeon_1' },
 };
 
@@ -157,6 +173,12 @@ const dungeon3: ZoneDef = {
     { kind: 'pillar', x: -12, z: -10 },
   ],
   tips: ['這層敵人有防禦 40，記得堆穿透'],
+  spawns: [
+    { enemy: 'lava_slime', x: -6, z: 10, count: 3, spread: 4 },
+    { enemy: 'ember_frog', x: 4, z: -4, count: 3, spread: 4 },
+    { enemy: 'lava_slime', x: -12, z: -6, count: 2, spread: 3 },
+    { enemy: 'magma_frog', x: 0, z: -20 },
+  ],
   dungeon: { floor: 3, bossName: '熔心巨蛙', enemyDefense: 40, unlockAfter: 'dungeon_2' },
 };
 

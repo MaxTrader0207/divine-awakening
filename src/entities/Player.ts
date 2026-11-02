@@ -19,6 +19,9 @@ export class Player {
   mp = 0;
   /** 無敵剩餘秒數（閃現、復活） */
   invulnerable = 0;
+  /** 距離上次受傷的秒數（脫戰回血用） */
+  sinceHurt = 99;
+  private hurtT = 0;
   /** 0~1，目前移動強度（給動畫用） */
   private moveAmount = 0;
   private bobT = 0;
@@ -63,6 +66,25 @@ export class Player {
     return this.hp > 0;
   }
 
+  /** 受到傷害；回傳實際扣血量（無敵 / 已死亡回傳 0） */
+  takeDamage(amount: number): number {
+    if (!this.alive || this.invulnerable > 0) return 0;
+    this.hp = Math.max(0, this.hp - amount);
+    this.sinceHurt = 0;
+    this.hurtT = 0.3;
+    return amount;
+  }
+
+  /** 復活：滿血滿魔、短暫無敵 */
+  revive() {
+    this.hp = this.stats.maxHp;
+    this.mp = this.stats.maxMp;
+    this.invulnerable = 2;
+    this.sinceHurt = 99;
+    this.object.visible = true;
+    this.body.rotation.set(0, 0, 0);
+  }
+
   setLevel(level: number) {
     this.stats = statsForLevel(level);
     this.hp = Math.min(this.hp, this.stats.maxHp);
@@ -90,6 +112,13 @@ export class Player {
   /** move：世界方向向量，長度 0~1 */
   update(dt: number, move: { x: number; z: number }, collision: CollisionWorld, pushOut?: (pos: { x: number; z: number }, r: number) => void) {
     if (this.invulnerable > 0) this.invulnerable = Math.max(0, this.invulnerable - dt);
+    this.sinceHurt += dt;
+    if (!this.alive) {
+      // 倒地動畫
+      this.body.rotation.z += (Math.PI / 2 - this.body.rotation.z) * Math.min(1, dt * 8);
+      this.body.position.y = Math.max(-0.3, this.body.position.y - dt);
+      return;
+    }
     const len = Math.hypot(move.x, move.z);
     if (len > 0.001) {
       const speed = this.stats.moveSpeed * len;
@@ -121,6 +150,10 @@ export class Player {
     const c = this.castT / 0.22;
     this.body.rotation.x += 0.25 * Math.sin(c * Math.PI);
     this.staffTip.scale.setScalar(1 + c * 1.2);
+    // 受傷：左右晃；無敵：閃爍
+    if (this.hurtT > 0) this.hurtT = Math.max(0, this.hurtT - dt);
+    this.body.rotation.z = Math.sin(this.hurtT * 40) * 0.12 * (this.hurtT / 0.3);
+    this.object.visible = this.invulnerable > 0.05 ? Math.floor(this.invulnerable * 12) % 2 === 0 : true;
   }
 }
 

@@ -70,6 +70,7 @@ export class Hud {
     this.root.appendChild((this.els.banner = h('div', { class: 'zone-banner' })));
     this.root.appendChild((this.els.toast = h('div', { class: 'toast' })));
     this.root.appendChild((this.els.fps = h('div', { class: 'fps' })));
+    this.root.appendChild((this.els.hurt = h('div', { class: 'hurt-vignette' })));
 
     // ---- 左下藥水 ----
     const potions = h('div', { class: 'potions' }, [
@@ -102,6 +103,13 @@ export class Hud {
     bus.on('toast', ({ text, duration }) => this.toast(text, duration));
     bus.on('banner', ({ text }) => this.banner(text));
     bus.on('player:changed', () => this.refresh());
+    bus.on('combat:hit', (e) => {
+      if (!e.targetIsPlayer) return;
+      const v = this.els.hurt;
+      v.classList.remove('on');
+      void v.offsetWidth;
+      v.classList.add('on');
+    });
     bus.on('wallet:changed', () => this.refresh());
   }
 

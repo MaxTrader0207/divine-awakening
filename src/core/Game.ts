@@ -16,6 +16,14 @@ import { ProjectileSystem } from '@/systems/ProjectileSystem';
 import { TargetSelector } from '@/systems/TargetSelector';
 import { SkillSystem } from '@/systems/SkillSystem';
 import { Effects } from '@/systems/Effects';
+import { calcDamage } from '@/systems/Combat';
+import type { AiContext } from '@/systems/EnemyAI';
+import type { Enemy } from '@/entities/Enemy';
+
+/** 被攻擊後自動反擊的持續秒數 */
+const COUNTER_TIME = 3;
+/** 死亡後損失的金幣比例 */
+const DEATH_GOLD_PENALTY = 0.1;
 
 const AUTOSAVE_INTERVAL = 10; // 秒
 
@@ -46,6 +54,11 @@ export class Game {
   private timer = new THREE.Timer();
   private saveTimer = 0;
   private transitioning = false;
+  private counterTarget: Enemy | null = null;
+  private deathTimer = 0;
+  private deathGoldLost = 0;
+  private counterTimer = 0;
+  private aiCtx!: AiContext;
   private fadeEl: HTMLElement;
 
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement) {
@@ -128,7 +141,18 @@ export class Game {
     this.fadeEl.className = 'fade';
     uiRoot.appendChild(this.fadeEl);
 
+    this.aiCtx = {
+      player: this.player,
+      collision: this.zones.current?.collision as never,
+      hitPlayer: (e, power) => this.hitPlayer(e, power),
+    };
+
     // ---- Events ----
+    bus.on('player:hurt', ({ source }) => {
+      this.counterTarget = source as Enemy;
+      this.counterTimer = COUNTER_TIME;
+    });
+    bus.on('player:died', () => this.onPlayerDied());
     bus.on('zone:request', ({ zoneId, arrive }) => this.changeZone(zoneId, arrive));
     bus.on('camera:zoom', ({ delta }) => this.setZoom(this.state.settings.zoom + delta));
     bus.on('save:request', () => this.persist());
@@ -165,11 +189,16 @@ export class Game {
     this.input.update();
 
     if (this.input.consume('menu')) this.menu.toggle();
-    const canAct = !this.menu.isOpen && !this.transitioning;
+    const canAct = !this.menu.isOpen && !this.transitioning && this.player.alive;
 
     const collision = this.zones.current!.collision;
     const pushOut = (pos: { x: number; z: number }, r: number) => this.enemies.pushOut(pos, r);
     this.skills.update(dt);
+    this.counterTimer = Math.max(0, this.counterTimer - dt);
+    if (this.deathTimer > 0) {
+      this.deathTimer -= dt;
+      if (this.deathTimer <= 0) this.respawnAfterDeath();
+    }
     this.regen(dt);
 
     if (canAct) {
@@ -180,7 +209,8 @@ export class Game {
       this.player.update(dt, { x: 0, z: 0 }, collision, pushOut);
     }
 
-    this.enemies.update(dt, this.rig.camera);
+    this.aiCtx.collision = collision;
+    this.enemies.update(dt, this.rig.camera, this.aiCtx);
     this.effects.update(dt);
     this.projectiles.update(dt, this.rig.camera);
     this.targets.update(dt);
@@ -210,15 +240,59 @@ export class Game {
       else if (this.input.held(slot)) this.skills.cast(slot, true);
     }
     if (this.input.consume('auto')) bus.emit('toast', { text: 'AUTO 自動戰鬥將於第 5 週實作' });
+
+    // 被攻擊時自動反擊：沒有移動、沒有按攻擊時，對攻擊者放普攻
+    const idle = Math.hypot(this.input.move.x, this.input.move.z) < 0.05 && !this.input.held('basic');
+    if (this.counterTimer > 0 && idle && this.counterTarget?.alive) {
+      this.targets.current = this.counterTarget;
+      this.skills.cast('basic', true);
+    }
     if (this.input.consume('potionHp')) this.skills.usePotion('hp');
     if (this.input.consume('potionMp')) this.skills.usePotion('mp');
   }
 
-  /** MP 自然回復：每秒 2 點 + 最大值 1% */
+  /**
+   * 自然回復
+   * - MP：每秒 2 點 + 最大值 1%
+   * - HP：脫戰 5 秒後每秒 2%；安全區每秒 10%
+   */
   private regen(dt: number) {
     const p = this.player;
     if (!p.alive) return;
     if (p.mp < p.stats.maxMp) p.mp = Math.min(p.stats.maxMp, p.mp + (2 + p.stats.maxMp * 0.01) * dt);
+    const safe = this.zones.current?.def.safe;
+    if (p.hp < p.stats.maxHp && (safe || p.sinceHurt > 5)) p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * (safe ? 0.1 : 0.02) * dt);
+  }
+
+  /** 敵人攻擊命中玩家 */
+  private hitPlayer(e: Enemy, power: number) {
+    const p = this.player;
+    const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
+    const dealt = p.takeDamage(res.amount);
+    if (dealt <= 0) return;
+    bus.emit('combat:hit', { x: p.pos.x, y: 2.2, z: p.pos.z, amount: dealt, crit: res.crit, targetIsPlayer: true });
+    bus.emit('player:hurt', { amount: dealt, source: e });
+    if (!p.alive) bus.emit('player:died');
+  }
+
+  /** 玩家死亡：倒地 1.6 秒（遊戲時間）→ 損失 10% 金幣 → 主城復活 */
+  private onPlayerDied() {
+    this.counterTimer = 0;
+    this.targets.clear();
+    this.deathTimer = 1.6;
+    this.deathGoldLost = Math.floor(this.state.gold * DEATH_GOLD_PENALTY);
+    this.state.gold -= this.deathGoldLost;
+    bus.emit('banner', { text: '你被擊敗了…' });
+  }
+
+  private respawnAfterDeath() {
+    const lost = this.deathGoldLost;
+    this.enterZone('town', ZONES.town.spawn);
+    this.player.revive();
+    this.skills.reset();
+    this.persist();
+    bus.emit('toast', { text: lost > 0 ? `在主城復活，損失 ${lost} 金幣` : '在主城復活', duration: 2.6 });
+    bus.emit('player:changed');
   }
 
   /** 測試用：以固定 1/60 秒步進快轉遊戲時間（不渲染） */
@@ -241,9 +315,10 @@ export class Game {
   }
 
   /** 有淡入淡出的區域切換 */
-  private async changeZone(id: ZoneId, arrive?: { x: number; z: number }) {
+  private async changeZone(id: ZoneId, arrive?: { x: number; z: number }, force = false) {
     if (this.transitioning) return;
-    if (id === this.state.zoneId && !arrive) return;
+    if (id === this.state.zoneId && !arrive && !force) return;
+    if (!this.player.alive && !force) return;
     this.transitioning = true;
     this.fadeEl.classList.add('on');
     await wait(260);
@@ -259,6 +334,8 @@ export class Game {
     this.effects.clear();
     this.damageNumbers.clear();
     this.targets.clear();
+    this.counterTimer = 0;
+    this.counterTarget = null;
     const zone = this.zones.load(id);
     this.enemies.spawnForZone(zone.def);
     this.state.zoneId = id;
