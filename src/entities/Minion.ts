@@ -197,13 +197,8 @@ export class Minion {
       this.equip(inst.root, gear);
       this.addEyes(inst.root, gear.eye);
     } else {
-      // 模型載入失敗：紫色膠囊
-      const geo = new THREE.CapsuleGeometry(def.radius, def.height - def.radius * 2, 4, 8);
-      const mat = new THREE.MeshLambertMaterial({ color: 0xb9a6ff });
-      this.owned.push(geo, mat);
-      const m = new THREE.Mesh(geo, mat);
-      m.position.y = def.height / 2;
-      this.body.add(m);
+      // 模型載入失敗：用程式畫一副骷髏（不再是膠囊）
+      this.buildFallbackSkeleton(gear.eye);
     }
 
     // 召喚法陣（貼地、旋轉）
@@ -244,6 +239,50 @@ export class Minion {
 
     this.object.position.set(x, 0, z);
     this.body.position.y = -def.height; // 從地底開始
+  }
+
+  /** 備用骷髏：頭骨（眼窩發光）、下顎、脊椎、肋骨、骨盆、手腳骨，依身高等比例 */
+  private buildFallbackSkeleton(eye: number) {
+    const h = this.def.height;
+    const bone = new THREE.MeshLambertMaterial({ color: 0xe9e3f5, emissive: new THREE.Color(this.def.glow * 0.3, this.def.glow * 0.1, this.def.glow * 0.45), flatShading: true });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x2a2238 });
+    this.owned.push(bone, dark);
+    this.materials.push(bone);
+    const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, rx = 0, rz = 0) => {
+      this.owned.push(geo);
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(x, y, z);
+      m.rotation.set(rx, 0, rz);
+      m.castShadow = true;
+      this.body.add(m);
+      return m;
+    };
+    const u = h / 2.1; // 以骷髏兵 2.1m 為基準
+    // 頭骨＋下顎＋眼窩
+    add(new THREE.SphereGeometry(0.3 * u, 10, 8), bone, 0, 1.78 * u, 0).scale.set(1, 0.95, 1.05);
+    add(new THREE.BoxGeometry(0.34 * u, 0.12 * u, 0.3 * u), bone, 0, 1.52 * u, 0.05 * u);
+    for (const s of [-1, 1]) {
+      add(new THREE.SphereGeometry(0.075 * u, 6, 5), dark, s * 0.11 * u, 1.8 * u, 0.25 * u);
+      const g = glowSprite(eye, 0.2 * u);
+      this.owned.push(g.material);
+      g.position.set(s * 0.11 * u, 1.8 * u, 0.3 * u);
+      this.body.add(g);
+      this.eyes.push(g);
+    }
+    // 脊椎、肋骨、骨盆
+    add(new THREE.CylinderGeometry(0.045 * u, 0.045 * u, 0.75 * u, 6), bone, 0, 1.05 * u, -0.02 * u);
+    for (let i = 0; i < 4; i++) {
+      const r = (0.24 - i * 0.025) * u;
+      add(new THREE.TorusGeometry(r, 0.03 * u, 4, 10, Math.PI * 1.4), bone, 0, (1.3 - i * 0.12) * u, 0, Math.PI / 2, Math.PI * 0.3 - Math.PI / 2);
+    }
+    add(new THREE.BoxGeometry(0.38 * u, 0.14 * u, 0.2 * u), bone, 0, 0.72 * u, 0);
+    // 手臂、腿
+    for (const s of [-1, 1]) {
+      add(new THREE.CylinderGeometry(0.04 * u, 0.035 * u, 0.5 * u, 5), bone, s * 0.3 * u, 1.15 * u, 0, 0, s * 0.25);
+      add(new THREE.CylinderGeometry(0.035 * u, 0.03 * u, 0.45 * u, 5), bone, s * 0.38 * u, 0.75 * u, 0.06 * u, -0.3, s * 0.1);
+      add(new THREE.CylinderGeometry(0.05 * u, 0.04 * u, 0.62 * u, 5), bone, s * 0.12 * u, 0.36 * u, 0);
+      add(new THREE.BoxGeometry(0.12 * u, 0.06 * u, 0.2 * u), bone, s * 0.12 * u, 0.03 * u, 0.05 * u);
+    }
   }
 
   /** 武器掛到 handslot 骨頭（沒有 handslot 時用 hand） */

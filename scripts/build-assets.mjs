@@ -9,9 +9,13 @@
  *     KayKit-Dungeon-Remastered-1.0
  *     converted/Frog_Quaternius.glb  ← Quaternius Easy Animated Enemy Pack 的 Frog.fbx 用 FBX2glTF 轉出（見 CREDITS.md）
  * 做的事：只保留需要的動畫與零件 → 重新取樣動畫 → 去重 → 清除未使用資源 → 輸出 .glb
+ * 輸出兩份：
+ *   src/assets/models/        meshopt 壓縮（最小，但瀏覽器要用 WebAssembly 解壓）→ 一般版（GitHub Pages、App）
+ *   src/assets/models-plain/  只做量化（KHR_mesh_quantization，瀏覽器原生支援）→ 單一 HTML 版
+ *     （claude.ai Artifact 等禁止 WebAssembly 的環境，meshopt 模型會全部載入失敗、退回程式模型）
  */
 import { NodeIO } from '@gltf-transform/core';
-import { dedup, meshopt, prune, resample, weld } from '@gltf-transform/functions';
+import { cloneDocument, dedup, meshopt, prune, quantize, resample, weld } from '@gltf-transform/functions';
 import { EXTMeshoptCompression, KHRMeshQuantization } from '@gltf-transform/extensions';
 import { MeshoptEncoder } from 'meshoptimizer';
 import { readdirSync, statSync, mkdirSync } from 'node:fs';
@@ -23,7 +27,9 @@ if (!SRC) {
   process.exit(1);
 }
 const OUT = new URL('../src/assets/models/', import.meta.url).pathname;
+const OUT_PLAIN = new URL('../src/assets/models-plain/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+mkdirSync(OUT_PLAIN, { recursive: true });
 await MeshoptEncoder.ready;
 const io = new NodeIO().registerExtensions([EXTMeshoptCompression, KHRMeshQuantization]).registerDependencies({ 'meshopt.encoder': MeshoptEncoder });
 
@@ -97,6 +103,7 @@ const PROPS = [
 ];
 
 let total = 0;
+let totalPlain = 0;
 async function run(outName, file, keepAnims, dropNodes) {
   const path = find(SRC, file);
   if (!path) {
@@ -116,14 +123,21 @@ async function run(outName, file, keepAnims, dropNodes) {
       a.listSamplers().forEach((s) => s.dispose());
       a.dispose();
     }
-  await doc.transform(resample({ tolerance: 0.002 }), weld(), dedup(), prune(), meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
+  await doc.transform(resample({ tolerance: 0.002 }), weld(), dedup(), prune());
+  // 免 WebAssembly 版：只量化（頂點座標、法線、UV 轉成整數），GLTFLoader 原生支援
+  const plainDoc = cloneDocument(doc);
+  await plainDoc.transform(quantize());
+  const outPlain = join(OUT_PLAIN, `${outName}.glb`);
+  await io.write(outPlain, plainDoc);
+  totalPlain += statSync(outPlain).size / 1024;
+  await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
   const out = join(OUT, `${outName}.glb`);
   await io.write(out, doc);
   const kb = statSync(out).size / 1024;
   total += kb;
-  console.log(`${basename(out).padEnd(28)} ${kb.toFixed(0).padStart(5)} KB  ${keepAnims ? root.listAnimations().map((a) => a.getName()).join(',') : ''}`);
+  console.log(`${basename(out).padEnd(28)} ${kb.toFixed(0).padStart(5)} KB  免WASM ${(statSync(outPlain).size / 1024).toFixed(0).padStart(5)} KB  ${keepAnims ? root.listAnimations().map((a) => a.getName()).join(',') : ''}`);
 }
 
 for (const [o, f, a, d] of CHARACTERS) await run(o, f, a, d);
 for (const [o, f] of PROPS) await run(o, f, null, null);
-console.log(`合計 ${(total / 1024).toFixed(2)} MB`);
+console.log(`合計 ${(total / 1024).toFixed(2)} MB（免 WASM 版 ${(totalPlain / 1024).toFixed(2)} MB）`);

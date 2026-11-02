@@ -10,7 +10,11 @@ export default defineConfig(({ mode }) => ({
   base: './',
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: {
+      // 單一 HTML 版用免 WebAssembly 的模型（見 src/assets/Assets.ts）
+      '@models': fileURLToPath(new URL(mode === 'single' ? './src/assets/models-plain' : './src/assets/models', import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
   },
   plugins: mode === 'single' ? [viteSingleFile()] : [],
   test: {

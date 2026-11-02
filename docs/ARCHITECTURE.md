@@ -60,7 +60,8 @@ src/
 │  └─ songs.ts                曲譜資料（和弦、旋律、貝斯、鼓組、段落）
 ├─ assets/
 │  ├─ Assets.ts               載入 KayKit 模型（meshopt）、Lambert 材質、靜態複製 / 骨架複製、蒙皮網格合併
-│  └─ models/*.glb            由 scripts/build-assets.mjs 產生
+│  ├─ models/*.glb            meshopt 壓縮版（一般建置），由 scripts/build-assets.mjs 產生
+│  └─ models-plain/*.glb      只量化、免 WebAssembly 版（單一 HTML / Artifact 用）
 ├─ net/Cloud.ts               雲端存檔與排行榜用戶端（逾時、離線、轉移碼）
 ├─ camera/CameraRig.ts        斜俯視跟隨、縮放 80%~150%、跟隨地面高度
 ├─ world/

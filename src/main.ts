@@ -86,6 +86,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator && !inFrame && (locatio
 if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __game: Game; __inv: typeof Inventory }).__game = game;
   (window as unknown as { __inv: typeof Inventory }).__inv = Inventory;
+  (window as unknown as { __assets: typeof Assets }).__assets = Assets;
   // 離線輸出背景音樂（試聽、音量檢查）：await __renderMusic('boss', 30, 1)
   (window as unknown as { __renderMusic: typeof renderTrack }).__renderMusic = renderTrack;
 }

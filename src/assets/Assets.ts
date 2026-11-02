@@ -1,18 +1,23 @@
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /**
  * 素材庫（KayKit CC0 模型，見 CREDITS.md）
  * ------------------------------------------------------------
- * - 啟動時一次載入 src/assets/models/*.glb（由 scripts/build-assets.mjs 產生）。
+ * - 啟動時一次載入模型（由 scripts/build-assets.mjs 產生）：
+ *   一般版用 src/assets/models/（meshopt 壓縮，需要 WebAssembly 解壓）；
+ *   單一 HTML 版（vite --mode single）用 src/assets/models-plain/（只量化、不需要 WebAssembly），
+ *   因為 claude.ai Artifact 這類禁止 WebAssembly 的頁面，meshopt 模型會全部載入失敗。
+ *   `@models` 這個路徑別名在 vite.config.ts 依模式指向其中一個資料夾。
  * - 材質統一換成 Lambert（跟程式產生的物件光影一致、手機上較便宜），並標記為共用，
  *   讓 Zone.mergeStatic() 可以依材質合併、切換區域時不被釋放。
  * - 任何一個模型載入失敗都不影響遊戲：呼叫端用 has() 判斷，沒有就用原本的程式模型。
  */
-const URLS = import.meta.glob('./models/*.glb', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
+const URLS = import.meta.glob('@models/*.glb', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
+/** 單一 HTML 版的模型沒有 meshopt 壓縮，不載入解壓器（避免在禁止 WebAssembly 的頁面報錯） */
+const NEEDS_MESHOPT = import.meta.env.MODE !== 'single';
 
 export interface RigInstance {
   root: THREE.Object3D;
@@ -40,7 +45,14 @@ class AssetLibrary {
 
   async loadAll(onProgress?: (done: number, total: number) => void): Promise<void> {
     const loader = new GLTFLoader();
-    loader.setMeshoptDecoder(MeshoptDecoder);
+    if (NEEDS_MESHOPT) {
+      try {
+        const { MeshoptDecoder } = await import('three/examples/jsm/libs/meshopt_decoder.module.js');
+        loader.setMeshoptDecoder(MeshoptDecoder);
+      } catch (e) {
+        console.warn('[Assets] meshopt 解壓器無法載入', e);
+      }
+    }
     const entries = Object.entries(URLS);
     let done = 0;
     await Promise.all(
