@@ -1,5 +1,12 @@
 # 版本紀錄
 
+## v1.8.0 — 換掉螃蟹與青蛙模型
+
+- 青蛙（泡咪潮蛙、火山蛙、首領熔心巨蛙）改用 Quaternius「Easy Animated Enemy Pack」的 Frog（CC0），自帶待機、跳躍、攻擊、死亡動畫；身體顏色依敵人種類上色。
+- 寄居蟹、首領巨鉗蟹王重做程式模型：6 隻會交替擺動的腳、可開合的大鉗（出手前高舉張開）、眼柄、甲殼斑點；寄居蟹背螺旋殼，蟹王改成尖刺甲殼＋特大右鉗＋小皇冠。
+- `Enemy` 骨架模型一般化（`RIG_ANIMS` 動畫對應表），之後加新的 glTF 敵人只要加一筆。
+- 素材管線：去掉 FBX 轉檔留下的 `Armature|` 動畫名稱前綴。
+
 ## v1.7.0 — 2026-11-02（App 打包）
 - Capacitor Android 專案（`android/`）、`npm run app:sync / app:open`、`docs/APP.md`
 - API 允許 App 來源（`https://localhost`、`capacitor://localhost`）

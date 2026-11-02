@@ -90,6 +90,7 @@ class AssetLibrary {
       if (!lam) {
         lam = new THREE.MeshLambertMaterial({ map: src.map ?? null, color: src.color?.clone() ?? new THREE.Color(0xffffff) });
         if (lam.map) lam.map.colorSpace = THREE.SRGBColorSpace;
+        lam.name = src.name; // 保留材質名稱（青蛙依名稱換身體顏色）
         lam.userData.shared = true;
         this.matCache.set(src, lam);
         src.dispose();

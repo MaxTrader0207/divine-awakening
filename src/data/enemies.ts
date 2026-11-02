@@ -45,7 +45,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     exp: 18, gold: [4, 8],
   },
   bubble_frog: {
-    id: 'bubble_frog', name: '泡咪潮蛙', level: 4, aggro: 'passive', shape: 'frog',
+    id: 'bubble_frog', name: '泡咪潮蛙', level: 4, aggro: 'passive', shape: 'frog', model: 'frog',
     radius: 0.6, respawn: 12, scale: 1, color: 0x4fc3c9,
     stats: { maxHp: 250, atk: 30, def: 0, moveSpeed: 3.2 },
     attack: melee(1.3, 0.5, 1.6),
@@ -93,14 +93,14 @@ export const ENEMIES: Record<string, EnemyDef> = {
     exp: 95, gold: [22, 34],
   },
   ember_frog: {
-    id: 'ember_frog', name: '火山蛙', level: 12, aggro: 'aggressive', shape: 'frog',
+    id: 'ember_frog', name: '火山蛙', level: 12, aggro: 'aggressive', shape: 'frog', model: 'frog',
     radius: 0.65, respawn: 12, scale: 1.15, color: 0xc9442a,
     stats: { maxHp: 790, atk: 104, def: 40, moveSpeed: 3.4 },
     attack: melee(1.3, 0.45, 1.5),
     exp: 105, gold: [24, 38],
   },
   magma_frog: {
-    id: 'magma_frog', name: '熔心巨蛙', level: 15, aggro: 'aggressive', shape: 'frog', boss: true,
+    id: 'magma_frog', name: '熔心巨蛙', level: 15, aggro: 'aggressive', shape: 'frog', model: 'frog', boss: true,
     radius: 0.7, respawn: 90, scale: 2.8, color: 0xb8321e,
     stats: { maxHp: 51200, atk: 200, def: 40, moveSpeed: 3 },
     attack: melee(2.6, 0.6, 1.8),

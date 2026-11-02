@@ -28,3 +28,8 @@ node scripts/build-assets.mjs <素材資料夾>
 再在資料檔用 `model: '<id>'` 引用（場景物件見 `world/Props.ts`，敵人見 `EnemyDef.model`）。
 
 音效與音樂目前為程式即時合成（`audio/Audio.ts`），沒有外部音檔。
+
+## Quaternius — Easy Animated Enemy Pack（Frog）
+- 作者：Quaternius（https://quaternius.com）
+- 授權：CC0 1.0（公眾領域）
+- 使用：`frog.glb`（泡咪潮蛙、火山蛙、熔心巨蛙）。原檔為 FBX，用 FBX2glTF 轉成 glb 後經 `scripts/build-assets.mjs` 壓縮。

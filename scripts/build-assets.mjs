@@ -7,6 +7,7 @@
  *     KayKit-Character-Pack-Skeletons-1.0
  *     KayKit-Medieval-Hexagon-Pack-1.0
  *     KayKit-Dungeon-Remastered-1.0
+ *     converted/Frog_Quaternius.glb  ← Quaternius Easy Animated Enemy Pack 的 Frog.fbx 用 FBX2glTF 轉出（見 CREDITS.md）
  * 做的事：只保留需要的動畫與零件 → 重新取樣動畫 → 去重 → 清除未使用資源 → 輸出 .glb
  */
 import { NodeIO } from '@gltf-transform/core';
@@ -50,6 +51,7 @@ const CHARACTERS = [
   ['skeleton_warrior', 'Skeleton_Warrior.glb', SKEL_ANIMS, []],
   ['skeleton_rogue', 'Skeleton_Rogue.glb', SKEL_ANIMS, []],
   ['skeleton_mage', 'Skeleton_Mage.glb', SKEL_MAGE_ANIMS, []],
+  ['frog', 'Frog_Quaternius.glb', ['Frog_Idle', 'Frog_Jump', 'Frog_Attack', 'Frog_Death'], []],
 ];
 
 /** 靜態物件：[輸出名, 原始檔名] */
@@ -92,6 +94,8 @@ async function run(outName, file, keepAnims, dropNodes) {
   const doc = await io.read(path);
   const root = doc.getRoot();
   for (const n of root.listNodes()) if (dropNodes?.includes(n.getName())) n.dispose();
+  // 動畫名稱去掉骨架前綴（FBX 轉出的「FrogArmature|Frog_Idle」→「Frog_Idle」）
+  for (const a of root.listAnimations()) a.setName(a.getName().split('|').pop());
   // 動畫要連同 sampler / channel 一起丟掉，prune 才會清掉沒人用的 accessor（否則檔案不會變小）
   if (keepAnims)
     for (const a of root.listAnimations()) {
