@@ -23,6 +23,8 @@ import { AutoBattle } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
 import { LootSystem } from '@/systems/LootSystem';
+import { Telegraphs } from '@/systems/Telegraphs';
+import { BossController } from '@/systems/BossController';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -53,6 +55,8 @@ export class Game {
   readonly skills: SkillSystem;
   readonly auto: AutoBattle;
   readonly loot: LootSystem;
+  readonly telegraphs: Telegraphs;
+  readonly bosses: BossController;
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -100,6 +104,14 @@ export class Game {
     this.targets = new TargetSelector(this.scene, this.enemies);
     this.damageNumbers = new DamageNumbers(uiRoot, container);
     this.effects = new Effects(this.scene);
+    this.telegraphs = new Telegraphs(this.scene);
+    this.bosses = new BossController({
+      player: this.player,
+      telegraphs: this.telegraphs,
+      effects: this.effects,
+      collision: () => this.zones.current!.collision,
+      hitPlayer: (e, power) => this.hitPlayer(e, power),
+    });
     this.scene.add(this.player.object);
 
     this.player.stats = computeStats(this.state);
@@ -131,7 +143,7 @@ export class Game {
       targets: this.targets,
       skills: this.skills,
       nearestLoot: () => this.loot.nearest(),
-      dangerEscape: () => null,
+      dangerEscape: () => this.telegraphs.escape(this.player.pos.x, this.player.pos.z, this.player.radius + 0.4),
       collision: () => this.zones.current!.collision,
     });
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
@@ -255,6 +267,8 @@ export class Game {
     const zoneNow = this.zones.current!;
     this.player.groundY += (zoneNow.heightAt(this.player.pos.x, this.player.pos.z) - this.player.groundY) * Math.min(1, dt * 14);
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
+    this.bosses.update(dt, this.enemies.enemies);
+    this.telegraphs.update(dt);
     this.effects.update(dt);
     this.loot.update(dt);
     this.state.stats.playTime += dt;
@@ -264,6 +278,7 @@ export class Game {
     this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
     this.followSun();
     this.damageNumbers.update(dt, this.rig.camera);
+    this.hud.setBoss(this.enemies.engagedBoss());
     this.hud.update(dt);
     this.input.endFrame();
 
@@ -454,6 +469,7 @@ export class Game {
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
     this.projectiles.clear();
     this.effects.clear();
+    this.telegraphs?.clear();
     this.loot?.clear();
     this.damageNumbers.clear();
     this.targets.clear();
@@ -463,6 +479,7 @@ export class Game {
     const h = (x: number, z: number) => zone.heightAt(x, z);
     this.enemies.heightAt = h;
     this.effects.heightAt = h;
+    this.telegraphs.heightAt = h;
     this.enemies.spawnForZone(zone.def);
     if (zone.def.safe && this.auto?.on) this.setAuto(false);
     this.state.zoneId = id;

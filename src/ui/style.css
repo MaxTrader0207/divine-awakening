@@ -285,3 +285,15 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .shop-main { flex: 1; min-width: 0; display: grid; gap: 2px; }
 .shop-main b { font-size: 13px; }
 .shop-main small { font-size: 11px; color: var(--muted); }
+
+/* ---------------- 首領血條 ---------------- */
+.boss-bar {
+  position: absolute; left: var(--gutter); right: var(--gutter); top: calc(max(10px, env(safe-area-inset-top)) + 226px);
+  display: grid; gap: 3px; opacity: 0; transform: translateY(-6px); transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+}
+.boss-bar.show { opacity: 1; transform: none; }
+.boss-bar b { font-size: 13px; color: #ffd36b; text-shadow: 0 1px 3px #000; }
+.boss-track { position: relative; height: 14px; border-radius: 7px; background: rgba(14, 19, 28, 0.85); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2); }
+.boss-track i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #6a5ae0, #8f7aff); transition: width 0.15s; }
+.boss-bar.enraged .boss-track i { background: linear-gradient(90deg, #c6331f, #ff6a3c); }
+.boss-track span { position: absolute; right: 8px; top: 0; font: 700 10px/14px var(--font); text-shadow: 0 1px 2px #000; }

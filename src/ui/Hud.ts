@@ -73,6 +73,12 @@ export class Hud {
     this.root.appendChild((this.els.fps = h('div', { class: 'fps' })));
     this.root.appendChild((this.els.hurt = h('div', { class: 'hurt-vignette' })));
     this.root.appendChild((this.els.feed = h('div', { class: 'loot-feed' })));
+    this.root.appendChild(
+      (this.els.boss = h('div', { class: 'boss-bar' }, [
+        (this.els.bossName = h('b')),
+        h('div', { class: 'boss-track' }, [(this.els.bossFill = h('i')), (this.els.bossHp = h('span'))]),
+      ])),
+    );
 
     // ---- 左下藥水 ----
     const potions = h('div', { class: 'potions' }, [
@@ -139,6 +145,28 @@ export class Hud {
     btn.addEventListener('pointercancel', release);
     btn.addEventListener('lostpointercapture', release);
     return btn;
+  }
+
+  private bossShown: unknown = null;
+
+  /** 戰鬥中的首領血條（畫面上方） */
+  setBoss(e: { def: { name: string; stats: { maxHp: number } }; hp: number; hpRatioEnraged?: boolean } | null) {
+    if (!e) {
+      if (this.bossShown) {
+        this.els.boss.classList.remove('show');
+        this.bossShown = null;
+      }
+      return;
+    }
+    if (this.bossShown !== e) {
+      this.bossShown = e;
+      this.els.bossName.textContent = e.def.name;
+      this.els.boss.classList.add('show');
+    }
+    const r = e.hp / e.def.stats.maxHp;
+    this.els.bossFill.style.width = `${r * 100}%`;
+    this.els.bossHp.textContent = `${Math.ceil(e.hp)} / ${e.def.stats.maxHp}`;
+    this.els.boss.classList.toggle('enraged', r < 0.5);
   }
 
   setAuto(on: boolean) {
