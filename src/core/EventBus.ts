@@ -1,0 +1,47 @@
+import type { ZoneId } from '@/data/types';
+
+/**
+ * 型別安全的事件匯流排
+ * ------------------------------------------------------------
+ * 規範：系統之間不直接互相呼叫，而是透過事件溝通。
+ * 新事件一律在 GameEvents 介面登記，payload 用物件。
+ */
+export interface GameEvents {
+  'zone:enter': { zoneId: ZoneId };
+  'zone:request': { zoneId: ZoneId; arrive?: { x: number; z: number } };
+  'player:changed': void;
+  'wallet:changed': void;
+  toast: { text: string; duration?: number };
+  banner: { text: string };
+  'menu:open': { tab?: MenuTab };
+  'camera:zoom': { delta: number };
+  'save:request': void;
+  'save:written': void;
+}
+
+export type MenuTab = 'equip' | 'enhance' | 'shop' | 'map' | 'settings';
+
+type Handler<T> = (payload: T) => void;
+
+export class EventBus {
+  private handlers = new Map<keyof GameEvents, Set<Handler<unknown>>>();
+
+  on<K extends keyof GameEvents>(type: K, fn: Handler<GameEvents[K]>): () => void {
+    let set = this.handlers.get(type);
+    if (!set) {
+      set = new Set();
+      this.handlers.set(type, set);
+    }
+    set.add(fn as Handler<unknown>);
+    return () => set!.delete(fn as Handler<unknown>);
+  }
+
+  emit<K extends keyof GameEvents>(type: K, ...args: GameEvents[K] extends void ? [] : [GameEvents[K]]): void {
+    const set = this.handlers.get(type);
+    if (!set) return;
+    for (const fn of [...set]) fn(args[0]);
+  }
+}
+
+/** 全域單例 */
+export const bus = new EventBus();
