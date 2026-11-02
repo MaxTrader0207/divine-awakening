@@ -52,14 +52,14 @@ export class Hud {
 
     // ---- 右上：縮放 + 小地圖 + 貨幣 + 按鈕 ----
     const zoomCol = h('div', { class: 'zoom-col' }, [
-      h('button', { class: 'zoom-btn', onclick: () => bus.emit('camera:zoom', { delta: 0.1 }) }, '+'),
+      h('button', { class: 'zoom-btn', 'aria-label': '拉遠', onclick: () => bus.emit('camera:zoom', { delta: -0.1 }) }, '−'),
       (this.els.zoomText = h('div', { class: 'zoom-text' })),
-      h('button', { class: 'zoom-btn', onclick: () => bus.emit('camera:zoom', { delta: -0.1 }) }, '−'),
+      h('button', { class: 'zoom-btn', 'aria-label': '拉近', onclick: () => bus.emit('camera:zoom', { delta: 0.1 }) }, '+'),
     ]);
     const mapBox = h('div', { class: 'minimap-box', onclick: () => bus.emit('menu:open', { tab: 'map' }) });
     this.minimap = new Minimap(mapBox);
     const topRight = h('div', { class: 'top-right' }, [
-      h('div', { class: 'tr-row' }, [zoomCol, mapBox]),
+      h('div', { class: 'tr-row' }, [mapBox]),
       h('div', { class: 'wallet' }, [h('span', { class: 'coin' }), (this.els.gold = h('b')), h('span', { class: 'gem' }), (this.els.gems = h('b'))]),
       h('div', { class: 'tr-btns' }, [
         h('button', { class: 'icon-btn pause-btn', 'aria-label': '暫停', onclick: () => bus.emit('pause:toggle') }, [h('span', {}, '⏸'), h('small', {}, '暫停')]),
@@ -68,6 +68,8 @@ export class Hud {
       ]),
     ]);
     this.root.appendChild(topRight);
+    // 縮放鈕掛在狀態框裡、固定接在它下方（放右上會在窄螢幕蓋住狀態框）
+    status.appendChild(zoomCol);
 
     // ---- 提示與橫幅 ----
     this.root.appendChild((this.els.tip = h('div', { class: 'tip' })));
