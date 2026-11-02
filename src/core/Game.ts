@@ -6,7 +6,7 @@ import type { ZoneId } from '@/data/types';
 import { ZONES, DUNGEON_ORDER } from '@/data/zones';
 import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
-import { InputManager, type ActionKey } from '@/input/InputManager';
+import { InputManager } from '@/input/InputManager';
 import { ZoneManager } from '@/world/ZoneManager';
 import { Hud } from '@/ui/Hud';
 import { Menu } from '@/ui/Menu';
@@ -14,9 +14,8 @@ import { DamageNumbers } from '@/ui/DamageNumbers';
 import { EnemyManager } from '@/systems/EnemyManager';
 import { ProjectileSystem } from '@/systems/ProjectileSystem';
 import { TargetSelector } from '@/systems/TargetSelector';
-import { MAGE_SKILLS } from '@/data/player';
-
-const BASIC = MAGE_SKILLS.find((s) => s.slot === 'basic')!;
+import { SkillSystem } from '@/systems/SkillSystem';
+import { Effects } from '@/systems/Effects';
 
 const AUTOSAVE_INTERVAL = 10; // 秒
 
@@ -38,6 +37,8 @@ export class Game {
   readonly projectiles: ProjectileSystem;
   readonly targets: TargetSelector;
   readonly damageNumbers: DamageNumbers;
+  readonly effects: Effects;
+  readonly skills: SkillSystem;
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -46,8 +47,6 @@ export class Game {
   private saveTimer = 0;
   private transitioning = false;
   private fadeEl: HTMLElement;
-  private basicCooldown = 0;
-  private tmpV = new THREE.Vector3();
 
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement) {
     this.state = this.save.load() ?? newGameState();
@@ -81,13 +80,24 @@ export class Game {
     this.projectiles = new ProjectileSystem(this.scene, this.enemies);
     this.targets = new TargetSelector(this.scene, this.enemies);
     this.damageNumbers = new DamageNumbers(uiRoot, container);
+    this.effects = new Effects(this.scene);
     this.scene.add(this.player.object);
 
     this.player.setLevel(this.state.level);
     this.player.hp = this.state.hp < 0 ? this.player.stats.maxHp : this.state.hp;
     this.player.mp = this.state.mp < 0 ? this.player.stats.maxMp : this.state.mp;
 
-    this.hud = new Hud(uiRoot, this.state, this.player, this.input);
+    this.skills = new SkillSystem({
+      player: this.player,
+      state: this.state,
+      enemies: this.enemies,
+      targets: this.targets,
+      projectiles: this.projectiles,
+      effects: this.effects,
+      collision: () => this.zones.current!.collision,
+      moveInput: () => this.input.move,
+    });
+    this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
     this.menu = new Menu(uiRoot, this.state, {
       onResetSave: () => {
         this.save.clear();
@@ -159,7 +169,8 @@ export class Game {
 
     const collision = this.zones.current!.collision;
     const pushOut = (pos: { x: number; z: number }, r: number) => this.enemies.pushOut(pos, r);
-    this.basicCooldown = Math.max(0, this.basicCooldown - dt);
+    this.skills.update(dt);
+    this.regen(dt);
 
     if (canAct) {
       this.handleActions();
@@ -170,6 +181,7 @@ export class Game {
     }
 
     this.enemies.update(dt, this.rig.camera);
+    this.effects.update(dt);
     this.projectiles.update(dt, this.rig.camera);
     this.targets.update(dt);
     this.zones.update(dt);
@@ -186,43 +198,27 @@ export class Game {
     }
   }
 
-  /** 技能與道具按鈕。尚未實作的先給提示 */
+  /** 技能與道具按鈕 */
   private handleActions() {
-    // 普攻：按住可連續攻擊
+    // 普攻：按住可連續攻擊（不提示冷卻）
     this.input.consume('basic');
-    if (this.input.held('basic') && this.basicCooldown <= 0) this.basicAttack();
-
-    const planned: [ActionKey, string][] = [
-      ['Q', '技能 Q 將於第 3 週實作'],
-      ['W', '技能 W 將於第 3 週實作'],
-      ['E', '技能 E 將於第 3 週實作'],
-      ['R', '技能 R 將於第 3 週實作'],
-      ['auto', 'AUTO 自動戰鬥將於第 5 週實作'],
-    ];
-    for (const [k, msg] of planned) if (this.input.consume(k)) bus.emit('toast', { text: msg });
-
-    if (this.input.consume('potionHp')) this.usePotion('hp');
-    if (this.input.consume('potionMp')) this.usePotion('mp');
+    if (this.input.held('basic')) this.skills.cast('basic', true);
+    // 技能：點一下施放；按住則冷卻好就自動再放
+    for (const slot of ['Q', 'W', 'E', 'R'] as const) {
+      const pressed = this.input.consume(slot);
+      if (pressed) this.skills.cast(slot);
+      else if (this.input.held(slot)) this.skills.cast(slot, true);
+    }
+    if (this.input.consume('auto')) bus.emit('toast', { text: 'AUTO 自動戰鬥將於第 5 週實作' });
+    if (this.input.consume('potionHp')) this.skills.usePotion('hp');
+    if (this.input.consume('potionMp')) this.skills.usePotion('mp');
   }
 
-  /** 普攻：鎖定射程內最近敵人發射追蹤魔彈；沒有目標就往面向發射 */
-  private basicAttack() {
+  /** MP 自然回復：每秒 2 點 + 最大值 1% */
+  private regen(dt: number) {
     const p = this.player;
-    const target = this.targets.acquire(p.pos.x, p.pos.z, BASIC.range);
-    let dx = Math.sin(p.facing);
-    let dz = Math.cos(p.facing);
-    if (target) {
-      dx = target.pos.x - p.pos.x;
-      dz = target.pos.z - p.pos.z;
-      const l = Math.hypot(dx, dz) || 1;
-      dx /= l;
-      dz /= l;
-    }
-    p.cast(dx, dz);
-    // 投射物從法杖前方出發（先用角色位置推算，避免當幀轉身前的舊座標）
-    const from = this.tmpV.set(p.pos.x + dx * 0.6, 1.5, p.pos.z + dz * 0.6);
-    this.projectiles.fire({ from, dirX: dx, dirZ: dz, target, attacker: p.stats, power: BASIC.power, range: BASIC.range, color: BASIC.color });
-    this.basicCooldown = BASIC.cooldown;
+    if (!p.alive) return;
+    if (p.mp < p.stats.maxMp) p.mp = Math.min(p.stats.maxMp, p.mp + (2 + p.stats.maxMp * 0.01) * dt);
   }
 
   /** 測試用：以固定 1/60 秒步進快轉遊戲時間（不渲染） */
@@ -231,18 +227,6 @@ export class Game {
     for (let i = 0; i < steps; i++) this.tick(1 / 60);
   }
 
-  private usePotion(kind: 'hp' | 'mp') {
-    const p = this.player;
-    const max = kind === 'hp' ? p.stats.maxHp : p.stats.maxMp;
-    const cur = kind === 'hp' ? p.hp : p.mp;
-    if (this.state.potions[kind] <= 0) return bus.emit('toast', { text: '藥水用完了' });
-    if (cur >= max) return bus.emit('toast', { text: kind === 'hp' ? 'HP 已滿' : 'MP 已滿' });
-    const heal = Math.round(max * 0.35);
-    if (kind === 'hp') p.hp = Math.min(max, p.hp + heal);
-    else p.mp = Math.min(max, p.mp + heal);
-    this.state.potions[kind]--;
-    this.hud.refresh();
-  }
 
   private followSun() {
     const { x, z } = this.player.pos;
@@ -272,6 +256,7 @@ export class Game {
 
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
     this.projectiles.clear();
+    this.effects.clear();
     this.damageNumbers.clear();
     this.targets.clear();
     const zone = this.zones.load(id);

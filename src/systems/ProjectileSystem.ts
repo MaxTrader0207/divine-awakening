@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { bus } from '@/core/EventBus';
 import type { Enemy } from '@/entities/Enemy';
 import type { EnemyManager } from './EnemyManager';
-import { calcDamage, type AttackerStats } from './Combat';
+import type { AttackerStats } from './Combat';
+import { damageArea, damageEnemy } from './Damage';
 
 /**
  * 投射物系統（物件池，不在戰鬥中 new / dispose，避免手機 GC 卡頓）
@@ -21,6 +21,10 @@ export interface FireOptions {
   range?: number;
   color?: number;
   size?: number;
+  /** 命中時的範圍爆炸半徑（火球）；0 = 單體 */
+  aoe?: number;
+  /** 命中後呼叫（特效、狀態） */
+  onImpact?: (x: number, z: number) => void;
 }
 
 interface Projectile {
@@ -33,6 +37,8 @@ interface Projectile {
   power: number;
   speed: number;
   life: number;
+  aoe: number;
+  onImpact?: (x: number, z: number) => void;
 }
 
 interface Spark {
@@ -61,7 +67,7 @@ export class ProjectileSystem {
       mesh.add(glow);
       mesh.visible = false;
       scene.add(mesh);
-      this.projectiles.push({ mesh, glow, active: false, vel: new THREE.Vector3(), target: null, attacker: { atk: 0, pen: 0, critRate: 0, critDmg: 1 }, power: 1, speed: 18, life: 0 });
+      this.projectiles.push({ mesh, glow, active: false, vel: new THREE.Vector3(), target: null, attacker: { atk: 0, pen: 0, critRate: 0, critDmg: 1 }, power: 1, speed: 18, life: 0, aoe: 0 });
     }
     const ringGeo = new THREE.RingGeometry(0.2, 0.42, 20);
     for (let i = 0; i < SPARK_POOL; i++) {
@@ -81,6 +87,8 @@ export class ProjectileSystem {
     p.attacker = { ...o.attacker };
     p.power = o.power;
     p.speed = speed;
+    p.aoe = o.aoe ?? 0;
+    p.onImpact = o.onImpact;
     p.life = (o.range ?? 10) / speed + 0.25;
     p.mesh.position.copy(o.from);
     p.mesh.scale.setScalar(o.size ?? 1);
@@ -149,11 +157,11 @@ export class ProjectileSystem {
   }
 
   private resolveHit(p: Projectile, e: Enemy) {
-    const res = calcDamage(p.attacker, p.power, e.defense);
-    const killed = e.takeDamage(res.amount);
-    bus.emit('combat:hit', { x: e.pos.x, y: e.height + 0.2, z: e.pos.z, amount: res.amount, crit: res.crit, targetIsPlayer: false });
-    if (killed) bus.emit('enemy:killed', { enemyId: e.def.id, x: e.pos.x, z: e.pos.z });
-    this.spawnSpark(p.mesh.position, (p.mesh.material as THREE.MeshBasicMaterial).color.getHex(), res.crit);
+    let crit = false;
+    if (p.aoe > 0) damageArea(this.enemies.enemies, e.pos.x, e.pos.z, p.aoe, p.attacker, p.power);
+    else crit = !!damageEnemy(e, p.attacker, p.power)?.crit;
+    p.onImpact?.(e.pos.x, e.pos.z);
+    this.spawnSpark(p.mesh.position, (p.mesh.material as THREE.MeshBasicMaterial).color.getHex(), crit || p.aoe > 0);
     this.kill(p);
   }
 
@@ -171,6 +179,7 @@ export class ProjectileSystem {
   private kill(p: Projectile) {
     p.active = false;
     p.target = null;
+    p.onImpact = undefined;
     p.mesh.visible = false;
   }
 

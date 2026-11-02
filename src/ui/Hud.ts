@@ -4,6 +4,8 @@ import type { ZoneDef } from '@/data/types';
 import { MAGE_SKILLS, expToNext } from '@/data/player';
 import type { Player } from '@/entities/Player';
 import type { InputManager, ActionKey } from '@/input/InputManager';
+import type { SkillSlot } from '@/data/types';
+import type { SkillSystem } from '@/systems/SkillSystem';
 import { Minimap } from './Minimap';
 import { h } from './dom';
 
@@ -24,8 +26,11 @@ export class Hud {
   private tipTimer = 0;
   private bannerTimer = 0;
   private fpsAcc = { frames: 0, time: 0 };
+  private skillBtns = new Map<SkillSlot, { btn: HTMLElement; cd: HTMLElement; num: HTMLElement }>();
+  private potionCds: HTMLElement[] = [];
+  private hudTimer = 0;
 
-  constructor(uiRoot: HTMLElement, private state: GameState, private player: Player, private input: InputManager) {
+  constructor(uiRoot: HTMLElement, private state: GameState, private player: Player, private input: InputManager, private skills: SkillSystem) {
     this.root = h('div', { class: 'hud' });
     uiRoot.appendChild(this.root);
 
@@ -71,6 +76,11 @@ export class Hud {
       this.actionButton('potion red', 'potionHp', '1', (this.els.potHp = h('em'))),
       this.actionButton('potion blue', 'potionMp', '2', (this.els.potMp = h('em'))),
     ]);
+    potions.querySelectorAll('.act').forEach((b) => {
+      const cd = h('div', { class: 'cd' });
+      b.appendChild(cd);
+      this.potionCds.push(cd);
+    });
     this.root.appendChild(potions);
 
     // ---- 右下技能 ----
@@ -81,6 +91,10 @@ export class Hud {
       btn.querySelector('.ico')!.textContent = sk.icon;
       if (sk.slot === 'basic') btn.appendChild(h('small', { class: 'basic-label' }, '普攻'));
       btn.title = sk.name;
+      const cd = h('div', { class: 'cd' });
+      const num = h('b', { class: 'cd-num' });
+      btn.append(cd, num);
+      this.skillBtns.set(sk.slot, { btn, cd, num });
       skillArea.appendChild(btn);
     }
     this.root.appendChild(skillArea);
@@ -143,6 +157,30 @@ export class Hud {
     this.bannerTimer = 2.4;
   }
 
+  private updateCooldowns() {
+    for (const [slot, ui] of this.skillBtns) {
+      const r = this.skills.cooldownRatio(slot);
+      const rem = this.skills.remaining(slot);
+      ui.cd.style.setProperty('--p', String(r));
+      ui.cd.style.opacity = r > 0 ? '1' : '0';
+      ui.num.textContent = rem > 0.05 && slot !== 'basic' ? (rem >= 1 ? String(Math.ceil(rem)) : rem.toFixed(1)) : '';
+      ui.btn.classList.toggle('no-mp', this.player.mp < this.skills.def(slot).mpCost);
+    }
+    const pr = this.skills.potionCd / 2;
+    for (const cd of this.potionCds) {
+      cd.style.setProperty('--p', String(pr));
+      cd.style.opacity = pr > 0 ? '1' : '0';
+    }
+  }
+
+  private refreshBars() {
+    const p = this.player;
+    this.els.hpFill.style.width = `${(p.hp / p.stats.maxHp) * 100}%`;
+    this.els.hpText.textContent = `${Math.round(p.hp)}/${p.stats.maxHp}`;
+    this.els.mpFill.style.width = `${(p.mp / p.stats.maxMp) * 100}%`;
+    this.els.mpText.textContent = `${Math.round(p.mp)}/${p.stats.maxMp}`;
+  }
+
   /** 數值變動時呼叫（不必每幀） */
   refresh() {
     const s = this.state;
@@ -168,6 +206,13 @@ export class Hud {
 
   update(dt: number) {
     this.minimap.draw(this.player.pos.x, this.player.pos.z, this.player.facing);
+    this.updateCooldowns();
+    // HP/MP 條每 0.1 秒刷新一次（回魔、受傷是連續變化）
+    this.hudTimer += dt;
+    if (this.hudTimer > 0.1) {
+      this.hudTimer = 0;
+      this.refreshBars();
+    }
 
     this.tipTimer += dt;
     if (this.tipTimer > 6 && this.tips.length > 1) {

@@ -220,3 +220,12 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 }
 .dmg.crit { font-size: 26px; color: var(--gold); text-shadow: 0 0 4px #6b3a00, 0 2px 0 #6b3a00, 1px 1px 0 #6b3a00, -1px -1px 0 #6b3a00; }
 .dmg.hurt { color: #ff6a55; }
+
+/* ---------------- 冷卻遮罩 ---------------- */
+.act .cd {
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: conic-gradient(rgba(8, 10, 18, 0.72) calc(var(--p, 0) * 360deg), transparent 0);
+}
+.act .cd-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 900 15px/1 var(--font); text-shadow: 0 1px 3px #000; pointer-events: none; }
+.act.no-mp .ico { filter: grayscale(1) brightness(0.6); }
+.act.no-mp { border-color: rgba(47, 143, 232, 0.6); }

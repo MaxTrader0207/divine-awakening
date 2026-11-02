@@ -19,7 +19,9 @@ export interface GameEvents {
   'save:written': void;
   /** 任何單位受到傷害（傷害數字、音效、統計會聽這個） */
   'combat:hit': { x: number; y: number; z: number; amount: number; crit: boolean; targetIsPlayer: boolean };
-  'enemy:killed': { enemyId: string; x: number; z: number };
+  'enemy:killed': { enemyId: string; name: string; x: number; z: number; level: number; exp: number; gold: [number, number]; boss: boolean };
+  /** 技能施放（音效、教學用） */
+  'skill:cast': { slot: string };
 }
 
 export type MenuTab = 'equip' | 'enhance' | 'shop' | 'map' | 'settings';

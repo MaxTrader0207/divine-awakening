@@ -17,6 +17,8 @@ export class Player {
   stats: Stats = statsForLevel(1);
   hp = 0;
   mp = 0;
+  /** 無敵剩餘秒數（閃現、復活） */
+  invulnerable = 0;
   /** 0~1，目前移動強度（給動畫用） */
   private moveAmount = 0;
   private bobT = 0;
@@ -57,6 +59,10 @@ export class Player {
     }
   }
 
+  get alive() {
+    return this.hp > 0;
+  }
+
   setLevel(level: number) {
     this.stats = statsForLevel(level);
     this.hp = Math.min(this.hp, this.stats.maxHp);
@@ -83,6 +89,7 @@ export class Player {
 
   /** move：世界方向向量，長度 0~1 */
   update(dt: number, move: { x: number; z: number }, collision: CollisionWorld, pushOut?: (pos: { x: number; z: number }, r: number) => void) {
+    if (this.invulnerable > 0) this.invulnerable = Math.max(0, this.invulnerable - dt);
     const len = Math.hypot(move.x, move.z);
     if (len > 0.001) {
       const speed = this.stats.moveSpeed * len;

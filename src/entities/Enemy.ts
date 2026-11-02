@@ -24,10 +24,14 @@ export class Enemy {
   readonly height: number;
   hp: number;
   state: EnemyState = 'alive';
+  /** 緩速剩餘秒數與倍率（冰霜新星） */
+  slowTimer = 0;
+  slowMul = 1;
 
   private body = new THREE.Group();
   private materials: THREE.MeshLambertMaterial[] = [];
   private flash = 0;
+  private tinted = false;
   private shake = 0;
   private stateTimer = 0;
   private hpBar: THREE.Group;
@@ -78,6 +82,11 @@ export class Enemy {
     return this.height * 0.6;
   }
 
+  applySlow(duration: number, mul: number) {
+    this.slowTimer = Math.max(this.slowTimer, duration);
+    this.slowMul = Math.min(this.slowMul === 1 ? mul : this.slowMul, mul);
+  }
+
   /** 回傳是否因此死亡 */
   takeDamage(amount: number): boolean {
     if (!this.alive) return false;
@@ -110,10 +119,18 @@ export class Enemy {
       return;
     }
 
-    // 受擊閃白
-    if (this.flash > 0) {
+    // 緩速
+    if (this.slowTimer > 0) {
+      this.slowTimer -= dt;
+      if (this.slowTimer <= 0) this.slowMul = 1;
+    }
+    // 受擊閃白；緩速時偏藍
+    if (this.flash > 0 || this.slowTimer > 0 || this.tinted) {
       this.flash = Math.max(0, this.flash - dt * 6);
-      for (const m of this.materials) m.emissive.setScalar(this.flash * 0.8);
+      const f = this.flash * 0.8;
+      const slow = this.slowTimer > 0 ? 0.35 : 0;
+      for (const m of this.materials) m.emissive.setRGB(f, f + slow * 0.4, f + slow);
+      this.tinted = this.flash > 0 || slow > 0;
     }
     // 受擊晃動
     if (this.shake > 0) {
@@ -140,6 +157,8 @@ export class Enemy {
     this.body.position.y = 0;
     this.object.visible = true;
     this.hpBarTimer = 0;
+    this.slowTimer = 0;
+    this.slowMul = 1;
   }
 
   private m(color: number): THREE.MeshLambertMaterial {
