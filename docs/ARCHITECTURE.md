@@ -15,7 +15,7 @@
 
 ```
 src/
-├─ main.ts                    進入點：建立 Game、註冊 PWA、?debug 暴露 __game / __inv
+├─ main.ts                    進入點：載入模型 → 開頭畫面（選存檔）→ 選職業（空欄位）→ 建立 Game、註冊 PWA
 ├─ core/
 │  ├─ Game.ts                 組裝所有系統、主迴圈、區域切換、死亡復活、擊殺獎勵、存檔時機
 │  ├─ EventBus.ts             型別化事件匯流排（GameEvents 登記所有事件）
@@ -68,6 +68,7 @@ src/
    ├─ Menu.ts                 選單殼與「地圖 / 設定」分頁
    ├─ InventoryTabs.ts        「裝備 / 強化 / 商城」分頁
    ├─ CloudTabs.ts            雲端存檔卡片、「排行」分頁
+   ├─ TitleScreen.ts          開頭畫面：繼續遊戲、5 格存檔（選擇 / 新遊戲 / 刪除）
    ├─ DamageNumbers.ts        傷害數字與漂浮文字（DOM 物件池）
    ├─ Minimap.ts、dom.ts、style.css
 public/                       manifest.webmanifest、sw.js、icons/（PWA）
@@ -137,6 +138,7 @@ raw  = atk × 技能倍率
 
 
 - 多存檔：`SaveSlots` 管 5 格（localStorage `little-mage.save.slot1`~`slot5`），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。
+- 開頭畫面：每次打開遊戲先顯示；從選單「讀取 / 開新遊戲」切換時用 sessionStorage 旗標略過一次；網址帶 `?class=` 時略過（測試用）。
 - 舊版單一存檔 `little-mage.save.v1` 第一次啟動時自動搬到第 1 格。
 - `GameState` 經 `SaveBackend` 存取，`LocalSave` 讀寫使用中的那一格；雲端存檔上傳 / 下載的也是使用中的那一格。
 - 物品只存「底材 id、稀有度、強化等級」，屬性即時計算 → 調整平衡不會讓舊存檔失真。

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { bus } from './EventBus';
 import { newGameState, type GameState } from './GameState';
 import { LocalSave } from './SaveSystem';
+import { skipTitleOnce } from '@/ui/TitleScreen';
 import type { ZoneId } from '@/data/types';
 import { ZONES, DUNGEON_ORDER } from '@/data/zones';
 import { Player } from '@/entities/Player';
@@ -214,6 +215,7 @@ export class Game {
           this.persist();
           this.resetting = true; // 重新載入前不要再把目前進度寫到新欄位
           this.save.slots.setActive(n);
+          skipTitleOnce();
           location.reload();
         },
         newGame: (n) => {
@@ -221,7 +223,13 @@ export class Game {
           this.persist();
           this.resetting = true;
           this.save.slots.setActive(n);
+          skipTitleOnce();
           location.reload(); // 空欄位 → 進入選職業畫面
+        },
+        toTitle: () => {
+          this.persist();
+          this.resetting = true;
+          location.reload();
         },
         remove: (n) => {
           if (n !== this.save.slot) this.save.slots.delete(n);

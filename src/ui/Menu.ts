@@ -1,6 +1,6 @@
 import { bus, type MenuTab } from '@/core/EventBus';
 import { isZoneUnlocked, type GameState } from '@/core/GameState';
-import { DUNGEON_ORDER, WORLD_FIELDS, ZONES } from '@/data/zones';
+import { DUNGEON_ORDER, WORLD_FIELDS, ZONES, zoneLabel } from '@/data/zones';
 import { h } from './dom';
 import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
 import { BONUS_GEMS, canClaim, ensureToday, questText } from '@/systems/DailyQuests';
@@ -54,6 +54,8 @@ export interface MenuActions {
     /** 在空的第 n 格開新遊戲（重新載入、選職業） */
     newGame(n: number): void;
     remove(n: number): void;
+    /** 存檔後回到開頭畫面 */
+    toTitle(): void;
   };
 }
 
@@ -345,14 +347,13 @@ export class Menu {
       if (info.corrupt) body.push(h('p', { class: 'cloud-status bad' }, '這格存檔已損壞，無法讀取。'));
       else if (!info.empty) {
         const cls = CLASSES[info.heroClass ?? 'mage'];
-        const zone = ZONES[info.zoneId as keyof typeof ZONES];
         const mins = Math.floor((info.playTime ?? 0) / 60);
         body.push(
           h('div', { class: 'slot-main' }, [
             h('span', { class: 'slot-ico' }, cls.icon),
             h('div', {}, [
               h('div', { class: 'slot-name' }, `${info.playerName ?? cls.name}・${cls.name} Lv.${info.level}`),
-              h('p', {}, `${zone?.name ?? '主城'}・首領 ${info.bosses ?? 0}/${DUNGEON_ORDER.length}・遊戲 ${Math.floor(mins / 60)} 小時 ${mins % 60} 分`),
+              h('p', {}, `${zoneLabel(info.zoneId)}・首領 ${info.bosses ?? 0}/${DUNGEON_ORDER.length}・遊戲 ${Math.floor(mins / 60)} 小時 ${mins % 60} 分`),
               h('p', {}, info.updatedAt ? `最後存檔 ${new Date(info.updatedAt).toLocaleString('zh-TW', { hour12: false })}` : ''),
             ]),
           ]),
@@ -376,6 +377,7 @@ export class Menu {
       body.push(row);
       out.push(h('div', { class: `card slot${isActive ? ' active' : ''}`, 'data-slot': n }, body));
     }
+    out.push(h('div', { class: 'card-row' }, [h('button', { class: 'go ghost', onclick: () => sv.toTitle() }, '存檔並回到開頭畫面')]));
     out.push(h('p', { class: 'version' }, '存檔存在這台裝置的瀏覽器裡。換裝置請用「設定 → 雲端存檔」（上傳的是使用中的那一格）。'));
     return out;
   }

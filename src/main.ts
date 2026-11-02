@@ -2,7 +2,8 @@ import './ui/style.css';
 import { Game } from './core/Game';
 import * as Inventory from './systems/Inventory';
 import { Assets } from './assets/Assets';
-import { LocalSave } from './core/SaveSystem';
+import { SaveSlots } from './core/SaveSystem';
+import { shouldShowTitle, showTitleScreen } from './ui/TitleScreen';
 import { CLASSES, CLASS_LIST, type HeroClass } from './data/classes';
 
 /**
@@ -33,9 +34,12 @@ await Assets.loadAll((done, total) => {
 loading.classList.add('done');
 setTimeout(() => loading.remove(), 500);
 
-// 新玩家：先選職業（已有存檔就直接進遊戲；?class=archer 可略過畫面，測試用）
+// 開頭畫面：選存檔（從選單切換存檔重新載入時、或網址帶 ?class= 測試時略過）
+const slots = new SaveSlots();
+if (shouldShowTitle()) slots.setActive(await showTitleScreen(app, slots, __APP_VERSION__));
+// 空的存檔欄位：先選職業（?class=archer 可略過畫面，測試用）
 let heroClass: HeroClass = 'mage';
-if (!new LocalSave().load()) heroClass = await pickClass();
+if (!slots.load(slots.active)) heroClass = await pickClass();
 game = new Game(canvas, app, uiRoot, heroClass);
 game.start();
 

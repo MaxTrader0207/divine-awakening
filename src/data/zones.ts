@@ -365,3 +365,11 @@ export const WORLD_FIELDS: { name: string; range: string; zone?: ZoneId }[] = [
 ];
 
 export const DUNGEON_ORDER: ZoneId[] = ['dungeon_1', 'dungeon_2', 'dungeon_3'];
+
+/** 給存檔欄位用的短地名：主城艾爾芙、新手草原、第一層・海岸古道… */
+export function zoneLabel(id: string | undefined): string {
+  const def = id ? ZONES[id as ZoneId] : undefined;
+  if (!def) return '主城艾爾芙';
+  if (def.kind === 'dungeon' && def.dungeon) return `第${'一二三四五'[def.dungeon.floor - 1]}層・${def.name}`;
+  return def.subtitle.split('・')[0];
+}
