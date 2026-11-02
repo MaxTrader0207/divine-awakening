@@ -15,6 +15,8 @@ export interface Settings {
   showFps: boolean;
   musicVolume: number;
   sfxVolume: number;
+  /** 畫質：auto / high / medium / low */
+  quality: 'auto' | 'high' | 'medium' | 'low';
 }
 
 export interface GameState {
@@ -64,7 +66,7 @@ export function newGameState(): GameState {
     equipment: { weapon: { uid: 1, base: 'weapon_t1', rarity: 'common', plus: 0 } },
     nextUid: 2,
     stats: { kills: 0, deaths: 0, playTime: 0 },
-    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8 },
+    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto' },
   };
 }
 

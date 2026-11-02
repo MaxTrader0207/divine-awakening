@@ -26,6 +26,7 @@ import { LootSystem } from '@/systems/LootSystem';
 import { Telegraphs } from '@/systems/Telegraphs';
 import { BossController } from '@/systems/BossController';
 import { AudioSystem } from '@/audio/Audio';
+import { Quality, type QualitySetting } from '@/systems/Quality';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -59,6 +60,7 @@ export class Game {
   readonly telegraphs: Telegraphs;
   readonly bosses: BossController;
   readonly audio: AudioSystem;
+  readonly quality: Quality;
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -96,6 +98,7 @@ export class Game {
     sc.far = 80;
     this.sun.shadow.bias = -0.0008;
     this.scene.add(this.sun, this.sun.target);
+    this.quality = new Quality(this.renderer, this.sun, this.state.settings, () => this.resize());
 
     // ---- Systems ----
     this.rig = new CameraRig(1);
@@ -180,6 +183,12 @@ export class Game {
         this.effects.pillar(x, z, 1, 0xffd36b, 0.9);
         this.effects.ring(x, z, 0.4, 2.6, 0xffe9a0, 0.6);
       },
+      onQuality: (q: QualitySetting) => {
+        this.quality.set(q);
+        this.persist();
+        return this.quality.label;
+      },
+      getQualityLabel: () => this.quality.label,
       onVolume: (kind, v) => {
         if (kind === 'music') this.state.settings.musicVolume = v;
         else this.state.settings.sfxVolume = v;
@@ -237,7 +246,9 @@ export class Game {
   private frame() {
     // dt 上限 0.05：切到背景再回來時避免角色瞬移穿牆
     this.timer.update();
-    this.tick(Math.min(0.05, this.timer.getDelta()));
+    const realDt = this.timer.getDelta();
+    this.quality.sample(realDt);
+    this.tick(Math.min(0.05, realDt));
     this.renderer.render(this.scene, this.rig.camera);
   }
 
@@ -292,7 +303,7 @@ export class Game {
     const boss = this.enemies.engagedBoss();
     this.hud.setBoss(boss);
     this.audio.setZoneMusic(boss ? 'boss' : zoneNow.def.kind);
-    if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・${this.renderer.info.render.triangles} 三角形`;
+    if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・畫質${this.quality.label}`;
     this.hud.update(dt);
     this.input.endFrame();
 
@@ -521,6 +532,7 @@ export class Game {
   }
 
   private resize() {
+    if (!this.rig) return; // Quality 在建構途中呼叫時，攝影機還沒建立
     const w = this.container.clientWidth;
     const hgt = this.container.clientHeight;
     this.renderer.setSize(w, hgt, false);

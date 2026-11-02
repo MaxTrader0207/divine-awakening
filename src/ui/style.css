@@ -307,3 +307,6 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .loading-box i { width: 180px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 .loading-box em { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f4c64e, #ffe08a); transition: width 0.2s; }
 .loading-box small { margin-top: 18px; font-size: 11px; color: var(--muted); letter-spacing: 2px; }
+.seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.seg-btn { padding: 8px 0; border-radius: 9px; background: rgba(255, 255, 255, 0.08); font-weight: 700; font-size: 13px; }
+.seg-btn.on { background: linear-gradient(#ffe07a, var(--gold)); color: #4a3308; }

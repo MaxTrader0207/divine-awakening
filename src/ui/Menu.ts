@@ -28,6 +28,9 @@ export interface MenuActions {
   onInventoryChanged(): void;
   onCelebrate(): void;
   onVolume(kind: 'music' | 'sfx', v: number): void;
+  /** 回傳目前實際畫質（高 / 中 / 低） */
+  onQuality(q: 'auto' | 'high' | 'medium' | 'low'): string;
+  getQualityLabel(): string;
 }
 
 export class Menu {
@@ -163,6 +166,7 @@ export class Menu {
 
     return [
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '鏡頭縮放'), zoomVal]), slider]),
+      this.renderQuality(),
       vol('music', '音樂音量', s.musicVolume),
       vol('sfx', '音效音量', s.sfxVolume),
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '顯示 FPS'), fps])]),
@@ -178,6 +182,31 @@ export class Menu {
       this.renderReset(),
       h('p', { class: 'version' }, `小法師 v${__APP_VERSION__}・Wei Studio`),
     ];
+  }
+
+  private renderQuality(): HTMLElement {
+    const opts: ['auto' | 'high' | 'medium' | 'low', string][] = [['auto', '自動'], ['high', '高'], ['medium', '中'], ['low', '低']];
+    const now = h('b', {}, `目前：${this.actions.getQualityLabel()}`);
+    const row = h('div', { class: 'seg' });
+    const draw = () => {
+      row.replaceChildren(
+        ...opts.map(([v, label]) =>
+          h('button', {
+            class: `seg-btn${this.state.settings.quality === v ? ' on' : ''}`,
+            onclick: () => {
+              now.textContent = `目前：${this.actions.onQuality(v)}`;
+              draw();
+            },
+          }, label),
+        ),
+      );
+    };
+    draw();
+    return h('div', { class: 'card' }, [
+      h('div', { class: 'set-row' }, [h('span', {}, '畫質'), now]),
+      row,
+      h('p', {}, '自動：畫面不順時自動降低解析度與陰影。手機發燙或耗電時可選「低」。'),
+    ]);
   }
 
   /** 重置存檔：按兩次確認（artifact 環境不能用 confirm()） */
