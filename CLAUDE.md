@@ -27,7 +27,8 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v0.2.0，第 1、2 週完成。下一步：第 3 週技能系統（SkillSystem：Q 火球、W 冰霜新星、E 烈焰爆發、R 閃現，冷卻遮罩、MP 消耗）。
-- 普攻已完成（`Game.basicAttack` → `ProjectileSystem`）。技能 Q/W/E/R 與 AUTO 按鈕仍只顯示「第 N 週實作」提示（`Game.handleActions`）。
-- 自動化測試：`npm test`（Vitest，純邏輯）；瀏覽器測試用 `?debug` + `__game.debugAdvance(秒)` 快轉，不要用 setTimeout 等待（無 GPU 環境只有 3~4 FPS）。
-- 選單的裝備 / 強化 / 商城分頁是佔位（`Menu.PLANNED`）。
+- 版本 v1.0.0：10 週 MVP 全部完成（ROADMAP 全勾）。下一步見 ROADMAP「MVP 之後」：實機測試 → 正式美術 → 雲端存檔。
+- 自動化測試：`npm test`（Vitest，26 個純邏輯案例）。瀏覽器測試用 `?debug` + `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。
+- 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
+- 美術全是程式產生的低多邊形：場景物件在 `world/Props.ts`，角色在 `entities/Player.ts` / `Enemy.ts`。
+- 音效音樂是 Web Audio 合成（`audio/Audio.ts`），換正式音檔時保留 `play(id)` / `setZoneMusic(kind)`。

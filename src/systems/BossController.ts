@@ -76,6 +76,7 @@ export class BossController {
       const id = skills[st.next % skills.length];
       st.next++;
       const castTime = this.cast(e, id, st.enraged);
+      bus.emit('boss:cast', { skill: id });
       e.ai = 'boss';
       e.windup = castTime; // 施法中身體泛紅
       st.castT = castTime + 0.35;

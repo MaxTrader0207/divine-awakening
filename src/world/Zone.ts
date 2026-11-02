@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { PlatformDef, PortalDef, ZoneDef } from '@/data/types';
 
 /** 石階長度（公尺） */
@@ -73,6 +74,7 @@ export class Zone {
     }
 
     for (const portal of def.portals) this.group.add(this.buildPortal(portal));
+    this.mergeStatic();
     for (const t of def.triggers ?? []) {
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(t.radius - 0.18, t.radius, 32),
@@ -82,6 +84,43 @@ export class Zone {
       ring.position.set(t.x, 0.04, t.z);
       this.group.add(ring);
       this.animated.push({ obj: ring, kind: 'pulse', phase: 2 });
+    }
+  }
+
+  /**
+   * 效能：把不會動、使用共用材質的靜態網格依材質合併成一個網格。
+   * 場景物件（房子、樹、石頭、高台、石柱…）原本每個零件一個 draw call，合併後每種顏色一個。
+   */
+  private mergeStatic() {
+    this.group.updateMatrixWorld(true);
+    const animated = new Set(this.animated.map((a) => a.obj));
+    const byMat = new Map<THREE.Material, THREE.BufferGeometry[]>();
+    const remove: THREE.Mesh[] = [];
+    this.group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || animated.has(m) || Array.isArray(m.material)) return;
+      const mat = m.material as THREE.Material;
+      if (!mat.userData.shared) return;
+      const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld);
+      for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+      if (!g.attributes.normal) g.computeVertexNormals();
+      let list = byMat.get(mat);
+      if (!list) byMat.set(mat, (list = []));
+      list.push(g);
+      remove.push(m);
+    });
+    for (const m of remove) {
+      m.geometry.dispose();
+      m.removeFromParent();
+    }
+    for (const [mat, geos] of byMat) {
+      const merged = mergeGeometries(geos, false);
+      geos.forEach((g) => g.dispose());
+      if (!merged) continue;
+      const mesh = new THREE.Mesh(merged, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.group.add(mesh);
     }
   }
 

@@ -48,6 +48,15 @@
 1. `core/EventBus.ts` 的 `GameEvents` 加一行：`'名稱': payload 型別`。
 2. 發出：`bus.emit('名稱', {...})`；接收：`bus.on('名稱', fn)`（回傳值可取消訂閱）。
 
+### 新增敵人
+1. `data/enemies.ts` 加一筆（`shape` 用既有造型，或在 `Enemy.buildBody()` 加新造型）。
+2. 在區域的 `spawns` 放進去（`count`、`spread`）。
+3. 首領：`boss: true` 並在 `bossSkills` 列出技能；新技能寫在 `BossController.cast()`。
+4. 改完跑 `docs/BALANCE.md` 的模擬。
+
+### 新增裝備
+`data/items.ts` 的底材表依 slot × tier 自動產生；改 `T1`（基礎屬性）或 `NAMES` 即可。
+
 ### 改存檔欄位
 1. 改 `GameState` 介面與 `newGameState()`。
 2. `SAVE_VERSION + 1`。

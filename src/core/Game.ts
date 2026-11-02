@@ -25,6 +25,7 @@ import { computeStats } from '@/systems/Inventory';
 import { LootSystem } from '@/systems/LootSystem';
 import { Telegraphs } from '@/systems/Telegraphs';
 import { BossController } from '@/systems/BossController';
+import { AudioSystem } from '@/audio/Audio';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -57,6 +58,7 @@ export class Game {
   readonly loot: LootSystem;
   readonly telegraphs: Telegraphs;
   readonly bosses: BossController;
+  readonly audio: AudioSystem;
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -66,6 +68,7 @@ export class Game {
   private transitioning = false;
   private counterTarget: Enemy | null = null;
   private deathTimer = 0;
+  private resetting = false;
   private deathGoldLost = 0;
   private counterTimer = 0;
   private aiCtx!: AiContext;
@@ -105,6 +108,7 @@ export class Game {
     this.damageNumbers = new DamageNumbers(uiRoot, container);
     this.effects = new Effects(this.scene);
     this.telegraphs = new Telegraphs(this.scene);
+    this.audio = new AudioSystem(this.state.settings);
     this.bosses = new BossController({
       player: this.player,
       telegraphs: this.telegraphs,
@@ -149,6 +153,7 @@ export class Game {
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
     this.menu = new Menu(uiRoot, this.state, {
       onResetSave: () => {
+        this.resetting = true; // 避免 pagehide 時又把舊進度存回去
         this.save.clear();
         location.reload();
       },
@@ -170,6 +175,7 @@ export class Game {
       },
       onInventoryChanged: () => this.onInventoryChanged(),
       onCelebrate: () => {
+        this.audio.play('enhance');
         const { x, z } = this.player.pos;
         this.effects.pillar(x, z, 1, 0xffd36b, 0.9);
         this.effects.ring(x, z, 0.4, 2.6, 0xffe9a0, 0.6);
@@ -212,8 +218,13 @@ export class Game {
     window.addEventListener('resize', () => this.resize());
 
     // ---- 首次進入 ----
+    const firstTime = this.state.stats.playTime < 1;
     this.enterZone(this.state.zoneId, this.state.pos);
     this.resize();
+    if (firstTime) {
+      setTimeout(() => bus.emit('banner', { text: '歡迎來到艾爾芙大陸' }), 600);
+      setTimeout(() => bus.emit('toast', { text: '用左下搖桿移動，往南走進入新手草原', duration: 4 }), 3200);
+    }
   }
 
   start() {
@@ -278,7 +289,10 @@ export class Game {
     this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
     this.followSun();
     this.damageNumbers.update(dt, this.rig.camera);
-    this.hud.setBoss(this.enemies.engagedBoss());
+    const boss = this.enemies.engagedBoss();
+    this.hud.setBoss(boss);
+    this.audio.setZoneMusic(boss ? 'boss' : zoneNow.def.kind);
+    if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・${this.renderer.info.render.triangles} 三角形`;
     this.hud.update(dt);
     this.input.endFrame();
 
@@ -433,9 +447,9 @@ export class Game {
   }
 
   /** 測試用：以固定 1/60 秒步進快轉遊戲時間（不渲染） */
-  debugAdvance(seconds: number) {
-    const steps = Math.round(seconds * 60);
-    for (let i = 0; i < steps; i++) this.tick(1 / 60);
+  debugAdvance(seconds: number, step = 1 / 60) {
+    const steps = Math.round(seconds / step);
+    for (let i = 0; i < steps; i++) this.tick(step);
   }
 
 
@@ -497,6 +511,7 @@ export class Game {
   }
 
   private persist() {
+    if (this.resetting) return;
     const s = this.state;
     s.pos = { x: round2(this.player.pos.x), z: round2(this.player.pos.z) };
     s.hp = Math.round(this.player.hp);

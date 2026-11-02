@@ -253,6 +253,8 @@ export class Hud {
   }
 
   currentZone: ZoneDef | null = null;
+  /** FPS 旁的除錯資訊（draw calls） */
+  debugInfo = '';
 
   update(dt: number) {
     this.minimap.draw(this.player.pos.x, this.player.pos.z, this.player.facing);
@@ -278,7 +280,7 @@ export class Hud {
       this.fpsAcc.frames++;
       this.fpsAcc.time += dt;
       if (this.fpsAcc.time >= 0.5) {
-        this.els.fps.textContent = `${Math.round(this.fpsAcc.frames / this.fpsAcc.time)} FPS`;
+        this.els.fps.textContent = `${Math.round(this.fpsAcc.frames / this.fpsAcc.time)} FPS・${this.debugInfo}`;
         this.fpsAcc = { frames: 0, time: 0 };
       }
     }

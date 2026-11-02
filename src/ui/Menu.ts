@@ -4,6 +4,9 @@ import { DUNGEON_ORDER, WORLD_FIELDS, ZONES } from '@/data/zones';
 import { h } from './dom';
 import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
 
+/** 開發模式或網址帶 ?debug 才顯示開發工具 */
+const DEV = import.meta.env.DEV || new URLSearchParams(location.search).has('debug');
+
 const TABS: { id: MenuTab; label: string }[] = [
   { id: 'equip', label: '裝備' },
   { id: 'enhance', label: '強化' },
@@ -163,17 +166,42 @@ export class Menu {
       vol('music', '音樂音量', s.musicVolume),
       vol('sfx', '音效音量', s.sfxVolume),
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '顯示 FPS'), fps])]),
-      h('div', { class: 'section-title' }, '開發工具'),
-      this.renderPenTester(),
-      h('div', { class: 'card' }, [
-        h('p', {}, '這些按鈕方便測試，正式版會移除。'),
-        h('div', { class: 'card-row' }, [
-          h('button', { class: 'go ghost', onclick: () => { this.actions.onUnlockAll(); this.show('map'); } }, '解鎖全部副本'),
-          h('button', { class: 'go danger', onclick: () => this.actions.onResetSave() }, '重置存檔'),
-        ]),
-      ]),
+      ...(DEV
+        ? [
+            h('div', { class: 'section-title' }, '開發工具（?debug）'),
+            this.renderPenTester(),
+            h('div', { class: 'card' }, [
+              h('div', { class: 'card-row' }, [h('button', { class: 'go ghost', onclick: () => { this.actions.onUnlockAll(); this.show('map'); } }, '解鎖全部副本')]),
+            ]),
+          ]
+        : []),
+      this.renderReset(),
       h('p', { class: 'version' }, `小法師 v${__APP_VERSION__}・Wei Studio`),
     ];
+  }
+
+  /** 重置存檔：按兩次確認（artifact 環境不能用 confirm()） */
+  private renderReset(): HTMLElement {
+    const btn = h('button', { class: 'go danger' }, '重置存檔');
+    let armed = false;
+    btn.addEventListener('click', () => {
+      if (!armed) {
+        armed = true;
+        btn.textContent = '再按一次確認刪除進度';
+        setTimeout(() => {
+          armed = false;
+          btn.textContent = '重置存檔';
+        }, 3000);
+        return;
+      }
+      this.actions.onResetSave();
+    });
+    const st = this.state.stats;
+    const mins = Math.floor(st.playTime / 60);
+    return h('div', { class: 'card' }, [
+      h('p', {}, `遊戲時間 ${Math.floor(mins / 60)} 小時 ${mins % 60} 分・擊倒 ${st.kills}・倒下 ${st.deaths}`),
+      h('div', { class: 'card-row' }, [btn]),
+    ]);
   }
 
   /** 穿透測試：切換後到新手草原打三根不同防禦的木樁比較傷害 */

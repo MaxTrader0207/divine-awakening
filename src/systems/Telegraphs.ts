@@ -18,8 +18,12 @@ interface Tele {
   duration: number;
   group: THREE.Group;
   fill: THREE.Mesh;
+  autoNoticed: boolean;
   onResolve: (inside: (x: number, z: number, pad?: number) => boolean) => void;
 }
+
+/** AUTO 能「察覺」並閃避的預警比例：手動玩家可以全閃，AUTO 不會完美 */
+export const AUTO_DODGE_CHANCE = 0.65;
 
 const OUTER_COLOR = 0xff3a2a;
 const FILL_COLOR = 0xff6a3a;
@@ -75,7 +79,7 @@ export class Telegraphs {
     rot.add(fill);
     group.renderOrder = 4;
     this.scene.add(group);
-    this.list.push({ shape, t: 0, duration, group, fill, onResolve });
+    this.list.push({ shape, t: 0, duration, group, fill, onResolve, autoNoticed: Math.random() < AUTO_DODGE_CHANCE });
   }
 
   update(dt: number) {
@@ -98,7 +102,7 @@ export class Telegraphs {
   escape(x: number, z: number, pad = 0.6): { x: number; z: number } | null {
     for (const te of this.list) {
       const s = te.shape;
-      if (!contains(s, x, z, pad)) continue;
+      if (!te.autoNoticed || !contains(s, x, z, pad)) continue;
       if (s.kind === 'circle' || s.kind === 'cone') {
         let dx = x - s.x;
         let dz = z - s.z;

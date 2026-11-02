@@ -2,107 +2,112 @@
 
 ## 設計原則
 
-1. **資料驅動**：地圖、技能、怪物、裝備都是 `src/data/` 裡的純資料。加內容 = 改資料，不改系統程式。
-2. **系統之間用事件溝通**：透過 `core/EventBus.ts` 的型別化事件，避免系統互相 import 造成糾纏。
-3. **Game 只做組裝與調度**：每個功能是一個獨立類別，Game 負責建立它們、依序呼叫 `update(dt)`。
-4. **狀態與表現分離**：`GameState` 只存可序列化的進度資料（會存檔）；Three.js 物件屬於表現層，不存檔。
-5. **不用物理引擎**：碰撞是 xz 平面的「圓 vs 圓 / 圓 vs 矩形」，簡單、可預期、手機上便宜。
-6. **灰盒優先**：美術用程式產生的低多邊形方塊，玩法確定後（第 8 週）再替換成 glTF 模型。
+1. **資料驅動**：地圖、敵人、技能、裝備都是 `src/data/` 的純資料。加內容 = 改資料，不改系統。
+2. **系統之間用事件溝通**：`core/EventBus.ts` 的型別化事件，避免系統互相 import 糾纏。
+3. **Game 只做組裝與調度**：每個功能一個類別，Game 建立它們、依序呼叫 `update(dt)`。
+4. **狀態與表現分離**：`GameState` 只存可序列化的進度（會存檔）；Three.js 物件屬於表現層。
+5. **規則寫成純函式**：傷害、成長、背包、強化、掉落、預警判定都可單元測試（`*.test.ts`）。
+6. **不用物理引擎**：xz 平面的「圓 vs 圓 / 圓 vs 矩形」碰撞＋高度查詢（高台）。
+7. **程式產生的低多邊形模型**：外觀集中在 `world/Props.ts` 與 `entities/*`，換成 glTF 時只改這兩處。
+8. **邏輯與渲染分開**：`tick(dt)` 推進邏輯、`render` 畫面；`debugAdvance()` 可快轉做自動化測試與平衡模擬。
 
 ## 資料夾地圖
 
 ```
 src/
-├─ main.ts                進入點：找 DOM、建立 Game、啟動
-├─ env.d.ts               全域型別（__APP_VERSION__）
+├─ main.ts                    進入點：建立 Game、註冊 PWA、?debug 暴露 __game / __inv
 ├─ core/
-│  ├─ Game.ts             組裝所有系統、主迴圈、區域切換、存檔時機
-│  ├─ EventBus.ts         型別化事件匯流排（GameEvents 介面登記所有事件）
-│  ├─ GameState.ts        存檔資料結構、新遊戲預設值、解鎖判斷
-│  └─ SaveSystem.ts       SaveBackend 介面 + LocalSave（localStorage）+ 版本遷移
-├─ data/                  ★ 遊戲內容（純資料）
-│  ├─ types.ts            所有資料型別：ZoneDef、PropDef、SkillDef、ItemDef、EnemyDef、Stats
-│  ├─ zones.ts            5 個區域：主城、新手草原、副本 1~3；世界地圖清單；spawns
-│  ├─ enemies.ts          敵人資料表（目前：訓練木樁）
-│  └─ player.ts           基礎屬性、升級成長、經驗曲線、法師技能表
-├─ input/
-│  ├─ InputManager.ts     鍵盤 + 搖桿 + 按鈕 → move 向量與 action 事件
-│  └─ VirtualJoystick.ts  觸控搖桿
+│  ├─ Game.ts                 組裝所有系統、主迴圈、區域切換、死亡復活、擊殺獎勵、存檔時機
+│  ├─ EventBus.ts             型別化事件匯流排（GameEvents 登記所有事件）
+│  ├─ GameState.ts            存檔結構 v2、新遊戲預設、副本解鎖判斷
+│  └─ SaveSystem.ts           SaveBackend 介面 + LocalSave + 版本遷移
+├─ data/                      ★ 遊戲內容（純資料）
+│  ├─ types.ts                所有資料型別
+│  ├─ zones.ts                主城、新手草原、三層副本（地形、高台、生怪、傳送、商店入口）
+│  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
+│  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
+│  └─ player.ts               基礎屬性、升級成長、經驗曲線、法師技能表
+├─ input/                     InputManager（鍵盤 + 搖桿 + 按住）、VirtualJoystick
 ├─ entities/
-│  ├─ Player.ts           小法師：模型、移動、朝向、走路 / 施法動畫、屬性
-│  └─ Enemy.ts            敵人：模型（依 shape）、HP、閃白、血條、死亡、重生
+│  ├─ Player.ts               小法師：模型、移動、施法 / 受傷 / 倒地動畫、無敵、地面高度
+│  └─ Enemy.ts                敵人：7 種造型、HP、閃白 / 緩速 / 前搖變色、血條、死亡重生、AI 欄位
 ├─ systems/
-│  ├─ Combat.ts           傷害公式（純函式）＋ Combat.test.ts
-│  ├─ EnemyManager.ts     依 spawns 生成敵人、查詢最近敵人、推開玩家
-│  ├─ ProjectileSystem.ts 投射物與命中光圈（物件池）
-│  └─ TargetSelector.ts   鎖定目標、腳下紅圈
-├─ camera/
-│  └─ CameraRig.ts        斜俯視跟隨、縮放 80%~150%
+│  ├─ Combat.ts               傷害公式（純函式）
+│  ├─ Damage.ts               傷害結算入口（發 combat:hit / enemy:killed）
+│  ├─ SkillSystem.ts          普攻 + Q/W/E/R、冷卻、MP、藥水
+│  ├─ ProjectileSystem.ts     投射物（追蹤、範圍爆炸）物件池
+│  ├─ Effects.ts              地面特效池（光圈、圓盤、光柱）
+│  ├─ TargetSelector.ts       鎖定目標、腳下紅圈
+│  ├─ EnemyManager.ts         生怪（數量、散佈）、AI 更新、互相推擠、查詢
+│  ├─ EnemyAI.ts              小怪狀態機 idle / wander / chase / attack / return
+│  ├─ BossController.ts       首領技能輪替、二階段狂暴
+│  ├─ Telegraphs.ts           紅色範圍預警（圓 / 扇形 / 長方形）與判定
+│  ├─ AutoBattle.ts           AUTO：喝藥、閃預警、撿東西、選目標、技能優先序、沿牆繞路
+│  ├─ Progression.ts          經驗（等級差修正）、升級、金幣（純函式）
+│  ├─ Inventory.ts            背包、裝備、屬性計算、賣出、強化（純函式）
+│  ├─ LootTable.ts            掉落擲骰（純函式）
+│  └─ LootSystem.ts           地上掉落物、自動拾取
+├─ audio/Audio.ts             Web Audio 合成音效與各區域音樂（無音檔）
+├─ camera/CameraRig.ts        斜俯視跟隨、縮放 80%~150%、跟隨地面高度
 ├─ world/
-│  ├─ ZoneManager.ts      載入/卸載區域、天空與霧、傳送點偵測
-│  ├─ Zone.ts             依 ZoneDef 建出場景、碰撞、傳送點；dispose
-│  ├─ Props.ts            灰盒物件工廠（房子、樹、石頭…）＋ 預設碰撞尺寸
-│  ├─ Collision.ts        2D 碰撞世界
-│  └─ Label.ts            Canvas 文字 Sprite（招牌、傳送點名稱）
+│  ├─ ZoneManager.ts          載入 / 卸載區域、天空與霧、傳送點、商店入口
+│  ├─ Zone.ts                 依 ZoneDef 建場景、高台與石階、碰撞、heightAt()
+│  ├─ Props.ts                低多邊形物件工廠（含首領石圈、水晶）＋ 碰撞尺寸
+│  ├─ Collision.ts            2D 碰撞世界
+│  └─ Label.ts                Canvas 文字 Sprite
 └─ ui/
-   ├─ Hud.ts              狀態框、小地圖、貨幣、提示、橫幅、藥水、技能按鈕
-   ├─ Minimap.ts          小地圖（靜態層快取 + 玩家箭頭）
-   ├─ Menu.ts             選單：裝備 / 強化 / 商城 / 地圖 / 設定（含傷害測試）
-   ├─ DamageNumbers.ts    傷害數字（DOM 物件池，世界座標投影）
-   ├─ dom.ts              h() 極簡 DOM 建構
-   └─ style.css           全部 UI 樣式（:root 變數）
+   ├─ Hud.ts                  狀態框、小地圖、貨幣、提示、橫幅、撿寶訊息、首領血條、冷卻遮罩、AUTO
+   ├─ Menu.ts                 選單殼與「地圖 / 設定」分頁
+   ├─ InventoryTabs.ts        「裝備 / 強化 / 商城」分頁
+   ├─ DamageNumbers.ts        傷害數字與漂浮文字（DOM 物件池）
+   ├─ Minimap.ts、dom.ts、style.css
+public/                       manifest.webmanifest、sw.js、icons/（PWA）
 ```
 
-## 每幀更新順序（Game.frame）
+## 每幀更新順序
 
 ```
 frame():  Timer.update → tick(dt，上限 0.05 秒) → render
 tick(dt):
-  InputManager.update        讀鍵盤/搖桿 → move 向量
-  選單開關判斷
-  handleActions              普攻（按住連發）、技能、藥水、AUTO
-  Player.update              移動 + 敵人推擠 + 地形碰撞 + 動畫
-  ZoneManager.checkPortals   踏入傳送點 → zone:request 或 menu:open
-  EnemyManager.update        敵人動畫、死亡、重生（第 4 週加 AI）
-  ProjectileSystem.update    飛行、追蹤、命中 → calcDamage → combat:hit
-  TargetSelector.update      目標失效檢查、紅圈
-  ZoneManager.update         場景動畫（水面、水晶）
-  CameraRig.update           平滑跟隨
-  followSun                  陰影光源跟著玩家
-  DamageNumbers.update       傷害數字投影到螢幕
-  Hud.update                 小地圖、提示輪播、FPS
-  InputManager.endFrame      清除未消耗的 action
-  每 10 秒 autosave
+  InputManager.update
+  選單開關
+  SkillSystem.update        冷卻、延遲技能（烈焰爆發）
+  反擊計時、死亡倒數、自然回復
+  ── 可操作時 ──
+  handleActions             普攻（按住連發）、技能、藥水、AUTO 開關、被打自動反擊
+  AutoBattle.update         決定 AUTO 移動方向與施法
+  Player.update             移動（手動優先，否則 AUTO）+ 敵人推擠 + 地形碰撞
+  ZoneManager.checkPortals / checkTriggers
+  ── 世界 ──
+  Player 地面高度
+  EnemyManager.update       AI → 動畫 → 互相推擠
+  BossController.update     首領技能
+  Telegraphs.update         預警長滿 → 結算
+  Effects / LootSystem / ProjectileSystem / TargetSelector / Zone 動畫
+  CameraRig、太陽光跟隨、DamageNumbers
+  首領血條、音樂切換、HUD
+  InputManager.endFrame、每 10 秒自動存檔
 ```
 
-`tick` 與 render 分開：`Game.debugAdvance(秒)` 用固定 1/60 秒步進快轉，自動化測試不受裝置 FPS 影響。
+## 事件一覽
 
-**之後加入的系統插入位置**：
-`handleActions` → `SkillSystem`（第 3 週）→ `Player.update` → `EnemyAI`（第 4 週，在 EnemyManager.update 內）→ `ProjectileSystem` → `LootSystem`（第 6 週）→ …
+| 事件 | 發出者 | 主要接收者 |
+|---|---|---|
+| `zone:request` / `zone:enter` | ZoneManager、Menu / Game | Game / — |
+| `menu:open` | Hud、傳送石、商店入口 | Menu、Audio |
+| `camera:zoom` | Hud | Game |
+| `toast` / `banner` / `float:text` | 任何系統 | Hud / DamageNumbers |
+| `combat:hit` | Damage、Game.hitPlayer | DamageNumbers、Hud（受傷紅框）、Audio |
+| `enemy:killed` | Damage | Game（經驗金幣、首領解鎖）、LootSystem、Audio |
+| `player:hurt` / `player:died` / `player:levelup` | Game | Game（反擊、復活）、Audio |
+| `player:changed` / `wallet:changed` | 任何系統 | Hud |
+| `skill:cast` | SkillSystem | Audio |
+| `loot:picked` | LootSystem | Hud（撿寶訊息）、Audio |
+| `boss:cast` / `boss:defeated` | BossController / Game | Audio / — |
+| `settings:changed` | Menu | Audio |
+| `save:request` / `save:written` | 任何系統 / Game | Game / — |
 
-## 事件一覽（core/EventBus.ts）
-
-| 事件 | 發出者 | 接收者 | 用途 |
-|---|---|---|---|
-| `zone:request` | ZoneManager、Menu | Game | 要求切換區域（淡出 → 載入 → 淡入） |
-| `zone:enter` | Game | （未來：音樂、任務） | 區域載入完成 |
-| `menu:open` | Hud、ZoneManager（傳送石） | Menu | 開啟選單到指定分頁 |
-| `camera:zoom` | Hud | Game | 縮放 ±10% |
-| `toast` / `banner` | 任何系統 | Hud | 短訊息 / 進入區域大字 |
-| `save:request` / `save:written` | 任何系統 / Game | Game / — | 立即存檔 |
-| `player:changed` / `wallet:changed` | 任何系統 | Hud | 數值變動刷新 HUD |
-| `combat:hit` | ProjectileSystem | DamageNumbers | 造成傷害（位置、數值、爆擊） |
-| `enemy:killed` | ProjectileSystem | （第 5 週：經驗、掉落） | 敵人死亡 |
-
-## 存檔
-
-- `GameState` 透過 `SaveBackend` 介面存取，目前實作 `LocalSave`（localStorage，key `little-mage.save.v1`）。
-- 存檔時機：每 10 秒、切換區域後、分頁隱藏 / 關閉時。
-- 讀寫全部 try/catch；無痕模式下可玩但不保存。
-- **改存檔結構時**：`SAVE_VERSION + 1`，在 `SaveSystem.migrate()` 補舊版遷移。
-- 之後要雲端存檔：寫一個 `CloudSave implements SaveBackend`（Cloudflare Workers + D1），在 Game 替換即可。
-
-## 戰鬥系統
+## 戰鬥
 
 ```
 raw  = atk × 技能倍率
@@ -110,9 +115,14 @@ raw  = atk × 技能倍率
 最終 = round(基礎 × 浮動(0.9~1.1) × (爆擊 ? critDmg : 1))，至少 1
 ```
 
-- 實作於 `systems/Combat.ts`（純函式，可注入亂數），測試在 `Combat.test.ts`。
-- 命中流程：`ProjectileSystem` 命中 → `calcDamage` → `Enemy.takeDamage` → `combat:hit`（→ DamageNumbers）／`enemy:killed`。
-- 投射物有目標時追蹤目標（手機上不會打歪）；沒有目標沿面向直線飛，碰到任何敵人即命中。
-- 副本的 `enemyDefense`（0 / 18 / 40）直接套用到該層怪物，讓「堆穿透」成為裝備選擇的理由。
-- 怪物 AI 狀態機：`Idle → Patrol → (Aggro | Retaliate) → Attack → Return`；`aggro: 'passive'` 的怪只在受擊後進入 Retaliate。
-- 玩家「被攻擊時自動反擊最近敵人」與 AUTO 共用同一個 `TargetSelector`。
+- 敵人打玩家用同一個公式（敵人穿透 0、爆擊 5%）。
+- 首領技能傷害 = 公式 × 技能倍率（1.4~2.2），只有預警結算時站在範圍內才會受傷。
+- AUTO 只會察覺 65% 的預警（`AUTO_DODGE_CHANCE`），手動操作可以全部閃掉。
+
+## 存檔（v2）
+
+- `GameState` 經 `SaveBackend` 存取，目前是 `LocalSave`（localStorage `little-mage.save.v1`）。
+- 物品只存「底材 id、稀有度、強化等級」，屬性即時計算 → 調整平衡不會讓舊存檔失真。
+- v1 → v2 遷移：補背包欄位與新手法杖。
+- 時機：每 10 秒、切換區域、撿到 / 買賣 / 強化裝備、死亡復活、分頁隱藏。
+- 雲端存檔：實作 `CloudSave implements SaveBackend`（Cloudflare Workers + D1）即可替換。

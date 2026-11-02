@@ -26,6 +26,8 @@ export interface GameEvents {
   'player:levelup': { level: number };
   'loot:picked': { name: string; rarity: string };
   'settings:changed': void;
+  /** 首領開始施放技能（音效警告） */
+  'boss:cast': { skill: string };
   'boss:defeated': { zoneId: ZoneId; first: boolean };
   /** 漂浮文字（+金幣、+經驗、升級） */
   'float:text': { x: number; y: number; z: number; text: string; kind: 'gold' | 'exp' | 'info' };

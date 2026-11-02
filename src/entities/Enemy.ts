@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { EnemyDef, SpawnDef } from '@/data/types';
 import { makeLabelSprite } from '@/world/Label';
 
@@ -70,6 +71,7 @@ export class Enemy {
     this.facing = Math.random() * Math.PI * 2;
 
     this.height = this.buildBody() * def.scale;
+    this.mergeBody();
     this.body.scale.setScalar(def.scale);
     this.object.add(this.body);
 
@@ -270,6 +272,45 @@ export class Enemy {
     this.add(new THREE.SphereGeometry(size * 1.5, 6, 4), 0xffffff, gap, y, z);
     this.add(new THREE.SphereGeometry(size, 6, 4), 0x1b2433, -gap, y, z + size);
     this.add(new THREE.SphereGeometry(size, 6, 4), 0x1b2433, gap, y, z + size);
+  }
+
+  /**
+   * 效能：把身體上直接掛著的零件合併成一個「頂點顏色」網格（一隻敵人 1 個 draw call）。
+   * 會動的零件（蝙蝠翅膀掛在 pivot 下）與發光零件（MeshBasicMaterial）保持獨立。
+   */
+  private mergeBody() {
+    const parts: THREE.Mesh[] = [];
+    for (const c of this.body.children) {
+      const m = c as THREE.Mesh;
+      if (m.isMesh && m.material instanceof THREE.MeshLambertMaterial) parts.push(m);
+    }
+    if (parts.length < 2) return;
+    const geos: THREE.BufferGeometry[] = [];
+    for (const m of parts) {
+      m.updateMatrix();
+      const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrix);
+      for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+      const col = (m.material as THREE.MeshLambertMaterial).color;
+      const n = g.attributes.position.count;
+      const arr = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) arr.set([col.r, col.g, col.b], i * 3);
+      g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+      geos.push(g);
+    }
+    const merged = mergeGeometries(geos, false);
+    geos.forEach((g) => g.dispose());
+    if (!merged) return;
+    for (const m of parts) {
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+      this.materials.splice(this.materials.indexOf(m.material as THREE.MeshLambertMaterial), 1);
+      m.removeFromParent();
+    }
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    this.materials.push(mat);
+    const mesh = new THREE.Mesh(merged, mat);
+    mesh.castShadow = true;
+    this.body.add(mesh);
   }
 
   /** 依 shape 建模型（面向 +z），回傳模型高度（未縮放） */
