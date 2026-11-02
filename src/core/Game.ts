@@ -19,6 +19,9 @@ import { Effects } from '@/systems/Effects';
 import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
+import { AutoBattle } from '@/systems/AutoBattle';
+import { addExp, expForKill, rollGold } from '@/systems/Progression';
+import { statsForLevel } from '@/data/player';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -47,6 +50,7 @@ export class Game {
   readonly damageNumbers: DamageNumbers;
   readonly effects: Effects;
   readonly skills: SkillSystem;
+  readonly auto: AutoBattle;
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -110,6 +114,15 @@ export class Game {
       collision: () => this.zones.current!.collision,
       moveInput: () => this.input.move,
     });
+    this.auto = new AutoBattle({
+      player: this.player,
+      enemies: this.enemies,
+      targets: this.targets,
+      skills: this.skills,
+      nearestLoot: () => null,
+      dangerEscape: () => null,
+      collision: () => this.zones.current!.collision,
+    });
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
     this.menu = new Menu(uiRoot, this.state, {
       onResetSave: () => {
@@ -128,6 +141,7 @@ export class Game {
         this.persist();
       },
       onSetPen: (pen) => {
+        this.devPen = pen;
         this.player.stats.pen = pen;
         bus.emit('toast', { text: `穿透設為 ${Math.round(pen * 100)}%（測試用，重新整理後還原）` });
       },
@@ -153,6 +167,7 @@ export class Game {
       this.counterTimer = COUNTER_TIME;
     });
     bus.on('player:died', () => this.onPlayerDied());
+    bus.on('enemy:killed', (k) => this.onEnemyKilled(k));
     bus.on('zone:request', ({ zoneId, arrive }) => this.changeZone(zoneId, arrive));
     bus.on('camera:zoom', ({ delta }) => this.setZoom(this.state.settings.zoom + delta));
     bus.on('save:request', () => this.persist());
@@ -203,7 +218,11 @@ export class Game {
 
     if (canAct) {
       this.handleActions();
-      this.player.update(dt, this.input.move, collision, pushOut);
+      this.auto.update(dt);
+      // 手動推搖桿優先；沒推時採用 AUTO 的移動
+      const manual = Math.hypot(this.input.move.x, this.input.move.z) > 0.05;
+      const move = this.auto.on && !manual ? this.auto.move : this.input.move;
+      this.player.update(dt, move, collision, pushOut);
       this.zones.checkPortals(this.player.pos.x, this.player.pos.z);
     } else {
       this.player.update(dt, { x: 0, z: 0 }, collision, pushOut);
@@ -239,7 +258,7 @@ export class Game {
       if (pressed) this.skills.cast(slot);
       else if (this.input.held(slot)) this.skills.cast(slot, true);
     }
-    if (this.input.consume('auto')) bus.emit('toast', { text: 'AUTO 自動戰鬥將於第 5 週實作' });
+    if (this.input.consume('auto')) this.setAuto(!this.auto.on);
 
     // 被攻擊時自動反擊：沒有移動、沒有按攻擊時，對攻擊者放普攻
     const idle = Math.hypot(this.input.move.x, this.input.move.z) < 0.05 && !this.input.held('basic');
@@ -262,6 +281,59 @@ export class Game {
     if (p.mp < p.stats.maxMp) p.mp = Math.min(p.stats.maxMp, p.mp + (2 + p.stats.maxMp * 0.01) * dt);
     const safe = this.zones.current?.def.safe;
     if (p.hp < p.stats.maxHp && (safe || p.sinceHurt > 5)) p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * (safe ? 0.1 : 0.02) * dt);
+  }
+
+  setAuto(on: boolean) {
+    if (on && this.zones.current?.def.safe) {
+      bus.emit('toast', { text: '安全區無法自動戰鬥' });
+      on = false;
+    }
+    if (this.auto.on === on) return this.hud.setAuto(on);
+    this.auto.on = on;
+    this.hud.setAuto(on);
+    if (on) bus.emit('toast', { text: 'AUTO 自動戰鬥：開啟' });
+    else bus.emit('toast', { text: 'AUTO 自動戰鬥：關閉' });
+  }
+
+  /** 依等級（與之後的裝備）重算屬性；hp / mp 依比例保留 */
+  recalcStats() {
+    const p = this.player;
+    const hpR = p.stats.maxHp > 0 ? p.hp / p.stats.maxHp : 1;
+    const mpR = p.stats.maxMp > 0 ? p.mp / p.stats.maxMp : 1;
+    p.stats = statsForLevel(this.state.level);
+    if (this.devPen !== null) p.stats.pen = this.devPen;
+    p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
+    p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));
+    bus.emit('player:changed');
+  }
+
+  private devPen: number | null = null;
+
+  /** 擊殺獎勵：經驗、金幣、鑽石、升級 */
+  private onEnemyKilled(k: { x: number; z: number; level: number; exp: number; gold: [number, number]; gems: number; boss: boolean }) {
+    const s = this.state;
+    const exp = expForKill(k.exp, s.level, k.level);
+    const gold = rollGold(k.gold);
+    if (exp <= 0 && gold <= 0) return;
+    s.gold += gold;
+    s.gems += k.gems;
+    const r = addExp(s.level, s.exp, exp);
+    s.exp = r.exp;
+    if (gold > 0) bus.emit('float:text', { x: k.x, y: 1.4, z: k.z, text: `+${gold} 金幣`, kind: 'gold' });
+    if (exp > 0) bus.emit('float:text', { x: this.player.pos.x, y: 2.6, z: this.player.pos.z, text: `+${exp} EXP`, kind: 'exp' });
+    if (k.gems > 0) bus.emit('toast', { text: `獲得 ${k.gems} 鑽石` });
+    if (r.levelsGained > 0) {
+      s.level = r.level;
+      this.recalcStats();
+      this.player.hp = this.player.stats.maxHp;
+      this.player.mp = this.player.stats.maxMp;
+      const { x, z } = this.player.pos;
+      this.effects.pillar(x, z, 1.2, 0xffd36b, 1.2);
+      this.effects.ring(x, z, 0.5, 3.5, 0xffe9a0, 0.8);
+      bus.emit('banner', { text: `升級！ Lv.${s.level}` });
+      bus.emit('player:levelup', { level: s.level });
+    }
+    bus.emit('player:changed');
   }
 
   /** 敵人攻擊命中玩家 */
@@ -338,6 +410,7 @@ export class Game {
     this.counterTarget = null;
     const zone = this.zones.load(id);
     this.enemies.spawnForZone(zone.def);
+    if (zone.def.safe && this.auto?.on) this.setAuto(false);
     this.state.zoneId = id;
     this.player.teleport(at.x, at.z);
     this.player.update(0, { x: 0, z: 0 }, zone.collision); // 確保出生點不在障礙物內

@@ -86,7 +86,7 @@ export class Hud {
 
     // ---- 右下技能 ----
     const skillArea = h('div', { class: 'skills' });
-    skillArea.appendChild(h('button', { class: 'auto-btn', onclick: () => this.input.trigger('auto') }, [h('b', {}, 'AUTO'), h('small', {}, '自動戰鬥')]));
+    skillArea.appendChild((this.els.auto = h('button', { class: 'auto-btn', onclick: () => this.input.trigger('auto') }, [h('b', {}, 'AUTO'), h('small', {}, '自動戰鬥')])));
     for (const sk of MAGE_SKILLS) {
       const btn = this.actionButton(`skill slot-${sk.slot}`, sk.slot as ActionKey, sk.slot === 'basic' ? '' : sk.slot);
       btn.querySelector('.ico')!.textContent = sk.icon;
@@ -130,6 +130,11 @@ export class Hud {
     btn.addEventListener('pointercancel', release);
     btn.addEventListener('lostpointercapture', release);
     return btn;
+  }
+
+  setAuto(on: boolean) {
+    this.els.auto.classList.toggle('on', on);
+    this.els.auto.querySelector('small')!.textContent = on ? '戰鬥中…' : '自動戰鬥';
   }
 
   setZone(def: ZoneDef) {

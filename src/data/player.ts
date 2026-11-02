@@ -22,7 +22,7 @@ export const STATS_PER_LEVEL: Partial<Stats> = {
 
 /** 升到下一級所需經驗 */
 export function expToNext(level: number): number {
-  return Math.round(40 * Math.pow(level, 1.6) + 60);
+  return Math.round(50 * Math.pow(level, 1.7) + 60);
 }
 
 export function statsForLevel(level: number): Stats {

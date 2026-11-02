@@ -32,6 +32,7 @@ export class DamageNumbers {
       this.nums.push({ el, active: false, t: 0, pos: new THREE.Vector3(), driftX: 0 });
     }
     bus.on('combat:hit', (h) => this.spawn(h.x, h.y, h.z, h.amount, h.crit, h.targetIsPlayer));
+    bus.on('float:text', (f) => this.spawnText(f.x, f.y, f.z, f.text, f.kind));
   }
 
   spawn(x: number, y: number, z: number, amount: number, crit: boolean, onPlayer: boolean) {
@@ -43,6 +44,17 @@ export class DamageNumbers {
     n.driftX = (Math.random() - 0.5) * 30;
     n.el.textContent = crit ? `${amount}!` : String(amount);
     n.el.className = `dmg${crit ? ' crit' : ''}${onPlayer ? ' hurt' : ''}`;
+    n.el.style.opacity = '1';
+  }
+
+  spawnText(x: number, y: number, z: number, text: string, kind: string) {
+    const n = this.nums.find((q) => !q.active) ?? this.nums.reduce((a, b) => (a.t > b.t ? a : b));
+    n.active = true;
+    n.t = 0;
+    n.pos.set(x, y, z);
+    n.driftX = 0;
+    n.el.textContent = text;
+    n.el.className = `dmg txt ${kind}`;
     n.el.style.opacity = '1';
   }
 

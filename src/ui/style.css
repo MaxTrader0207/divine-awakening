@@ -233,3 +233,9 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .hurt-vignette.on { animation: hurt 0.45s ease-out; }
 @keyframes hurt { 0% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .hurt-vignette.on { animation-duration: 0.2s; } }
+.auto-btn.on { background: linear-gradient(#ffe07a, #f0a92a); box-shadow: 0 0 0 3px rgba(244, 198, 78, 0.45), 0 0 18px rgba(244, 198, 78, 0.8); animation: autoPulse 1.2s ease-in-out infinite; }
+@keyframes autoPulse { 50% { box-shadow: 0 0 0 5px rgba(244, 198, 78, 0.25), 0 0 26px rgba(244, 198, 78, 0.9); } }
+.dmg.txt { font-size: 14px; }
+.dmg.txt.gold { color: var(--gold); }
+.dmg.txt.exp { color: #b7f08a; }
+.dmg.txt.info { color: #9fe0ff; }
