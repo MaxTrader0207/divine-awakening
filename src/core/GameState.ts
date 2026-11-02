@@ -1,5 +1,6 @@
 import type { EquipSlot, ZoneId } from '@/data/types';
 import type { ItemInstance } from '@/systems/Inventory';
+import type { DailyState } from '@/systems/DailyQuests';
 import { DUNGEON_ORDER, ZONES } from '@/data/zones';
 
 /**
@@ -8,7 +9,7 @@ import { DUNGEON_ORDER, ZONES } from '@/data/zones';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -39,6 +40,8 @@ export interface GameState {
   inventory: ItemInstance[];
   equipment: Partial<Record<EquipSlot, ItemInstance>>;
   nextUid: number;
+  /** v3：每日任務（沒有或過期時由 ensureToday 產生） */
+  daily?: DailyState;
   /** 統計（結算畫面、平衡用） */
   stats: { kills: number; deaths: number; playTime: number };
   settings: Settings;

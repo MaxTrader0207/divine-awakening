@@ -8,6 +8,7 @@ import type { SkillSlot } from '@/data/types';
 import type { SkillSystem } from '@/systems/SkillSystem';
 import { Minimap } from './Minimap';
 import { RARITY } from '@/data/items';
+import { claimableCount } from '@/systems/DailyQuests';
 import { h } from './dom';
 
 /**
@@ -61,7 +62,7 @@ export class Hud {
       h('div', { class: 'wallet' }, [h('span', { class: 'coin' }), (this.els.gold = h('b')), h('span', { class: 'gem' }), (this.els.gems = h('b'))]),
       h('div', { class: 'tr-btns' }, [
         h('button', { class: 'icon-btn', onclick: () => bus.emit('menu:open', { tab: 'equip' }) }, [h('span', {}, '🎒'), h('small', {}, '裝備')]),
-        h('button', { class: 'icon-btn', onclick: () => bus.emit('menu:open', {}) }, [h('span', {}, '☰'), h('small', {}, '選單')]),
+        h('button', { class: 'icon-btn', onclick: () => bus.emit('menu:open', claimableCount(this.state.daily) ? { tab: 'quests' } : {}) }, [h('span', {}, '☰'), h('small', {}, '選單'), (this.els.badge = h('i', { class: 'badge' }))]),
       ]),
     ]);
     this.root.appendChild(topRight);
@@ -111,6 +112,7 @@ export class Hud {
     bus.on('toast', ({ text, duration }) => this.toast(text, duration));
     bus.on('banner', ({ text }) => this.banner(text));
     bus.on('player:changed', () => this.refresh());
+    bus.on('quests:changed', () => this.refreshBadge());
     bus.on('loot:picked', ({ name, rarity }) => {
       const line = h('div', { class: 'feed-line', style: `--rc:${RARITY[rarity as keyof typeof RARITY].color}` }, [h('span', {}, '獲得 '), h('b', {}, name)]);
       this.els.feed.prepend(line);
@@ -231,6 +233,12 @@ export class Hud {
     this.els.mpText.textContent = `${Math.round(p.mp)}/${p.stats.maxMp}`;
   }
 
+  refreshBadge() {
+    const n = claimableCount(this.state.daily);
+    this.els.badge.textContent = n ? String(n) : '';
+    this.els.badge.style.display = n ? 'flex' : 'none';
+  }
+
   /** 數值變動時呼叫（不必每幀） */
   refresh() {
     const s = this.state;
@@ -250,6 +258,7 @@ export class Hud {
     this.els.potMp.textContent = String(s.potions.mp);
     this.els.zoomText.textContent = `${Math.round(s.settings.zoom * 100)}%`;
     this.els.fps.style.display = s.settings.showFps ? 'block' : 'none';
+    this.refreshBadge();
   }
 
   currentZone: ZoneDef | null = null;

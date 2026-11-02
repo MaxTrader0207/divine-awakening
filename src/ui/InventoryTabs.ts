@@ -9,6 +9,7 @@ import {
   type ItemInstance,
 } from '@/systems/Inventory';
 import { h } from './dom';
+import { bus } from '@/core/EventBus';
 
 /**
  * 選單的「裝備 / 強化 / 商城」三個分頁。
@@ -154,6 +155,7 @@ export function renderEnhance(ctx: InvContext): HTMLElement[] {
       const msg = { success: `強化成功！${itemName(it)}`, fail: '強化失敗…（裝備沒有降級）', max: '已達最高強化', 'no-gold': '金幣不足', 'no-gems': '鑽石不足', missing: '找不到裝備' }[r];
       ctx.toast(msg);
       if (r === 'success') ctx.celebrate();
+      if (r === 'success' || r === 'fail') bus.emit('enhance:done', { success: r === 'success' });
       if (r === 'success' || r === 'fail') ctx.changed();
       ctx.rerender();
     };

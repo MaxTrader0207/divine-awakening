@@ -31,6 +31,8 @@ export interface AutoContext {
   /** 危險區域（首領預警）：玩家站在裡面時回傳逃離方向 */
   dangerEscape: () => { x: number; z: number } | null;
   collision: () => CollisionWorld;
+  /** 玩家等級（AUTO 不主動去打比自己高等的首領） */
+  level: () => number;
 }
 
 /** 繞路時嘗試的偏轉角度（弧度），左右各試一次 */
@@ -80,7 +82,7 @@ export class AutoBattle {
     // 4. 目標
     const bolt = skills.def('basic');
     let target = targets.current && targets.current.alive && targets.current.def.aggro !== 'none' ? targets.current : null;
-    if (!target || dist(target, p) > AUTO_SEARCH_RANGE) target = enemies.nearest(p.pos.x, p.pos.z, AUTO_SEARCH_RANGE, false);
+    if (!target || dist(target, p) > AUTO_SEARCH_RANGE) target = this.pickTarget();
     targets.current = target;
     if (!target) return;
 
@@ -96,6 +98,24 @@ export class AutoBattle {
     else if (skills.canCast('W') && (around(p.pos.x, p.pos.z, 4) >= 2 || around(p.pos.x, p.pos.z, 2.5) >= 1)) skills.cast('W', true);
     else if (skills.canCast('Q')) skills.cast('Q', true);
     else skills.cast('basic', true);
+  }
+
+  /** 最近的敵人；還沒開打、而且等級比玩家高的首領會略過（避免 AUTO 把低等玩家帶去送死） */
+  private pickTarget(): Enemy | null {
+    const p = this.ctx.player;
+    const lv = this.ctx.level();
+    let best: Enemy | null = null;
+    let bd = AUTO_SEARCH_RANGE;
+    for (const e of this.ctx.enemies.enemies) {
+      if (!e.alive || e.ai === 'return' || e.def.aggro === 'none') continue;
+      if (e.def.boss && !e.engaged && lv < e.def.level) continue;
+      const d = dist(e, p) - e.radius;
+      if (d < bd) {
+        bd = d;
+        best = e;
+      }
+    }
+    return best;
   }
 
   private moveTo(x: number, z: number) {

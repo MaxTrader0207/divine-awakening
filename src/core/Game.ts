@@ -27,6 +27,7 @@ import { Telegraphs } from '@/systems/Telegraphs';
 import { BossController } from '@/systems/BossController';
 import { AudioSystem } from '@/audio/Audio';
 import { Quality, type QualitySetting } from '@/systems/Quality';
+import { ensureToday, progressQuests, questText, type QuestEvent } from '@/systems/DailyQuests';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -152,6 +153,7 @@ export class Game {
       nearestLoot: () => this.loot.nearest(),
       dangerEscape: () => this.telegraphs.escape(this.player.pos.x, this.player.pos.z, this.player.radius + 0.4),
       collision: () => this.zones.current!.collision,
+      level: () => this.state.level,
     });
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
     this.menu = new Menu(uiRoot, this.state, {
@@ -217,6 +219,17 @@ export class Game {
         });
       },
     };
+
+    // ---- 每日任務 ----
+    ensureToday(this.state);
+    const quest = (ev: QuestEvent) => this.quest(ev);
+    bus.on('enemy:killed', (k) => {
+      quest({ type: 'kill', zone: this.state.zoneId });
+      if (k.boss) quest({ type: 'boss' });
+    });
+    bus.on('loot:picked', ({ rarity }) => quest({ type: 'loot', rarity: rarity as 'rare' }));
+    bus.on('skill:cast', ({ slot }) => slot === 'potion' && quest({ type: 'potion' }));
+    bus.on('enhance:done', () => quest({ type: 'enhance' }));
 
     // ---- Events ----
     bus.on('player:hurt', ({ source }) => {
@@ -318,6 +331,11 @@ export class Game {
     this.saveTimer += dt;
     if (this.saveTimer > AUTOSAVE_INTERVAL) {
       this.saveTimer = 0;
+      // 跨日：重新產生每日任務
+      if (ensureToday(this.state)) {
+        bus.emit('toast', { text: '新的一天！每日任務已更新' });
+        bus.emit('quests:changed');
+      }
       this.persist();
     }
   }
@@ -384,6 +402,14 @@ export class Game {
 
   private devPen: number | null = null;
 
+  /** 推進每日任務 */
+  quest(ev: QuestEvent) {
+    if (!this.state.daily) return;
+    const done = progressQuests(this.state.daily, ev);
+    for (const q of done) bus.emit('toast', { text: `每日任務完成：${questText(q)}（到選單「任務」領取）`, duration: 3 });
+    bus.emit('quests:changed');
+  }
+
   /** 背包、裝備、金錢變動後：重算屬性、刷新、存檔 */
   onInventoryChanged() {
     this.recalcStats();
@@ -401,6 +427,7 @@ export class Game {
     if (exp <= 0 && gold <= 0) return;
     s.gold += gold;
     s.gems += k.gems;
+    if (gold > 0) this.quest({ type: 'gold', amount: gold });
     const r = addExp(s.level, s.exp, exp);
     s.exp = r.exp;
     if (gold > 0) bus.emit('float:text', { x: k.x, y: 1.4, z: k.z, text: `+${gold} 金幣`, kind: 'gold' });

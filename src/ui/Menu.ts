@@ -3,6 +3,9 @@ import { isZoneUnlocked, type GameState } from '@/core/GameState';
 import { DUNGEON_ORDER, WORLD_FIELDS, ZONES } from '@/data/zones';
 import { h } from './dom';
 import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
+import { BONUS_GEMS, canClaim, ensureToday, questText } from '@/systems/DailyQuests';
+import { rollDrop } from '@/systems/LootTable';
+import { addItem, itemName } from '@/systems/Inventory';
 
 /** 開發模式或網址帶 ?debug 才顯示開發工具 */
 const DEV = import.meta.env.DEV || new URLSearchParams(location.search).has('debug');
@@ -11,6 +14,7 @@ const TABS: { id: MenuTab; label: string }[] = [
   { id: 'equip', label: '裝備' },
   { id: 'enhance', label: '強化' },
   { id: 'shop', label: '商城' },
+  { id: 'quests', label: '任務' },
   { id: 'map', label: '地圖' },
   { id: 'settings', label: '設定' },
 ];
@@ -82,6 +86,7 @@ export class Menu {
 
   private render(tab: MenuTab): HTMLElement[] {
     if (tab === 'map') return this.renderMap();
+    if (tab === 'quests') return this.renderQuests();
     if (tab === 'settings') return this.renderSettings();
     const ctx: InvContext = {
       state: this.state,
@@ -102,7 +107,7 @@ export class Menu {
 
   /** 選單開著時資料變了（撿到東西）就重畫 */
   refreshIfOpen() {
-    if (this.isOpen && this.tab !== 'settings') this.show(this.tab);
+    if (this.isOpen && this.tab !== 'settings' && this.tab !== 'map') this.show(this.tab);
   }
 
   private renderMap(): HTMLElement[] {
@@ -212,6 +217,68 @@ export class Menu {
       row,
       h('p', {}, '自動：畫面不順時自動降低解析度與陰影。手機發燙或耗電時可選「低」。'),
     ]);
+  }
+
+  private renderQuests(): HTMLElement[] {
+    const s = this.state;
+    ensureToday(s);
+    const d = s.daily!;
+    const out: HTMLElement[] = [h('div', { class: 'card' }, [h('h4', {}, `每日任務・${d.date}`), h('p', {}, '每天 00:00（你的時區）重置。完成後在這裡領獎，三個都領完還有獎勵寶箱。')])];
+    d.quests.forEach((q) => {
+      const pct = Math.min(100, (q.progress / q.target) * 100);
+      const btn = q.claimed
+        ? h('span', { class: 'pill' }, '已領取')
+        : canClaim(q)
+          ? h('button', {
+              class: 'go small',
+              onclick: () => {
+                q.claimed = true;
+                s.gold += q.reward.gold;
+                s.gems += q.reward.gems;
+                bus.emit('toast', { text: `領取 ${q.reward.gold} 金幣、${q.reward.gems} 鑽石` });
+                this.actions.onInventoryChanged();
+                bus.emit('quests:changed');
+                this.show('quests');
+              },
+            }, '領取')
+          : h('span', { class: 'pill locked' }, '進行中');
+      out.push(
+        h('div', { class: `card quest${q.claimed ? ' done' : ''}` }, [
+          h('div', { class: 'quest-head' }, [h('b', {}, questText(q)), h('small', {}, `${q.reward.gold} 金・${q.reward.gems}💎`)]),
+          h('div', { class: 'quest-bar' }, [h('i', { style: `width:${pct}%` })]),
+          h('div', { class: 'quest-row' }, [h('span', {}, `${Math.floor(q.progress)} / ${q.target}`), btn]),
+        ]),
+      );
+    });
+    const allClaimed = d.quests.every((q) => q.claimed);
+    out.push(
+      h('div', { class: `card quest${d.bonusClaimed ? ' done' : ''}` }, [
+        h('div', { class: 'quest-head' }, [h('b', {}, '🎁 每日獎勵寶箱'), h('small', {}, `${BONUS_GEMS}💎 + 精良以上裝備`)]),
+        h('div', { class: 'quest-row' }, [
+          h('span', {}, allClaimed ? '三個任務都完成了！' : '領完三個任務的獎勵後開啟'),
+          d.bonusClaimed
+            ? h('span', { class: 'pill' }, '已領取')
+            : allClaimed
+              ? h('button', {
+                  class: 'go small',
+                  onclick: () => {
+                    const tier = Math.max(1, Math.min(4, Math.ceil(s.level / 6)));
+                    const drop = rollDrop(tier, true);
+                    const it = drop ? addItem(s, drop.base, drop.rarity) : null;
+                    if (!it && drop) return bus.emit('toast', { text: '背包已滿，先清出空間再領取' });
+                    d.bonusClaimed = true;
+                    s.gems += BONUS_GEMS;
+                    bus.emit('toast', { text: it ? `獲得 ${BONUS_GEMS} 鑽石與 ${itemName(it)}` : `獲得 ${BONUS_GEMS} 鑽石` });
+                    this.actions.onInventoryChanged();
+                    bus.emit('quests:changed');
+                    this.show('quests');
+                  },
+                }, '開啟')
+              : h('span', { class: 'pill locked' }, '未完成'),
+        ]),
+      ]),
+    );
+    return out;
   }
 
   /** 重置存檔：按兩次確認（artifact 環境不能用 confirm()） */

@@ -26,6 +26,10 @@ export interface GameEvents {
   'player:levelup': { level: number };
   'loot:picked': { name: string; rarity: string };
   'settings:changed': void;
+  /** 強化一次（成功或失敗） */
+  'enhance:done': { success: boolean };
+  /** 每日任務變動（HUD 紅點） */
+  'quests:changed': void;
   /** 首領開始施放技能（音效警告） */
   'boss:cast': { skill: string };
   'boss:defeated': { zoneId: ZoneId; first: boolean };
@@ -35,7 +39,7 @@ export interface GameEvents {
   'skill:cast': { slot: string };
 }
 
-export type MenuTab = 'equip' | 'enhance' | 'shop' | 'map' | 'settings';
+export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'map' | 'settings';
 
 type Handler<T> = (payload: T) => void;
 

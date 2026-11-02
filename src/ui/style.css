@@ -310,3 +310,15 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .seg-btn { padding: 8px 0; border-radius: 9px; background: rgba(255, 255, 255, 0.08); font-weight: 700; font-size: 13px; }
 .seg-btn.on { background: linear-gradient(#ffe07a, var(--gold)); color: #4a3308; }
+.icon-btn { position: relative; }
+.badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #e5533d; color: #fff; font: 800 11px/18px var(--font); font-style: normal; display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #1b2433; }
+.menu-tab { font-size: 13px; }
+/* 每日任務 */
+.quest { display: grid; gap: 6px; }
+.quest-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.quest-head b { font-size: 14px; }
+.quest-head small { color: var(--gold); font-size: 12px; white-space: nowrap; }
+.quest-bar { position: relative; height: 10px; border-radius: 5px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
+.quest-bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #6fd36a, #b7f08a); }
+.quest-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.quest.done { opacity: 0.55; }
