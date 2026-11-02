@@ -1,27 +1,26 @@
 import * as THREE from 'three';
-import { Assets } from '@/assets/Assets';
 import type { MinionDef, MinionId } from '@/data/minions';
 import type { Stats } from '@/data/types';
-import { CharacterRig } from './CharacterRig';
+import { buildBoneSkeleton, poseBones, type BonePose, type BoneRig, type BoneStyle } from './BoneSkeleton';
 import type { Enemy } from './Enemy';
 
 /**
  * 召喚物（召喚師的骷髏）：外觀、HP、動畫。AI 在 systems/MinionManager.ts。
  *
  * 外觀細節（和敵人的骷髏區分）：
- * - 骨頭偏紫＋淡淡的紫色自發光；各自的武器掛在 handslot 骨頭上
- *   （骷髏兵：劍＋小盾、骷髏法師：法杖＋杖頂光球、骷髏巨衛：斧＋大盾）。
+ * - 程式骷髏（entities/BoneSkeleton.ts）：細長手腳骨、肋骨、有眼窩與牙齒的頭骨，關節會動。
+ *   （KayKit 骷髏是Q版大頭，在斜俯視鏡頭下看起來像一根柱子，所以不用）
+ *   骷髏兵：劍；骷髏法師：紫色尖帽＋法杖＋杖頂光球；骷髏巨衛：有角鐵盔、肩甲、斧＋大盾。
  * - 眼窩裡的紫色靈魂之火、身邊往上飄的靈魂火焰。
  * - 腳下旋轉的召喚法陣：存在時間越少，法陣越小越淡（看得出還能留多久）。
  * - 出場：法陣先亮起，骷髏從地底爬出來；倒下：沉入地面、冒紫煙、碎骨四散。
  */
-const ANIM = { idle: 'Idle', walk: 'Walking_D_Skeletons', attack: '1H_Melee_Attack_Chop', cast: 'Spellcast_Shoot', hit: 'Hit_A', death: 'Death_C_Skeletons' };
 
 /** 各召喚物的裝備與特效設定 */
-const GEAR: Record<MinionId, { right?: string; left?: string; orb?: boolean; eye: number; wisps: number; rune: number }> = {
-  skeleton_minion: { right: 'skel_blade', left: 'skel_shield_small', eye: 0xc77dff, wisps: 2, rune: 1 },
-  skeleton_mage: { right: 'skel_staff', orb: true, eye: 0x9fd8ff, wisps: 3, rune: 1.1 },
-  skeleton_warrior: { right: 'skel_axe', left: 'skel_shield_large', eye: 0xff7ad9, wisps: 3, rune: 1.45 },
+const GEAR: Record<MinionId, { style: BoneStyle; eye: number; wisps: number; rune: number }> = {
+  skeleton_minion: { style: 'soldier', eye: 0xc77dff, wisps: 1, rune: 1 },
+  skeleton_mage: { style: 'mage', eye: 0x8fd8ff, wisps: 2, rune: 1.1 },
+  skeleton_warrior: { style: 'guard', eye: 0xff6ad5, wisps: 3, rune: 1.45 },
 };
 
 const SPAWN_TIME = 0.7;
@@ -153,8 +152,9 @@ export class Minion {
   dying = 0;
   /** 召喚順序（跟隨站位用） */
   slot = 0;
-  private rig: CharacterRig | null = null;
-  /** 會動的身體（骨架模型＋武器＋眼睛），出場時從地底升起 */
+  private bones: BoneRig;
+  private pose: BonePose = { t: 0, walk: 0, moving: 0, swingT: 0, swingTotal: 1, windupFrac: 0.6, hitT: 0, cast: false };
+  /** 會動的身體（骨架＋武器＋眼睛），出場時從地底升起 */
   private body = new THREE.Group();
   private materials: THREE.MeshLambertMaterial[] = [];
   private hpBar = new THREE.Group();
@@ -181,24 +181,30 @@ export class Minion {
     const gear = GEAR[def.id];
     this.object.add(this.body);
 
-    const inst = Assets.cloneRig(def.model);
-    if (inst) {
-      inst.root.scale.setScalar(def.height / Assets.height(def.model));
-      for (const m of inst.materials) {
-        // 友軍：保留骨頭原本的貼圖細節，只微微偏紫（太紫會糊成一團）
-        m.color.lerp(new THREE.Color(0xd8ccff), 0.12);
-        m.emissive.setRGB(def.glow * 0.35, def.glow * 0.1, def.glow * 0.5);
-      }
-      this.materials = inst.materials;
-      this.body.add(inst.root);
-      inst.root.traverse((o) => ((o as THREE.Mesh).isMesh ? ((o as THREE.Mesh).castShadow = true) : null));
-      this.rig = new CharacterRig(inst);
-      this.rig.setLoop(ANIM.idle, 0);
-      this.equip(inst.root, gear);
-      this.addEyes(inst.root, gear.eye);
-    } else {
-      // 模型載入失敗：用程式畫一副骷髏（不再是膠囊）
-      this.buildFallbackSkeleton(gear.eye);
+    // 程式骷髏（關節會動）
+    this.bones = buildBoneSkeleton(gear.style, def.height, def.glow);
+    this.body.add(this.bones.root);
+    this.materials.push(...this.bones.materials);
+    this.owned.push(...this.bones.owned);
+    this.pose.cast = !!def.ranged;
+    // 眼窩裡的靈魂之火
+    for (const ep of this.bones.eyePos) {
+      const sp = glowSprite(gear.eye, def.height * 0.16);
+      this.owned.push(sp.material);
+      sp.position.copy(ep);
+      this.bones.head.add(sp);
+      this.eyes.push(sp);
+    }
+    // 骷髏法師：杖頂光球
+    if (this.bones.staffTip && this.bones.weapon) {
+      this.orb = glowSprite(0xb48cff, 0.55);
+      this.owned.push(this.orb.material);
+      // 光球掛在手臂上（跟著揮動），位置換算成手臂座標
+      this.bones.root.updateMatrixWorld(true);
+      const tip = this.bones.weapon.localToWorld(this.bones.staffTip.clone());
+      this.bones.armR.worldToLocal(tip);
+      this.orb.position.copy(tip);
+      this.bones.armR.add(this.orb);
     }
 
     // 召喚法陣（貼地、旋轉）
@@ -241,121 +247,6 @@ export class Minion {
     this.body.position.y = -def.height; // 從地底開始
   }
 
-  /** 備用骷髏：頭骨（眼窩發光）、下顎、脊椎、肋骨、骨盆、手腳骨，依身高等比例 */
-  private buildFallbackSkeleton(eye: number) {
-    const h = this.def.height;
-    const bone = new THREE.MeshLambertMaterial({ color: 0xe9e3f5, emissive: new THREE.Color(this.def.glow * 0.3, this.def.glow * 0.1, this.def.glow * 0.45), flatShading: true });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x2a2238 });
-    this.owned.push(bone, dark);
-    this.materials.push(bone);
-    const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, rx = 0, rz = 0) => {
-      this.owned.push(geo);
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(x, y, z);
-      m.rotation.set(rx, 0, rz);
-      m.castShadow = true;
-      this.body.add(m);
-      return m;
-    };
-    const u = h / 2.1; // 以骷髏兵 2.1m 為基準
-    // 頭骨＋下顎＋眼窩
-    add(new THREE.SphereGeometry(0.3 * u, 10, 8), bone, 0, 1.78 * u, 0).scale.set(1, 0.95, 1.05);
-    add(new THREE.BoxGeometry(0.34 * u, 0.12 * u, 0.3 * u), bone, 0, 1.52 * u, 0.05 * u);
-    for (const s of [-1, 1]) {
-      add(new THREE.SphereGeometry(0.075 * u, 6, 5), dark, s * 0.11 * u, 1.8 * u, 0.25 * u);
-      const g = glowSprite(eye, 0.2 * u);
-      this.owned.push(g.material);
-      g.position.set(s * 0.11 * u, 1.8 * u, 0.3 * u);
-      this.body.add(g);
-      this.eyes.push(g);
-    }
-    // 脊椎、肋骨、骨盆
-    add(new THREE.CylinderGeometry(0.045 * u, 0.045 * u, 0.75 * u, 6), bone, 0, 1.05 * u, -0.02 * u);
-    for (let i = 0; i < 4; i++) {
-      const r = (0.24 - i * 0.025) * u;
-      add(new THREE.TorusGeometry(r, 0.03 * u, 4, 10, Math.PI * 1.4), bone, 0, (1.3 - i * 0.12) * u, 0, Math.PI / 2, Math.PI * 0.3 - Math.PI / 2);
-    }
-    add(new THREE.BoxGeometry(0.38 * u, 0.14 * u, 0.2 * u), bone, 0, 0.72 * u, 0);
-    // 手臂、腿
-    for (const s of [-1, 1]) {
-      add(new THREE.CylinderGeometry(0.04 * u, 0.035 * u, 0.5 * u, 5), bone, s * 0.3 * u, 1.15 * u, 0, 0, s * 0.25);
-      add(new THREE.CylinderGeometry(0.035 * u, 0.03 * u, 0.45 * u, 5), bone, s * 0.38 * u, 0.75 * u, 0.06 * u, -0.3, s * 0.1);
-      add(new THREE.CylinderGeometry(0.05 * u, 0.04 * u, 0.62 * u, 5), bone, s * 0.12 * u, 0.36 * u, 0);
-      add(new THREE.BoxGeometry(0.12 * u, 0.06 * u, 0.2 * u), bone, s * 0.12 * u, 0.03 * u, 0.05 * u);
-    }
-  }
-
-  /** 武器掛到 handslot 骨頭（沒有 handslot 時用 hand） */
-  private equip(root: THREE.Object3D, gear: (typeof GEAR)[MinionId]) {
-    const attach = (id: string | undefined, side: 'r' | 'l') => {
-      if (!id) return null;
-      // GLTFLoader 會把節點名稱的「.」拿掉（handslot.r → handslotr）
-      const bone = root.getObjectByName(`handslot${side}`) ?? root.getObjectByName(`handslot.${side}`) ?? root.getObjectByName(`hand${side}`);
-      const w = Assets.cloneStatic(id);
-      if (!bone || !w) return null;
-      // 武器材質每隻一份：加上和骨頭一樣的紫色靈光
-      w.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (!m.isMesh) return;
-        m.castShadow = true;
-        const mat = (m.material as THREE.MeshLambertMaterial).clone();
-        mat.emissive = new THREE.Color(this.def.glow * 0.35, this.def.glow * 0.1, this.def.glow * 0.55);
-        m.material = mat;
-        this.materials.push(mat);
-        this.owned.push(mat);
-      });
-      bone.add(w);
-      return w;
-    };
-    attach(gear.left, 'l');
-    const right = attach(gear.right, 'r');
-    // 骷髏法師：杖頂的光球（掛在杖最長軸的末端）
-    if (gear.orb && right) {
-      const local = new THREE.Box3();
-      right.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (!m.isMesh) return;
-        m.geometry.computeBoundingBox();
-        local.union(m.geometry.boundingBox!.clone().applyMatrix4(m.matrix));
-      });
-      const size = local.getSize(new THREE.Vector3());
-      const axis = size.x > size.y && size.x > size.z ? 'x' : size.z > size.y ? 'z' : 'y';
-      const top = local.getCenter(new THREE.Vector3());
-      top[axis] = local.max[axis];
-      this.orb = glowSprite(0xb48cff, 1);
-      this.owned.push(this.orb.material);
-      this.orb.position.copy(top);
-      root.updateWorldMatrix(true, true);
-      const ws = new THREE.Vector3();
-      right.getWorldScale(ws);
-      this.orb.scale.setScalar(0.5 / Math.max(1e-4, ws.x));
-      right.add(this.orb);
-    }
-  }
-
-  /** 眼窩裡的靈魂之火：掛在 head 骨頭，位置用模型高度換算 */
-  private addEyes(root: THREE.Object3D, color: number) {
-    const head = root.getObjectByName('head');
-    if (!head) return;
-    root.updateWorldMatrix(true, true);
-    const hw = new THREE.Vector3();
-    head.getWorldPosition(hw);
-    const h = this.def.height;
-    for (const side of [-1, 1]) {
-      const sp = glowSprite(color, 0.2);
-      this.owned.push(sp.material);
-      // 頭骨中心約在 head 骨頭上方 0.13h，眼睛在前方 0.12h、左右 0.055h
-      const world = new THREE.Vector3(hw.x + side * h * 0.055, hw.y + h * 0.12, hw.z + h * 0.115);
-      head.worldToLocal(world);
-      sp.position.copy(world);
-      const s = new THREE.Vector3();
-      head.getWorldScale(s);
-      sp.scale.setScalar((h * 0.11) / s.x);
-      head.add(sp);
-      this.eyes.push(sp);
-    }
-  }
-
   get alive() {
     return this.hp > 0 && this.life > 0 && this.dying <= 0;
   }
@@ -371,7 +262,7 @@ export class Minion {
     this.hp -= dealt;
     this.flash = 0.4;
     if (this.hp <= 0) this.die();
-    else if (this.rig && this.windup <= 0) this.rig.playOnce(ANIM.hit, { priority: false, timeScale: 1.4 });
+    else if (this.windup <= 0) this.pose.hitT = 0.25;
     return dealt;
   }
 
@@ -382,7 +273,6 @@ export class Minion {
     this.hp = 0;
     this.target = null;
     this.windup = 0;
-    this.rig?.die(ANIM.death);
     this.hpBar.visible = false;
     const color = GEAR[this.def.id].eye;
     const h = this.def.height;
@@ -414,7 +304,9 @@ export class Minion {
 
   /** 出手動畫 */
   swing() {
-    this.rig?.playOnce(this.def.ranged ? ANIM.cast : ANIM.attack, { timeScale: 1.5 });
+    this.pose.swingTotal = this.def.windup + 0.3;
+    this.pose.swingT = this.pose.swingTotal;
+    this.pose.windupFrac = this.def.windup / this.pose.swingTotal;
     if (this.orb) this.orb.scale.multiplyScalar(1.6);
   }
 
@@ -454,9 +346,19 @@ export class Minion {
     this.rune.rotation.z += dt * (this.spawnT > 0 ? 4 : 0.8);
     this.runeMat.opacity = runeOpacity;
 
-    if (this.rig) {
-      if (this.alive) this.rig.setLoop(this.moving > 0.05 ? ANIM.walk : ANIM.idle, 0.15, 1.3);
-      this.rig.update(dt);
+    // 骨架動作（走路、攻擊、施法、受擊）；倒下時往後倒、頭掉下來滾開
+    if (this.dying > 0) {
+      const k = 1 - this.dying / DEATH_TIME;
+      const b = this.bones;
+      b.root.rotation.x = -Math.min(1, k * 3) * 1.45;
+      b.root.position.y = -Math.min(1, k * 3) * h * 0.32;
+      b.armL.rotation.x = b.armR.rotation.x = -1.2 * Math.min(1, k * 3);
+      b.head.position.z = 0.02 * h + Math.min(1, k * 2.5) * h * 0.35;
+      b.head.rotation.z = k * 4;
+    } else {
+      this.pose.t = this.t;
+      this.pose.moving = this.moving;
+      poseBones(this.bones, this.pose, dt, GEAR[this.def.id].style);
     }
     this.moving = Math.max(0, this.moving - dt * 4);
 
@@ -525,7 +427,6 @@ export class Minion {
   }
 
   dispose() {
-    this.rig?.dispose();
     this.object.removeFromParent();
     for (const o of this.owned) o.dispose();
     this.owned = [];
