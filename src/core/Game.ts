@@ -28,6 +28,7 @@ import { BossController } from '@/systems/BossController';
 import { AudioSystem } from '@/audio/Audio';
 import { Quality, type QualitySetting } from '@/systems/Quality';
 import { ensureToday, progressQuests, questText, type QuestEvent } from '@/systems/DailyQuests';
+import { Cloud } from '@/net/Cloud';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -35,6 +36,7 @@ const COUNTER_TIME = 3;
 const DEATH_GOLD_PENALTY = 0.1;
 
 const AUTOSAVE_INTERVAL = 10; // 秒
+const CLOUD_INTERVAL = 300; // 自動上傳雲端（秒）
 
 /**
  * Game：組裝所有系統並跑主迴圈。
@@ -62,6 +64,7 @@ export class Game {
   readonly bosses: BossController;
   readonly audio: AudioSystem;
   readonly quality: Quality;
+  readonly cloud = new Cloud();
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -72,6 +75,7 @@ export class Game {
   private counterTarget: Enemy | null = null;
   private deathTimer = 0;
   private resetting = false;
+  private cloudTimer = 0;
   private deathGoldLost = 0;
   private counterTimer = 0;
   private aiCtx!: AiContext;
@@ -191,6 +195,12 @@ export class Game {
         return this.quality.label;
       },
       getQualityLabel: () => this.quality.label,
+      cloud: this.cloud,
+      applyCloudSave: (data) => {
+        this.resetting = true; // 不要讓離開頁面時把舊進度存回去
+        this.save.save({ ...data, updatedAt: Date.now() });
+        location.reload();
+      },
       onVolume: (kind, v) => {
         if (kind === 'music') this.state.settings.musicVolume = v;
         else this.state.settings.sfxVolume = v;
@@ -332,6 +342,11 @@ export class Game {
     if (this.saveTimer > AUTOSAVE_INTERVAL) {
       this.saveTimer = 0;
       // 跨日：重新產生每日任務
+      this.cloudTimer += AUTOSAVE_INTERVAL;
+      if (this.cloudTimer >= CLOUD_INTERVAL) {
+        this.cloudTimer = 0;
+        this.cloudAutoUpload();
+      }
       if (ensureToday(this.state)) {
         bus.emit('toast', { text: '新的一天！每日任務已更新' });
         bus.emit('quests:changed');
@@ -402,6 +417,19 @@ export class Game {
 
   private devPen: number | null = null;
 
+  /** 自動上傳（已登入且開啟自動）；失敗靜默，衝突時提示到設定頁處理 */
+  private cloudAutoUpload() {
+    const acc = this.cloud.account;
+    if (!acc || acc.auto === false) return;
+    this.persist();
+    this.cloud
+      .upload(this.state)
+      .then(() => this.cloud.submitScore(this.state))
+      .catch((e: { status?: number }) => {
+        if (e.status === 409) bus.emit('toast', { text: '雲端有較新的存檔，請到「設定 → 雲端存檔」選擇要保留哪一份', duration: 3.5 });
+      });
+  }
+
   /** 推進每日任務 */
   quest(ev: QuestEvent) {
     if (!this.state.daily) return;
@@ -460,6 +488,7 @@ export class Game {
     else bus.emit('banner', { text: `擊敗${name}！` });
     bus.emit('boss:defeated', { zoneId, first });
     this.persist();
+    this.cloudAutoUpload();
   }
 
   /** 敵人攻擊命中玩家 */

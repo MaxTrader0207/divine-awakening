@@ -6,6 +6,8 @@ import { renderEnhance, renderEquip, renderShop, type InvContext } from './Inven
 import { BONUS_GEMS, canClaim, ensureToday, questText } from '@/systems/DailyQuests';
 import { rollDrop } from '@/systems/LootTable';
 import { addItem, itemName } from '@/systems/Inventory';
+import { renderCloudCard, renderLeaderboard, type CloudContext } from './CloudTabs';
+import type { Cloud } from '@/net/Cloud';
 
 /** 開發模式或網址帶 ?debug 才顯示開發工具 */
 const DEV = import.meta.env.DEV || new URLSearchParams(location.search).has('debug');
@@ -15,6 +17,7 @@ const TABS: { id: MenuTab; label: string }[] = [
   { id: 'enhance', label: '強化' },
   { id: 'shop', label: '商城' },
   { id: 'quests', label: '任務' },
+  { id: 'rank', label: '排行' },
   { id: 'map', label: '地圖' },
   { id: 'settings', label: '設定' },
 ];
@@ -35,6 +38,8 @@ export interface MenuActions {
   /** 回傳目前實際畫質（高 / 中 / 低） */
   onQuality(q: 'auto' | 'high' | 'medium' | 'low'): string;
   getQualityLabel(): string;
+  cloud: Cloud;
+  applyCloudSave(data: GameState): void;
 }
 
 export class Menu {
@@ -87,6 +92,7 @@ export class Menu {
   private render(tab: MenuTab): HTMLElement[] {
     if (tab === 'map') return this.renderMap();
     if (tab === 'quests') return this.renderQuests();
+    if (tab === 'rank') return renderLeaderboard(this.cloudCtx());
     if (tab === 'settings') return this.renderSettings();
     const ctx: InvContext = {
       state: this.state,
@@ -176,6 +182,7 @@ export class Menu {
 
     return [
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '鏡頭縮放'), zoomVal]), slider]),
+      renderCloudCard(this.cloudCtx()),
       this.renderQuality(),
       vol('music', '音樂音量', s.musicVolume),
       vol('sfx', '音效音量', s.sfxVolume),
@@ -192,6 +199,19 @@ export class Menu {
       this.renderReset(),
       h('p', { class: 'version' }, `小法師 v${__APP_VERSION__}・Wei Studio`),
     ];
+  }
+
+  private cloudCtx(): CloudContext {
+    return {
+      cloud: this.actions.cloud,
+      state: this.state,
+      applyCloudSave: (d) => this.actions.applyCloudSave(d),
+      rerender: () => {
+        const top = this.body.scrollTop;
+        this.show(this.tab);
+        this.body.scrollTop = top;
+      },
+    };
   }
 
   private renderQuality(): HTMLElement {

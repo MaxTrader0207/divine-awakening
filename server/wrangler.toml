@@ -1,0 +1,15 @@
+# 小法師 API — 部署步驟見 server/README.md
+name = "little-mage-api"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+[vars]
+# 允許呼叫 API 的網頁來源（GitHub Pages 網址、本機開發）。逗號分隔，* = 全部
+ALLOWED_ORIGINS = "https://maxtrader0207.github.io,http://localhost:5173,http://localhost:4173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "little-mage"
+# 執行 `npx wrangler d1 create little-mage` 後，把輸出的 database_id 貼到這裡
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

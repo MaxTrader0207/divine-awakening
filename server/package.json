@@ -1,0 +1,20 @@
+{
+  "name": "little-mage-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "小法師 雲端存檔與排行榜 API（Cloudflare Workers + D1）",
+  "scripts": {
+    "dev": "wrangler dev --local --port 8787",
+    "db:local": "wrangler d1 migrations apply little-mage --local",
+    "db:remote": "wrangler d1 migrations apply little-mage --remote",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/api.test.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "typescript": "5.9",
+    "wrangler": "4.40"
+  }
+}
