@@ -6,7 +6,7 @@ import type { SkillDef, Stats } from './types';
  * 新增職業：在 CLASSES 加一筆（屬性、技能、模型動畫、武器名稱），
  * 技能效果寫在 systems/SkillSystem.ts 的 cast()（依 skill.id 分派）。
  */
-export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker';
+export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker' | 'summoner';
 
 /** 模型動畫名稱對應（KayKit 動畫名） */
 export interface HeroAnimSet {
@@ -19,6 +19,8 @@ export interface HeroAnimSet {
   death: string;
   dodge: string;
   cheer: string;
+  /** 模型自發光顏色（職業靈光） */
+  tint?: number;
 }
 
 export interface ClassDef {
@@ -125,6 +127,24 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
     weaponNames: ['見習戰斧', '珊瑚戰斧', '熔心戰斧', '霧森巨斧'],
     weaponIcon: '🪓',
   },
+  summoner: {
+    id: 'summoner',
+    name: '召喚師',
+    desc: '召喚骷髏大軍替你作戰，本人在後方用暗影箭支援',
+    icon: '💀',
+    base: { maxHp: 230, maxMp: 130, atk: 22, def: 6, pen: 0, moveSpeed: 6.5, critRate: 0.05, critDmg: 1.5 },
+    perLevel: { maxHp: 46, maxMp: 15, atk: 3.8, def: 1.5 },
+    skills: [
+      { id: 'shadow_bolt', name: '暗影箭', slot: 'basic', mpCost: 0, cooldown: 0.65, power: 0.85, range: 9, shape: 'projectile', icon: '☾', color: 0xb48cff, auto: 'single' },
+      { id: 'raise_skeleton', name: '骷髏兵', slot: 'Q', mpCost: 16, cooldown: 4, power: 0, range: 0, shape: 'circle', summon: 'skeleton_minion', count: 2, icon: '💀', color: 0xa58cff, auto: 'summon', anim: 'Spellcast_Raise' },
+      { id: 'raise_mage', name: '骷髏法師', slot: 'W', mpCost: 22, cooldown: 7, power: 0, range: 0, shape: 'circle', summon: 'skeleton_mage', count: 1, icon: '🔮', color: 0xb48cff, auto: 'summon', anim: 'Spellcast_Raise' },
+      { id: 'raise_guard', name: '骷髏巨衛', slot: 'E', mpCost: 32, cooldown: 14, power: 0, range: 0, shape: 'circle', summon: 'skeleton_warrior', count: 1, icon: '🛡', color: 0x9a7aff, auto: 'summon', anim: 'Spellcast_Long' },
+      { id: 'bone_burst', name: '白骨爆裂', slot: 'R', mpCost: 10, cooldown: 10, power: 1.8, range: 0, shape: 'circle', radius: 2.6, icon: '💥', color: 0xd8c8ff, auto: 'detonate', anim: 'Spellcast_Shoot' },
+    ],
+    anims: { model: 'summoner', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', tint: 0x9a6aff },
+    weaponNames: ['見習骨杖', '珊瑚骨杖', '熔心骨杖', '霧森冥杖'],
+    weaponIcon: '🦴',
+  },
 };
 
-export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker'];
+export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker', 'summoner'];

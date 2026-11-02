@@ -1,6 +1,7 @@
 import type { Enemy } from '@/entities/Enemy';
 import type { Player } from '@/entities/Player';
 import type { CollisionWorld } from '@/world/Collision';
+import type { Minion } from '@/entities/Minion';
 
 /**
  * 小怪 AI 狀態機
@@ -25,20 +26,26 @@ export interface AiContext {
   collision: CollisionWorld;
   /** 敵人普攻命中玩家 */
   hitPlayer: (e: Enemy, power: number) => void;
-  /** 遠程怪（骷髏法師）出手：在玩家腳下放預警，前搖結束時結算 */
-  rangedAttack?: (e: Enemy, windup: number) => void;
+  /** 遠程怪（骷髏法師）出手：在目標腳下放預警，前搖結束時結算 */
+  rangedAttack?: (e: Enemy, windup: number, tx: number, tz: number) => void;
+  /** 敵人普攻命中召喚物（召喚師的骷髏） */
+  hitMinion?: (e: Enemy, m: Minion, power: number) => void;
 }
 
 export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
   if (!e.alive || e.def.aggro === 'none') return;
   const p = ctx.player;
   e.attackCd = Math.max(0, e.attackCd - dt);
-  const dx = p.pos.x - e.pos.x;
-  const dz = p.pos.z - e.pos.z;
+  // 目標：被召喚物嘲諷時打骷髏，否則打玩家
+  if (e.aggroMinion && !e.aggroMinion.alive) e.aggroMinion = null;
+  const minion = e.aggroMinion;
+  const tgt = minion ?? p;
+  const dx = tgt.pos.x - e.pos.x;
+  const dz = tgt.pos.z - e.pos.z;
   const dist = Math.hypot(dx, dz);
   const homeDist = Math.hypot(e.pos.x - e.home.x, e.pos.z - e.home.z);
   const atk = e.def.attack ?? { range: 1.2, windup: 0.5, cooldown: 1.5 };
-  const reach = atk.range + p.radius + e.radius * 0.5;
+  const reach = atk.range + tgt.radius + e.radius * 0.5;
   const speed = e.def.stats.moveSpeed * e.slowMul;
 
   // 共通：脫戰條件
@@ -87,10 +94,10 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
         if (e.attackCd <= 0) {
           e.ai = 'attack';
           e.windup = atk.windup;
-          if (e.def.ranged) ctx.rangedAttack?.(e, atk.windup);
+          if (e.def.ranged) ctx.rangedAttack?.(e, atk.windup, tgt.pos.x, tgt.pos.z);
         }
       } else {
-        moveToward(e, p.pos.x, p.pos.z, speed, dt, ctx.collision, reach * 0.85);
+        moveToward(e, tgt.pos.x, tgt.pos.z, speed, dt, ctx.collision, reach * 0.85);
       }
       break;
     }
@@ -100,7 +107,10 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
       if (e.windup <= 0) {
         e.windup = 0;
         // 出手時玩家還在範圍內（+0.6 容錯）才算命中：玩家可以靠走位閃開
-        if (!e.def.ranged && p.alive && dist <= reach + 0.6) ctx.hitPlayer(e, 1);
+        if (!e.def.ranged && dist <= reach + 0.6) {
+          if (minion) ctx.hitMinion?.(e, minion, 1);
+          else if (p.alive) ctx.hitPlayer(e, 1);
+        }
         e.attackCd = atk.cooldown;
         e.ai = 'chase';
       }

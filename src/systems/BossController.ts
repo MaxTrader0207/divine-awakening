@@ -33,6 +33,8 @@ export interface BossContext {
   effects: Effects;
   collision: () => CollisionWorld;
   hitPlayer: (e: Enemy, power: number) => void;
+  /** 預警範圍內的召喚物也會受傷 */
+  hitMinionsInside?: (e: Enemy, power: number, inside: (x: number, z: number, pad?: number) => boolean) => void;
 }
 
 export class BossController {
@@ -91,6 +93,7 @@ export class BossController {
     e.facing = dir;
     const hit = (power: number) => (inside: (x: number, z: number, pad?: number) => boolean) => {
       if (inside(p.pos.x, p.pos.z, p.radius)) this.ctx.hitPlayer(e, power);
+      this.ctx.hitMinionsInside?.(e, power, inside);
     };
     switch (id) {
       case 'claw_slam': {

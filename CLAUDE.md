@@ -27,10 +27,10 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.14.0。10 週 MVP 完成，加上 v1.1~v1.14（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
-- 測試：`npm test`（Vitest 46 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
+- 版本 v1.15.0。10 週 MVP 完成，加上 v1.1~v1.15（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 測試：`npm test`（Vitest 48 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
 - 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。暫停中（`__game.paused`）`frame()` 不呼叫 `tick()`，但 `debugAdvance()` 仍會推進。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
 - 美術：KayKit CC0（`src/assets/models/`，由 `scripts/build-assets.mjs` 產生）；青蛙用 Quaternius CC0 模型；史萊姆、寄居蟹（會動的程式模型）、魔像、蝙蝠、蘑菇仍是程式模型。
-- 職業（法師、弓手、騎士、狂戰士）在 `data/classes.ts`，技能效果在 `SkillSystem.cast()` 依 `skill.id` 分派。近戰判定 `Damage.inCone()`；AUTO 普攻射程 < 4 視為近戰（走到「射程＋敵人體型」內、用 `auto: 'gap'` 技能貼近、`auto: 'guard'` 開防禦、`auto: 'burst'` 開爆發）。狂戰士 `resource: 'rage'`：怒氣存在 `player.mp`，上限固定 `RAGE.max`，增減在 `Game`（combat:hit 監聽、regen）。
+- 職業（法師、弓手、騎士、狂戰士、召喚師）在 `data/classes.ts`，技能效果在 `SkillSystem.cast()` 依 `skill.id` 分派。近戰判定 `Damage.inCone()`；AUTO 普攻射程 < 4 視為近戰（走到「射程＋敵人體型」內、用 `auto: 'gap'` 技能貼近、`auto: 'guard'` 開防禦、`auto: 'burst'` 開爆發）。狂戰士 `resource: 'rage'`：怒氣存在 `player.mp`，上限固定 `RAGE.max`，增減在 `Game`（combat:hit 監聽、regen）。召喚師的骷髏：資料 `data/minions.ts`、實體 `entities/Minion.ts`、AI `systems/MinionManager.ts`；小怪被骷髏打會改打骷髏（`Enemy.aggroMinion`，EnemyAI 依此選目標），敵人打骷髏走 `Game.hitMinion()`。
 - 音效是 Web Audio 合成（`audio/Audio.ts`）；背景音樂是 `audio/Music.ts` 合成引擎播 `audio/songs.ts` 曲譜（6 首），區域用 `ZoneDef.music` 指定。`?debug` 下 `await __renderMusic('boss', 30, 1)` 可離線輸出 WAV 試聽。換正式音檔時保留 `play(id)` / `setMusic(id)` / `setBossIntensity(v)`。

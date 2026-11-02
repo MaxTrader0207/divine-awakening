@@ -15,7 +15,7 @@ import { SONGS } from './songs';
 export type SfxId =
   | 'bolt' | 'fireball' | 'frost' | 'flame' | 'blink' | 'hit' | 'crit' | 'hurt' | 'kill'
   | 'levelup' | 'pickup' | 'coin' | 'potion' | 'warn' | 'boss' | 'ui' | 'enhance' | 'fail'
-  | 'slash' | 'bash' | 'guard' | 'whirl' | 'charge' | 'cleave' | 'leap' | 'land' | 'roar' | 'execute';
+  | 'slash' | 'bash' | 'guard' | 'whirl' | 'charge' | 'cleave' | 'leap' | 'land' | 'roar' | 'execute' | 'summon' | 'burst' | 'shadow';
 
 /** 區域種類 → 預設曲子（區域資料沒指定 music 時） */
 const KIND_MUSIC: Record<ZoneKind, TrackId> = { town: 'town', field: 'grassland', dungeon: 'dungeon' };
@@ -118,7 +118,7 @@ export class AudioSystem {
   private bindEvents() {
     bus.on('skill:cast', ({ slot, id }) => {
       // 騎士技能有自己的音效；其他職業依欄位
-      const byId: Record<string, SfxId> = { slash: 'slash', shield_bash: 'bash', guard: 'guard', whirlwind: 'whirl', charge: 'charge', cleave: 'cleave', leap: 'leap', leap_land: 'land', bloodlust: 'roar', berserk: 'roar', execute: 'execute' };
+      const byId: Record<string, SfxId> = { slash: 'slash', shield_bash: 'bash', guard: 'guard', whirlwind: 'whirl', charge: 'charge', cleave: 'cleave', leap: 'leap', leap_land: 'land', bloodlust: 'roar', berserk: 'roar', execute: 'execute', shadow_bolt: 'shadow', raise_skeleton: 'summon', raise_mage: 'summon', raise_guard: 'summon', bone_burst: 'burst' };
       const map: Record<string, SfxId> = { basic: 'bolt', Q: 'fireball', W: 'frost', E: 'flame', R: 'blink', potion: 'potion' };
       const sfx = (id && byId[id]) || map[slot];
       if (sfx) this.play(sfx);
@@ -170,6 +170,9 @@ export class AudioSystem {
       case 'leap': this.noise(t, 0.3, 1200, 0.25); this.tone('sine', 200, 500, t, 0.3, 0.1); break;
       case 'land': this.tone('sine', 120, 40, t, 0.35, 0.5); this.noise(t, 0.3, 700, 0.6); break;
       case 'roar': this.tone('sawtooth', 110, 90, t, 0.5, 0.2); this.tone('square', 165, 120, t, 0.45, 0.1); this.noise(t, 0.4, 900, 0.25); break;
+      case 'shadow': this.tone('sine', 520, 260, t, 0.14, 0.2); this.tone('triangle', 780, 390, t, 0.1, 0.08); break;
+      case 'summon': [0, 3, 7].forEach((n, i) => this.tone('triangle', midi(50 + n), midi(62 + n), t + i * 0.06, 0.4, 0.14)); this.noise(t, 0.35, 600, 0.25); break;
+      case 'burst': [0, 0.06, 0.12].forEach((d) => { this.tone('square', 160, 50, t + d, 0.25, 0.18); this.noise(t + d, 0.25, 1500, 0.45); }); break;
       case 'execute': this.tone('square', 90, 40, t, 0.3, 0.35); this.noise(t, 0.2, 2400, 0.5); this.tone('triangle', 1400, 700, t, 0.15, 0.12); break;
     }
   }

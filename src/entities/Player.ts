@@ -87,6 +87,11 @@ export class Player {
     this.body.clear();
     const s = HERO_HEIGHT / Assets.height(this.anims.model);
     inst.root.scale.setScalar(s);
+    // 職業光暈（召喚師：淡淡的紫色靈光）
+    if (this.anims.tint !== undefined) {
+      const c = new THREE.Color(this.anims.tint);
+      for (const m of inst.materials) m.emissive.copy(c).multiplyScalar(0.22);
+    }
     this.body.add(inst.root);
     // 法杖頂端改成隱形的定位點（投射物出生點、施法光效）
     this.staffTip.visible = false;

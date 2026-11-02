@@ -4,6 +4,8 @@ import type { EnemyManager } from './EnemyManager';
 import type { SkillSystem } from './SkillSystem';
 import type { TargetSelector } from './TargetSelector';
 import type { CollisionWorld } from '@/world/Collision';
+import type { MinionManager } from './MinionManager';
+import { MINIONS, type MinionId } from '@/data/minions';
 
 /**
  * AUTO 自動戰鬥
@@ -35,6 +37,8 @@ export interface AutoContext {
   collision: () => CollisionWorld;
   /** 玩家等級（AUTO 不主動去打比自己高等的首領） */
   level: () => number;
+  /** 召喚物（召喚師） */
+  minions?: MinionManager;
 }
 
 /** 繞路時嘗試的偏轉角度（弧度），左右各試一次 */
@@ -93,9 +97,10 @@ export class AutoBattle {
     const reach = melee ? bolt.range + target.radius - 0.5 : bolt.range - 1;
     if (d > reach) {
       this.moveTo(target.pos.x, target.pos.z);
-      // 近戰：邊走邊放防禦技（被圍時）；離目標 4m 以上、在衝鋒距離內就衝過去
+      // 邊走邊放增益 / 召喚（被圍時開防禦、召喚師先把骷髏叫出來）
+      if (this.tryGuard(target)) return;
+      // 近戰：離目標 4m 以上、在衝鋒距離內就衝過去
       if (melee) {
-        if (this.tryGuard(target)) return;
         for (const slot of ['R', 'E', 'Q'] as const) {
           const sk = skills.def(slot);
           if (sk.auto !== 'gap' || !skills.canCast(slot)) continue;
@@ -142,6 +147,22 @@ export class AutoBattle {
         const bossCasting = target.def.boss && target.engaged && (target.windup > 0 || this.ctx.dangerEscape() !== null);
         const want = near >= 3 || (near >= 1 && p.hp / p.stats.maxHp < 0.6) || bossNear || bossCasting;
         if (want && skills.cast(slot, true)) return true;
+      } else if (sk.auto === 'summon') {
+        // 召喚物不足就補（骷髏兵少於上限、巨衛不在場…）
+        const id = sk.summon as MinionId | undefined;
+        const mm = this.ctx.minions;
+        if (!id || !mm || !MINIONS[id]) continue;
+        const have = mm.count(id);
+        const lowLife = mm.list.filter((m) => m.alive && m.def.id === id && m.life < 4).length;
+        const want = MINIONS[id].max >= 3 ? have + (sk.count ?? 1) <= MINIONS[id].max || lowLife > 0 : have - lowLife < MINIONS[id].max;
+        if (want && skills.cast(slot, true)) return true;
+      } else if (sk.auto === 'detonate') {
+        // 殘血保命（爆炸回血），或召喚物快消失時引爆
+        const mm = this.ctx.minions;
+        if (!mm) continue;
+        const alive = mm.count();
+        const expiring = mm.list.filter((m) => m.alive && m.life < 1.5 && Math.hypot(m.pos.x - target.pos.x, m.pos.z - target.pos.z) < 4).length;
+        if (alive >= 1 && (p.hp / p.stats.maxHp < 0.35 || expiring >= 2) && skills.cast(slot, true)) return true;
       } else if (sk.auto === 'burst') {
         if (p.berserkT > 0) continue;
         if ((bossNear || near >= 3) && skills.cast(slot, true)) return true;

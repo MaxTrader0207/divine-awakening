@@ -71,6 +71,8 @@ export class Enemy {
   /** 緩速剩餘秒數與倍率（冰霜新星） */
   /** 暈眩剩餘秒數（盾擊）：期間不移動、不攻擊，前搖被打斷 */
   stunTimer = 0;
+  /** 被召喚物嘲諷：改打這隻骷髏（死掉後自動回頭打玩家） */
+  aggroMinion: import('./Minion').Minion | null = null;
   slowTimer = 0;
   slowMul = 1;
 
@@ -333,6 +335,7 @@ export class Enemy {
     this.slowTimer = 0;
     this.slowMul = 1;
     this.stunTimer = 0;
+    this.aggroMinion = null;
     this.ai = 'idle';
     this.provoked = false;
     this.windup = 0;
@@ -341,6 +344,7 @@ export class Enemy {
 
   /** 脫戰回到出生點：回滿血 */
   resetToHome() {
+    this.aggroMinion = null;
     this.hp = this.def.stats.maxHp;
     this.provoked = false;
     this.windup = 0;

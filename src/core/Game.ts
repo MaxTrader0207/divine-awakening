@@ -4,6 +4,8 @@ import { newGameState, type GameState } from './GameState';
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
 import { PauseScreen } from '@/ui/PauseScreen';
+import { MinionManager } from '@/systems/MinionManager';
+import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
 import { ZONES, DUNGEON_ORDER } from '@/data/zones';
@@ -59,6 +61,8 @@ export class Game {
   readonly menu: Menu;
   readonly enemies: EnemyManager;
   readonly projectiles: ProjectileSystem;
+  /** 召喚物（召喚師的骷髏） */
+  readonly minions: MinionManager;
   readonly targets: TargetSelector;
   readonly damageNumbers: DamageNumbers;
   readonly effects: Effects;
@@ -139,6 +143,18 @@ export class Game {
       effects: this.effects,
       collision: () => this.zones.current!.collision,
       hitPlayer: (e, power) => this.hitPlayer(e, power),
+      hitMinionsInside: (e, power, inside) => {
+        for (const m of this.minions.list) if (m.alive && inside(m.pos.x, m.pos.z, m.radius)) this.hitMinion(e, m, power);
+      },
+    });
+    this.minions = new MinionManager(this.scene, {
+      player: this.player,
+      enemies: this.enemies,
+      targets: this.targets,
+      projectiles: this.projectiles,
+      effects: this.effects,
+      collision: () => this.zones.current!.collision,
+      heightAt: (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
     });
     this.scene.add(this.player.object);
 
@@ -155,6 +171,7 @@ export class Game {
       effects: this.effects,
       collision: () => this.zones.current!.collision,
       moveInput: () => this.input.move,
+      minions: this.minions,
     }, this.state.heroClass);
     this.loot = new LootSystem(
       this.scene,
@@ -166,6 +183,7 @@ export class Game {
       (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
     );
     this.auto = new AutoBattle({
+      minions: this.minions,
       player: this.player,
       enemies: this.enemies,
       targets: this.targets,
@@ -288,14 +306,15 @@ export class Game {
       player: this.player,
       collision: this.zones.current?.collision as never,
       hitPlayer: (e, power) => this.hitPlayer(e, power),
-      rangedAttack: (e, windup) => {
-        const { x, z } = this.player.pos;
+      rangedAttack: (e, windup, x, z) => {
         this.telegraphs.add({ kind: 'circle', x, z, r: 1.6 }, windup, (inside) => {
           this.effects.pillar(x, z, 0.7, 0xb48cff, 0.45);
           this.effects.disc(x, z, 1.6, 0x8a5aff, 0.35, 0.6);
           if (inside(this.player.pos.x, this.player.pos.z, this.player.radius)) this.hitPlayer(e, 1.2);
+          for (const m of this.minions.list) if (m.alive && inside(m.pos.x, m.pos.z, m.radius)) this.hitMinion(e, m, 1.2);
         });
       },
+      hitMinion: (e, m, power) => this.hitMinion(e, m, power),
     };
 
     // ---- 每日任務 ----
@@ -436,6 +455,7 @@ export class Game {
     const zoneNow = this.zones.current!;
     this.player.groundY += (zoneNow.heightAt(this.player.pos.x, this.player.pos.z) - this.player.groundY) * Math.min(1, dt * 14);
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
+    this.minions.update(dt, this.rig.camera);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
@@ -615,6 +635,12 @@ export class Game {
   }
 
   /** 敵人攻擊命中玩家 */
+  /** 敵人打召喚物（不顯示傷害數字，只閃白） */
+  private hitMinion(e: Enemy, m: Minion, power: number) {
+    const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, m.stats.def);
+    m.takeDamage(res.amount);
+  }
+
   private hitPlayer(e: Enemy, power: number) {
     const p = this.player;
     const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
@@ -704,6 +730,7 @@ export class Game {
     this.enemies.heightAt = h;
     this.effects.heightAt = h;
     this.telegraphs.heightAt = h;
+    this.minions.clear();
     this.enemies.spawnForZone(zone.def);
     if (zone.def.safe && this.auto?.on) this.setAuto(false);
     this.state.zoneId = id;

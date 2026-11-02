@@ -26,12 +26,14 @@ src/
 │  ├─ zones.ts                主城、新手草原、三層副本（地形、高台、生怪、傳送、商店入口）
 │  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
 │  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
-│  ├─ classes.ts              職業（法師、弓手、騎士、狂戰士）、怒氣規則 RAGE：屬性、成長、技能表、模型動畫、武器名稱
+│  ├─ classes.ts              職業（法師、弓手、騎士、狂戰士、召喚師）、怒氣規則 RAGE
+│  ├─ minions.ts              召喚物（骷髏兵、骷髏法師、骷髏巨衛）：屬性倍率、存在時間、上限、嘲諷：屬性、成長、技能表、模型動畫、武器名稱
 │  └─ player.ts               經驗曲線、statsForLevel(level, class)
 ├─ input/                     InputManager（鍵盤 + 搖桿 + 按住）、VirtualJoystick
 ├─ entities/
 │  ├─ Player.ts               小法師：模型、移動、施法 / 受傷 / 倒地動畫、無敵、地面高度
 │  ├─ Enemy.ts                敵人：程式造型或骷髏骨架模型、HP、閃白 / 緩速 / 前搖變色、血條、死亡重生
+│  ├─ Minion.ts               召喚物：骷髏模型（紫色靈光）、HP、綠色血條、出現 / 倒下動畫
 │  └─ CharacterRig.ts         骨架動畫：循環層（待機/跑）＋單次層（攻擊/受擊）＋死亡
 ├─ systems/
 │  ├─ Combat.ts               傷害公式（純函式）
@@ -41,7 +43,8 @@ src/
 │  ├─ Effects.ts              地面特效池（光圈、圓盤、光柱）
 │  ├─ TargetSelector.ts       鎖定目標、腳下紅圈
 │  ├─ EnemyManager.ts         生怪（數量、散佈）、AI 更新、互相推擠、查詢
-│  ├─ EnemyAI.ts              小怪狀態機 idle / wander / chase / attack / return
+│  ├─ EnemyAI.ts              小怪狀態機 idle / wander / chase / attack / return；被嘲諷時改打召喚物
+│  ├─ MinionManager.ts        召喚物 AI：跟隨、選目標、攻擊、嘲諷、白骨爆裂
 │  ├─ BossController.ts       首領技能輪替、二階段狂暴
 │  ├─ Telegraphs.ts           紅色範圍預警（圓 / 扇形 / 長方形）與判定
 │  ├─ AutoBattle.ts           AUTO：喝藥、閃預警、撿東西、選目標、技能優先序、沿牆繞路
@@ -98,6 +101,7 @@ tick(dt):
   ── 世界 ──
   Player 地面高度
   EnemyManager.update       AI → 動畫 → 互相推擠
+  MinionManager.update      召喚物 AI、存在時間、動畫
   BossController.update     首領技能
   Telegraphs.update         預警長滿 → 結算
   Effects / LootSystem / ProjectileSystem / TargetSelector / Zone 動畫

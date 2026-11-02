@@ -431,3 +431,4 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .cp-card i { font-size: 10.5px; line-height: 1.5; }
 .cp-card em { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 10px; }
 .cp-card em span { white-space: nowrap; }
+.cp-list > .cp-card:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 5px); }

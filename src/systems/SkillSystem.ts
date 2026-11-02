@@ -11,6 +11,8 @@ import type { TargetSelector } from './TargetSelector';
 import type { Effects } from './Effects';
 import { damageArea, damageCone, damageEnemy, inCone } from './Damage';
 import type { Enemy } from '@/entities/Enemy';
+import type { MinionManager } from './MinionManager';
+import { MINIONS, type MinionId } from '@/data/minions';
 
 /**
  * 技能系統：普攻 + Q/W/E/R、藥水。技能清單依職業（data/classes.ts），效果依 skill.id 分派。
@@ -40,6 +42,12 @@ import type { Enemy } from '@/entities/Enemy';
  *  W     嗜血       6 秒內造成傷害的 18% 回血
  *  E     斬殺       前方重擊，目標血量低於 35% 時傷害 ×2
  *  R     狂暴       8 秒攻擊力 +25%、普攻冷卻 ×0.6、怒氣獲得 ×1.5
+ * 召喚師（召喚物 AI 在 MinionManager）
+ *  普攻  暗影箭     追蹤單體（傷害較低，主力是召喚物）
+ *  Q     骷髏兵     召喚 2 隻近戰骷髏（上限 4，存在 20 秒）
+ *  W     骷髏法師   召喚 1 隻遠程骷髏（上限 2）
+ *  E     骷髏巨衛   召喚 1 隻高血量坦克（上限 1，出場嘲諷周圍小怪）
+ *  R     白骨爆裂   所有召喚物原地爆炸（範圍傷害），每隻回復主人 8% HP；沒有召喚物時不能用
  */
 export const POTION_COOLDOWN = 2;
 export const POTION_HEAL_RATIO = 0.35;
@@ -63,6 +71,8 @@ export interface SkillContext {
   effects: Effects;
   collision: () => CollisionWorld;
   moveInput: () => { x: number; z: number };
+  /** 召喚物（召喚師） */
+  minions?: MinionManager;
 }
 
 interface Delayed {
@@ -212,6 +222,17 @@ export class SkillSystem {
         break;
       case 'berserk':
         ok = this.castBerserk(sk);
+        break;
+      case 'shadow_bolt':
+        ok = this.castShadowBolt(sk);
+        break;
+      case 'raise_skeleton':
+      case 'raise_mage':
+      case 'raise_guard':
+        ok = this.castSummon(sk);
+        break;
+      case 'bone_burst':
+        ok = this.castBoneBurst(sk);
         break;
     }
     if (!ok) return false;
@@ -659,6 +680,40 @@ export class SkillSystem {
     fx.pillar(p.pos.x, p.pos.z, 1, sk.color, 0.6);
     fx.ring(p.pos.x, p.pos.z, 0.5, 3.5, 0xffa24a, 0.5);
     bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '狂暴！', kind: 'info' });
+    return true;
+  }
+
+  /* ---------------- 召喚師 ---------------- */
+
+  private castShadowBolt(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { target, dx, dz } = this.aim(sk.range);
+    p.cast(dx, dz);
+    return this.ctx.projectiles.fire({ from: this.fireFrom(dx, dz), dirX: dx, dirZ: dz, target, attacker: p.stats, power: sk.power, range: sk.range, color: sk.color, speed: 17, size: 0.9 });
+  }
+
+  private castSummon(sk: SkillDef): boolean {
+    const mm = this.ctx.minions;
+    const id = sk.summon as MinionId | undefined;
+    if (!mm || !id || !MINIONS[id]) return false;
+    const p = this.ctx.player;
+    p.act(sk.anim, 1.6);
+    this.ctx.effects.ring(p.pos.x, p.pos.z, 0.3, 2.2, sk.color, 0.45);
+    mm.summon(id, sk.count ?? 1);
+    return true;
+  }
+
+  private castBoneBurst(sk: SkillDef): boolean {
+    const mm = this.ctx.minions;
+    if (!mm || mm.count() === 0) {
+      bus.emit('toast', { text: '沒有可以引爆的召喚物' });
+      return false;
+    }
+    const p = this.ctx.player;
+    p.act(sk.anim, 2);
+    const n = mm.detonateAll();
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: `白骨爆裂 ×${n}`, kind: 'info' });
+    bus.emit('player:changed');
     return true;
   }
 }
