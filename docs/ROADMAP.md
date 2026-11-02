@@ -105,11 +105,27 @@
 
 ---
 
-## MVP 之後（建議順序）
+## MVP 之後
 
-1. **實機測試**：Android Chrome、iOS Safari 的效能與觸控手感（此專案的自動化測試在無 GPU 環境執行）。
-2. **正式美術**：Kenney / Quaternius / Synty 低多邊形 glTF 替換 `world/Props.ts` 與 `entities/*` 的程式模型；角色加 Mixamo 動畫。
-3. **正式音效 / 音樂**：替換 `audio/Audio.ts` 內的合成音（保留 `play(id)` 介面）。
-4. **雲端存檔與排行榜**：Cloudflare Workers + D1，實作 `CloudSave implements SaveBackend`。
-5. **迷霧森林（Lv.11-25）**之後的野外、更多職業、每日任務。
-6. 上架：Capacitor 包成 App，或維持 PWA。
+| 版本 | 內容 | 狀態 |
+|---|---|---|
+| v1.1 | 正式美術：KayKit CC0 模型與動畫、素材管線 | ✅ |
+| v1.2 | 畫質設定與自動降級（彌補尚未實機測試） | ✅ |
+| v1.3 | 新野外「迷霧森林」Lv.11-25、骷髏敵人、菁英首領、第 4 階裝備 | ✅ |
+| v1.4 | 每日任務 | ✅ |
+| v1.5 | 雲端存檔與排行榜（Cloudflare Workers + D1，程式與測試完成） | ✅（待部署） |
+| v1.6 | 第二職業：弓手 | ✅ |
+| v1.7 | Capacitor Android 專案與打包說明 | ✅（待在 Android Studio 建置） |
+
+### 需要你來做的
+- [ ] **實機測試**：Android Chrome、iOS Safari（效能、觸控手感、發熱）。設定開「顯示 FPS」可看幀數與畫質等級。
+- [ ] **部署雲端 API**：`server/README.md`（約 5 分鐘，需要 Cloudflare 帳號登入）。
+- [ ] **推上 GitHub**：推到 `main` 後 GitHub Pages 自動部署。
+- [ ] **建置 App**：`docs/APP.md`（需要 Android Studio）。
+
+### 之後可以做
+1. 正式音效 / 音樂（目前是程式合成，`audio/Audio.ts` 保留 `play(id)` 介面即可替換）。
+2. 黑暗山谷（Lv.26-45）、魔王領地（Lv.46-60）與對應副本。
+3. 第三職業（戰士：近戰，KayKit Knight / Barbarian 模型已有）。
+4. 史萊姆、寄居蟹、青蛙、魔像換成正式模型（目前仍為程式模型）。
+5. 成就、圖鑑、寵物等長期目標。

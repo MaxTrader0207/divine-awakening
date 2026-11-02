@@ -1,6 +1,6 @@
 {
   "name": "little-mage",
-  "version": "1.0.0",
+  "version": "1.7.0",
   "description": "小法師 Little Mage — 手機直式 3D 動作 RPG（Three.js + TypeScript）",
   "scripts": {
     "dev": "vite --host",

@@ -1,6 +1,6 @@
 // 小法師 Service Worker：離線快取（網路優先，失敗時用快取）
 // 每次發版改 VERSION，舊快取會被清掉。
-const VERSION = 'little-mage-v1.0.0';
+const VERSION = 'little-mage-v1.7.0';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest'])).then(() => self.skipWaiting()));

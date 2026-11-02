@@ -60,8 +60,8 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
     name: '弓手',
     desc: '射程遠、移動快、爆擊高，靠走位與後跳拉開距離',
     icon: '🏹',
-    base: { maxHp: 240, maxMp: 100, atk: 25, def: 7, pen: 0.05, moveSpeed: 7.1, critRate: 0.12, critDmg: 1.6 },
-    perLevel: { maxHp: 46, maxMp: 10, atk: 4.2, def: 1.6 },
+    base: { maxHp: 240, maxMp: 100, atk: 23, def: 7, pen: 0.03, moveSpeed: 6.9, critRate: 0.1, critDmg: 1.6 },
+    perLevel: { maxHp: 46, maxMp: 10, atk: 3.7, def: 1.6 },
     skills: [
       { id: 'arrow', name: '射擊', slot: 'basic', mpCost: 0, cooldown: 0.5, power: 0.92, range: 11, shape: 'projectile', icon: '➹', color: 0xd8f0ff, auto: 'single' },
       { id: 'multishot', name: '多重箭', slot: 'Q', mpCost: 12, cooldown: 4, power: 1.1, range: 11, shape: 'projectile', count: 5, icon: '⋔', color: 0xa8e0ff, auto: 'single' },

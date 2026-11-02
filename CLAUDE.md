@@ -27,8 +27,10 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.0.0：10 週 MVP 全部完成（ROADMAP 全勾）。下一步見 ROADMAP「MVP 之後」：實機測試 → 正式美術 → 雲端存檔。
-- 自動化測試：`npm test`（Vitest，26 個純邏輯案例）。瀏覽器測試用 `?debug` + `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。
+- 版本 v1.7.0。10 週 MVP 完成，加上 v1.1~v1.7（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 測試：`npm test`（Vitest 31 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
+- 瀏覽器測試：網址 `?debug&quality=high&class=mage`，用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
-- 美術全是程式產生的低多邊形：場景物件在 `world/Props.ts`，角色在 `entities/Player.ts` / `Enemy.ts`。
+- 美術：KayKit CC0（`src/assets/models/`，由 `scripts/build-assets.mjs` 產生）；史萊姆、寄居蟹、青蛙、魔像、蝙蝠、蘑菇仍是程式模型。
+- 職業在 `data/classes.ts`，技能效果在 `SkillSystem.cast()` 依 `skill.id` 分派。
 - 音效音樂是 Web Audio 合成（`audio/Audio.ts`），換正式音檔時保留 `play(id)` / `setZoneMusic(kind)`。

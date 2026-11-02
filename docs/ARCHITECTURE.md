@@ -26,11 +26,13 @@ src/
 │  ├─ zones.ts                主城、新手草原、三層副本（地形、高台、生怪、傳送、商店入口）
 │  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
 │  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
-│  └─ player.ts               基礎屬性、升級成長、經驗曲線、法師技能表
+│  ├─ classes.ts              職業：屬性、成長、技能表、模型動畫、武器名稱
+│  └─ player.ts               經驗曲線、statsForLevel(level, class)
 ├─ input/                     InputManager（鍵盤 + 搖桿 + 按住）、VirtualJoystick
 ├─ entities/
 │  ├─ Player.ts               小法師：模型、移動、施法 / 受傷 / 倒地動畫、無敵、地面高度
-│  └─ Enemy.ts                敵人：7 種造型、HP、閃白 / 緩速 / 前搖變色、血條、死亡重生、AI 欄位
+│  ├─ Enemy.ts                敵人：程式造型或骷髏骨架模型、HP、閃白 / 緩速 / 前搖變色、血條、死亡重生
+│  └─ CharacterRig.ts         骨架動畫：循環層（待機/跑）＋單次層（攻擊/受擊）＋死亡
 ├─ systems/
 │  ├─ Combat.ts               傷害公式（純函式）
 │  ├─ Damage.ts               傷害結算入口（發 combat:hit / enemy:killed）
@@ -46,8 +48,14 @@ src/
 │  ├─ Progression.ts          經驗（等級差修正）、升級、金幣（純函式）
 │  ├─ Inventory.ts            背包、裝備、屬性計算、賣出、強化（純函式）
 │  ├─ LootTable.ts            掉落擲骰（純函式）
-│  └─ LootSystem.ts           地上掉落物、自動拾取
+│  ├─ LootSystem.ts           地上掉落物、自動拾取
+│  ├─ DailyQuests.ts          每日任務（純函式）
+│  └─ Quality.ts              畫質分級與自動降級
 ├─ audio/Audio.ts             Web Audio 合成音效與各區域音樂（無音檔）
+├─ assets/
+│  ├─ Assets.ts               載入 KayKit 模型（meshopt）、Lambert 材質、靜態複製 / 骨架複製、蒙皮網格合併
+│  └─ models/*.glb            由 scripts/build-assets.mjs 產生
+├─ net/Cloud.ts               雲端存檔與排行榜用戶端（逾時、離線、轉移碼）
 ├─ camera/CameraRig.ts        斜俯視跟隨、縮放 80%~150%、跟隨地面高度
 ├─ world/
 │  ├─ ZoneManager.ts          載入 / 卸載區域、天空與霧、傳送點、商店入口
@@ -59,9 +67,13 @@ src/
    ├─ Hud.ts                  狀態框、小地圖、貨幣、提示、橫幅、撿寶訊息、首領血條、冷卻遮罩、AUTO
    ├─ Menu.ts                 選單殼與「地圖 / 設定」分頁
    ├─ InventoryTabs.ts        「裝備 / 強化 / 商城」分頁
+   ├─ CloudTabs.ts            雲端存檔卡片、「排行」分頁
    ├─ DamageNumbers.ts        傷害數字與漂浮文字（DOM 物件池）
    ├─ Minimap.ts、dom.ts、style.css
 public/                       manifest.webmanifest、sw.js、icons/（PWA）
+server/                       Cloudflare Worker + D1（雲端 API，獨立 npm 專案）
+android/                      Capacitor Android 專案
+scripts/build-assets.mjs      素材管線
 ```
 
 ## 每幀更新順序
@@ -119,7 +131,10 @@ raw  = atk × 技能倍率
 - 首領技能傷害 = 公式 × 技能倍率（1.4~2.2），只有預警結算時站在範圍內才會受傷。
 - AUTO 只會察覺 65% 的預警（`AUTO_DODGE_CHANCE`），手動操作可以全部閃掉。
 
-## 存檔（v2）
+## 存檔（v4）
+
+- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）。舊存檔讀入時自動遷移。
+
 
 - `GameState` 經 `SaveBackend` 存取，目前是 `LocalSave`（localStorage `little-mage.save.v1`）。
 - 物品只存「底材 id、稀有度、強化等級」，屬性即時計算 → 調整平衡不會讓舊存檔失真。
