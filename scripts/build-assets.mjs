@@ -40,6 +40,7 @@ function find(dir, name) {
 
 const MAGE_ANIMS = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Spellcast_Long', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
 const ROGUE_ANIMS = ['Idle', 'Running_A', '2H_Ranged_Shoot', 'Throw', 'Hit_A', 'Death_A', 'Dodge_Backward', 'Cheer'];
+const KNIGHT_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Chop', 'Block_Attack', '2H_Melee_Attack_Spin', 'Blocking', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
 const SKEL_ANIMS = ['Idle', 'Walking_D_Skeletons', '1H_Melee_Attack_Chop', 'Hit_A', 'Death_C_Skeletons'];
 const SKEL_MAGE_ANIMS = [...SKEL_ANIMS, 'Spellcast_Shoot'];
 
@@ -47,6 +48,7 @@ const SKEL_MAGE_ANIMS = [...SKEL_ANIMS, 'Spellcast_Shoot'];
 const CHARACTERS = [
   ['mage', 'Mage.glb', MAGE_ANIMS, ['Spellbook', 'Spellbook_open', '1H_Wand']],
   ['rogue', 'Rogue.glb', ROGUE_ANIMS, ['Knife_Offhand', '1H_Crossbow', 'Knife', 'Throwable']],
+  ['knight', 'Knight.glb', KNIGHT_ANIMS, ['1H_Sword_Offhand', 'Rectangle_Shield', 'Round_Shield', 'Spike_Shield', '2H_Sword']],
   ['skeleton_minion', 'Skeleton_Minion.glb', SKEL_ANIMS, []],
   ['skeleton_warrior', 'Skeleton_Warrior.glb', SKEL_ANIMS, []],
   ['skeleton_rogue', 'Skeleton_Rogue.glb', SKEL_ANIMS, []],

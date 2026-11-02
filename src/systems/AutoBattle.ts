@@ -16,6 +16,8 @@ import type { CollisionWorld } from '@/world/Collision';
  *   Q 火球術    有目標就放
  *   普攻        其餘時間
  * 閃現（R）不自動使用，保留給玩家躲首領技能。
+ * 近戰職業（普攻射程 < 4）：要走到「射程 + 敵人體型」以內才出手；
+ *   guard 類技能（騎士守護）在被 3 隻以上圍住、血量低於 60% 有敵人貼身、或首領出招時開。
  */
 export const AUTO_SEARCH_RANGE = 32;
 export const AUTO_HP_POTION = 0.4;
@@ -87,13 +89,28 @@ export class AutoBattle {
     if (!target) return;
 
     const d = dist(target, p);
-    if (d > bolt.range - 1) {
+    const melee = bolt.range < 4;
+    const reach = melee ? bolt.range + target.radius - 0.5 : bolt.range - 1;
+    if (d > reach) {
       this.moveTo(target.pos.x, target.pos.z);
+      // 近戰：邊走邊放防禦技（被圍時）；離目標 4m 以上、在衝鋒距離內就衝過去
+      if (melee) {
+        if (this.tryGuard(target)) return;
+        for (const slot of ['R', 'E', 'Q'] as const) {
+          const sk = skills.def(slot);
+          if (sk.auto !== 'gap' || !skills.canCast(slot)) continue;
+          if (d - reach > 4 && d < sk.range + reach && !this.ctx.dangerEscape() && (target.engaged || target.ai === 'chase' || target.ai === 'attack' || !target.def.boss)) {
+            skills.cast(slot, true);
+            return;
+          }
+        }
+      }
       return;
     }
 
     // 5. 技能：依 SkillDef.auto 規則，E → W → Q 的順序找第一個該放的
     const around = (x: number, z: number, r: number) => enemies.enemies.filter((e) => e.alive && e.def.aggro !== 'none' && Math.hypot(e.pos.x - x, e.pos.z - z) < r).length;
+    if (this.tryGuard(target)) return;
     for (const slot of ['E', 'W', 'Q'] as const) {
       const sk = skills.def(slot);
       if (!skills.canCast(slot)) continue;
@@ -101,10 +118,25 @@ export class AutoBattle {
       const want =
         sk.auto === 'target-aoe' ? target.def.boss || around(target.pos.x, target.pos.z, r) >= 2
         : sk.auto === 'self-aoe' ? around(p.pos.x, p.pos.z, r) >= 2 || around(p.pos.x, p.pos.z, 2.5) >= 1
-        : sk.auto === 'single';
+        : sk.auto === 'single' ? !melee || d <= reach + 0.3
+        : false;
       if (want && skills.cast(slot, true)) return;
     }
     skills.cast('basic', true);
+  }
+
+  /** guard 類技能（騎士守護）：被圍、殘血有怪貼身、或首領正在出招 */
+  private tryGuard(target: Enemy): boolean {
+    const { player: p, skills, enemies } = this.ctx;
+    for (const slot of ['W', 'Q', 'E'] as const) {
+      const sk = skills.def(slot);
+      if (sk.auto !== 'guard' || !skills.canCast(slot) || p.guardT > 0) continue;
+      const near = enemies.enemies.filter((e) => e.alive && e.def.aggro !== 'none' && (e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') && dist(e, p) < 4 + e.radius).length;
+      const bossCasting = target.def.boss && target.engaged && (target.windup > 0 || this.ctx.dangerEscape() !== null);
+      const want = near >= 3 || (near >= 1 && p.hp / p.stats.maxHp < 0.6) || (target.def.boss && target.engaged && dist(target, p) < 6) || bossCasting;
+      if (want) return skills.cast(slot, true);
+    }
+    return false;
   }
 
   /** 最近的敵人；還沒開打、而且等級比玩家高的首領會略過（避免 AUTO 把低等玩家帶去送死） */

@@ -192,8 +192,16 @@ export interface SkillDef {
   radius?: number;
   icon: string;
   color: number;
-  /** AUTO 施放規則：target-aoe 目標附近多隻或首領、self-aoe 自身附近多隻、single 有目標就放、none 不自動 */
-  auto?: 'target-aoe' | 'self-aoe' | 'single' | 'none';
+  /** AUTO 施放規則：target-aoe 目標附近多隻或首領、self-aoe 自身附近多隻、single 有目標就放、guard 被圍或打首領時開防禦、gap 近戰離目標太遠時衝過去、none 不自動 */
+  auto?: 'target-aoe' | 'self-aoe' | 'single' | 'guard' | 'gap' | 'none';
+  /** 近戰扇形的總角度（弧度） */
+  arc?: number;
+  /** 施放時播的角色動畫（沒填用職業的 cast） */
+  anim?: string;
+  /** 暈眩秒數（盾擊） */
+  stun?: number;
+  /** 持續秒數（守護） */
+  duration?: number;
   /** 多重箭的箭數 */
   count?: number;
   /** 箭雨的波數 */

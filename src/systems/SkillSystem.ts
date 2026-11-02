@@ -9,7 +9,8 @@ import type { EnemyManager } from './EnemyManager';
 import type { ProjectileSystem } from './ProjectileSystem';
 import type { TargetSelector } from './TargetSelector';
 import type { Effects } from './Effects';
-import { damageArea } from './Damage';
+import { damageArea, damageCone, damageEnemy } from './Damage';
+import type { Enemy } from '@/entities/Enemy';
 
 /**
  * 技能系統：普攻 + Q/W/E/R、藥水。技能清單依職業（data/classes.ts），效果依 skill.id 分派。
@@ -27,11 +28,19 @@ import { damageArea } from './Damage';
  *  W     貫穿箭     直線穿透所有敵人
  *  E     箭雨       目標區域 3 波傷害
  *  R     後跳       往後（或搖桿方向）跳開 6m，附近敵人緩速
+ * 騎士
+ *  普攻  劍擊       前方扇形 2.7m / 120°，可同時砍多隻
+ *  Q     盾擊       前方扇形 3m，暈眩 1.4 秒並打斷前搖（首領免疫暈眩）
+ *  W     守護       4 秒受到傷害 -60%，6m 內敵人被挑釁
+ *  E     旋風斬     自身周圍 3.6m，0.3 秒一圈共 3 圈
+ *  R     衝鋒       往目標 / 搖桿方向衝 7m，撞到的敵人受傷，0.35 秒無敵
  */
 export const POTION_COOLDOWN = 2;
 export const POTION_HEAL_RATIO = 0.35;
 export const FROST_SLOW = { duration: 2.5, mul: 0.5 };
 export const FLAME_DELAY = 0.35;
+/** 守護減傷比例 */
+export const GUARD_REDUCTION = 0.6;
 
 export interface SkillContext {
   player: Player;
@@ -56,6 +65,7 @@ export class SkillSystem {
   potionCd = 0;
   private delayed: Delayed[] = [];
   private tmp = new THREE.Vector3();
+  private guardFx = 0;
 
   constructor(private ctx: SkillContext, heroClass: HeroClass = 'mage') {
     this.list = CLASSES[heroClass].skills;
@@ -89,6 +99,15 @@ export class SkillSystem {
   update(dt: number) {
     for (const k of Object.keys(this.cd) as SkillSlot[]) this.cd[k] = Math.max(0, this.cd[k] - dt);
     this.potionCd = Math.max(0, this.potionCd - dt);
+    // 守護中：腳下持續出現藍色護盾光圈
+    const p = this.ctx.player;
+    if (p.guardT > 0) {
+      this.guardFx -= dt;
+      if (this.guardFx <= 0) {
+        this.guardFx = 0.35;
+        this.ctx.effects.ring(p.pos.x, p.pos.z, 1.5, 1.1, 0x8fd4ff, 0.35);
+      }
+    }
     for (let i = this.delayed.length - 1; i >= 0; i--) {
       const d = this.delayed[i];
       d.t -= dt;
@@ -144,11 +163,26 @@ export class SkillSystem {
       case 'backstep':
         ok = this.castBackstep(sk);
         break;
+      case 'slash':
+        ok = this.castSlash(sk);
+        break;
+      case 'shield_bash':
+        ok = this.castShieldBash(sk);
+        break;
+      case 'guard':
+        ok = this.castGuard(sk);
+        break;
+      case 'whirlwind':
+        ok = this.castWhirlwind(sk);
+        break;
+      case 'charge':
+        ok = this.castCharge(sk);
+        break;
     }
     if (!ok) return false;
     p.mp -= sk.mpCost;
     this.cd[slot] = sk.cooldown;
-    bus.emit('skill:cast', { slot });
+    bus.emit('skill:cast', { slot, id: sk.id });
     if (sk.mpCost > 0) bus.emit('player:changed');
     return true;
   }
@@ -370,6 +404,123 @@ export class SkillSystem {
     p.dodge();
     p.invulnerable = Math.max(p.invulnerable, 0.3);
     fx.pillar(p.pos.x, p.pos.z, 0.6, sk.color, 0.35);
+    return true;
+  }
+
+  /* ---------------- 騎士 ---------------- */
+
+  /** 近戰朝向：鎖定範圍放寬一點（會先轉身面向最近的敵人） */
+  private meleeAim(range: number) {
+    return this.aim(range + 1.5);
+  }
+
+  private castSlash(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.meleeAim(sk.range);
+    p.cast(dx, dz);
+    p.act(sk.anim, 2.2);
+    const facing = Math.atan2(dx, dz);
+    this.ctx.effects.arc(p.pos.x, p.pos.z, facing, 0.8, sk.range, sk.color, 0.2, 0.9 + p.groundY);
+    damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, sk.range, sk.arc ?? 2.1, p.stats, sk.power);
+    return true;
+  }
+
+  private castShieldBash(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.meleeAim(sk.range);
+    p.cast(dx, dz);
+    p.act(sk.anim, 1.8);
+    const fx = this.ctx.effects;
+    const facing = Math.atan2(dx, dz);
+    fx.arc(p.pos.x, p.pos.z, facing, 0.6, sk.range, sk.color, 0.3, 0.7 + p.groundY);
+    fx.ring(p.pos.x + dx * 1.6, p.pos.z + dz * 1.6, 0.3, 1.6, sk.color, 0.35);
+    damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, sk.range, sk.arc ?? 1.6, p.stats, sk.power, (e) => {
+      if (e.applyStun(sk.stun ?? 1.4)) fx.pillar(e.pos.x, e.pos.z, 0.35, 0xffe27a, 0.5);
+      else bus.emit('float:text', { x: e.pos.x, y: e.height + 0.8, z: e.pos.z, text: '免疫', kind: 'info' });
+    });
+    return true;
+  }
+
+  private castGuard(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    p.guardT = sk.duration ?? 4;
+    p.act(sk.anim, 1.4);
+    const fx = this.ctx.effects;
+    fx.pillar(p.pos.x, p.pos.z, 0.9, sk.color, 0.5);
+    fx.ring(p.pos.x, p.pos.z, 0.5, sk.radius ?? 6, sk.color, 0.5);
+    // 挑釁：範圍內的敵人都來找騎士
+    const r = sk.radius ?? 6;
+    for (const e of this.ctx.enemies.enemies) {
+      if (!e.alive || e.def.aggro === 'none' || e.ai === 'return') continue;
+      if (Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z) > r + e.radius) continue;
+      e.provoked = true;
+      if (e.ai === 'idle' || e.ai === 'wander') e.ai = 'chase';
+    }
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '守護', kind: 'info' });
+    return true;
+  }
+
+  private castWhirlwind(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const r = sk.radius ?? 3.6;
+    p.act(sk.anim, 1.5);
+    p.cast(Math.sin(p.facing), Math.cos(p.facing));
+    const stats = { ...p.stats };
+    const fx = this.ctx.effects;
+    const waves = sk.waves ?? 3;
+    for (let w = 0; w < waves; w++) {
+      const spin = () => {
+        // 跟著騎士目前位置（旋轉中可以移動）
+        const x = p.pos.x;
+        const z = p.pos.z;
+        for (let k = 0; k < 3; k++) fx.arc(x, z, p.facing + w * 1.1 + (k * Math.PI * 2) / 3, 0.6, r, sk.color, 0.25, 0.8 + p.groundY);
+        fx.ring(x, z, r * 0.5, r, 0xffd36b, 0.3);
+        damageArea(this.ctx.enemies.enemies, x, z, r, stats, sk.power);
+      };
+      if (w === 0) spin();
+      else this.delayed.push({ t: w * 0.3, run: spin });
+    }
+    return true;
+  }
+
+  private castCharge(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const mv = this.ctx.moveInput();
+    const l = Math.hypot(mv.x, mv.z);
+    let dx: number;
+    let dz: number;
+    if (l > 0.1) {
+      dx = mv.x / l;
+      dz = mv.z / l;
+    } else {
+      const a = this.aim(sk.range + 2);
+      dx = a.dx;
+      dz = a.dz;
+    }
+    const fx = this.ctx.effects;
+    fx.ring(p.pos.x, p.pos.z, 0.3, 1.8, sk.color, 0.3);
+    p.dodge();
+    // 分段前進＋碰撞；沿路撞到的敵人各受一次傷害並緩速
+    const col = this.ctx.collision();
+    const hit = new Set<Enemy>();
+    const steps = 28;
+    for (let i = 0; i < steps; i++) {
+      p.pos.x += (dx * sk.range) / steps;
+      p.pos.z += (dz * sk.range) / steps;
+      col.resolve(p.pos, p.radius);
+      for (const e of this.ctx.enemies.enemies) {
+        if (!e.alive || hit.has(e)) continue;
+        if (Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z) < e.radius + 1.2) hit.add(e);
+      }
+      if (i % 7 === 3) fx.ring(p.pos.x, p.pos.z, 0.4, 1.2, sk.color, 0.3);
+    }
+    for (const e of hit) {
+      damageEnemy(e, p.stats, sk.power);
+      e.applySlow(1.5, 0.6);
+    }
+    p.facing = Math.atan2(dx, dz);
+    p.invulnerable = Math.max(p.invulnerable, 0.35);
+    fx.disc(p.pos.x, p.pos.z, 2.2, sk.color, 0.35, 0.45);
     return true;
   }
 }

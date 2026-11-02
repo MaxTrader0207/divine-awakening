@@ -14,7 +14,8 @@ import { SONGS } from './songs';
  */
 export type SfxId =
   | 'bolt' | 'fireball' | 'frost' | 'flame' | 'blink' | 'hit' | 'crit' | 'hurt' | 'kill'
-  | 'levelup' | 'pickup' | 'coin' | 'potion' | 'warn' | 'boss' | 'ui' | 'enhance' | 'fail';
+  | 'levelup' | 'pickup' | 'coin' | 'potion' | 'warn' | 'boss' | 'ui' | 'enhance' | 'fail'
+  | 'slash' | 'bash' | 'guard' | 'whirl' | 'charge';
 
 /** 區域種類 → 預設曲子（區域資料沒指定 music 時） */
 const KIND_MUSIC: Record<ZoneKind, TrackId> = { town: 'town', field: 'grassland', dungeon: 'dungeon' };
@@ -115,9 +116,12 @@ export class AudioSystem {
 
   /** 事件 → 音效 */
   private bindEvents() {
-    bus.on('skill:cast', ({ slot }) => {
+    bus.on('skill:cast', ({ slot, id }) => {
+      // 騎士技能有自己的音效；其他職業依欄位
+      const byId: Record<string, SfxId> = { slash: 'slash', shield_bash: 'bash', guard: 'guard', whirlwind: 'whirl', charge: 'charge' };
       const map: Record<string, SfxId> = { basic: 'bolt', Q: 'fireball', W: 'frost', E: 'flame', R: 'blink', potion: 'potion' };
-      if (map[slot]) this.play(map[slot]);
+      const sfx = (id && byId[id]) || map[slot];
+      if (sfx) this.play(sfx);
     });
     bus.on('combat:hit', (h) => this.play(h.targetIsPlayer ? 'hurt' : h.crit ? 'crit' : 'hit'));
     bus.on('enemy:killed', (k) => this.play(k.boss ? 'boss' : 'kill'));
@@ -157,6 +161,11 @@ export class AudioSystem {
       case 'ui': this.tone('sine', 660, 660, t, 0.04, 0.1); break;
       case 'enhance': [0, 7, 12].forEach((n, i) => this.tone('triangle', midi(76 + n), midi(76 + n), t + i * 0.07, 0.2, 0.22)); break;
       case 'fail': this.tone('triangle', 330, 220, t, 0.25, 0.2); break;
+      case 'slash': this.noise(t, 0.12, 3200, 0.35); this.tone('triangle', 900, 300, t, 0.1, 0.12); break;
+      case 'bash': this.tone('square', 140, 60, t, 0.16, 0.3); this.noise(t, 0.1, 1400, 0.5); this.tone('triangle', 620, 610, t + 0.02, 0.18, 0.12); break;
+      case 'guard': [0, 7, 12].forEach((n, i) => this.tone('sine', midi(67 + n), midi(67 + n), t + i * 0.05, 0.4, 0.16)); break;
+      case 'whirl': [0, 0.3, 0.6].forEach((d) => { this.noise(t + d, 0.22, 2400, 0.32); this.tone('sawtooth', 300, 700, t + d, 0.2, 0.06); }); break;
+      case 'charge': this.noise(t, 0.35, 900, 0.45); this.tone('sawtooth', 120, 260, t, 0.3, 0.16); break;
     }
   }
 

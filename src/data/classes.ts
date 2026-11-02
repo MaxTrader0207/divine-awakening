@@ -6,7 +6,7 @@ import type { SkillDef, Stats } from './types';
  * 新增職業：在 CLASSES 加一筆（屬性、技能、模型動畫、武器名稱），
  * 技能效果寫在 systems/SkillSystem.ts 的 cast()（依 skill.id 分派）。
  */
-export type HeroClass = 'mage' | 'archer';
+export type HeroClass = 'mage' | 'archer' | 'knight';
 
 /** 模型動畫名稱對應（KayKit 動畫名） */
 export interface HeroAnimSet {
@@ -73,6 +73,24 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
     weaponNames: ['見習短弩', '珊瑚弩', '熔心弩', '霧影弩'],
     weaponIcon: '🏹',
   },
+  knight: {
+    id: 'knight',
+    name: '騎士',
+    desc: '劍盾近戰、血厚防高，盾擊打斷敵人、守護大減傷',
+    icon: '🛡️',
+    base: { maxHp: 320, maxMp: 90, atk: 22, def: 11, pen: 0, moveSpeed: 6.4, critRate: 0.05, critDmg: 1.5 },
+    perLevel: { maxHp: 60, maxMp: 9, atk: 3.7, def: 2.4 },
+    skills: [
+      { id: 'slash', name: '劍擊', slot: 'basic', mpCost: 0, cooldown: 0.5, power: 1.35, range: 2.7, shape: 'cone', arc: 2.1, icon: '⚔', color: 0xfff1c4, auto: 'single', anim: '1H_Melee_Attack_Slice_Horizontal' },
+      { id: 'shield_bash', name: '盾擊', slot: 'Q', mpCost: 10, cooldown: 4, power: 2.4, range: 3, shape: 'cone', arc: 1.6, stun: 1.4, icon: '🛡', color: 0xffd36b, auto: 'single', anim: 'Block_Attack' },
+      { id: 'guard', name: '守護', slot: 'W', mpCost: 18, cooldown: 12, power: 0, range: 0, shape: 'circle', radius: 6, duration: 4, icon: '✚', color: 0x8fd4ff, auto: 'guard', anim: 'Blocking' },
+      { id: 'whirlwind', name: '旋風斬', slot: 'E', mpCost: 26, cooldown: 9, power: 1.4, range: 0, shape: 'circle', radius: 3.6, waves: 3, icon: '🌀', color: 0xffe9a0, auto: 'self-aoe', anim: '2H_Melee_Attack_Spin' },
+      { id: 'charge', name: '衝鋒', slot: 'R', mpCost: 12, cooldown: 7, power: 1.8, range: 7, shape: 'dash', icon: '➤', color: 0xffb36b, auto: 'gap', anim: 'Dodge_Forward' },
+    ],
+    anims: { model: 'knight', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Horizontal', castBig: '1H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
+    weaponNames: ['見習長劍', '珊瑚劍', '熔心劍', '霧森聖劍'],
+    weaponIcon: '🗡️',
+  },
 };
 
-export const CLASS_LIST: HeroClass[] = ['mage', 'archer'];
+export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight'];

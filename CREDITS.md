@@ -4,7 +4,7 @@
 
 | 素材包 | 作者 | 授權 | 使用於 |
 |---|---|---|---|
-| KayKit : Adventurers Character Pack 1.0 | Kay Lousberg（kaylousberg.com） | CC0 | 法師、弓手（Rogue）角色與動畫 |
+| KayKit : Adventurers Character Pack 1.0 | Kay Lousberg（kaylousberg.com） | CC0 | 法師、弓手（Rogue）、騎士（Knight）角色與動畫 |
 | KayKit Character Pack : Skeletons 1.0 | Kay Lousberg | CC0 | 迷霧森林骷髏敵人與動畫 |
 | KayKit : Medieval Hexagon Pack 1.0 | Kay Lousberg | CC0 | 主城建築、樹、石頭、柵欄、帳篷、木桶、木箱 |
 | KayKit : Dungeon Remastered 1.0 | Kay Lousberg | CC0 | 火把、旗幟、寶箱、碎石、桶子、箱堆 |

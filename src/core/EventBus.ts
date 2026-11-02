@@ -38,7 +38,7 @@ export interface GameEvents {
   /** 漂浮文字（+金幣、+經驗、升級） */
   'float:text': { x: number; y: number; z: number; text: string; kind: 'gold' | 'exp' | 'info' };
   /** 技能施放（音效、教學用） */
-  'skill:cast': { slot: string };
+  'skill:cast': { slot: string; id?: string };
 }
 
 export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'rank' | 'map' | 'saves' | 'settings';

@@ -69,6 +69,8 @@ export class Enemy {
   moving = 0;
 
   /** 緩速剩餘秒數與倍率（冰霜新星） */
+  /** 暈眩剩餘秒數（盾擊）：期間不移動、不攻擊，前搖被打斷 */
+  stunTimer = 0;
   slowTimer = 0;
   slowMul = 1;
 
@@ -145,6 +147,14 @@ export class Enemy {
   /** 傷害數字與投射物瞄準點 */
   get aimY() {
     return this.groundY + this.height * 0.6;
+  }
+
+  /** 暈眩；首領免疫，回傳是否生效 */
+  applyStun(duration: number): boolean {
+    if (!this.alive || this.def.boss) return false;
+    this.stunTimer = Math.max(this.stunTimer, duration);
+    this.windup = 0;
+    return true;
   }
 
   applySlow(duration: number, mul: number) {
@@ -233,14 +243,16 @@ export class Enemy {
       this.slowTimer -= dt;
       if (this.slowTimer <= 0) this.slowMul = 1;
     }
-    // 受擊閃白、緩速偏藍、前搖偏紅
+    if (this.stunTimer > 0) this.stunTimer = Math.max(0, this.stunTimer - dt);
+    // 受擊閃白、緩速偏藍、前搖偏紅、暈眩偏黃（閃爍）
     const wind = this.windup > 0 ? 0.45 : 0;
-    if (this.flash > 0 || this.slowTimer > 0 || wind > 0 || this.tinted) {
+    const stun = this.stunTimer > 0 ? 0.25 + Math.abs(Math.sin(this.stunTimer * 12)) * 0.2 : 0;
+    if (this.flash > 0 || this.slowTimer > 0 || wind > 0 || stun > 0 || this.tinted) {
       this.flash = Math.max(0, this.flash - dt * 6);
       const f = this.flash * 0.8;
       const slow = this.slowTimer > 0 ? 0.35 : 0;
-      for (const m of this.materials) m.emissive.setRGB(f + wind, f + slow * 0.4, f + slow);
-      this.tinted = this.flash > 0 || slow > 0 || wind > 0;
+      for (const m of this.materials) m.emissive.setRGB(f + wind + stun, f + slow * 0.4 + stun * 0.85, f + slow);
+      this.tinted = this.flash > 0 || slow > 0 || wind > 0 || stun > 0;
     }
     if (this.shake > 0 && !this.rig) {
       this.shake = Math.max(0, this.shake - dt * 5);
@@ -320,6 +332,7 @@ export class Enemy {
     this.rig?.revive(this.anims.idle);
     this.slowTimer = 0;
     this.slowMul = 1;
+    this.stunTimer = 0;
     this.ai = 'idle';
     this.provoked = false;
     this.windup = 0;

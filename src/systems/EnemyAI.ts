@@ -50,6 +50,13 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
     }
   }
 
+  // 暈眩：原地不動、不攻擊（被打會記仇，醒來直接追）
+  if (e.stunTimer > 0) {
+    e.windup = 0;
+    if (e.ai === 'idle' || e.ai === 'wander') e.ai = 'chase';
+    return;
+  }
+
   switch (e.ai) {
     case 'idle':
     case 'wander': {

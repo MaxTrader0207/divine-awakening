@@ -46,7 +46,7 @@ game.start();
 
 function pickClass(): Promise<HeroClass> {
   const forced = new URLSearchParams(location.search).get('class');
-  if (forced === 'mage' || forced === 'archer') return Promise.resolve(forced);
+  if (forced && (CLASS_LIST as string[]).includes(forced)) return Promise.resolve(forced as HeroClass);
   return new Promise((resolve) => {
     const el = document.createElement('div');
     el.className = 'class-pick';

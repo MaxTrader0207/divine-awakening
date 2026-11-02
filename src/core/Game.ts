@@ -17,7 +17,7 @@ import { DamageNumbers } from '@/ui/DamageNumbers';
 import { EnemyManager } from '@/systems/EnemyManager';
 import { ProjectileSystem } from '@/systems/ProjectileSystem';
 import { TargetSelector } from '@/systems/TargetSelector';
-import { SkillSystem } from '@/systems/SkillSystem';
+import { GUARD_REDUCTION, SkillSystem } from '@/systems/SkillSystem';
 import { Effects } from '@/systems/Effects';
 import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
@@ -597,6 +597,11 @@ export class Game {
   private hitPlayer(e: Enemy, power: number) {
     const p = this.player;
     const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
+    // 騎士「守護」：減傷
+    if (p.guardT > 0) {
+      res.amount = Math.max(1, Math.round(res.amount * (1 - GUARD_REDUCTION)));
+      this.effects.ring(p.pos.x, p.pos.z, 0.6, 1.3, 0x8fd4ff, 0.25);
+    }
     const dealt = p.takeDamage(res.amount);
     if (dealt <= 0) return;
     bus.emit('combat:hit', { x: p.pos.x, y: 2.2, z: p.pos.z, amount: dealt, crit: res.crit, targetIsPlayer: true });

@@ -4,7 +4,7 @@ import * as THREE from 'three';
  * 地面特效池：擴散光圈、範圍圓盤、光柱。
  * 技能（冰霜新星、烈焰爆發、閃現）、升級、撿寶都共用這個池子。
  */
-type FxKind = 'ring' | 'disc' | 'pillar';
+type FxKind = 'ring' | 'disc' | 'pillar' | 'arc';
 
 interface Fx {
   mesh: THREE.Mesh;
@@ -20,6 +20,9 @@ interface Fx {
 const RING_POOL = 24;
 const DISC_POOL = 12;
 const PILLAR_POOL = 8;
+const ARC_POOL = 8;
+/** 刀光扇形的角度（弧度） */
+export const ARC_ANGLE = 2.1;
 
 export class Effects {
   private fx: Fx[] = [];
@@ -46,6 +49,8 @@ export class Effects {
     mk(ringGeo, 'ring', RING_POOL);
     mk(discGeo, 'disc', DISC_POOL);
     mk(pillarGeo, 'pillar', PILLAR_POOL);
+    // 刀光：以 +x 為中心、張開 ARC_ANGLE 的扇環（spawn 時旋轉到面向）
+    mk(new THREE.RingGeometry(0.3, 1, 28, 1, -ARC_ANGLE / 2, ARC_ANGLE), 'arc', ARC_POOL);
   }
 
   /** 擴散光圈：半徑 from → to */
@@ -63,6 +68,13 @@ export class Effects {
     this.spawn('pillar', x, 3, z, radius, radius * 0.4, color, life, 0.55);
   }
 
+  /** 近戰刀光：面向 facing（0 = +z）的扇環，半徑 from → to */
+  arc(x: number, z: number, facing: number, from: number, to: number, color: number, life = 0.22, y = 0.9) {
+    const f = this.spawn('arc', x, y, z, from, to, color, life, 0.85);
+    // 平面先繞 x 轉 -90°，本地角度 θ 對應世界方向 (cosθ, -sinθ)；要對準 (sin a, cos a) → θ = a - π/2
+    if (f) f.mesh.rotation.z = facing - Math.PI / 2;
+  }
+
   clear() {
     for (const f of this.fx) {
       f.active = false;
@@ -70,9 +82,9 @@ export class Effects {
     }
   }
 
-  private spawn(kind: FxKind, x: number, y: number, z: number, from: number, to: number, color: number, life: number, opacity: number) {
+  private spawn(kind: FxKind, x: number, y: number, z: number, from: number, to: number, color: number, life: number, opacity: number): Fx | null {
     const f = this.fx.find((q) => q.kind === kind && !q.active);
-    if (!f) return;
+    if (!f) return null;
     f.active = true;
     f.t = 0;
     f.life = life;
@@ -83,6 +95,7 @@ export class Effects {
     (f.mesh.material as THREE.MeshBasicMaterial).color.setHex(color);
     f.mesh.visible = true;
     this.apply(f, 0);
+    return f;
   }
 
   update(dt: number) {

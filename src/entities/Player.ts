@@ -98,6 +98,14 @@ export class Player {
   }
 
   /** 大招施法（烈焰爆發）、閃避、歡呼：只有模型時有動作 */
+  /** 播指定動畫（近戰技能用）；動畫不存在時改播 cast */
+  act(anim: string | undefined, timeScale = 1.6) {
+    this.rig?.playOnce(anim ?? this.anims.cast, { timeScale });
+  }
+
+  /** 守護剩餘秒數：期間受到的傷害降低 GUARD_REDUCTION */
+  guardT = 0;
+
   castBig() {
     this.rig?.playOnce(this.anims.castBig, { timeScale: 1.6 });
   }
@@ -127,6 +135,7 @@ export class Player {
 
   /** 復活：滿血滿魔、短暫無敵 */
   revive() {
+    this.guardT = 0;
     this.hp = this.stats.maxHp;
     this.mp = this.stats.maxMp;
     this.invulnerable = 2;
@@ -165,6 +174,7 @@ export class Player {
   /** move：世界方向向量，長度 0~1 */
   update(dt: number, move: { x: number; z: number }, collision: CollisionWorld, pushOut?: (pos: { x: number; z: number }, r: number) => void) {
     if (this.invulnerable > 0) this.invulnerable = Math.max(0, this.invulnerable - dt);
+    if (this.guardT > 0) this.guardT = Math.max(0, this.guardT - dt);
     this.sinceHurt += dt;
     this.rig?.update(dt);
     if (!this.alive) {
