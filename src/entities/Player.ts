@@ -105,6 +105,10 @@ export class Player {
 
   /** 守護剩餘秒數：期間受到的傷害降低 GUARD_REDUCTION */
   guardT = 0;
+  /** 嗜血剩餘秒數：造成傷害的一部分回血 */
+  bloodlustT = 0;
+  /** 狂暴剩餘秒數：攻擊力提升、普攻變快 */
+  berserkT = 0;
 
   castBig() {
     this.rig?.playOnce(this.anims.castBig, { timeScale: 1.6 });
@@ -136,6 +140,8 @@ export class Player {
   /** 復活：滿血滿魔、短暫無敵 */
   revive() {
     this.guardT = 0;
+    this.bloodlustT = 0;
+    this.berserkT = 0;
     this.hp = this.stats.maxHp;
     this.mp = this.stats.maxMp;
     this.invulnerable = 2;
@@ -175,6 +181,8 @@ export class Player {
   update(dt: number, move: { x: number; z: number }, collision: CollisionWorld, pushOut?: (pos: { x: number; z: number }, r: number) => void) {
     if (this.invulnerable > 0) this.invulnerable = Math.max(0, this.invulnerable - dt);
     if (this.guardT > 0) this.guardT = Math.max(0, this.guardT - dt);
+    if (this.bloodlustT > 0) this.bloodlustT = Math.max(0, this.bloodlustT - dt);
+    if (this.berserkT > 0) this.berserkT = Math.max(0, this.berserkT - dt);
     this.sinceHurt += dt;
     this.rig?.update(dt);
     if (!this.alive) {

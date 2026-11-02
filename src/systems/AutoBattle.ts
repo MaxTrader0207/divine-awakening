@@ -64,7 +64,7 @@ export class AutoBattle {
 
     // 1. 喝藥
     if (p.hp / p.stats.maxHp < AUTO_HP_POTION) skills.usePotion('hp', true);
-    else if (p.mp / p.stats.maxMp < AUTO_MP_POTION) skills.usePotion('mp', true);
+    else if (p.mp / p.stats.maxMp < AUTO_MP_POTION && !skills.usesRage) skills.usePotion('mp', true);
 
     // 2. 躲首領預警
     const escape = this.ctx.dangerEscape();
@@ -125,16 +125,27 @@ export class AutoBattle {
     skills.cast('basic', true);
   }
 
-  /** guard 類技能（騎士守護）：被圍、殘血有怪貼身、或首領正在出招 */
+  /**
+   * 增益技能：
+   *  guard（騎士守護、狂戰士嗜血）：被圍、殘血有怪貼身、打首領、或首領正在出招
+   *  burst（狂戰士狂暴）：打首領，或身邊 3 隻以上
+   */
   private tryGuard(target: Enemy): boolean {
     const { player: p, skills, enemies } = this.ctx;
-    for (const slot of ['W', 'Q', 'E'] as const) {
+    const near = enemies.enemies.filter((e) => e.alive && e.def.aggro !== 'none' && (e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') && dist(e, p) < 4 + e.radius).length;
+    const bossNear = target.def.boss && target.engaged && dist(target, p) < 6;
+    for (const slot of ['R', 'W', 'Q', 'E'] as const) {
       const sk = skills.def(slot);
-      if (sk.auto !== 'guard' || !skills.canCast(slot) || p.guardT > 0) continue;
-      const near = enemies.enemies.filter((e) => e.alive && e.def.aggro !== 'none' && (e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') && dist(e, p) < 4 + e.radius).length;
-      const bossCasting = target.def.boss && target.engaged && (target.windup > 0 || this.ctx.dangerEscape() !== null);
-      const want = near >= 3 || (near >= 1 && p.hp / p.stats.maxHp < 0.6) || (target.def.boss && target.engaged && dist(target, p) < 6) || bossCasting;
-      if (want) return skills.cast(slot, true);
+      if (!skills.canCast(slot)) continue;
+      if (sk.auto === 'guard') {
+        if (p.guardT > 0 || p.bloodlustT > 0) continue;
+        const bossCasting = target.def.boss && target.engaged && (target.windup > 0 || this.ctx.dangerEscape() !== null);
+        const want = near >= 3 || (near >= 1 && p.hp / p.stats.maxHp < 0.6) || bossNear || bossCasting;
+        if (want && skills.cast(slot, true)) return true;
+      } else if (sk.auto === 'burst') {
+        if (p.berserkT > 0) continue;
+        if ((bossNear || near >= 3) && skills.cast(slot, true)) return true;
+      }
     }
     return false;
   }

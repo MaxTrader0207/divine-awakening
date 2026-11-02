@@ -26,7 +26,7 @@ src/
 │  ├─ zones.ts                主城、新手草原、三層副本（地形、高台、生怪、傳送、商店入口）
 │  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
 │  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
-│  ├─ classes.ts              職業（法師、弓手、騎士）：屬性、成長、技能表、模型動畫、武器名稱
+│  ├─ classes.ts              職業（法師、弓手、騎士、狂戰士）、怒氣規則 RAGE：屬性、成長、技能表、模型動畫、武器名稱
 │  └─ player.ts               經驗曲線、statsForLevel(level, class)
 ├─ input/                     InputManager（鍵盤 + 搖桿 + 按住）、VirtualJoystick
 ├─ entities/

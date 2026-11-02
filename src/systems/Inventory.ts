@@ -1,6 +1,7 @@
 import type { EquipSlot, Rarity, Stats } from '@/data/types';
 import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice } from '@/data/items';
 import { statsForLevel } from '@/data/player';
+import { CLASSES, RAGE } from '@/data/classes';
 
 /**
  * 背包與裝備（純邏輯，不碰畫面；全部可單元測試）
@@ -50,6 +51,8 @@ export function computeStats(s: InventoryState): Stats {
   }
   st.maxHp = Math.round(st.maxHp);
   st.maxMp = Math.round(st.maxMp);
+  // 怒氣職業：上限固定 100（裝備的 MP 不加怒氣）
+  if (CLASSES[s.heroClass ?? 'mage']?.resource === 'rage') st.maxMp = RAGE.max;
   st.atk = Math.round(st.atk);
   st.def = Math.round(st.def * 10) / 10;
   st.pen = Math.min(0.9, st.pen);

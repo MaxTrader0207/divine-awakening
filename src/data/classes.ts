@@ -6,7 +6,7 @@ import type { SkillDef, Stats } from './types';
  * 新增職業：在 CLASSES 加一筆（屬性、技能、模型動畫、武器名稱），
  * 技能效果寫在 systems/SkillSystem.ts 的 cast()（依 skill.id 分派）。
  */
-export type HeroClass = 'mage' | 'archer' | 'knight';
+export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker';
 
 /** 模型動畫名稱對應（KayKit 動畫名） */
 export interface HeroAnimSet {
@@ -34,7 +34,22 @@ export interface ClassDef {
   /** 武器欄的名稱（第 1~4 階）與圖示 */
   weaponNames: [string, string, string, string];
   weaponIcon: string;
+  /** 資源：mp 魔力（自然回復）；rage 怒氣（上限 100，打人 / 被打累積，脫戰消退） */
+  resource?: 'mp' | 'rage';
 }
+
+/** 怒氣規則（狂戰士） */
+export const RAGE = {
+  max: 100,
+  /** 每打中一隻敵人 */
+  perHit: 3,
+  /** 每次受傷 */
+  perHurt: 6,
+  /** 脫戰幾秒後開始消退 */
+  idleDelay: 5,
+  /** 每秒消退 */
+  decay: 6,
+};
 
 export const CLASSES: Record<HeroClass, ClassDef> = {
   mage: {
@@ -91,6 +106,25 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
     weaponNames: ['見習長劍', '珊瑚劍', '熔心劍', '霧森聖劍'],
     weaponIcon: '🗡️',
   },
+  berserker: {
+    id: 'berserker',
+    name: '狂戰士',
+    desc: '雙手巨斧近戰爆發，打人累積怒氣放大招、嗜血回血',
+    icon: '🪓',
+    resource: 'rage',
+    base: { maxHp: 290, maxMp: 100, atk: 25, def: 8, pen: 0.05, moveSpeed: 6.6, critRate: 0.08, critDmg: 1.7 },
+    perLevel: { maxHp: 54, atk: 4.2, def: 1.8 },
+    skills: [
+      { id: 'cleave', name: '劈砍', slot: 'basic', mpCost: 0, cooldown: 0.7, power: 1.5, range: 2.9, shape: 'cone', arc: 2.2, icon: '🪓', color: 0xffb08a, auto: 'single', anim: '2H_Melee_Attack_Slice' },
+      { id: 'leap', name: '躍擊', slot: 'Q', mpCost: 20, cooldown: 6, power: 2.2, range: 8, shape: 'circle', radius: 2.8, icon: '⤒', color: 0xff8a4a, auto: 'gap', anim: 'Jump_Full_Short' },
+      { id: 'bloodlust', name: '嗜血', slot: 'W', mpCost: 30, cooldown: 15, power: 0, range: 0, shape: 'circle', duration: 6, icon: '🩸', color: 0xff4a5a, auto: 'guard', anim: 'Cheer' },
+      { id: 'execute', name: '斬殺', slot: 'E', mpCost: 40, cooldown: 7, power: 3.2, range: 3.2, shape: 'cone', arc: 1.4, icon: '💀', color: 0xff3a2a, auto: 'single', anim: '2H_Melee_Attack_Chop' },
+      { id: 'berserk', name: '狂暴', slot: 'R', mpCost: 0, cooldown: 30, power: 0, range: 0, shape: 'circle', duration: 8, icon: '🔥', color: 0xff5a2a, auto: 'burst', anim: 'Cheer' },
+    ],
+    anims: { model: 'barbarian', idle: '2H_Melee_Idle', run: 'Running_A', cast: '2H_Melee_Attack_Slice', castBig: '2H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
+    weaponNames: ['見習戰斧', '珊瑚戰斧', '熔心戰斧', '霧森巨斧'],
+    weaponIcon: '🪓',
+  },
 };
 
-export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight'];
+export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker'];

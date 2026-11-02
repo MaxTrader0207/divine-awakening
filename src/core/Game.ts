@@ -17,7 +17,7 @@ import { DamageNumbers } from '@/ui/DamageNumbers';
 import { EnemyManager } from '@/systems/EnemyManager';
 import { ProjectileSystem } from '@/systems/ProjectileSystem';
 import { TargetSelector } from '@/systems/TargetSelector';
-import { GUARD_REDUCTION, SkillSystem } from '@/systems/SkillSystem';
+import { BERSERK, BLOODLUST_LEECH, GUARD_REDUCTION, SkillSystem } from '@/systems/SkillSystem';
 import { Effects } from '@/systems/Effects';
 import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
@@ -32,7 +32,7 @@ import { AudioSystem } from '@/audio/Audio';
 import { Quality, type QualitySetting } from '@/systems/Quality';
 import { ensureToday, progressQuests, questText, type QuestEvent } from '@/systems/DailyQuests';
 import { Cloud } from '@/net/Cloud';
-import { CLASSES, type HeroClass } from '@/data/classes';
+import { CLASSES, RAGE, type HeroClass } from '@/data/classes';
 import { applyClassWeaponNames } from '@/data/items';
 
 /** 被攻擊後自動反擊的持續秒數 */
@@ -86,6 +86,11 @@ export class Game {
   private aiCtx!: AiContext;
   private fadeEl: HTMLElement;
   private pauseScreen!: PauseScreen;
+  /** 怒氣職業：距離上次戰鬥（打人 / 被打）的秒數 */
+  private rageIdle = 0;
+  private get usesRage() {
+    return CLASSES[this.state.heroClass]?.resource === 'rage';
+  }
   /** 暫停中：不推進任何遊戲邏輯，只渲染 */
   paused = false;
 
@@ -304,6 +309,18 @@ export class Game {
     bus.on('skill:cast', ({ slot }) => slot === 'potion' && quest({ type: 'potion' }));
     bus.on('enhance:done', () => quest({ type: 'enhance' }));
 
+    // ---- 怒氣（狂戰士）與嗜血 ----
+    bus.on('combat:hit', (hit) => {
+      const p = this.player;
+      if (!hit.targetIsPlayer && p.bloodlustT > 0 && p.alive) {
+        p.hp = Math.min(p.stats.maxHp, p.hp + hit.amount * BLOODLUST_LEECH);
+      }
+      if (!this.usesRage) return;
+      this.rageIdle = 0;
+      const gain = (hit.targetIsPlayer ? RAGE.perHurt : RAGE.perHit) * (p.berserkT > 0 ? BERSERK.rage : 1);
+      p.mp = Math.min(p.stats.maxMp, p.mp + gain);
+    });
+
     // ---- Events ----
     bus.on('player:hurt', ({ source }) => {
       this.counterTarget = source as Enemy;
@@ -488,7 +505,11 @@ export class Game {
   private regen(dt: number) {
     const p = this.player;
     if (!p.alive) return;
-    if (p.mp < p.stats.maxMp) p.mp = Math.min(p.stats.maxMp, p.mp + (2 + p.stats.maxMp * 0.01) * dt);
+    if (this.usesRage) {
+      // 怒氣：不會自然回復，脫戰一段時間後消退
+      this.rageIdle += dt;
+      if (this.rageIdle > RAGE.idleDelay && p.mp > 0) p.mp = Math.max(0, p.mp - RAGE.decay * dt);
+    } else if (p.mp < p.stats.maxMp) p.mp = Math.min(p.stats.maxMp, p.mp + (2 + p.stats.maxMp * 0.01) * dt);
     const safe = this.zones.current?.def.safe;
     if (p.hp < p.stats.maxHp && (safe || p.sinceHurt > 5)) p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * (safe ? 0.1 : 0.02) * dt);
   }

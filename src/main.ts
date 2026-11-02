@@ -56,8 +56,8 @@ function pickClass(): Promise<HeroClass> {
       const c = CLASSES[id];
       const b = document.createElement('button');
       b.className = 'cp-card';
-      const sk = c.skills.filter((s) => s.slot !== 'basic').map((s) => `${s.icon} ${s.name}`).join('　');
-      b.innerHTML = `<span class="cp-ico">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small><em>${sk}</em><i>HP ${c.base.maxHp}・攻擊 ${c.base.atk}・移速 ${c.base.moveSpeed}・爆擊 ${Math.round(c.base.critRate * 100)}%</i>`;
+      const sk = c.skills.filter((s) => s.slot !== 'basic').map((s) => `<span>${s.icon} ${s.name}</span>`).join(' ');
+      b.innerHTML = `<span class="cp-ico">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small><em>${sk}</em><i>HP ${c.base.maxHp}・攻擊 ${c.base.atk}・防禦 ${c.base.def}<br>移速 ${c.base.moveSpeed}・爆擊 ${Math.round(c.base.critRate * 100)}%</i>`;
       b.addEventListener('click', () => {
         el.classList.add('done');
         setTimeout(() => el.remove(), 350);

@@ -33,7 +33,8 @@ export class Hud {
   private hudTimer = 0;
 
   constructor(uiRoot: HTMLElement, private state: GameState, private player: Player, private input: InputManager, private skills: SkillSystem) {
-    this.root = h('div', { class: 'hud' });
+    // 怒氣職業：MP 條與頭像右半改成橘紅色
+    this.root = h('div', { class: `hud${skills.usesRage ? ' rage' : ''}` });
     uiRoot.appendChild(this.root);
 
     // ---- 左上狀態框 ----

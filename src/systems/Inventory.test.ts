@@ -101,3 +101,11 @@ describe('rollDrop', () => {
     expect(n / 4000).toBeLessThan(0.22);
   });
 });
+
+describe('狂戰士怒氣上限', () => {
+  it('怒氣上限固定 100，不受等級與裝備 MP 影響', () => {
+    const s: InventoryState = { inventory: [], equipment: { hat: { uid: 1, base: 'hat_t3', rarity: 'epic', plus: 5 } }, nextUid: 2, gold: 0, gems: 0, level: 20, heroClass: 'berserker' };
+    expect(computeStats(s).maxMp).toBe(100);
+    expect(computeStats({ ...s, heroClass: 'mage' }).maxMp).toBeGreaterThan(100);
+  });
+});

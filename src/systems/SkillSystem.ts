@@ -9,7 +9,7 @@ import type { EnemyManager } from './EnemyManager';
 import type { ProjectileSystem } from './ProjectileSystem';
 import type { TargetSelector } from './TargetSelector';
 import type { Effects } from './Effects';
-import { damageArea, damageCone, damageEnemy } from './Damage';
+import { damageArea, damageCone, damageEnemy, inCone } from './Damage';
 import type { Enemy } from '@/entities/Enemy';
 
 /**
@@ -34,6 +34,12 @@ import type { Enemy } from '@/entities/Enemy';
  *  W     守護       4 秒受到傷害 -60%，6m 內敵人被挑釁
  *  E     旋風斬     自身周圍 3.6m，0.3 秒一圈共 3 圈
  *  R     衝鋒       往目標 / 搖桿方向衝 7m，撞到的敵人受傷，0.35 秒無敵
+ * 狂戰士（資源是怒氣：打人 / 被打累積，見 data/classes.ts 的 RAGE）
+ *  普攻  劈砍       前方扇形 2.9m / 126°
+ *  Q     躍擊       跳到目標（8m 內），落地 r2.8 範圍傷害＋緩速，空中無敵
+ *  W     嗜血       6 秒內造成傷害的 18% 回血
+ *  E     斬殺       前方重擊，目標血量低於 35% 時傷害 ×2
+ *  R     狂暴       8 秒攻擊力 +25%、普攻冷卻 ×0.6、怒氣獲得 ×1.5
  */
 export const POTION_COOLDOWN = 2;
 export const POTION_HEAL_RATIO = 0.35;
@@ -41,6 +47,12 @@ export const FROST_SLOW = { duration: 2.5, mul: 0.5 };
 export const FLAME_DELAY = 0.35;
 /** 守護減傷比例 */
 export const GUARD_REDUCTION = 0.6;
+/** 嗜血回血比例 */
+export const BLOODLUST_LEECH = 0.18;
+/** 狂暴：攻擊力倍率、普攻冷卻倍率、怒氣獲得倍率 */
+export const BERSERK = { atk: 1.25, basicCd: 0.6, rage: 1.5 };
+/** 斬殺：低血量門檻與倍率 */
+export const EXECUTE = { threshold: 0.35, mul: 2 };
 
 export interface SkillContext {
   player: Player;
@@ -67,8 +79,15 @@ export class SkillSystem {
   private tmp = new THREE.Vector3();
   private guardFx = 0;
 
+  /** 資源名稱（提示用） */
+  private resName: string;
+  /** 資源是怒氣（AUTO 不喝藍水補怒氣） */
+  readonly usesRage: boolean;
+
   constructor(private ctx: SkillContext, heroClass: HeroClass = 'mage') {
     this.list = CLASSES[heroClass].skills;
+    this.usesRage = CLASSES[heroClass].resource === 'rage';
+    this.resName = this.usesRage ? '怒氣' : 'MP';
     this.bySlot = Object.fromEntries(this.list.map((s) => [s.slot, s])) as Record<SkillSlot, SkillDef>;
   }
 
@@ -99,13 +118,14 @@ export class SkillSystem {
   update(dt: number) {
     for (const k of Object.keys(this.cd) as SkillSlot[]) this.cd[k] = Math.max(0, this.cd[k] - dt);
     this.potionCd = Math.max(0, this.potionCd - dt);
-    // 守護中：腳下持續出現藍色護盾光圈
+    // 守護（藍）/ 嗜血（紅）/ 狂暴（橘）：腳下持續出現光圈
     const p = this.ctx.player;
-    if (p.guardT > 0) {
+    if (p.guardT > 0 || p.bloodlustT > 0 || p.berserkT > 0) {
       this.guardFx -= dt;
       if (this.guardFx <= 0) {
         this.guardFx = 0.35;
-        this.ctx.effects.ring(p.pos.x, p.pos.z, 1.5, 1.1, 0x8fd4ff, 0.35);
+        const color = p.guardT > 0 ? 0x8fd4ff : p.berserkT > 0 ? 0xff6a2a : 0xff4a5a;
+        this.ctx.effects.ring(p.pos.x, p.pos.z, 1.5, 1.1, color, 0.35);
       }
     }
     for (let i = this.delayed.length - 1; i >= 0; i--) {
@@ -128,7 +148,7 @@ export class SkillSystem {
     if (!p.alive) return false;
     if (this.cd[slot] > 0) return false;
     if (p.mp < sk.mpCost) {
-      if (!silent) bus.emit('toast', { text: 'MP 不足' });
+      if (!silent) bus.emit('toast', { text: `${this.resName}不足` });
       return false;
     }
     let ok = false;
@@ -178,10 +198,25 @@ export class SkillSystem {
       case 'charge':
         ok = this.castCharge(sk);
         break;
+      case 'cleave':
+        ok = this.castCleave(sk);
+        break;
+      case 'leap':
+        ok = this.castLeap(sk);
+        break;
+      case 'bloodlust':
+        ok = this.castBloodlust(sk);
+        break;
+      case 'execute':
+        ok = this.castExecute(sk);
+        break;
+      case 'berserk':
+        ok = this.castBerserk(sk);
+        break;
     }
     if (!ok) return false;
     p.mp -= sk.mpCost;
-    this.cd[slot] = sk.cooldown;
+    this.cd[slot] = sk.cooldown * (slot === 'basic' && p.berserkT > 0 ? BERSERK.basicCd : 1);
     bus.emit('skill:cast', { slot, id: sk.id });
     if (sk.mpCost > 0) bus.emit('player:changed');
     return true;
@@ -521,6 +556,109 @@ export class SkillSystem {
     p.facing = Math.atan2(dx, dz);
     p.invulnerable = Math.max(p.invulnerable, 0.35);
     fx.disc(p.pos.x, p.pos.z, 2.2, sk.color, 0.35, 0.45);
+    return true;
+  }
+
+  /* ---------------- 狂戰士 ---------------- */
+
+  /** 狂暴中攻擊力提升 */
+  private atkStats() {
+    const p = this.ctx.player;
+    return p.berserkT > 0 ? { ...p.stats, atk: p.stats.atk * BERSERK.atk } : p.stats;
+  }
+
+  private castCleave(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.meleeAim(sk.range);
+    p.cast(dx, dz);
+    p.act(sk.anim, p.berserkT > 0 ? 2.6 : 2);
+    const facing = Math.atan2(dx, dz);
+    this.ctx.effects.arc(p.pos.x, p.pos.z, facing, 0.9, sk.range, p.berserkT > 0 ? 0xff7a3a : sk.color, 0.22, 1.0 + p.groundY);
+    damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, sk.range, sk.arc ?? 2.2, this.atkStats(), sk.power);
+    return true;
+  }
+
+  private castLeap(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const r = sk.radius ?? 2.8;
+    const { target, dx, dz } = this.aim(sk.range);
+    // 落點：目標腳邊（不疊在目標身上），沒有目標就往前 6m
+    let tx = p.pos.x + dx * 6;
+    let tz = p.pos.z + dz * 6;
+    if (target) {
+      const d = Math.hypot(target.pos.x - p.pos.x, target.pos.z - p.pos.z);
+      const stop = Math.max(0, d - target.radius - 0.8);
+      tx = p.pos.x + dx * stop;
+      tz = p.pos.z + dz * stop;
+    }
+    p.cast(dx, dz);
+    p.act(sk.anim, 1.9);
+    p.invulnerable = Math.max(p.invulnerable, 0.5);
+    const fx = this.ctx.effects;
+    fx.ring(tx, tz, r * 1.4, r, sk.color, 0.45);
+    const sx = p.pos.x;
+    const sz = p.pos.z;
+    const steps = 8;
+    const col = this.ctx.collision();
+    for (let i = 1; i <= steps; i++) {
+      this.delayed.push({
+        t: (0.42 * i) / steps,
+        run: () => {
+          p.pos.x = sx + ((tx - sx) * i) / steps;
+          p.pos.z = sz + ((tz - sz) * i) / steps;
+          col.resolve(p.pos, p.radius);
+          if (i < steps) return;
+          // 落地
+          fx.disc(p.pos.x, p.pos.z, r, 0xff6a2a, 0.4, 0.7);
+          fx.ring(p.pos.x, p.pos.z, 0.5, r * 1.3, 0xffc46b, 0.4);
+          fx.pillar(p.pos.x, p.pos.z, 0.6, sk.color, 0.35);
+          bus.emit('skill:cast', { slot: 'impact', id: 'leap_land' });
+          damageArea(this.ctx.enemies.enemies, p.pos.x, p.pos.z, r, this.atkStats(), sk.power, (e) => e.applySlow(1.5, 0.5));
+        },
+      });
+    }
+    return true;
+  }
+
+  private castBloodlust(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    p.bloodlustT = sk.duration ?? 6;
+    p.act(sk.anim, 1.8);
+    this.ctx.effects.pillar(p.pos.x, p.pos.z, 0.8, sk.color, 0.5);
+    this.ctx.effects.ring(p.pos.x, p.pos.z, 0.4, 2.4, sk.color, 0.45);
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '嗜血', kind: 'info' });
+    return true;
+  }
+
+  private castExecute(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.meleeAim(sk.range);
+    p.cast(dx, dz);
+    p.act(sk.anim, 1.7);
+    const fx = this.ctx.effects;
+    const facing = Math.atan2(dx, dz);
+    fx.arc(p.pos.x, p.pos.z, facing, 0.5, sk.range, sk.color, 0.3, 1.1 + p.groundY);
+    const stats = this.atkStats();
+    let n = 0;
+    for (const e of this.ctx.enemies.enemies) {
+      if (!e.alive || !inCone(e, p.pos.x, p.pos.z, dx, dz, sk.range, sk.arc ?? 1.4)) continue;
+      const low = e.hp / e.def.stats.maxHp < EXECUTE.threshold;
+      damageEnemy(e, stats, sk.power * (low ? EXECUTE.mul : 1));
+      fx.pillar(e.pos.x, e.pos.z, low ? 0.7 : 0.4, low ? 0xff2a1a : sk.color, 0.35);
+      n++;
+    }
+    if (!n) fx.disc(p.pos.x + dx * 2, p.pos.z + dz * 2, 1.2, sk.color, 0.3, 0.4);
+    return true;
+  }
+
+  private castBerserk(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    p.berserkT = sk.duration ?? 8;
+    p.act(sk.anim, 1.8);
+    const fx = this.ctx.effects;
+    fx.pillar(p.pos.x, p.pos.z, 1, sk.color, 0.6);
+    fx.ring(p.pos.x, p.pos.z, 0.5, 3.5, 0xffa24a, 0.5);
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '狂暴！', kind: 'info' });
     return true;
   }
 }
