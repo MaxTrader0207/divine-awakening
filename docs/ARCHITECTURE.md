@@ -71,6 +71,7 @@ src/
    ├─ Menu.ts                 選單殼與「地圖 / 設定」分頁
    ├─ InventoryTabs.ts        「裝備 / 強化 / 商城」分頁
    ├─ CloudTabs.ts            雲端存檔卡片、「排行」分頁
+   ├─ PauseScreen.ts          暫停畫面：繼續、存檔、設定、裝備、地圖、回到開頭畫面
    ├─ TitleScreen.ts          開頭畫面：繼續遊戲、5 格存檔（選擇 / 新遊戲 / 刪除）
    ├─ DamageNumbers.ts        傷害數字與漂浮文字（DOM 物件池）
    ├─ Minimap.ts、dom.ts、style.css
@@ -83,7 +84,7 @@ scripts/build-assets.mjs      素材管線
 ## 每幀更新順序
 
 ```
-frame():  Timer.update → tick(dt，上限 0.05 秒) → render
+frame():  Timer.update → （暫停中：pausedFrame() 只處理繼續鍵）否則 tick(dt，上限 0.05 秒) → render
 tick(dt):
   InputManager.update
   選單開關
@@ -163,3 +164,11 @@ raw  = atk × 技能倍率
 - `Game.tick()`：有交戰中的首領 → `setMusic('boss')`＋`setBossIntensity(血量<50% ? 1 : 0)`；否則播 `ZoneDef.music`（沒填依 kind）。
 - 換曲：一般 0.7 秒淡出淡入；進魔王戰 0.25 秒快速切換。
 - 排程落後（手機卡頓）時跳過錯過的拍子，保持節拍。
+
+## 暫停
+
+- `Game.setPaused(v)`：暫停時 `frame()` 不呼叫 `tick()`，所以敵人、首領技能、預警、冷卻、自動回復、AUTO、遊戲時間、自動存檔計時全部停住；畫面照常渲染。
+- 進入暫停會先存檔；音樂轉小聲（30%），音效除了 UI 按鈕都靜音。
+- 觸發：HUD 右上「暫停」鈕（`pause:toggle` 事件）、電腦按 Esc、切到別的 App / 分頁（`visibilitychange` hidden）自動暫停。換地圖中、倒地時不能暫停。
+- 暫停中可以開選單（存檔、設定、裝備、地圖）；選單開著時暫停畫面隱藏，關掉後回到暫停畫面。
+- 選單本身不會暫停世界（沿用原設計）。

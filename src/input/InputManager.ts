@@ -5,9 +5,9 @@ import { VirtualJoystick } from './VirtualJoystick';
  * 遊戲邏輯只讀 move / pressed，不直接碰 DOM 事件。
  *
  * 鍵位（電腦測試用）：WASD / 方向鍵 = 移動；J 或空白 = 普攻；
- * 技能 Q/W/E/R 因為 W 與移動衝突，鍵盤改用 U/I/O/P；1/2 = 藥水；T = AUTO；M/Esc = 選單
+ * 技能 Q/W/E/R 因為 W 與移動衝突，鍵盤改用 U/I/O/P；1/2 = 藥水；T = AUTO；M = 選單；Esc = 暫停 / 繼續
  */
-export type ActionKey = 'basic' | 'Q' | 'W' | 'E' | 'R' | 'potionHp' | 'potionMp' | 'auto' | 'menu';
+export type ActionKey = 'basic' | 'Q' | 'W' | 'E' | 'R' | 'potionHp' | 'potionMp' | 'auto' | 'menu' | 'pause';
 
 const KEY_BINDINGS: Record<string, ActionKey> = {
   KeyJ: 'basic',
@@ -19,7 +19,7 @@ const KEY_BINDINGS: Record<string, ActionKey> = {
   Digit1: 'potionHp',
   Digit2: 'potionMp',
   KeyT: 'auto',
-  Escape: 'menu',
+  Escape: 'pause',
   KeyM: 'menu',
 };
 
@@ -65,6 +65,12 @@ export class InputManager {
     if (this.uiHeld.has(action)) return true;
     for (const [code, a] of Object.entries(KEY_BINDINGS)) if (a === action && this.keys.has(code)) return true;
     return false;
+  }
+
+  /** 清掉還沒處理的按鍵（暫停 / 繼續時用，避免恢復後誤觸） */
+  clearPressed() {
+    this.justPressed.clear();
+    this.uiHeld.clear();
   }
 
   /** 本幀是否按下（讀取後清除） */

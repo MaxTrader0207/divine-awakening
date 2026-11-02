@@ -61,6 +61,7 @@ export class Hud {
       h('div', { class: 'tr-row' }, [zoomCol, mapBox]),
       h('div', { class: 'wallet' }, [h('span', { class: 'coin' }), (this.els.gold = h('b')), h('span', { class: 'gem' }), (this.els.gems = h('b'))]),
       h('div', { class: 'tr-btns' }, [
+        h('button', { class: 'icon-btn pause-btn', 'aria-label': '暫停', onclick: () => bus.emit('pause:toggle') }, [h('span', {}, '⏸'), h('small', {}, '暫停')]),
         h('button', { class: 'icon-btn', onclick: () => bus.emit('menu:open', { tab: 'equip' }) }, [h('span', {}, '🎒'), h('small', {}, '裝備')]),
         h('button', { class: 'icon-btn', onclick: () => bus.emit('menu:open', claimableCount(this.state.daily) ? { tab: 'quests' } : {}) }, [h('span', {}, '☰'), h('small', {}, '選單'), (this.els.badge = h('i', { class: 'badge' }))]),
       ]),

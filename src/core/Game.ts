@@ -3,6 +3,8 @@ import { bus } from './EventBus';
 import { newGameState, type GameState } from './GameState';
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
+import { PauseScreen } from '@/ui/PauseScreen';
+import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
 import { ZONES, DUNGEON_ORDER } from '@/data/zones';
 import { Player } from '@/entities/Player';
@@ -83,6 +85,9 @@ export class Game {
   private counterTimer = 0;
   private aiCtx!: AiContext;
   private fadeEl: HTMLElement;
+  private pauseScreen!: PauseScreen;
+  /** 暫停中：不推進任何遊戲邏輯，只渲染 */
+  paused = false;
 
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement, initialClass: HeroClass = 'mage') {
     this.state = this.save.load() ?? newGameState(initialClass);
@@ -252,6 +257,24 @@ export class Game {
       },
     });
 
+    this.pauseScreen = new PauseScreen(uiRoot, {
+      resume: () => this.setPaused(false),
+      openMenu: (tab) => this.menu.open(tab),
+      toTitle: () => {
+        this.persist();
+        this.resetting = true;
+        location.reload();
+      },
+      info: () => ({
+        place: zoneLabel(this.state.zoneId),
+        level: this.state.level,
+        className: CLASSES[this.state.heroClass]?.name ?? '法師',
+        playTime: this.state.stats.playTime,
+        kills: this.state.stats.kills,
+      }),
+    });
+    bus.on('pause:toggle', () => this.setPaused(!this.paused));
+
     this.fadeEl = document.createElement('div');
     this.fadeEl.className = 'fade';
     uiRoot.appendChild(this.fadeEl);
@@ -292,7 +315,10 @@ export class Game {
     bus.on('camera:zoom', ({ delta }) => this.setZoom(this.state.settings.zoom + delta));
     bus.on('save:request', () => this.persist());
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') this.persist();
+      if (document.visibilityState !== 'hidden') return;
+      this.persist();
+      // 切到別的 App / 分頁：自動暫停，回來時不會被怪打
+      if (!this.transitioning && this.player.alive) this.setPaused(true);
     });
     window.addEventListener('pagehide', () => this.persist());
     window.addEventListener('resize', () => this.resize());
@@ -318,9 +344,37 @@ export class Game {
     // dt 上限 0.05：切到背景再回來時避免角色瞬移穿牆
     this.timer.update();
     const realDt = this.timer.getDelta();
-    this.quality.sample(realDt);
-    this.tick(Math.min(0.05, realDt));
+    if (this.paused) {
+      this.pausedFrame();
+    } else {
+      this.quality.sample(realDt);
+      this.tick(Math.min(0.05, realDt));
+    }
     this.renderer.render(this.scene, this.rig.camera);
+  }
+
+  /** 暫停 / 繼續。暫停時遊戲世界完全停住（敵人、冷卻、AUTO、計時、存檔計時） */
+  setPaused(v: boolean) {
+    if (v === this.paused) return;
+    if (v && (this.transitioning || !this.player.alive)) return; // 換地圖、倒地時不暫停
+    this.paused = v;
+    this.input.clearPressed();
+    this.audio.setPaused(v);
+    if (v) this.persist();
+    else this.menu.close();
+    this.pauseScreen.setVisible(v && !this.menu.isOpen);
+  }
+
+  /** 暫停中的每一幀：只處理「繼續」按鍵，選單開著時隱藏暫停畫面 */
+  private pausedFrame() {
+    this.input.update();
+    if (this.input.consume('pause')) {
+      if (this.menu.isOpen) this.menu.close();
+      else this.setPaused(false);
+    }
+    if (this.input.consume('menu')) this.menu.toggle();
+    this.input.clearPressed();
+    this.pauseScreen.setVisible(!this.menu.isOpen);
   }
 
   /**
@@ -331,6 +385,11 @@ export class Game {
     this.input.update();
 
     if (this.input.consume('menu')) this.menu.toggle();
+    if (this.input.consume('pause')) {
+      if (this.menu.isOpen) this.menu.close();
+      else this.setPaused(true);
+      if (this.paused) return;
+    }
     const canAct = !this.menu.isOpen && !this.transitioning && this.player.alive;
 
     const collision = this.zones.current!.collision;

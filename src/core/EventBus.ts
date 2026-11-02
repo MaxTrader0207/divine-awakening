@@ -14,6 +14,8 @@ export interface GameEvents {
   toast: { text: string; duration?: number };
   banner: { text: string };
   'menu:open': { tab?: MenuTab };
+  /** HUD 暫停鈕 */
+  'pause:toggle': void;
   'camera:zoom': { delta: number };
   'save:request': void;
   'save:written': void;

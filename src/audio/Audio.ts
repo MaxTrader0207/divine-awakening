@@ -32,6 +32,7 @@ export class AudioSystem {
   private music: MusicPlayer | null = null;
   private wantSong: TrackId = 'town';
   private bossIntensity = 0;
+  private paused = false;
   private timer: number | null = null;
   private lastPlay = new Map<SfxId, number>();
 
@@ -79,7 +80,13 @@ export class AudioSystem {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     this.sfxBus.gain.setTargetAtTime(this.settings.sfxVolume * 0.55, t, 0.05);
-    this.musicBus.gain.setTargetAtTime(this.settings.musicVolume * MUSIC_GAIN, t, 0.3);
+    this.musicBus.gain.setTargetAtTime(this.settings.musicVolume * MUSIC_GAIN * (this.paused ? 0.3 : 1), t, this.paused ? 0.12 : 0.3);
+  }
+
+  /** 暫停時音樂轉小聲（不中斷），繼續時恢復 */
+  setPaused(v: boolean) {
+    this.paused = v;
+    this.applyVolume();
   }
 
   /** 指定曲子（區域音樂 / 魔王戰）；同一首重複呼叫不會重播 */
@@ -125,6 +132,7 @@ export class AudioSystem {
   play(id: SfxId) {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== 'running' || this.settings.sfxVolume <= 0) return;
+    if (this.paused && id !== 'ui') return;
     // 同一音效 40ms 內不重複（AoE 一次打很多隻時避免爆音）
     const now = ctx.currentTime;
     if (now - (this.lastPlay.get(id) ?? -1) < 0.04) return;

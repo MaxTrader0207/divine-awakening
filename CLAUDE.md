@@ -27,9 +27,9 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.11.0。10 週 MVP 完成，加上 v1.1~v1.11（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 版本 v1.12.0。10 週 MVP 完成，加上 v1.1~v1.12（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
 - 測試：`npm test`（Vitest 41 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
-- 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。
+- 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。暫停中（`__game.paused`）`frame()` 不呼叫 `tick()`，但 `debugAdvance()` 仍會推進。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
 - 美術：KayKit CC0（`src/assets/models/`，由 `scripts/build-assets.mjs` 產生）；青蛙用 Quaternius CC0 模型；史萊姆、寄居蟹（會動的程式模型）、魔像、蝙蝠、蘑菇仍是程式模型。
 - 職業在 `data/classes.ts`，技能效果在 `SkillSystem.cast()` 依 `skill.id` 分派。
