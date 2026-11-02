@@ -23,6 +23,8 @@ const PILLAR_POOL = 8;
 
 export class Effects {
   private fx: Fx[] = [];
+  /** 地面高度（高台上的技能特效要墊高） */
+  heightAt: (x: number, z: number) => number = () => 0;
 
   constructor(scene: THREE.Scene) {
     const ringGeo = new THREE.RingGeometry(0.86, 1, 48);
@@ -77,7 +79,7 @@ export class Effects {
     f.from = from;
     f.to = to;
     f.opacity = opacity;
-    f.mesh.position.set(x, y, z);
+    f.mesh.position.set(x, y + this.heightAt(x, z), z);
     (f.mesh.material as THREE.MeshBasicMaterial).color.setHex(color);
     f.mesh.visible = true;
     this.apply(f, 0);

@@ -44,8 +44,7 @@ export class TargetSelector {
       return;
     }
     this.ring.visible = true;
-    this.ring.position.x = this.current.pos.x;
-    this.ring.position.z = this.current.pos.z;
+    this.ring.position.set(this.current.pos.x, this.current.groundY + 0.05, this.current.pos.z);
     this.ring.scale.setScalar(this.current.radius * 1.4 * (1 + Math.sin(this.t * 6) * 0.06));
     this.ring.rotation.z += dt;
   }

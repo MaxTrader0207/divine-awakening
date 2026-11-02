@@ -19,6 +19,8 @@ export const PROP_DEFAULTS: Record<PropDef['kind'], { w: number; d: number; h: n
   fountain: { w: 7, d: 7, h: 1.4, solid: true, round: true },
   stairs: { w: 6, d: 4, h: 1.2, solid: false, round: false },
   pillar: { w: 1.4, d: 1.4, h: 3, solid: true, round: true },
+  stonering: { w: 9, d: 9, h: 0.1, solid: false, round: true },
+  crystal: { w: 1.2, d: 1.2, h: 2.2, solid: true, round: true },
 };
 
 const matCache = new Map<number, THREE.MeshLambertMaterial>();
@@ -127,9 +129,43 @@ export function buildProp(p: PropDef): THREE.Object3D {
       }
       break;
     }
-    case 'pillar':
+    case 'pillar': {
       g.add(mesh(new THREE.BoxGeometry(w, h, d), p.color ?? 0xd8d2c2, h / 2));
+      g.add(mesh(new THREE.BoxGeometry(w * 1.25, 0.3, d * 1.25), p.color ?? 0xd8d2c2, h));
       break;
+    }
+    case 'stonering': {
+      // 首領石圈：地面的石環＋符文
+      const ring = new THREE.Mesh(new THREE.RingGeometry(w / 2 - 0.6, w / 2, 40), mat(p.color ?? 0xcfc6b0));
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.03;
+      ring.receiveShadow = true;
+      g.add(ring);
+      const inner = new THREE.Mesh(new THREE.CircleGeometry(w / 2 - 0.6, 40), mat(new THREE.Color(p.color ?? 0xcfc6b0).multiplyScalar(0.82).getHex()));
+      inner.rotation.x = -Math.PI / 2;
+      inner.position.y = 0.02;
+      inner.receiveShadow = true;
+      g.add(inner);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const rune = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.18), new THREE.MeshBasicMaterial({ color: 0xffb36b }));
+        rune.position.set(Math.cos(a) * (w / 2 - 0.3), 0.06, Math.sin(a) * (w / 2 - 0.3));
+        rune.rotation.y = -a;
+        g.add(rune);
+      }
+      break;
+    }
+    case 'crystal': {
+      for (let i = 0; i < 3; i++) {
+        const c = new THREE.Mesh(new THREE.OctahedronGeometry(0.35 + i * 0.12, 0), new THREE.MeshLambertMaterial({ color: p.color ?? 0x8fe8ff, emissive: p.color ?? 0x8fe8ff, emissiveIntensity: 0.35, flatShading: true }));
+        c.scale.y = 2.2;
+        c.position.set((i - 1) * 0.35, 0.6 + i * 0.15, (i % 2) * 0.25);
+        c.rotation.z = (i - 1) * 0.3;
+        c.castShadow = true;
+        g.add(c);
+      }
+      break;
+    }
   }
 
   g.position.set(p.x, 0, p.z);

@@ -29,8 +29,8 @@ export class CameraRig {
     this.apply();
   }
 
-  update(dt: number, x: number, z: number) {
-    this.target.set(x, 0, z);
+  update(dt: number, x: number, z: number, y = 0) {
+    this.target.set(x, y, z);
     this.current.lerp(this.target, 1 - Math.exp(-dt * 8));
     this.apply();
   }
@@ -45,6 +45,6 @@ export class CameraRig {
   private apply() {
     const off = this.offset.clone().multiplyScalar(1 / this.zoom);
     this.camera.position.copy(this.current).add(off);
-    this.camera.lookAt(this.current.x, 0.8, this.current.z);
+    this.camera.lookAt(this.current.x, this.current.y + 0.8, this.current.z);
   }
 }

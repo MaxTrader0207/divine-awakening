@@ -17,6 +17,8 @@ export class Player {
   stats: Stats = statsForLevel(1);
   hp = 0;
   mp = 0;
+  /** 地面高度（高台、石階），由 Game 依 Zone.heightAt 更新 */
+  groundY = 0;
   /** 無敵剩餘秒數（閃現、復活） */
   invulnerable = 0;
   /** 距離上次受傷的秒數（脫戰回血用） */
@@ -94,7 +96,7 @@ export class Player {
   teleport(x: number, z: number) {
     this.pos.x = x;
     this.pos.z = z;
-    this.object.position.set(x, 0, z);
+    this.object.position.set(x, this.groundY, z);
   }
 
   /** 施法：面向指定方向一小段時間並播放揮杖動畫 */
@@ -139,7 +141,7 @@ export class Player {
     this.moveAmount += ((len > 0.001 ? 1 : 0) - this.moveAmount) * Math.min(1, dt * 10);
     this.bobT += dt * (4 + this.moveAmount * 8);
 
-    this.object.position.set(this.pos.x, 0, this.pos.z);
+    this.object.position.set(this.pos.x, this.groundY, this.pos.z);
     this.object.rotation.y = this.facing;
     // 走路：上下彈跳＋前傾；待機：呼吸
     this.body.position.y = Math.abs(Math.sin(this.bobT)) * 0.12 * this.moveAmount + Math.sin(this.bobT * 0.5) * 0.02;

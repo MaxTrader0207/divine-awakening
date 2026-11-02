@@ -43,6 +43,7 @@ export class LootSystem {
     private zoneTier: () => number,
     /** 撿到裝備後（重算屬性、存檔） */
     private onInventoryChanged: () => void,
+    private heightAt: (x: number, z: number) => number = () => 0,
   ) {
     bus.on('enemy:killed', (k) => {
       const tier = this.zoneTier();
@@ -64,7 +65,7 @@ export class LootSystem {
     const px = x + Math.cos(a) * r;
     const pz = z + Math.sin(a) * r;
     const g = new THREE.Group();
-    g.position.set(px, 0, pz);
+    g.position.set(px, this.heightAt(px, pz), pz);
     const color = kind.type === 'item' ? new THREE.Color(RARITY[kind.rarity].color).getHex() : kind.potion === 'hp' ? 0xff6a55 : 0x5cb2ff;
     const bob = new THREE.Group();
     g.add(bob);

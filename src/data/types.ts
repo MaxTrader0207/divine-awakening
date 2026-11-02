@@ -33,7 +33,9 @@ export type PropKind =
   | 'wall'
   | 'fountain'
   | 'stairs'
-  | 'pillar';
+  | 'pillar'
+  | 'stonering'
+  | 'crystal';
 
 export interface PropDef {
   kind: PropKind;
@@ -63,6 +65,20 @@ export interface PatchDef {
   color: number;
   /** water = 不可行走 */
   water?: boolean;
+}
+
+/**
+ * 高台：可以走上去的抬高地面。四周是峭壁（擋住），南側（+z）可開一段石階。
+ * 石階從高台南緣往外延伸 rampLength 公尺，高度線性下降到 0。
+ */
+export interface PlatformDef {
+  x: number;
+  z: number;
+  w: number;
+  d: number;
+  h: number;
+  color?: number;
+  stairs?: { x: number; width: number };
 }
 
 /** 傳送點：走進去就切換區域 */
@@ -111,6 +127,7 @@ export interface ZoneDef {
   skyColor: number;
   fogColor: number;
   patches: PatchDef[];
+  platforms?: PlatformDef[];
   props: PropDef[];
   portals: PortalDef[];
   spawn: Vec2;

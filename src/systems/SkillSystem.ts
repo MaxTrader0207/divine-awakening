@@ -175,7 +175,7 @@ export class SkillSystem {
     const p = this.ctx.player;
     const { target, dx, dz } = this.aim(sk.range);
     p.cast(dx, dz);
-    const from = this.tmp.set(p.pos.x + dx * 0.6, 1.5, p.pos.z + dz * 0.6);
+    const from = this.tmp.set(p.pos.x + dx * 0.6, 1.5 + p.groundY, p.pos.z + dz * 0.6);
     const fx = this.ctx.effects;
     return this.ctx.projectiles.fire({
       from,

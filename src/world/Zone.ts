@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import type { PortalDef, ZoneDef } from '@/data/types';
+import type { PlatformDef, PortalDef, ZoneDef } from '@/data/types';
+
+/** 石階長度（公尺） */
+const RAMP = 3.5;
 import { CollisionWorld } from './Collision';
 import { buildProp, PROP_DEFAULTS, mat } from './Props';
 import { makeLabelSprite } from './Label';
@@ -53,9 +56,13 @@ export class Zone {
       }
     });
 
-    // 靜態物件與碰撞
+    for (const pf of def.platforms ?? []) this.buildPlatform(pf);
+
+    // 靜態物件與碰撞（放在高台上的物件會自動墊高）
     for (const p of def.props) {
-      this.group.add(buildProp(p));
+      const obj = buildProp(p);
+      obj.position.y = this.heightAt(p.x, p.z);
+      this.group.add(obj);
       const pd = PROP_DEFAULTS[p.kind];
       if (!(p.solid ?? pd.solid)) continue;
       const pw = p.w ?? pd.w;
@@ -76,6 +83,78 @@ export class Zone {
       this.group.add(ring);
       this.animated.push({ obj: ring, kind: 'pulse', phase: 2 });
     }
+  }
+
+  /** 地面高度（高台、石階）；角色、敵人、特效都用它決定 y */
+  heightAt(x: number, z: number): number {
+    let y = 0;
+    for (const pf of this.def.platforms ?? []) {
+      const hw = pf.w / 2;
+      const hd = pf.d / 2;
+      if (x >= pf.x - hw && x <= pf.x + hw && z >= pf.z - hd && z <= pf.z + hd) y = Math.max(y, pf.h);
+      else if (pf.stairs) {
+        const s = pf.stairs;
+        const z0 = pf.z + hd;
+        if (Math.abs(x - s.x) <= s.width / 2 && z > z0 && z < z0 + RAMP) y = Math.max(y, pf.h * (1 - (z - z0) / RAMP));
+      }
+    }
+    return y;
+  }
+
+  private buildPlatform(pf: PlatformDef) {
+    const color = pf.color ?? this.def.groundColor;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(pf.w, pf.h, pf.d), [
+      mat(darkenHex(color, 0.7)), mat(darkenHex(color, 0.7)), mat(color), mat(darkenHex(color, 0.6)), mat(darkenHex(color, 0.75)), mat(darkenHex(color, 0.75)),
+    ]);
+    top.position.set(pf.x, pf.h / 2, pf.z);
+    top.receiveShadow = true;
+    top.castShadow = true;
+    this.group.add(top);
+    // 峭壁邊緣的石塊裝飾
+    const rim = mat(darkenHex(color, 0.55));
+    for (let i = 0; i < Math.floor(pf.w / 2.2); i++) {
+      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.5 + (i % 3) * 0.15, 0), rim);
+      r.position.set(pf.x - pf.w / 2 + 1 + i * 2.2, 0.3, pf.z - pf.d / 2 - 0.2);
+      r.castShadow = true;
+      this.group.add(r);
+    }
+
+    const hw = pf.w / 2;
+    const hd = pf.d / 2;
+    const T = 0.5;
+    // 北、西、東三邊整段擋住
+    this.collision.addBox(pf.x, pf.z - hd, pf.w + T, T);
+    this.collision.addBox(pf.x - hw, pf.z, T, pf.d + T);
+    this.collision.addBox(pf.x + hw, pf.z, T, pf.d + T);
+    // 南邊：留出石階缺口
+    if (pf.stairs) {
+      const s = pf.stairs;
+      const gapL = s.x - s.width / 2;
+      const gapR = s.x + s.width / 2;
+      const leftW = gapL - (pf.x - hw);
+      const rightW = pf.x + hw - gapR;
+      if (leftW > 0) this.collision.addBox(pf.x - hw + leftW / 2, pf.z + hd, leftW, T);
+      if (rightW > 0) this.collision.addBox(gapR + rightW / 2, pf.z + hd, rightW, T);
+      // 石階兩側的矮牆
+      this.collision.addBox(gapL - 0.2, pf.z + hd + RAMP / 2, 0.4, RAMP);
+      this.collision.addBox(gapR + 0.2, pf.z + hd + RAMP / 2, 0.4, RAMP);
+      const steps = 6;
+      const stepD = RAMP / steps;
+      for (let i = 0; i < steps; i++) {
+        const sh = pf.h * (1 - i / steps);
+        const st = new THREE.Mesh(new THREE.BoxGeometry(s.width, sh, stepD), mat(0xe9e2d0));
+        st.position.set(s.x, sh / 2, pf.z + hd + stepD * (i + 0.5));
+        st.receiveShadow = true;
+        st.castShadow = true;
+        this.group.add(st);
+      }
+      for (const sx of [gapL - 0.2, gapR + 0.2]) {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, pf.h * 0.9, RAMP), mat(0xcfc6b0));
+        wall.position.set(sx, pf.h * 0.45, pf.z + hd + RAMP / 2);
+        wall.castShadow = true;
+        this.group.add(wall);
+      }
+    } else this.collision.addBox(pf.x, pf.z + hd, pf.w + T, T);
   }
 
   private buildPortal(p: PortalDef): THREE.Object3D {
@@ -145,6 +224,10 @@ export class Zone {
     });
     this.group.removeFromParent();
   }
+}
+
+function darkenHex(hex: number, f: number): number {
+  return new THREE.Color(hex).multiplyScalar(f).getHex();
 }
 
 function darken(hex: number, f: number): number {

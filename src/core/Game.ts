@@ -123,6 +123,7 @@ export class Game {
       this.effects,
       () => this.zones.current?.def.dungeon?.floor ?? 1,
       () => this.onInventoryChanged(),
+      (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
     );
     this.auto = new AutoBattle({
       player: this.player,
@@ -251,6 +252,8 @@ export class Game {
     }
 
     this.aiCtx.collision = collision;
+    const zoneNow = this.zones.current!;
+    this.player.groundY += (zoneNow.heightAt(this.player.pos.x, this.player.pos.z) - this.player.groundY) * Math.min(1, dt * 14);
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
     this.effects.update(dt);
     this.loot.update(dt);
@@ -258,7 +261,7 @@ export class Game {
     this.projectiles.update(dt, this.rig.camera);
     this.targets.update(dt);
     this.zones.update(dt);
-    this.rig.update(dt, this.player.pos.x, this.player.pos.z);
+    this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
     this.followSun();
     this.damageNumbers.update(dt, this.rig.camera);
     this.hud.update(dt);
@@ -457,9 +460,13 @@ export class Game {
     this.counterTimer = 0;
     this.counterTarget = null;
     const zone = this.zones.load(id);
+    const h = (x: number, z: number) => zone.heightAt(x, z);
+    this.enemies.heightAt = h;
+    this.effects.heightAt = h;
     this.enemies.spawnForZone(zone.def);
     if (zone.def.safe && this.auto?.on) this.setAuto(false);
     this.state.zoneId = id;
+    this.player.groundY = zone.heightAt(at.x, at.z);
     this.player.teleport(at.x, at.z);
     this.player.update(0, { x: 0, z: 0 }, zone.collision); // 確保出生點不在障礙物內
     this.rig.snapTo(this.player.pos.x, this.player.pos.z);
