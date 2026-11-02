@@ -62,6 +62,12 @@ const CHARACTERS = [
 
 /** 靜態物件：[輸出名, 原始檔名] */
 const PROPS = [
+  // 召喚師骷髏的武器（掛在 handslot 骨頭上）
+  ['skel_blade', 'Skeleton_Blade.gltf'],
+  ['skel_axe', 'Skeleton_Axe.gltf'],
+  ['skel_staff', 'Skeleton_Staff.gltf'],
+  ['skel_shield_small', 'Skeleton_Shield_Small_A.gltf'],
+  ['skel_shield_large', 'Skeleton_Shield_Large_A.gltf'],
   ['building_blacksmith', 'building_blacksmith_blue.gltf'],
   ['building_market', 'building_market_blue.gltf'],
   ['building_tavern', 'building_tavern_blue.gltf'],

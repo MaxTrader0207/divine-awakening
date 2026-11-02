@@ -36,3 +36,6 @@ node scripts/build-assets.mjs <素材資料夾>
 
 ## 背景音樂
 - 6 首背景音樂（艾爾芙的午後、草原小冒險、霧中小徑、古道探險、巨影來襲、勝利）為本專案原創，以 Web Audio 即時合成（`src/audio/songs.ts`），無第三方音檔。
+
+## KayKit : Skeletons 武器
+- 骷髏兵的劍與小盾、骷髏法師的法杖、骷髏巨衛的斧與大盾：KayKit Character Pack : Skeletons 1.0 的 Assets（Skeleton_Blade / Axe / Staff / Shield_Small_A / Shield_Large_A），CC0。
