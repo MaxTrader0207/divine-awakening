@@ -27,6 +27,8 @@ export class InputManager {
   readonly joystick: VirtualJoystick;
   private keys = new Set<string>();
   private justPressed = new Set<ActionKey>();
+  /** UI 按鈕目前按住的動作 */
+  private uiHeld = new Set<ActionKey>();
   /** 世界移動向量（x 東、z 南），長度 0~1 */
   readonly move = { x: 0, z: 0 };
 
@@ -39,12 +41,30 @@ export class InputManager {
       if (action) this.justPressed.add(action);
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
-    window.addEventListener('blur', () => this.keys.clear());
+    window.addEventListener('blur', () => {
+      this.keys.clear();
+      this.uiHeld.clear();
+    });
   }
 
   /** UI 按鈕呼叫，等同按下一次動作鍵 */
   trigger(action: ActionKey) {
     this.justPressed.add(action);
+  }
+
+  /** UI 按鈕按住 / 放開（支援按住普攻連續攻擊） */
+  setHeld(action: ActionKey, down: boolean) {
+    if (down) {
+      this.uiHeld.add(action);
+      this.justPressed.add(action);
+    } else this.uiHeld.delete(action);
+  }
+
+  /** 動作鍵目前是否按住（鍵盤或 UI） */
+  held(action: ActionKey): boolean {
+    if (this.uiHeld.has(action)) return true;
+    for (const [code, a] of Object.entries(KEY_BINDINGS)) if (a === action && this.keys.has(code)) return true;
+    return false;
   }
 
   /** 本幀是否按下（讀取後清除） */

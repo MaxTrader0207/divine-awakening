@@ -10,13 +10,20 @@ import { InputManager, type ActionKey } from '@/input/InputManager';
 import { ZoneManager } from '@/world/ZoneManager';
 import { Hud } from '@/ui/Hud';
 import { Menu } from '@/ui/Menu';
+import { DamageNumbers } from '@/ui/DamageNumbers';
+import { EnemyManager } from '@/systems/EnemyManager';
+import { ProjectileSystem } from '@/systems/ProjectileSystem';
+import { TargetSelector } from '@/systems/TargetSelector';
+import { MAGE_SKILLS } from '@/data/player';
+
+const BASIC = MAGE_SKILLS.find((s) => s.slot === 'basic')!;
 
 const AUTOSAVE_INTERVAL = 10; // 秒
 
 /**
  * Game：組裝所有系統並跑主迴圈。
  * 規範：Game 只做「組裝與調度」，具體邏輯放在各自的 system 類別。
- * 每幀順序：Input → 遊戲邏輯（Player/Zone/之後的 Combat、AI）→ Camera → HUD → Render
+ * 每幀順序見 docs/ARCHITECTURE.md「每幀更新順序」
  */
 export class Game {
   readonly renderer: THREE.WebGLRenderer;
@@ -27,6 +34,10 @@ export class Game {
   readonly zones: ZoneManager;
   readonly hud: Hud;
   readonly menu: Menu;
+  readonly enemies: EnemyManager;
+  readonly projectiles: ProjectileSystem;
+  readonly targets: TargetSelector;
+  readonly damageNumbers: DamageNumbers;
   state: GameState;
 
   private save: SaveBackend = new LocalSave();
@@ -35,6 +46,8 @@ export class Game {
   private saveTimer = 0;
   private transitioning = false;
   private fadeEl: HTMLElement;
+  private basicCooldown = 0;
+  private tmpV = new THREE.Vector3();
 
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement) {
     this.state = this.save.load() ?? newGameState();
@@ -64,6 +77,10 @@ export class Game {
     this.rig.setZoom(this.state.settings.zoom);
     this.input = new InputManager(uiRoot);
     this.zones = new ZoneManager(this.scene);
+    this.enemies = new EnemyManager(this.scene);
+    this.projectiles = new ProjectileSystem(this.scene, this.enemies);
+    this.targets = new TargetSelector(this.scene, this.enemies);
+    this.damageNumbers = new DamageNumbers(uiRoot, container);
     this.scene.add(this.player.object);
 
     this.player.setLevel(this.state.level);
@@ -86,6 +103,14 @@ export class Game {
         this.state.settings.showFps = v;
         this.hud.refresh();
         this.persist();
+      },
+      onSetPen: (pen) => {
+        this.player.stats.pen = pen;
+        bus.emit('toast', { text: `穿透設為 ${Math.round(pen * 100)}%（測試用，重新整理後還原）` });
+      },
+      getStatsText: () => {
+        const s = this.player.stats;
+        return `攻擊 ${s.atk}　穿透 ${Math.round(s.pen * 100)}%　爆擊 ${Math.round(s.critRate * 100)}% ×${s.critDmg}`;
       },
     });
 
@@ -118,25 +143,40 @@ export class Game {
   private frame() {
     // dt 上限 0.05：切到背景再回來時避免角色瞬移穿牆
     this.timer.update();
-    const dt = Math.min(0.05, this.timer.getDelta());
+    this.tick(Math.min(0.05, this.timer.getDelta()));
+    this.renderer.render(this.scene, this.rig.camera);
+  }
+
+  /**
+   * 推進一步遊戲邏輯（不渲染）。
+   * 與 render 分開，讓自動化測試可以用 debugAdvance() 快轉，不受裝置 FPS 影響。
+   */
+  private tick(dt: number) {
     this.input.update();
 
     if (this.input.consume('menu')) this.menu.toggle();
     const canAct = !this.menu.isOpen && !this.transitioning;
 
+    const collision = this.zones.current!.collision;
+    const pushOut = (pos: { x: number; z: number }, r: number) => this.enemies.pushOut(pos, r);
+    this.basicCooldown = Math.max(0, this.basicCooldown - dt);
+
     if (canAct) {
       this.handleActions();
-      this.player.update(dt, this.input.move, this.zones.current!.collision);
+      this.player.update(dt, this.input.move, collision, pushOut);
       this.zones.checkPortals(this.player.pos.x, this.player.pos.z);
     } else {
-      this.player.update(dt, { x: 0, z: 0 }, this.zones.current!.collision);
+      this.player.update(dt, { x: 0, z: 0 }, collision, pushOut);
     }
 
+    this.enemies.update(dt, this.rig.camera);
+    this.projectiles.update(dt, this.rig.camera);
+    this.targets.update(dt);
     this.zones.update(dt);
     this.rig.update(dt, this.player.pos.x, this.player.pos.z);
     this.followSun();
+    this.damageNumbers.update(dt, this.rig.camera);
     this.hud.update(dt);
-    this.renderer.render(this.scene, this.rig.camera);
     this.input.endFrame();
 
     this.saveTimer += dt;
@@ -146,10 +186,13 @@ export class Game {
     }
   }
 
-  /** 技能與道具按鈕。戰鬥系統完成前先給提示，介面先能點 */
+  /** 技能與道具按鈕。尚未實作的先給提示 */
   private handleActions() {
+    // 普攻：按住可連續攻擊
+    this.input.consume('basic');
+    if (this.input.held('basic') && this.basicCooldown <= 0) this.basicAttack();
+
     const planned: [ActionKey, string][] = [
-      ['basic', '普攻將於第 2 週實作'],
       ['Q', '技能 Q 將於第 3 週實作'],
       ['W', '技能 W 將於第 3 週實作'],
       ['E', '技能 E 將於第 3 週實作'],
@@ -160,6 +203,32 @@ export class Game {
 
     if (this.input.consume('potionHp')) this.usePotion('hp');
     if (this.input.consume('potionMp')) this.usePotion('mp');
+  }
+
+  /** 普攻：鎖定射程內最近敵人發射追蹤魔彈；沒有目標就往面向發射 */
+  private basicAttack() {
+    const p = this.player;
+    const target = this.targets.acquire(p.pos.x, p.pos.z, BASIC.range);
+    let dx = Math.sin(p.facing);
+    let dz = Math.cos(p.facing);
+    if (target) {
+      dx = target.pos.x - p.pos.x;
+      dz = target.pos.z - p.pos.z;
+      const l = Math.hypot(dx, dz) || 1;
+      dx /= l;
+      dz /= l;
+    }
+    p.cast(dx, dz);
+    // 投射物從法杖前方出發（先用角色位置推算，避免當幀轉身前的舊座標）
+    const from = this.tmpV.set(p.pos.x + dx * 0.6, 1.5, p.pos.z + dz * 0.6);
+    this.projectiles.fire({ from, dirX: dx, dirZ: dz, target, attacker: p.stats, power: BASIC.power, range: BASIC.range, color: BASIC.color });
+    this.basicCooldown = BASIC.cooldown;
+  }
+
+  /** 測試用：以固定 1/60 秒步進快轉遊戲時間（不渲染） */
+  debugAdvance(seconds: number) {
+    const steps = Math.round(seconds * 60);
+    for (let i = 0; i < steps; i++) this.tick(1 / 60);
   }
 
   private usePotion(kind: 'hp' | 'mp') {
@@ -202,7 +271,11 @@ export class Game {
   }
 
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
+    this.projectiles.clear();
+    this.damageNumbers.clear();
+    this.targets.clear();
     const zone = this.zones.load(id);
+    this.enemies.spawnForZone(zone.def);
     this.state.zoneId = id;
     this.player.teleport(at.x, at.z);
     this.player.update(0, { x: 0, z: 0 }, zone.collision); // 確保出生點不在障礙物內

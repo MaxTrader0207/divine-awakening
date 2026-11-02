@@ -16,6 +16,7 @@ npm run dev          # 開發伺服器（--host：同 Wi-Fi 的手機可用 http
 npm run build        # 型別檢查 + 建置到 dist/
 npm run build:single # 建置成單一 HTML（dist-single/index.html），方便分享
 npm run preview      # 預覽 dist/
+npm test             # 單元測試（Vitest）
 ```
 
 網址加上 `?debug` 會開放主控台的 `window.__game`（開發模式預設開啟）。
@@ -44,4 +45,7 @@ npm run preview      # 預覽 dist/
 
 ## 目前進度
 
-**v0.1.0 — 第 1 週：專案骨架與移動 ✅**（詳見 ROADMAP）
+- **v0.1.0 — 第 1 週：專案骨架與移動 ✅**
+- **v0.2.0 — 第 2 週：戰鬥核心 ✅**：普攻、傷害公式、敵人受擊與重生、傷害數字、訓練木樁
+
+詳見 [ROADMAP](docs/ROADMAP.md)。

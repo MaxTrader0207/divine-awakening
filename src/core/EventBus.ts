@@ -17,6 +17,9 @@ export interface GameEvents {
   'camera:zoom': { delta: number };
   'save:request': void;
   'save:written': void;
+  /** 任何單位受到傷害（傷害數字、音效、統計會聽這個） */
+  'combat:hit': { x: number; y: number; z: number; amount: number; crit: boolean; targetIsPlayer: boolean };
+  'enemy:killed': { enemyId: string; x: number; z: number };
 }
 
 export type MenuTab = 'equip' | 'enhance' | 'shop' | 'map' | 'settings';

@@ -22,13 +22,20 @@ src/
 │  └─ SaveSystem.ts       SaveBackend 介面 + LocalSave（localStorage）+ 版本遷移
 ├─ data/                  ★ 遊戲內容（純資料）
 │  ├─ types.ts            所有資料型別：ZoneDef、PropDef、SkillDef、ItemDef、EnemyDef、Stats
-│  ├─ zones.ts            5 個區域：主城、新手草原、副本 1~3；世界地圖清單
+│  ├─ zones.ts            5 個區域：主城、新手草原、副本 1~3；世界地圖清單；spawns
+│  ├─ enemies.ts          敵人資料表（目前：訓練木樁）
 │  └─ player.ts           基礎屬性、升級成長、經驗曲線、法師技能表
 ├─ input/
 │  ├─ InputManager.ts     鍵盤 + 搖桿 + 按鈕 → move 向量與 action 事件
 │  └─ VirtualJoystick.ts  觸控搖桿
 ├─ entities/
-│  └─ Player.ts           小法師：模型、移動、朝向、走路動畫、屬性
+│  ├─ Player.ts           小法師：模型、移動、朝向、走路 / 施法動畫、屬性
+│  └─ Enemy.ts            敵人：模型（依 shape）、HP、閃白、血條、死亡、重生
+├─ systems/
+│  ├─ Combat.ts           傷害公式（純函式）＋ Combat.test.ts
+│  ├─ EnemyManager.ts     依 spawns 生成敵人、查詢最近敵人、推開玩家
+│  ├─ ProjectileSystem.ts 投射物與命中光圈（物件池）
+│  └─ TargetSelector.ts   鎖定目標、腳下紅圈
 ├─ camera/
 │  └─ CameraRig.ts        斜俯視跟隨、縮放 80%~150%
 ├─ world/
@@ -40,7 +47,8 @@ src/
 └─ ui/
    ├─ Hud.ts              狀態框、小地圖、貨幣、提示、橫幅、藥水、技能按鈕
    ├─ Minimap.ts          小地圖（靜態層快取 + 玩家箭頭）
-   ├─ Menu.ts             選單：裝備 / 強化 / 商城 / 地圖 / 設定
+   ├─ Menu.ts             選單：裝備 / 強化 / 商城 / 地圖 / 設定（含傷害測試）
+   ├─ DamageNumbers.ts    傷害數字（DOM 物件池，世界座標投影）
    ├─ dom.ts              h() 極簡 DOM 建構
    └─ style.css           全部 UI 樣式（:root 變數）
 ```
@@ -48,23 +56,29 @@ src/
 ## 每幀更新順序（Game.frame）
 
 ```
-Timer.update → dt（上限 0.05 秒）
-InputManager.update        讀鍵盤/搖桿 → move 向量
-選單開關判斷
-handleActions              技能、藥水、AUTO 按鈕（消耗 action）
-Player.update              移動 + 碰撞 + 動畫
-ZoneManager.checkPortals   踏入傳送點 → 發出 zone:request 或 menu:open
-ZoneManager.update         場景動畫（水面、水晶）
-CameraRig.update           平滑跟隨
-followSun                  陰影光源跟著玩家
-Hud.update                 小地圖、提示輪播、FPS
-render
-InputManager.endFrame      清除未消耗的 action
-每 10 秒 autosave
+frame():  Timer.update → tick(dt，上限 0.05 秒) → render
+tick(dt):
+  InputManager.update        讀鍵盤/搖桿 → move 向量
+  選單開關判斷
+  handleActions              普攻（按住連發）、技能、藥水、AUTO
+  Player.update              移動 + 敵人推擠 + 地形碰撞 + 動畫
+  ZoneManager.checkPortals   踏入傳送點 → zone:request 或 menu:open
+  EnemyManager.update        敵人動畫、死亡、重生（第 4 週加 AI）
+  ProjectileSystem.update    飛行、追蹤、命中 → calcDamage → combat:hit
+  TargetSelector.update      目標失效檢查、紅圈
+  ZoneManager.update         場景動畫（水面、水晶）
+  CameraRig.update           平滑跟隨
+  followSun                  陰影光源跟著玩家
+  DamageNumbers.update       傷害數字投影到螢幕
+  Hud.update                 小地圖、提示輪播、FPS
+  InputManager.endFrame      清除未消耗的 action
+  每 10 秒 autosave
 ```
 
-**之後加入的系統插入位置**（照順序）：
-`handleActions` → `SkillSystem` → `Player.update` → `EnemyAI` → `Projectiles` → `CombatSystem`（傷害結算）→ `LootSystem` → `checkPortals` …
+`tick` 與 render 分開：`Game.debugAdvance(秒)` 用固定 1/60 秒步進快轉，自動化測試不受裝置 FPS 影響。
+
+**之後加入的系統插入位置**：
+`handleActions` → `SkillSystem`（第 3 週）→ `Player.update` → `EnemyAI`（第 4 週，在 EnemyManager.update 內）→ `ProjectileSystem` → `LootSystem`（第 6 週）→ …
 
 ## 事件一覽（core/EventBus.ts）
 
@@ -76,7 +90,9 @@ InputManager.endFrame      清除未消耗的 action
 | `camera:zoom` | Hud | Game | 縮放 ±10% |
 | `toast` / `banner` | 任何系統 | Hud | 短訊息 / 進入區域大字 |
 | `save:request` / `save:written` | 任何系統 / Game | Game / — | 立即存檔 |
-| `player:changed` / `wallet:changed` | （第 2 週起） | Hud | 數值變動刷新 HUD |
+| `player:changed` / `wallet:changed` | 任何系統 | Hud | 數值變動刷新 HUD |
+| `combat:hit` | ProjectileSystem | DamageNumbers | 造成傷害（位置、數值、爆擊） |
+| `enemy:killed` | ProjectileSystem | （第 5 週：經驗、掉落） | 敵人死亡 |
 
 ## 存檔
 
@@ -86,13 +102,17 @@ InputManager.endFrame      清除未消耗的 action
 - **改存檔結構時**：`SAVE_VERSION + 1`，在 `SaveSystem.migrate()` 補舊版遷移。
 - 之後要雲端存檔：寫一個 `CloudSave implements SaveBackend`（Cloudflare Workers + D1），在 Game 替換即可。
 
-## 戰鬥系統預定設計（第 2~5 週）
+## 戰鬥系統
 
 ```
-傷害 = max(1, atk × 技能倍率 − 目標防禦 × (1 − 穿透)) × (爆擊 ? critDmg : 1) × 浮動(0.9~1.1)
+raw  = atk × 技能倍率
+基礎 = max(raw × 10%, raw − 防禦 × (1 − 穿透))
+最終 = round(基礎 × 浮動(0.9~1.1) × (爆擊 ? critDmg : 1))，至少 1
 ```
 
-- `Stats` 已在 `data/types.ts` 定義（maxHp、maxMp、atk、def、pen、moveSpeed、critRate、critDmg）。
+- 實作於 `systems/Combat.ts`（純函式，可注入亂數），測試在 `Combat.test.ts`。
+- 命中流程：`ProjectileSystem` 命中 → `calcDamage` → `Enemy.takeDamage` → `combat:hit`（→ DamageNumbers）／`enemy:killed`。
+- 投射物有目標時追蹤目標（手機上不會打歪）；沒有目標沿面向直線飛，碰到任何敵人即命中。
 - 副本的 `enemyDefense`（0 / 18 / 40）直接套用到該層怪物，讓「堆穿透」成為裝備選擇的理由。
 - 怪物 AI 狀態機：`Idle → Patrol → (Aggro | Retaliate) → Attack → Return`；`aggro: 'passive'` 的怪只在受擊後進入 Retaliate。
 - 玩家「被攻擊時自動反擊最近敵人」與 AUTO 共用同一個 `TargetSelector`。

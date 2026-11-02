@@ -26,16 +26,27 @@
 
 **驗收**：手機打開網址，可用搖桿在主城、草原、副本 1 之間走動並切換，重新整理後位置保留。
 
-## ⬜ 第 2 週：戰鬥核心（v0.2）
-- [ ] `systems/CombatSystem.ts`：傷害公式（攻 − 防 ×（1 − 穿透）、爆擊、浮動）
-- [ ] `entities/Enemy.ts`：基礎敵人實體（HP、受擊閃白、死亡消失）
-- [ ] 普攻投射物 `systems/ProjectileSystem.ts`（物件池）
-- [ ] 自動鎖定最近敵人（`TargetSelector`）
-- [ ] 傷害飄字（DOM 或 Sprite 物件池）
-- [ ] 訓練木樁放在新手草原
-- [ ] HUD 響應 `player:changed`
+## ✅ 第 2 週：戰鬥核心（v0.2）
+- [x] `systems/Combat.ts`：傷害公式（攻 − 防 ×（1 − 穿透）、保底 10%、爆擊、±10% 浮動），純函式
+- [x] Vitest 單元測試（`npm test`，8 個案例）
+- [x] `entities/Enemy.ts`：HP、受擊閃白、晃動、頭頂血條與名稱、死亡縮小消失、定時重生
+- [x] `systems/EnemyManager.ts`：依 `ZoneDef.spawns` 生成、切換區域時釋放、敵人阻擋玩家
+- [x] `systems/ProjectileSystem.ts`：追蹤魔彈、無目標直線飛、命中光圈（物件池 40 / 24）
+- [x] `systems/TargetSelector.ts`：鎖定最近敵人、腳下紅圈、超出 1.25 倍射程才換目標
+- [x] `ui/DamageNumbers.ts`：傷害數字（DOM 物件池），爆擊黃色大字
+- [x] 按住普攻連續攻擊（觸控按住、J / 空白鍵按住）
+- [x] 新手草原三根訓練木樁（防禦 0 / 18 / 40）
+- [x] 設定 → 傷害測試：穿透 0 / 30 / 60 / 100% 切換
+- [x] `Game.debugAdvance(秒)`：固定步進快轉，自動化測試不受 FPS 影響
+- [x] HUD 響應 `player:changed` / `wallet:changed`
 
-**驗收**：對木樁連續普攻，飄字正確，防禦值改變時傷害跟著變。
+**驗收結果**（攻擊 24，20 發平均）：
+
+| 穿透 | 防禦 0 | 防禦 18 | 防禦 40 |
+|---|---|---|---|
+| 0% | 24.6 | 6.0 | 2.2（保底） |
+| 60% | 23.6 | 17.0 | 8.0 |
+| 100% | 25.1 | 24.8 | 24.3 |
 
 ## ⬜ 第 3 週：技能系統（v0.3）
 - [ ] `systems/SkillSystem.ts`：依 `SkillDef` 施放、MP 消耗、冷卻

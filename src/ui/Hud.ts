@@ -87,6 +87,8 @@ export class Hud {
 
     bus.on('toast', ({ text, duration }) => this.toast(text, duration));
     bus.on('banner', ({ text }) => this.banner(text));
+    bus.on('player:changed', () => this.refresh());
+    bus.on('wallet:changed', () => this.refresh());
   }
 
   private actionButton(cls: string, action: ActionKey, key: string, extra?: HTMLElement): HTMLElement {
@@ -94,10 +96,17 @@ export class Hud {
     // pointerdown 比 click 反應快，手機上手感較好
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      this.input.trigger(action);
+      btn.setPointerCapture?.(e.pointerId);
+      this.input.setHeld(action, true);
       btn.classList.add('pressed');
-      setTimeout(() => btn.classList.remove('pressed'), 120);
     });
+    const release = () => {
+      this.input.setHeld(action, false);
+      btn.classList.remove('pressed');
+    };
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointercancel', release);
+    btn.addEventListener('lostpointercapture', release);
     return btn;
   }
 

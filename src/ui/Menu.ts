@@ -23,6 +23,9 @@ export interface MenuActions {
   onUnlockAll(): void;
   onZoomSet(z: number): void;
   onToggleFps(v: boolean): void;
+  /** 開發用：直接設定穿透，驗證防禦公式 */
+  onSetPen(pen: number): void;
+  getStatsText(): string;
 }
 
 export class Menu {
@@ -132,6 +135,7 @@ export class Menu {
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '鏡頭縮放'), zoomVal]), slider]),
       h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '顯示 FPS'), fps])]),
       h('div', { class: 'section-title' }, '開發工具'),
+      this.renderPenTester(),
       h('div', { class: 'card' }, [
         h('p', {}, '這些按鈕方便測試，正式版會移除。'),
         h('div', { class: 'card-row' }, [
@@ -141,6 +145,24 @@ export class Menu {
       ]),
       h('p', { class: 'version' }, `小法師 v${__APP_VERSION__}・Wei Studio`),
     ];
+  }
+
+  /** 穿透測試：切換後到新手草原打三根不同防禦的木樁比較傷害 */
+  private renderPenTester(): HTMLElement {
+    const stats = h('p', {}, this.actions.getStatsText());
+    const row = h('div', { class: 'card-row' });
+    for (const pct of [0, 30, 60, 100]) {
+      row.appendChild(
+        h('button', {
+          class: 'go ghost',
+          onclick: () => {
+            this.actions.onSetPen(pct / 100);
+            stats.textContent = this.actions.getStatsText();
+          },
+        }, `穿透 ${pct}%`),
+      );
+    }
+    return h('div', { class: 'card' }, [h('h4', {}, '傷害測試'), stats, row]);
   }
 
   private travel(id: (typeof DUNGEON_ORDER)[number] | 'town' | 'grassland') {

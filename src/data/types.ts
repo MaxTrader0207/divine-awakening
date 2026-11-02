@@ -78,6 +78,19 @@ export interface PortalDef {
   style: 'edge' | 'stone';
 }
 
+/** 敵人出生點 */
+export interface SpawnDef {
+  enemy: string;
+  x: number;
+  z: number;
+  /** 覆寫該隻敵人的防禦（訓練木樁用來展示穿透） */
+  def?: number;
+  /** 顯示名稱後綴，例如「防禦 40」 */
+  tag?: string;
+  /** 死亡後幾秒重生，預設用 EnemyDef.respawn */
+  respawn?: number;
+}
+
 export interface ZoneDef {
   id: ZoneId;
   kind: ZoneKind;
@@ -99,6 +112,8 @@ export interface ZoneDef {
   spawn: Vec2;
   /** 進入區域後輪播的提示 */
   tips: string[];
+  /** 敵人出生點（第 2 週起） */
+  spawns?: SpawnDef[];
   /** 副本專用 */
   dungeon?: {
     floor: number;
@@ -156,11 +171,18 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem';
+
 export interface EnemyDef {
   id: string;
   name: string;
   level: number;
-  aggro: AggroType;
+  aggro: AggroType | 'none';
+  shape: EnemyShape;
+  /** 碰撞半徑 */
+  radius: number;
+  /** 死亡後重生秒數 */
+  respawn: number;
   stats: Pick<Stats, 'maxHp' | 'atk' | 'def' | 'moveSpeed'>;
   exp: number;
   gold: [number, number];

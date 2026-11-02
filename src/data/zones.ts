@@ -78,7 +78,12 @@ const grassland: ZoneDef = {
   ],
   portals: [{ x: 0, z: -28, radius: 2.6, to: 'town', arrive: { x: 0, z: 26 }, label: '主城艾爾芙', style: 'edge' }],
   spawn: { x: 0, z: -24 },
-  tips: ['商店街就在主城的東西大街上', '新手草原的怪物適合 Lv.1-10 冒險者', '第 4 週將加入怪物'],
+  tips: ['訓練木樁在草原東側，可以測試不同防禦下的傷害', '敵人防禦越高越需要穿透', '按住普攻鍵可以連續攻擊'],
+  spawns: [
+    { enemy: 'training_dummy', x: 6, z: -16, def: 0, tag: '防禦 0' },
+    { enemy: 'training_dummy', x: 11, z: -16, def: 18, tag: '防禦 18' },
+    { enemy: 'training_dummy', x: 16, z: -16, def: 40, tag: '防禦 40' },
+  ],
 };
 
 const dungeon1: ZoneDef = {

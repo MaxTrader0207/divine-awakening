@@ -22,6 +22,11 @@ export class Player {
   private bobT = 0;
   private body: THREE.Group;
   private staffTip: THREE.Mesh;
+  /** 施法動畫剩餘時間 */
+  private castT = 0;
+  /** 鎖定方向（施法時強制面向目標），null = 跟移動方向 */
+  private lockFacing: number | null = null;
+  private lockTimer = 0;
 
   constructor() {
     this.body = new THREE.Group();
@@ -64,16 +69,35 @@ export class Player {
     this.object.position.set(x, 0, z);
   }
 
+  /** 施法：面向指定方向一小段時間並播放揮杖動畫 */
+  cast(dirX: number, dirZ: number) {
+    this.lockFacing = Math.atan2(dirX, dirZ);
+    this.lockTimer = 0.35;
+    this.castT = 0.22;
+  }
+
+  /** 法杖頂端的世界座標（投射物出生點） */
+  staffTipWorld(out: THREE.Vector3): THREE.Vector3 {
+    return this.staffTip.getWorldPosition(out);
+  }
+
   /** move：世界方向向量，長度 0~1 */
-  update(dt: number, move: { x: number; z: number }, collision: CollisionWorld) {
+  update(dt: number, move: { x: number; z: number }, collision: CollisionWorld, pushOut?: (pos: { x: number; z: number }, r: number) => void) {
     const len = Math.hypot(move.x, move.z);
     if (len > 0.001) {
       const speed = this.stats.moveSpeed * len;
       this.pos.x += move.x * speed * dt;
       this.pos.z += move.z * speed * dt;
-      const target = Math.atan2(move.x, move.z);
-      this.facing = lerpAngle(this.facing, target, 1 - Math.exp(-dt * 14));
+      if (this.lockTimer <= 0) {
+        const target = Math.atan2(move.x, move.z);
+        this.facing = lerpAngle(this.facing, target, 1 - Math.exp(-dt * 14));
+      }
     }
+    if (this.lockTimer > 0 && this.lockFacing !== null) {
+      this.lockTimer -= dt;
+      this.facing = lerpAngle(this.facing, this.lockFacing, 1 - Math.exp(-dt * 30));
+    }
+    pushOut?.(this.pos, this.radius); // 敵人等動態障礙
     collision.resolve(this.pos, this.radius);
 
     this.moveAmount += ((len > 0.001 ? 1 : 0) - this.moveAmount) * Math.min(1, dt * 10);
@@ -85,6 +109,11 @@ export class Player {
     this.body.position.y = Math.abs(Math.sin(this.bobT)) * 0.12 * this.moveAmount + Math.sin(this.bobT * 0.5) * 0.02;
     this.body.rotation.x = 0.12 * this.moveAmount;
     this.staffTip.rotation.y += dt * 3;
+    // 施法：身體前傾 + 法杖頂端放大發光
+    if (this.castT > 0) this.castT = Math.max(0, this.castT - dt);
+    const c = this.castT / 0.22;
+    this.body.rotation.x += 0.25 * Math.sin(c * Math.PI);
+    this.staffTip.scale.setScalar(1 + c * 1.2);
   }
 }
 

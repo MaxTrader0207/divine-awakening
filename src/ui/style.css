@@ -210,3 +210,13 @@ button { font-family: inherit; color: inherit; border: 0; background: none; padd
 input[type='range'] { width: 100%; accent-color: var(--gold); }
 input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .version { text-align: center; font-size: 11px; color: var(--muted); margin: 4px 0 0; }
+
+/* ---------------- 傷害數字 ---------------- */
+.dmg-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.dmg {
+  position: absolute; left: 0; top: 0; opacity: 0; will-change: transform, opacity;
+  font: 900 18px/1 var(--font); color: #fff; letter-spacing: 0.5px;
+  text-shadow: 0 0 3px #1b2433, 0 2px 0 #1b2433, 1px 1px 0 #1b2433, -1px -1px 0 #1b2433;
+}
+.dmg.crit { font-size: 26px; color: var(--gold); text-shadow: 0 0 4px #6b3a00, 0 2px 0 #6b3a00, 1px 1px 0 #6b3a00, -1px -1px 0 #6b3a00; }
+.dmg.hurt { color: #ff6a55; }
