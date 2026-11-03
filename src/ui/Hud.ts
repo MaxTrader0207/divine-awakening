@@ -13,6 +13,16 @@ import { h } from './dom';
 import { currentStep, progressText, targetFor } from '@/systems/Tutorial';
 import { TUTORIAL_STEPS } from '@/data/tutorial';
 import { SKILL_HELP } from '@/data/manual';
+import { CLASSES } from '@/data/classes';
+
+/** 職業頭像底色 */
+const CLASS_TINT: Record<string, [string, string]> = {
+  mage: ['#8f7aff', '#3a2a8a'],
+  archer: ['#6fd36a', '#1f6a3a'],
+  knight: ['#a9c4e8', '#3a5276'],
+  berserker: ['#ff8a5a', '#8a2a1a'],
+  summoner: ['#c38bff', '#4a1f6a'],
+};
 
 /**
  * HUD（v1.24 重新排版）
@@ -66,13 +76,21 @@ export class Hud {
     uiRoot.appendChild(this.root);
 
     // ---- 左上欄 ----
-    const status = h('div', { class: 'status-card' }, [
-      h('div', { class: 'orb' }, [h('div', { class: 'orb-hp' }), h('div', { class: 'orb-mp' }), (this.els.lv = h('div', { class: 'orb-lv' }))]),
+    // 狀態框：職業頭像（外圈＝經驗值進度）＋名字・職業＋HP（含受傷殘影）＋MP / 怒氣。點一下開「裝備」
+    const cls = CLASSES[state.heroClass];
+    const [c1, c2] = CLASS_TINT[state.heroClass] ?? ['#8f7aff', '#3a2a8a'];
+    const status = h('button', { class: 'status-card', 'aria-label': '角色與裝備', onclick: () => bus.emit('menu:open', { tab: 'equip' }) }, [
+      (this.els.avatar = h('div', { class: 'avatar', style: `--c1:${c1};--c2:${c2}` }, [
+        h('div', { class: 'avatar-face' }, cls.icon),
+        (this.els.lv = h('div', { class: 'avatar-lv' })),
+      ])),
       h('div', { class: 'status-body' }, [
-        (this.els.title = h('div', { class: 'status-title' })),
-        h('div', { class: 'bar hp' }, [(this.els.hpFill = h('i')), (this.els.hpText = h('span'))]),
-        h('div', { class: 'bar mp' }, [(this.els.mpFill = h('i')), (this.els.mpText = h('span'))]),
-        h('div', { class: 'exp-row' }, [h('div', { class: 'bar exp' }, [(this.els.expFill = h('i'))]), (this.els.expText = h('span', { class: 'exp-pct' }))]),
+        h('div', { class: 'status-head' }, [
+          (this.els.title = h('b', { class: 'status-title' })),
+          (this.els.expText = h('span', { class: 'exp-pct' })),
+        ]),
+        h('div', { class: 'bar hp' }, [h('em', { class: 'bar-tag' }, 'HP'), (this.els.hpTrail = h('u')), (this.els.hpFill = h('i')), (this.els.hpText = h('span'))]),
+        h('div', { class: 'bar mp' }, [h('em', { class: 'bar-tag' }, skills.usesRage ? '怒' : 'MP'), (this.els.mpFill = h('i')), (this.els.mpText = h('span'))]),
       ]),
     ]);
     this.els.buffs = h('div', { class: 'buffs' });
@@ -168,6 +186,12 @@ export class Hud {
     bus.on('wallet:changed', () => this.refresh());
     bus.on('tutorial:changed', () => this.refreshGuide());
     bus.on('settings:changed', () => this.applyLayout());
+    bus.on('player:levelup', () => {
+      const a = this.els.avatar;
+      a.classList.remove('lvup');
+      void a.offsetWidth;
+      a.classList.add('lvup');
+    });
     this.applyLayout();
     this.refreshGuide();
   }
@@ -190,7 +214,8 @@ export class Hud {
     if (!step) return;
     const prog = progressText(t);
     this.els.guideNo.textContent = `${t.step + 1}/${TUTORIAL_STEPS.length}`;
-    this.els.guideText.textContent = prog ? `${step.text}（${prog}）` : step.text;
+    // 進度包成不斷行的一段，避免「（0 / 10 公尺）」從中間被折成兩行
+    this.els.guideText.replaceChildren(step.text, ...(prog ? [h('span', { class: 'nowrap' }, `（${prog}）`)] : []));
     if (this.guideStep !== t.step) {
       this.guideStep = t.step;
       el.classList.remove('flash');
@@ -390,6 +415,7 @@ export class Hud {
     const p = this.player;
     const hpR = p.hp / p.stats.maxHp;
     this.els.hpFill.style.width = `${hpR * 100}%`;
+    this.els.hpTrail.style.width = `${hpR * 100}%`; // 殘影用 CSS 延遲跟上，被打時看得出掉了多少
     this.els.hpText.textContent = `${Math.round(p.hp)}/${p.stats.maxHp}`;
     this.els.mpFill.style.width = `${(p.mp / p.stats.maxMp) * 100}%`;
     this.els.mpText.textContent = `${Math.round(p.mp)}/${p.stats.maxMp}`;
@@ -412,8 +438,8 @@ export class Hud {
     this.els.zoneName.textContent = zone ? (zone.kind === 'dungeon' ? zone.name : zone.subtitle.split('・')[0]) : '';
     this.refreshBars();
     const expR = Math.min(1, s.exp / expToNext(s.level));
-    this.els.expFill.style.width = `${expR * 100}%`;
-    this.els.expText.textContent = `${Math.floor(expR * 100)}%`;
+    this.els.avatar.style.setProperty('--exp', String(expR));
+    this.els.expText.textContent = `EXP ${Math.floor(expR * 100)}%`;
     this.root.classList.toggle('near-level', expR >= 0.9);
     this.els.gold.textContent = String(s.gold);
     this.els.gems.textContent = String(s.gems);
