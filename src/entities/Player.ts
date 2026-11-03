@@ -114,6 +114,11 @@ export class Player {
         const ws = new THREE.Vector3();
         bone.getWorldScale(ws);
         w.scale.setScalar(prop.length / Math.max(size.x, size.y, size.z) / ws.x);
+        // 細長化：只壓縮橫向（模型沿 +y），長度不變
+        if (prop.thin) {
+          w.scale.x *= prop.thin;
+          w.scale.z *= prop.thin;
+        }
         // 待機姿勢下讓道具在世界座標「直立」（模型本身沿 +y），之後跟著手的動畫一起動
         const poseRig = new CharacterRig(inst);
         poseRig.setLoop(this.anims.idle, 0);
@@ -123,8 +128,8 @@ export class Player {
         const bq = new THREE.Quaternion();
         bone.getWorldQuaternion(bq);
         w.quaternion.copy(bq.invert());
-        // 握在中段：沿世界 y 往下移 35% 長度（換算到骨頭座標）
-        const down = new THREE.Vector3(0, -prop.length * 0.35, 0).applyQuaternion(w.quaternion).divideScalar(ws.x);
+        // 握點：沿世界 y 往下移 grip（預設 35%）長度（換算到骨頭座標）
+        const down = new THREE.Vector3(0, -prop.length * (prop.grip ?? 0.35), 0).applyQuaternion(w.quaternion).divideScalar(ws.x);
         w.position.copy(down);
         w.traverse((o) => ((o as THREE.Mesh).isMesh ? ((o as THREE.Mesh).castShadow = true) : null));
         bone.add(w);

@@ -24,7 +24,8 @@ export interface HeroAnimSet {
   /** 貼圖換色：色相落在 [from, to]（度）的像素轉成 hue 度（召喚師：綠色布料 → 深紫） */
   recolor?: { from: number; to: number; hue: number; light?: number };
   /** 手上額外拿的道具（assets/models 的靜態模型 id、長度公尺、右手 r / 左手 l） */
-  prop?: { id: string; length: number; hand: 'r' | 'l' };
+  /** 手上的道具：length 全長（公尺）、thin 橫向粗細倍率（預設 1）、grip 握點離底端的比例（預設 0.35） */
+  prop?: { id: string; length: number; hand: 'r' | 'l'; thin?: number; grip?: number };
 }
 
 export interface ClassDef {
@@ -150,7 +151,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'sword_rain', name: '萬劍歸宗', slot: 'E', mpCost: 32, cooldown: 11, power: 1.0, range: 9, shape: 'circle', radius: 3.6, waves: 4, icon: '⚔', color: 0x6ad8ff, auto: 'target-aoe', anim: '2H_Melee_Attack_Spinning' },
       { id: 'sword_intent', name: '人劍合一', slot: 'R', mpCost: 25, cooldown: 30, power: 0, range: 0, shape: 'circle', duration: 8, icon: '☯', color: 0xffe9a0, auto: 'burst', anim: 'Cheer' },
     ],
-    anims: { model: 'swordsman', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.15, hand: 'r' } },
+    anims: { model: 'swordsman', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.6, hand: 'r', thin: 0.55, grip: 0.24 } },
   },
 };
 
