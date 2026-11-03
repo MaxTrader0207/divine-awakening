@@ -13,9 +13,9 @@ function memKV(init: Record<string, string> = {}): KV & { data: Record<string, s
 }
 
 describe('SaveSlots 多存檔', () => {
-  it('至少 5 格，預設第 1 格、全部是空的', () => {
+  it('共 10 格，預設第 1 格、全部是空的', () => {
     const s = new SaveSlots(memKV());
-    expect(SLOT_COUNT).toBeGreaterThanOrEqual(5);
+    expect(SLOT_COUNT).toBe(10);
     expect(s.active).toBe(1);
     expect(s.list().every((i) => i.empty)).toBe(true);
   });
@@ -34,7 +34,7 @@ describe('SaveSlots 多存檔', () => {
     expect(s.info(2).empty).toBe(true);
     s.setActive(4);
     expect(new LocalSave(new SaveSlots(kv)).load()!.level).toBe(15);
-    expect(s.setActive(9)).toBe(false);
+    expect(s.setActive(11)).toBe(false);
   });
 
   it('複製與刪除', () => {
@@ -71,5 +71,25 @@ describe('SaveSlots 多存檔', () => {
     expect(s.write(1, newGameState())).toBe(false);
     expect(s.load(1)).toBeNull();
     expect(s.list()).toHaveLength(SLOT_COUNT);
+  });
+});
+
+describe('擴充為 10 格', () => {
+  it('第 6~10 格可以存讀，舊的第 1~5 格資料不受影響', () => {
+    const kv = memKV();
+    const s = new SaveSlots(kv);
+    const old = newGameState('knight');
+    old.level = 9;
+    s.write(3, old);
+    const a = newGameState('summoner');
+    a.level = 21;
+    expect(s.write(10, a)).toBe(true);
+    expect(s.setActive(10)).toBe(true);
+    expect(s.active).toBe(10);
+    expect(s.load(10)!.heroClass).toBe('summoner');
+    expect(s.load(3)!.level).toBe(9);
+    expect(kv.data['little-mage.save.slot3']).toBeTruthy();
+    expect(s.write(11, a)).toBe(false);
+    expect(s.list().filter((i) => !i.empty).map((i) => i.slot)).toEqual([3, 10]);
   });
 });

@@ -5,12 +5,12 @@ import type { HeroClass } from '@/data/classes';
 /**
  * 本機存檔（localStorage），多存檔欄位
  * ------------------------------------------------------------
- * - 共 SLOT_COUNT 格：`little-mage.save.slot1` ~ `slot5`；目前使用中的欄位記在 `little-mage.activeSlot`。
+ * - 共 SLOT_COUNT 格：`little-mage.save.slot1` ~ `slot10`（v1.19 由 5 格擴充為 10 格，舊的 1~5 格不受影響）；目前使用中的欄位記在 `little-mage.activeSlot`。
  * - 舊版單一存檔（`little-mage.save.v1`）第一次啟動時自動搬到第 1 格。
  * - 所有讀寫都包 try/catch：無痕模式或封鎖儲存時遊戲仍可正常遊玩（只是不保存）。
  * - 雲端存檔：實作同樣的 SaveBackend 介面即可替換。
  */
-export const SLOT_COUNT = 5;
+export const SLOT_COUNT = 10;
 const LEGACY_KEY = 'little-mage.save.v1';
 const ACTIVE_KEY = 'little-mage.activeSlot';
 const slotKey = (n: number) => `little-mage.save.slot${n}`;

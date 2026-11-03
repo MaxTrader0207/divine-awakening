@@ -4,7 +4,7 @@ import { DUNGEON_ORDER, zoneLabel } from '@/data/zones';
 import { h } from './dom';
 
 /**
- * 開頭畫面：遊戲標題 + 「繼續遊戲」 + 5 格存檔。
+ * 開頭畫面：遊戲標題 + 「繼續遊戲」 + 10 格存檔（列表可捲動）。
  * 回傳玩家選的欄位（呼叫端負責 setActive；空格接著進選職業）。
  * 從選單「讀取 / 開新遊戲」重新載入時會跳過（見 skipTitleOnce）。
  */

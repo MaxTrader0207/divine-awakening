@@ -20,7 +20,7 @@ src/
 │  ├─ Game.ts                 組裝所有系統、主迴圈、區域切換、死亡復活、擊殺獎勵、存檔時機
 │  ├─ EventBus.ts             型別化事件匯流排（GameEvents 登記所有事件）
 │  ├─ GameState.ts            存檔結構 v2、新遊戲預設、副本解鎖判斷
-│  └─ SaveSystem.ts           5 格存檔 SaveSlots、LocalSave（使用中欄位）、版本遷移
+│  └─ SaveSystem.ts           10 格存檔 SaveSlots、LocalSave（使用中欄位）、版本遷移
 ├─ data/                      ★ 遊戲內容（純資料）
 │  ├─ types.ts                所有資料型別
 │  ├─ zones.ts                主城、新手草原、三層副本（地形、高台、生怪、傳送、商店入口）
@@ -77,7 +77,7 @@ src/
    ├─ InventoryTabs.ts        「裝備 / 強化 / 商城」分頁
    ├─ CloudTabs.ts            雲端存檔卡片、「排行」分頁
    ├─ PauseScreen.ts          暫停畫面：繼續、存檔、設定、裝備、地圖、回到開頭畫面
-   ├─ TitleScreen.ts          開頭畫面：繼續遊戲、5 格存檔（選擇 / 新遊戲 / 刪除）
+   ├─ TitleScreen.ts          開頭畫面：繼續遊戲、10 格存檔（選擇 / 新遊戲 / 刪除）
    ├─ DamageNumbers.ts        傷害數字與漂浮文字（DOM 物件池）
    ├─ Minimap.ts、dom.ts、style.css
 public/                       manifest.webmanifest、sw.js、icons/（PWA）
@@ -147,7 +147,7 @@ raw  = atk × 技能倍率
 - v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）。舊存檔讀入時自動遷移。
 
 
-- 多存檔：`SaveSlots` 管 5 格（localStorage `little-mage.save.slot1`~`slot5`），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。
+- 多存檔：`SaveSlots` 管 10 格（localStorage `little-mage.save.slot1`~`slot10`；v1.19 前是 5 格，鍵名相同所以舊存檔直接沿用），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。
 - 開頭畫面：每次打開遊戲先顯示；從選單「讀取 / 開新遊戲」切換時用 sessionStorage 旗標略過一次；網址帶 `?class=` 時略過（測試用）。
 - 舊版單一存檔 `little-mage.save.v1` 第一次啟動時自動搬到第 1 格。
 - `GameState` 經 `SaveBackend` 存取，`LocalSave` 讀寫使用中的那一格；雲端存檔上傳 / 下載的也是使用中的那一格。
