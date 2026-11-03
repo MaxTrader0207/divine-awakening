@@ -29,7 +29,7 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.39.0。10 週 MVP 完成，加上 v1.1~v1.39（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 版本 v1.40.0。10 週 MVP 完成，加上 v1.1~v1.40（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
 - 測試：`npm test`（Vitest 85 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
 - 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。暫停中（`__game.paused`）`frame()` 不呼叫 `tick()`，但 `debugAdvance()` 仍會推進。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。

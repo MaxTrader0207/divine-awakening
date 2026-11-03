@@ -5,6 +5,7 @@ import { makeLabelSprite } from '@/world/Label';
 import { Assets } from '@/assets/Assets';
 import { CharacterRig } from './CharacterRig';
 import { DEFAULT_RIG, ENEMY_SHAPES, RIG_ANIMS, type RigAnims, type ShapeAnimState, type ShapeBuilder } from './enemyShapes';
+import { PoseSmoother, refineGeometry } from './enemyShapes/refine';
 
 export type EnemyState = 'alive' | 'dying' | 'dead';
 /** AI 狀態（見 systems/EnemyAI.ts） */
@@ -71,6 +72,9 @@ export class Enemy {
   /** 程式模型的動畫（enemyShapes 提供；沒有就用預設的走路晃動） */
   private shapeAnim: ((st: ShapeAnimState) => void) | null = null;
   private animState: ShapeAnimState = { t: 0, dt: 0, moving: false, winding: false, lean: 0, scale: 1, body: this.body };
+  /** 首領：動作平滑（程式模型）與轉身平滑 */
+  private smoother: PoseSmoother | null = null;
+  private yaw = 0;
 
   constructor(def: EnemyDef, spawn: SpawnDef) {
     this.def = def;
@@ -85,6 +89,11 @@ export class Enemy {
 
     this.height = this.buildRig() ?? this.buildBody() * def.scale;
     if (!this.rig) this.mergeBody();
+    if (def.boss && !this.rig) {
+      this.smoother = new PoseSmoother(this.body);
+      this.smoother.collect();
+    }
+    this.yaw = this.facing;
     this.body.scale.setScalar(def.scale);
     this.object.add(this.body);
 
@@ -253,7 +262,12 @@ export class Enemy {
   private animate(dt: number) {
     const t = this.animT;
     const s = this.def.scale;
-    this.object.rotation.y = this.facing;
+    if (this.def.boss) {
+      // 首領轉身用追的（招式瞬間改朝向時不會「瞬間轉頭」）
+      const d = Math.atan2(Math.sin(this.facing - this.yaw), Math.cos(this.facing - this.yaw));
+      this.yaw += d * (1 - Math.exp(-dt * 12));
+      this.object.rotation.y = this.yaw;
+    } else this.object.rotation.y = this.facing;
     const lean = this.windup > 0 ? -0.25 : 0;
     if (this.rig) {
       // 骷髏：前搖開始時播攻擊（遠程播施法），其餘依移動切換走路 / 待機
@@ -279,6 +293,7 @@ export class Enemy {
       this.body.position.y = this.moving > 0.05 ? Math.abs(Math.sin(t * 9)) * 0.08 : 0;
       this.body.rotation.x = lean;
     }
+    this.smoother?.apply(dt);
     this.moving = Math.max(0, this.moving - dt * 4);
   }
 
@@ -300,6 +315,8 @@ export class Enemy {
     this.slowMul = 1;
     this.stunTimer = 0;
     this.aggroMinion = null;
+    this.smoother?.reset();
+    this.yaw = this.facing;
     this.ai = 'idle';
     this.provoked = false;
     this.windup = 0;
@@ -315,13 +332,14 @@ export class Enemy {
   }
 
   private m(color: number): THREE.MeshLambertMaterial {
-    const mat = new THREE.MeshLambertMaterial({ color, flatShading: true });
+    // 首領用平滑著色（配合 refineGeometry 的高分段），小怪維持低多邊形的平面著色
+    const mat = new THREE.MeshLambertMaterial({ color, flatShading: !this.def.boss });
     this.materials.push(mat);
     return mat;
   }
 
   private add(geo: THREE.BufferGeometry, color: number, x = 0, y = 0, z = 0, parent: THREE.Object3D = this.body): THREE.Mesh {
-    const mesh = new THREE.Mesh(geo, this.m(color));
+    const mesh = new THREE.Mesh(this.def.boss ? refineGeometry(geo) : geo, this.m(color));
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     parent.add(mesh);
@@ -360,7 +378,7 @@ export class Enemy {
       this.materials.splice(this.materials.indexOf(m.material as THREE.MeshLambertMaterial), 1);
       m.removeFromParent();
     }
-    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: !this.def.boss });
     this.materials.push(mat);
     const mesh = new THREE.Mesh(merged, mat);
     mesh.castShadow = true;
@@ -380,7 +398,7 @@ export class Enemy {
       light: new THREE.Color(c).lerp(new THREE.Color(0xffe8d0), 0.45).getHex(),
       add: (geo, color, x = 0, y = 0, z = 0, parent = this.body) => self.add(geo, color, x, y, z, parent),
       glow: (geo, color, x = 0, y = 0, z = 0, parent = this.body) => {
-        const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color }));
+        const mesh = new THREE.Mesh(this.def.boss ? refineGeometry(geo) : geo, new THREE.MeshBasicMaterial({ color }));
         mesh.position.set(x, y, z);
         parent.add(mesh);
         return mesh;
