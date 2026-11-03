@@ -36,6 +36,9 @@ import { ensureToday, progressQuests, questText, type QuestEvent } from '@/syste
 import { Cloud } from '@/net/Cloud';
 import { CLASSES, RAGE, type HeroClass } from '@/data/classes';
 import { applyClassWeaponNames } from '@/data/items';
+import { currentStep, targetFor, tutorialEvent, type TutorialEvent } from '@/systems/Tutorial';
+import { rewardText } from '@/data/tutorial';
+import { GuideArrow } from '@/world/GuideArrow';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -59,6 +62,9 @@ export class Game {
   readonly zones: ZoneManager;
   readonly hud: Hud;
   readonly menu: Menu;
+  /** 新手指引：腳邊箭頭與目標光柱 */
+  private guideArrow = new GuideArrow();
+  private guideLast = { x: 0, z: 0 };
   readonly enemies: EnemyManager;
   readonly projectiles: ProjectileSystem;
   /** 召喚物（召喚師的骷髏） */
@@ -317,6 +323,19 @@ export class Game {
       hitMinion: (e, m, power) => this.hitMinion(e, m, power),
     };
 
+    // ---- 新手指引 ----
+    const tut = (ev: TutorialEvent) => this.tutorial(ev);
+    bus.on('enemy:killed', () => tut({ type: 'kill' }));
+    bus.on('skill:cast', ({ slot }) => tut({ type: 'skill', slot }));
+    bus.on('auto:changed', ({ on }) => tut({ type: 'auto', on }));
+    bus.on('player:levelup', ({ level }) => tut({ type: 'level', level }));
+    bus.on('item:equipped', () => tut({ type: 'equip' }));
+    bus.on('shop:bought', () => tut({ type: 'buy' }));
+    bus.on('enhance:done', () => tut({ type: 'enhance' }));
+    bus.on('zone:enter', ({ zoneId }) => tut({ type: 'zone', zone: zoneId }));
+    bus.on('boss:defeated', ({ zoneId }) => tut({ type: 'boss', zone: zoneId }));
+    this.scene.add(this.guideArrow.group);
+
     // ---- 每日任務 ----
     ensureToday(this.state);
     const quest = (ev: QuestEvent) => this.quest(ev);
@@ -365,8 +384,10 @@ export class Game {
     this.resize();
     if (firstTime) {
       setTimeout(() => bus.emit('banner', { text: '歡迎來到赫拉斯大陸' }), 600);
-      setTimeout(() => bus.emit('toast', { text: '用左下搖桿移動，往南走進入阿卡迪亞草原', duration: 4 }), 3200);
+      setTimeout(() => bus.emit('toast', { text: '左上角的「新手指引」會一步步帶你玩，點它可以看詳細說明', duration: 4.5 }), 3000);
     }
+    this.tutorial(null); // 輪到的步驟如果已經達成（例如已在草原），直接完成
+    this.guideLast = { ...this.player.pos };
   }
 
   start() {
@@ -465,6 +486,7 @@ export class Game {
     this.targets.update(dt);
     this.zones.update(dt, this.player.pos.x, this.player.pos.z);
     this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
+    this.updateGuide(dt);
     this.followSun();
     this.damageNumbers.update(dt, this.rig.camera);
     const boss = this.enemies.engagedBoss();
@@ -542,6 +564,7 @@ export class Game {
     if (this.auto.on === on) return this.hud.setAuto(on);
     this.auto.on = on;
     this.hud.setAuto(on);
+    bus.emit('auto:changed', { on });
     if (on) bus.emit('toast', { text: 'AUTO 自動戰鬥：開啟' });
     else bus.emit('toast', { text: 'AUTO 自動戰鬥：關閉' });
   }
@@ -571,6 +594,49 @@ export class Game {
       .catch((e: { status?: number }) => {
         if (e.status === 409) bus.emit('toast', { text: '雲端有較新的存檔，請到「設定 → 雲端存檔」選擇要保留哪一份', duration: 3.5 });
       });
+  }
+
+  /** 推進新手指引；完成的步驟發獎勵、顯示訊息 */
+  tutorial(ev: TutorialEvent | null) {
+    const s = this.state;
+    const t = s.tutorial;
+    if (t.done) return;
+    const before = `${t.step}|${Math.floor(t.progress)}|${t.skills.length}`;
+    const done = tutorialEvent(t, ev, { zoneId: s.zoneId, level: s.level, bossesDefeated: s.bossesDefeated });
+    for (const c of done) {
+      const r = c.step.reward;
+      if (c.rewarded) {
+        s.gold += r.gold ?? 0;
+        s.gems += r.gems ?? 0;
+        s.potions.hp += r.hp ?? 0;
+        s.potions.mp += r.mp ?? 0;
+      }
+      if (!t.hidden) bus.emit('toast', { text: `✔ 指引完成：${c.step.title}${c.rewarded ? `　獲得 ${rewardText(r)}` : ''}`, duration: 3 });
+    }
+    if (done.length) {
+      this.audio.play(t.done ? 'levelup' : 'coin');
+      if (t.done && !t.hidden) {
+        bus.emit('banner', { text: '新手指引完成！' });
+        setTimeout(() => bus.emit('toast', { text: '接下來挑戰更深的副本和每日任務吧！說明隨時在「選單 → 指引」', duration: 4 }), 2400);
+      }
+      bus.emit('wallet:changed');
+      this.persist();
+    }
+    if (`${t.step}|${Math.floor(t.progress)}|${t.skills.length}` !== before) bus.emit('tutorial:changed');
+  }
+
+  /** 每幀：「走動」步驟累計距離、更新指引箭頭 */
+  private updateGuide(dt: number) {
+    const t = this.state.tutorial;
+    const p = this.player.pos;
+    if (!t.done && currentStep(t)?.goal.type === 'move') {
+      const d = Math.hypot(p.x - this.guideLast.x, p.z - this.guideLast.z);
+      if (d > 0.001 && d < 1) this.tutorial({ type: 'move', meters: d }); // 大於 1m 是傳送 / 換地圖，不算
+    }
+    this.guideLast.x = p.x;
+    this.guideLast.z = p.z;
+    const zone = this.zones.current;
+    this.guideArrow.update(dt, p.x, p.z, zone ? targetFor(t, zone.def.id) : null, (x, z) => zone?.heightAt(x, z) ?? 0);
   }
 
   /** 推進每日任務 */

@@ -110,7 +110,7 @@ function detailCard(ctx: InvContext, it: ItemInstance): HTMLElement {
         h('button', { class: 'go', onclick: () => ctx.goTab('enhance') }, '強化'),
       ]
     : [
-        h('button', { class: 'go', onclick: () => { equip(s, it.uid); ctx.changed(); ctx.rerender(); } }, '裝備'),
+        h('button', { class: 'go', onclick: () => { if (equip(s, it.uid)) bus.emit('item:equipped'); ctx.changed(); ctx.rerender(); } }, '裝備'),
         h('button', { class: 'go ghost', onclick: () => ctx.goTab('enhance') }, '強化'),
         h('button', { class: 'go danger', onclick: () => { const g = sell(s, it.uid); selectedUid = null; ctx.toast(`賣出，獲得 ${g} 金幣`); ctx.changed(); ctx.rerender(); } }, `賣出 ${price}`),
       ];
@@ -184,6 +184,7 @@ export function renderShop(ctx: InvContext): HTMLElement[] {
     if (!give()) return ctx.toast('背包已滿');
     s.gold -= price;
     ctx.toast(`購買 ${label}`);
+    bus.emit('shop:bought');
     ctx.changed();
     ctx.rerender();
   };

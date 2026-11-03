@@ -28,12 +28,13 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.22.0。10 週 MVP 完成，加上 v1.1~v1.22（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
-- 測試：`npm test`（Vitest 52 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
+- 版本 v1.23.0。10 週 MVP 完成，加上 v1.1~v1.23（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 測試：`npm test`（Vitest 58 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
 - 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。暫停中（`__game.paused`）`frame()` 不呼叫 `tick()`，但 `debugAdvance()` 仍會推進。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
 - 美術：KayKit CC0（`src/assets/models/` meshopt 版給一般建置、`src/assets/models-plain/` 免 WebAssembly 版給單一 HTML——claude.ai Artifact 禁止 WebAssembly，meshopt 模型會全部載入失敗；兩者都由 `scripts/build-assets.mjs` 產生，`@models` 別名在 vite.config.ts 依模式切換）；青蛙用 Quaternius CC0 模型；史萊姆、寄居蟹（會動的程式模型）、魔像、蝙蝠、蘑菇仍是程式模型。
 - 角色模型驗證：用 `__game.paused = true` 後把鏡頭移到角色正前方（眼睛高度）拍全身，俯視鏡頭會被頭和帽子擋住看不出缺件。`Assets.mergeSkinned()` 合併蒙皮網格前要把各部位換算到同一個骨架空間（量化會把縮放折進各自的 inverseBindMatrices），否則身體會消失。
 - 職業（法師、弓手、騎士、狂戰士、召喚師）在 `data/classes.ts`，技能效果在 `SkillSystem.cast()` 依 `skill.id` 分派。近戰判定 `Damage.inCone()`；AUTO 普攻射程 < 4 視為近戰（走到「射程＋敵人體型」內、用 `auto: 'gap'` 技能貼近、`auto: 'guard'` 開防禦、`auto: 'burst'` 開爆發）。狂戰士 `resource: 'rage'`：怒氣存在 `player.mp`，上限固定 `RAGE.max`，增減在 `Game`（combat:hit 監聽、regen）。召喚師的骷髏：資料 `data/minions.ts`、實體 `entities/Minion.ts`、AI `systems/MinionManager.ts`；小怪被骷髏打會改打骷髏（`Enemy.aggroMinion`，EnemyAI 依此選目標），敵人打骷髏走 `Game.hitMinion()`。骷髏外觀是程式骷髏 `entities/BoneSkeleton.ts`（細骨頭、肋骨、有眼窩牙齒的頭骨、關節動畫；每個關節群組用頂點顏色合併成 1 個網格），不用 KayKit 骷髏模型（Q 版大頭在斜俯視鏡頭下像柱子）；眼火、法陣、靈魂火焰、出場 / 倒下特效在 `Minion.ts`。截圖驗證外觀時要先 `__game.paused = true`，否則 AI 會在截圖前把骷髏轉向。
 - 雅典城佈置：古希臘物件在 `world/GreekProps.ts`（新 PropKind，只用 `mat()` 共用顏色，會被 mergeStatic 合併）；小動物在 `world/Critters.ts`，資料寫在 `ZoneDef.critters`（kind、位置、活動範圍 area、花色 variant）。所有動物合成 1 個網格，每幀在 CPU 換算頂點（約 1.7 萬頂點、0.2ms）；新增動物種類＝加一個 build 函式＋行為分支。`__game.zones.current.critters.debug()` 看狀態。城裡 draw call 約 80~106（全景 116）。
+- 新手指引：步驟資料 `data/tutorial.ts`、邏輯 `systems/Tutorial.ts`（`GameState.tutorial`，存檔 v5），Game 監聽事件呼叫 `game.tutorial(ev)` 發獎勵；HUD 左上卡片（縮放鈕下方，寬度扣掉右側三顆按鈕）、地上金色箭頭 `world/GuideArrow.ts`（步驟的 `targets` 依區域）、選單「指引」分頁 `ui/GuideTab.ts`＋說明文字 `data/manual.ts`（新增技能要補 `SKILL_HELP`）。測試時可用 `__game.tutorial({ type: 'move', meters: 12 })` 直接推進。
 - 音效是 Web Audio 合成（`audio/Audio.ts`）；背景音樂是 `audio/Music.ts` 合成引擎播 `audio/songs.ts` 曲譜（6 首），區域用 `ZoneDef.music` 指定。`?debug` 下 `await __renderMusic('boss', 30, 1)` 可離線輸出 WAV 試聽。換正式音檔時保留 `play(id)` / `setMusic(id)` / `setBossIntensity(v)`。

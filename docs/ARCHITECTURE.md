@@ -27,6 +27,8 @@ src/
 │  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
 │  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
 │  ├─ classes.ts              職業（法師、弓手、騎士、狂戰士、召喚師）、怒氣規則 RAGE
+│  ├─ tutorial.ts             新手指引的 11 個步驟（目標、說明、獎勵、箭頭目標位置）
+│  ├─ manual.ts               選單「指引」的遊戲說明文字與每個技能的一句話說明
 │  ├─ minions.ts              召喚物（斯巴達亡靈、提瑞西阿斯亡靈、埃阿斯亡靈）：屬性倍率、存在時間、上限、嘲諷：屬性、成長、技能表、模型動畫、武器名稱
 │  └─ player.ts               經驗曲線、statsForLevel(level, class)
 ├─ input/                     InputManager（鍵盤 + 搖桿 + 按住）、VirtualJoystick
@@ -54,6 +56,7 @@ src/
 │  ├─ LootTable.ts            掉落擲骰（純函式）
 │  ├─ LootSystem.ts           地上掉落物、自動拾取
 │  ├─ DailyQuests.ts          每日任務（純函式）
+│  ├─ Tutorial.ts             新手指引進度（純函式：事件推進、狀態型目標自動完成、獎勵只發一次）
 │  └─ Quality.ts              畫質分級與自動降級
 ├─ audio/
 │  ├─ Audio.ts                Web Audio 合成音效、音樂匯流排、選曲（區域 / 魔王戰 / 勝利）
@@ -70,6 +73,7 @@ src/
 │  ├─ Zone.ts                 依 ZoneDef 建場景、高台與石階、碰撞、heightAt()
 │  ├─ Props.ts                低多邊形物件工廠（含首領石圈、水晶）＋ 碰撞尺寸
 │  ├─ GreekProps.ts           古希臘風格物件：神殿、石柱、雕像、橄欖樹、柏樹、花圃、長椅、市集攤位、陶罐、樹籬
+│  ├─ GuideArrow.ts           新手指引：玩家腳邊的金色箭頭＋目標光柱
 │  ├─ Critters.ts             城裡的小動物（ZoneDef.critters）：貓狗雞鴿子貓頭鷹蝴蝶，全部合成 1 個動態網格
 │  ├─ Collision.ts            2D 碰撞世界
 │  └─ Label.ts                Canvas 文字 Sprite
@@ -77,6 +81,7 @@ src/
    ├─ Hud.ts                  狀態框、小地圖、貨幣、提示、橫幅、撿寶訊息、首領血條、冷卻遮罩、AUTO
    ├─ Menu.ts                 選單殼與「地圖 / 設定」分頁
    ├─ InventoryTabs.ts        「裝備 / 強化 / 商城」分頁
+   ├─ GuideTab.ts             「指引」分頁：新手指引步驟清單＋可展開的遊戲說明
    ├─ CloudTabs.ts            雲端存檔卡片、「排行」分頁
    ├─ PauseScreen.ts          暫停畫面：繼續、存檔、設定、裝備、地圖、回到開頭畫面
    ├─ TitleScreen.ts          開頭畫面：繼續遊戲、10 格存檔（選擇 / 新遊戲 / 刪除）
@@ -126,7 +131,9 @@ tick(dt):
 | `enemy:killed` | Damage | Game（經驗金幣、首領解鎖）、LootSystem、Audio |
 | `player:hurt` / `player:died` / `player:levelup` | Game | Game（反擊、復活）、Audio |
 | `player:changed` / `wallet:changed` | 任何系統 | Hud |
-| `skill:cast` | SkillSystem | Audio |
+| `skill:cast` | SkillSystem | Audio、Game（每日任務、新手指引） |
+| `auto:changed` / `item:equipped` / `shop:bought` | Game / InventoryTabs | Game（新手指引） |
+| `tutorial:changed` | Game、Menu | Hud（指引卡片）、Menu（指引分頁重畫） |
 | `loot:picked` | LootSystem | Hud（撿寶訊息）、Audio |
 | `boss:cast` / `boss:defeated` | BossController / Game | Audio / — |
 | `settings:changed` | Menu | Audio |
@@ -144,9 +151,9 @@ raw  = atk × 技能倍率
 - 首領技能傷害 = 公式 × 技能倍率（1.4~2.2），只有預警結算時站在範圍內才會受傷。
 - AUTO 只會察覺 65% 的預警（`AUTO_DODGE_CHANCE`），手動操作可以全部閃掉。
 
-## 存檔（v4）
+## 存檔（v5）
 
-- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）。舊存檔讀入時自動遷移。
+- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）、v5 新手指引（`tutorial`；舊存檔 Lv.3 以上或打過首領的視為完成並隱藏）。舊存檔讀入時自動遷移。
 
 
 - 多存檔：`SaveSlots` 管 10 格（localStorage `little-mage.save.slot1`~`slot10`；v1.19 前是 5 格，鍵名相同所以舊存檔直接沿用），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。

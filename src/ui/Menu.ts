@@ -10,6 +10,8 @@ import { renderCloudCard, renderLeaderboard, type CloudContext } from './CloudTa
 import type { Cloud } from '@/net/Cloud';
 import type { SlotInfo } from '@/core/SaveSystem';
 import { CLASSES } from '@/data/classes';
+import { renderGuide } from './GuideTab';
+import { restartTutorial } from '@/systems/Tutorial';
 
 /** 開發模式或網址帶 ?debug 才顯示開發工具 */
 const DEV = import.meta.env.DEV || new URLSearchParams(location.search).has('debug');
@@ -19,6 +21,7 @@ const TABS: { id: MenuTab; label: string }[] = [
   { id: 'enhance', label: '強化' },
   { id: 'shop', label: '商城' },
   { id: 'quests', label: '任務' },
+  { id: 'guide', label: '指引' },
   { id: 'rank', label: '排行' },
   { id: 'map', label: '地圖' },
   { id: 'saves', label: '存檔' },
@@ -84,6 +87,7 @@ export class Menu {
     uiRoot.appendChild(this.root);
 
     bus.on('menu:open', ({ tab }) => this.open(tab));
+    bus.on('tutorial:changed', () => this.isOpen && this.tab === 'guide' && this.show('guide'));
   }
 
   open(tab?: MenuTab) {
@@ -114,6 +118,26 @@ export class Menu {
     if (tab === 'rank') return renderLeaderboard(this.cloudCtx());
     if (tab === 'settings') return this.renderSettings();
     if (tab === 'saves') return this.renderSaves();
+    if (tab === 'guide')
+      return renderGuide({
+        state: this.state,
+        setHidden: (v) => {
+          this.state.tutorial.hidden = v;
+          bus.emit('tutorial:changed');
+          bus.emit('save:request');
+        },
+        restart: () => {
+          restartTutorial(this.state.tutorial);
+          bus.emit('tutorial:changed');
+          bus.emit('save:request');
+          bus.emit('toast', { text: '新手指引重新開始（已領過的獎勵不會重複發放）' });
+        },
+        rerender: () => {
+          const top = this.body.scrollTop;
+          this.show('guide');
+          this.body.scrollTop = top;
+        },
+      });
     const ctx: InvContext = {
       state: this.state,
       changed: () => this.actions.onInventoryChanged(),

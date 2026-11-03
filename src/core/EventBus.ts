@@ -39,9 +39,17 @@ export interface GameEvents {
   'float:text': { x: number; y: number; z: number; text: string; kind: 'gold' | 'exp' | 'info' };
   /** 技能施放（音效、教學用） */
   'skill:cast': { slot: string; id?: string };
+  /** AUTO 自動戰鬥開關（新手指引用） */
+  'auto:changed': { on: boolean };
+  /** 在背包換上裝備 */
+  'item:equipped': void;
+  /** 在商城買東西 */
+  'shop:bought': void;
+  /** 新手指引進度變動（HUD 卡片、選單重畫） */
+  'tutorial:changed': void;
 }
 
-export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'rank' | 'map' | 'saves' | 'settings';
+export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'guide' | 'rank' | 'map' | 'saves' | 'settings';
 
 type Handler<T> = (payload: T) => void;
 

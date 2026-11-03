@@ -442,3 +442,51 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 }
 .zoom-col .zoom-btn { width: 30px; height: 26px; border-radius: 999px; font-size: 17px; }
 .zoom-col .zoom-text { min-width: 38px; text-align: center; font-size: 11px; font-weight: 700; }
+
+/* 新手指引卡片：狀態框 → 縮放鈕 → 這張卡片 */
+.status-card .guide-card {
+  /* 寬度扣掉右側「暫停 / 裝備 / 選單」三顆按鈕（約 150px），不會互相蓋到 */
+  position: absolute; top: calc(100% + 44px); left: 0; width: min(100%, calc(100vw - var(--gutter) * 2 - 156px));
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 8px; text-align: left;
+  background: linear-gradient(90deg, rgba(58, 44, 18, 0.92), rgba(27, 34, 50, 0.86)); border: 1px solid rgba(255, 211, 107, 0.55);
+  border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); color: #fff;
+}
+.guide-card .guide-ico { font-size: 18px; flex: none; }
+.guide-card .guide-body { display: grid; gap: 1px; min-width: 0; }
+.guide-card b { font-size: 11px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.guide-card .guide-body > span { font-size: 12px; font-weight: 700; line-height: 1.3; }
+.guide-card.flash { animation: guide-flash 1.2s ease-out; }
+@keyframes guide-flash {
+  0% { transform: scale(1.06); box-shadow: 0 0 0 0 rgba(255, 211, 107, 0.9); }
+  100% { transform: scale(1); box-shadow: 0 0 0 14px rgba(255, 211, 107, 0); }
+}
+/* 有指引卡片時，提示條往下讓位 */
+.hud:has(.guide-card[style*="flex"]) .tip { top: calc(max(10px, env(safe-area-inset-top)) + 222px); }
+
+/* ---------------- 選單「指引」分頁 ---------------- */
+.guide-steps { display: grid; gap: 6px; }
+.guide-step { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); }
+.guide-step .gs-mark { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: rgba(255, 255, 255, 0.08); color: var(--muted); }
+.guide-step.done .gs-mark { background: #4fb36a; color: #fff; }
+.guide-step.now { background: rgba(255, 211, 107, 0.12); border: 1px solid rgba(255, 211, 107, 0.5); }
+.guide-step.now .gs-mark { background: var(--gold); color: #1b2433; }
+.guide-step b { font-size: 13px; }
+.guide-step small { display: block; font-size: 11px; color: var(--muted); line-height: 1.45; }
+.guide-step.done b { color: var(--muted); }
+.guide-step .gs-reward { font-size: 10.5px; color: var(--gold); text-align: right; white-space: nowrap; }
+.guide-step .gs-hint { grid-column: 2 / -1; font-size: 12px; color: #e9e2d4; line-height: 1.55; background: rgba(0, 0, 0, 0.18); padding: 8px 10px; border-radius: 8px; }
+.guide-bar { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.guide-bar i { display: block; height: 100%; background: var(--gold); }
+.manual details { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; }
+.manual summary { padding: 11px 12px; font-size: 14px; font-weight: 700; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+.manual summary::-webkit-details-marker { display: none; }
+.manual summary::after { content: '▾'; margin-left: auto; color: var(--muted); transition: transform 0.2s; }
+.manual details[open] summary::after { transform: rotate(180deg); }
+.manual .mbody { padding: 0 12px 12px; display: grid; gap: 6px; font-size: 12.5px; line-height: 1.6; color: #e9e2d4; }
+.manual .mbody p { margin: 0; }
+.manual .mbody ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.manual .mbody b { color: #fff; }
+.manual .mbody kbd { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 5px; background: rgba(255, 255, 255, 0.12); font: 700 11px/18px inherit; text-align: center; }
+.manual .skill-line { display: grid; grid-template-columns: 34px 1fr; gap: 6px; }
+.manual .skill-line > span { font-weight: 800; color: var(--gold); }
+.manual { display: grid; gap: 8px; }

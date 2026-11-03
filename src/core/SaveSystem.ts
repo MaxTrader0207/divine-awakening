@@ -1,5 +1,6 @@
 import { newGameState, SAVE_VERSION, type GameState } from './GameState';
 import { ZONES } from '@/data/zones';
+import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
 
 /**
@@ -206,6 +207,9 @@ export function migrate(data: Partial<GameState>): GameState | null {
   // v2 → v3：新增 daily（選填，進遊戲時自動產生），不需轉換
   // v3 → v4：新增職業，舊存檔都是法師
   if (!merged.heroClass) merged.heroClass = 'mage';
-  // 未來版本：if ((data.version ?? 0) < 4) { ... }
+  // v4 → v5：新增新手指引；已經玩過一段（Lv.3 以上或打過首領）的視為完成、不顯示
+  if (!data.tutorial || typeof data.tutorial !== 'object') merged.tutorial = tutorialForExisting(merged.level, merged.bossesDefeated ?? []);
+  else merged.tutorial = { ...base.tutorial, ...data.tutorial };
+  // 未來版本：if ((data.version ?? 0) < 6) { ... }
   return merged;
 }

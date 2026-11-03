@@ -10,6 +10,8 @@ import { Minimap } from './Minimap';
 import { RARITY } from '@/data/items';
 import { claimableCount } from '@/systems/DailyQuests';
 import { h } from './dom';
+import { currentStep, progressText } from '@/systems/Tutorial';
+import { TUTORIAL_STEPS } from '@/data/tutorial';
 
 /**
  * HUD：對應影片的版面
@@ -70,6 +72,12 @@ export class Hud {
     this.root.appendChild(topRight);
     // 縮放鈕掛在狀態框裡、固定接在它下方（放右上會在窄螢幕蓋住狀態框）
     status.appendChild(zoomCol);
+    // 新手指引卡片：接在縮放鈕下方，點了開選單「指引」
+    this.els.guide = h('button', { class: 'guide-card', onclick: () => bus.emit('menu:open', { tab: 'guide' }) }, [
+      h('span', { class: 'guide-ico' }, '📜'),
+      h('span', { class: 'guide-body' }, [(this.els.guideTitle = h('b')), (this.els.guideText = h('span'))]),
+    ]);
+    status.appendChild(this.els.guide);
 
     // ---- 提示與橫幅 ----
     this.root.appendChild((this.els.tip = h('div', { class: 'tip' })));
@@ -132,6 +140,27 @@ export class Hud {
       v.classList.add('on');
     });
     bus.on('wallet:changed', () => this.refresh());
+    bus.on('tutorial:changed', () => this.refreshGuide());
+    this.refreshGuide();
+  }
+
+  private guideStep = -1;
+  /** 新手指引卡片（完成或隱藏時不顯示；換到下一步時閃一下） */
+  refreshGuide() {
+    const t = this.state.tutorial;
+    const step = currentStep(t);
+    const el = this.els.guide;
+    el.style.display = step && !t.hidden ? 'flex' : 'none';
+    if (!step) return;
+    const prog = progressText(t);
+    this.els.guideTitle.textContent = `新手指引 ${t.step + 1}/${TUTORIAL_STEPS.length}・${step.title}`;
+    this.els.guideText.textContent = prog ? `${step.text}（${prog}）` : step.text;
+    if (this.guideStep !== t.step) {
+      this.guideStep = t.step;
+      el.classList.remove('flash');
+      void el.offsetWidth;
+      el.classList.add('flash');
+    }
   }
 
   private actionButton(cls: string, action: ActionKey, key: string, extra?: HTMLElement): HTMLElement {

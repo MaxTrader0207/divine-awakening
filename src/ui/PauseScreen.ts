@@ -38,6 +38,10 @@ export class PauseScreen {
           h('button', { class: 'ps-btn', onclick: () => actions.openMenu('equip') }, '🎒 裝備'),
           h('button', { class: 'ps-btn', onclick: () => actions.openMenu('map') }, '🗺 地圖'),
         ]),
+        h('div', { class: 'ps-row' }, [
+          h('button', { class: 'ps-btn', onclick: () => actions.openMenu('guide') }, '📜 遊戲指引'),
+          h('button', { class: 'ps-btn', onclick: () => actions.openMenu('quests') }, '📋 任務'),
+        ]),
         this.titleBtn,
         h('p', { class: 'ps-hint' }, '電腦：按 Esc 暫停 / 繼續'),
       ]),
