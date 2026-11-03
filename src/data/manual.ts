@@ -1,6 +1,6 @@
 import type { HeroClass } from './classes';
 import { CLASSES } from './classes';
-import { ZONES, DUNGEON_ORDER } from './zones';
+import { ZONES, DUNGEON_ORDER, FIELD_ORDER, bossOf, zoneLabel } from './zones';
 import { ENHANCE_GEM_COST, ENHANCE_MAX, POTION_PRICE, RARITY, RARITY_ORDER } from './items';
 import type { ZoneId } from './types';
 
@@ -49,9 +49,9 @@ const SLOT_KEYS: Record<string, string> = { basic: '普攻', Q: 'Q', W: 'W', E: 
 function zoneLine(id: ZoneId): string {
   const z = ZONES[id];
   const [a, b] = z.levelRange ?? [1, 1];
-  // 副本的地名在 name（subtitle 是「第一層・…」）；野外的 name 是大陸名，地名在 subtitle 前半
-  const name = z.dungeon ? `${'一二三四五'[z.dungeon.floor - 1]}層・${z.name}` : z.subtitle.split('・')[0];
-  const boss = z.dungeon ? `，首領「${z.dungeon.bossName}」` : '';
+  const name = zoneLabel(id);
+  const bossDef = bossOf(id);
+  const boss = bossDef ? `，首領「${bossDef.name}」` : '';
   const need = z.minLevel ? `（Lv.${z.minLevel} 才能進入）` : '';
   return `**${name}**：建議 Lv.${a}~${b}${boss}${need}`;
 }
@@ -135,9 +135,8 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
       title: '地圖與副本',
       lines: [
         '**雅典城**：安全區，有商店街、強化屋，中央廣場的傳送石可以前往副本。',
-        zoneLine('grassland'),
+        ...FIELD_ORDER.filter((id) => id !== 'town').map((id) => zoneLine(id)),
         ...DUNGEON_ORDER.map((id) => zoneLine(id)),
-        zoneLine('mistwood'),
         '副本要依序解鎖：擊敗上一層的首領才能進下一層。',
       ],
     },

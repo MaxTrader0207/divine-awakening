@@ -23,8 +23,13 @@ src/
 │  └─ SaveSystem.ts           10 格存檔 SaveSlots、LocalSave（使用中欄位）、版本遷移
 ├─ data/                      ★ 遊戲內容（純資料）
 │  ├─ types.ts                所有資料型別
-│  ├─ zones.ts                主城、阿卡迪亞草原、三層副本（地形、高台、生怪、傳送、商店入口）
-│  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
+│  ├─ stages/                 關卡：一個關卡一個檔案（地圖＋這張地圖的小怪與首領），index.ts 是登記表（見 docs/CONTENT.md）
+│  │  ├─ index.ts             STAGES 登記表 → 自動產生 ZONES、ENEMIES、DUNGEON_ORDER、FIELD_ORDER、bossOf()、zonesForLevel()…
+│  │  ├─ helpers.ts           row / pillarRing / scatterTrees / melee
+│  │  └─ town.ts、grassland.ts、dungeon1~3-*.ts、dodona-grove.ts
+│  ├─ zones.ts / enemies.ts   相容入口（轉接到 stages）
+│  ├─ bossSkills.ts           首領招式庫：招式 = pattern（cone / dash / nova / rain / leap / line）＋參數
+│  ├─ content.test.ts         內容一致性檢查（出生點、首領、招式、造型、層數、等級、傳送點、音樂）
 │  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
 │  ├─ classes.ts              職業（法師、弓手、騎士、狂戰士、召喚師）、怒氣規則 RAGE
 │  ├─ gear.ts                 各職業裝備命名（標準裝前綴、每欄位 10 件神話裝、能力偏向）
@@ -36,7 +41,8 @@ src/
 ├─ input/                     InputManager（鍵盤 + 搖桿 + 按住）、VirtualJoystick
 ├─ entities/
 │  ├─ Player.ts               小法師：模型、移動、施法 / 受傷 / 倒地動畫、無敵、地面高度
-│  ├─ Enemy.ts                敵人：程式造型或骷髏骨架模型、HP、閃白 / 緩速 / 前搖變色、血條、死亡重生
+│  ├─ Enemy.ts                敵人：外觀（enemyShapes 或骨架模型）、HP、閃白 / 緩速 / 前搖變色、血條、死亡重生
+│  ├─ enemyShapes/            敵人程式模型登記表：一種造型一個建造函式（basic.ts、crab.ts），rigs.ts 是骨架模型動畫表
 │  ├─ Minion.ts               召喚物：眼火、法陣、靈魂火焰、HP、綠色血條、出現 / 倒下動畫
 │  ├─ BoneSkeleton.ts         程式骷髏（召喚物外觀）：骨頭、肋骨、頭骨、帽子 / 頭盔、武器，關節動畫（走、劈、施法、受擊）
 │  └─ CharacterRig.ts         骨架動畫：循環層（待機/跑）＋單次層（攻擊/受擊）＋死亡
@@ -50,7 +56,7 @@ src/
 │  ├─ EnemyManager.ts         生怪（數量、散佈）、AI 更新、互相推擠、查詢
 │  ├─ EnemyAI.ts              小怪狀態機 idle / wander / chase / attack / return；被嘲諷時改打召喚物
 │  ├─ MinionManager.ts        召喚物 AI：跟隨、選目標、攻擊、嘲諷、冥府骨爆
-│  ├─ BossController.ts       首領技能輪替、二階段狂暴
+│  ├─ BossController.ts       首領招式輪替、二階段狂暴；依 bossSkills.ts 的 pattern 執行
 │  ├─ Telegraphs.ts           紅色範圍預警（圓 / 扇形 / 長方形）與判定
 │  ├─ AutoBattle.ts           AUTO：喝藥、閃預警、撿東西、選目標、技能優先序、沿牆繞路
 │  ├─ Progression.ts          經驗（等級差修正）、升級、金幣（純函式）

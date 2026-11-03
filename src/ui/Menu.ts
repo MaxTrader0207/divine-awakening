@@ -1,6 +1,7 @@
 import { bus, type MenuTab } from '@/core/EventBus';
 import { isZoneUnlocked, type GameState } from '@/core/GameState';
-import { DUNGEON_ORDER, WORLD_FIELDS, ZONES, zoneLabel } from '@/data/zones';
+import { DUNGEON_ORDER, FIELD_ORDER, WORLD_FIELDS, ZONES, bossOf, lootTierOf, zoneLabel, zoneName } from '@/data/zones';
+import type { ZoneId } from '@/data/types';
 import { h } from './dom';
 import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
 import { BONUS_GEMS, canClaim, ensureToday, questText } from '@/systems/DailyQuests';
@@ -170,15 +171,17 @@ export class Menu {
       h('div', { class: 'card' }, [
         h('h3', {}, '赫拉斯大陸・雅典與野外'),
         h('p', {}, fieldList),
-        h('div', { class: 'card-row' }, [
-          here === 'town' ? h('span', { class: 'pill' }, '目前位置') : h('button', { class: 'go', onclick: () => this.travel('town') }, '回到主城'),
-          here === 'grassland' ? h('span', { class: 'pill' }, '目前位置') : h('button', { class: 'go ghost', onclick: () => this.travel('grassland') }, '阿卡迪亞草原'),
-          here === 'mistwood'
-            ? h('span', { class: 'pill' }, '目前位置')
-            : s.level < (ZONES.mistwood.minLevel ?? 0)
-              ? h('span', { class: 'pill locked' }, `🔒 多多納聖林 Lv.${ZONES.mistwood.minLevel}`)
-              : h('button', { class: 'go ghost', onclick: () => this.travel('mistwood') }, '多多納聖林'),
-        ]),
+        // 城鎮與野外：由關卡登記表產生；有進入等級的未達到時鎖住
+        h(
+          'div',
+          { class: 'card-row' },
+          FIELD_ORDER.map((id) => {
+            const z = ZONES[id];
+            if (here === id) return h('span', { class: 'pill' }, '目前位置');
+            if (z.minLevel && s.level < z.minLevel) return h('span', { class: 'pill locked' }, `🔒 ${zoneName(id)} Lv.${z.minLevel}`);
+            return h('button', { class: id === 'town' ? 'go' : 'go ghost', onclick: () => this.travel(id) }, id === 'town' ? '回到主城' : zoneName(id));
+          }),
+        ),
       ]),
       h('div', { class: 'section-title' }, '副本（原本的地區）'),
     ];
@@ -194,9 +197,9 @@ export class Menu {
       out.push(
         h('div', { class: `card dungeon${unlocked ? '' : ' locked'}` }, [
           h('div', { class: 'card-main' }, [
-            h('h4', {}, `第${'一二三四五'[dg.floor - 1]}層・${z.name}`),
-            h('p', {}, `建議等級 Lv.${z.levelRange?.[0] ?? 1}　首領：${dg.bossName}${cleared ? '（已擊敗）' : ''}`),
-            h('p', {}, `裝備掉落第 ${dg.floor} 階　敵人防禦 ${dg.enemyDefense}`),
+            h('h4', {}, zoneLabel(id)),
+            h('p', {}, `建議等級 Lv.${z.levelRange?.[0] ?? 1}　首領：${bossOf(id)?.name ?? '—'}${cleared ? '（已擊敗）' : ''}`),
+            h('p', {}, `裝備掉落第 ${lootTierOf(id)} 階　敵人防禦 ${dg.enemyDefense}`),
           ]),
           action,
         ]),
@@ -515,7 +518,7 @@ export class Menu {
     return h('div', { class: 'card' }, [h('h4', {}, '傷害測試'), stats, row]);
   }
 
-  private travel(id: (typeof DUNGEON_ORDER)[number] | 'town' | 'grassland' | 'mistwood') {
+  private travel(id: ZoneId) {
     this.close();
     bus.emit('zone:request', { zoneId: id });
   }

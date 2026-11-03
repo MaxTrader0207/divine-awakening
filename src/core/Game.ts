@@ -8,7 +8,7 @@ import { MinionManager } from '@/systems/MinionManager';
 import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
-import { ZONES, DUNGEON_ORDER } from '@/data/zones';
+import { ZONES, DUNGEON_ORDER, lootTierOf } from '@/data/zones';
 import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
 import { InputManager } from '@/input/InputManager';
@@ -198,7 +198,7 @@ export class Game {
       this.state,
       this.player,
       this.effects,
-      () => this.zones.current?.def.lootTier ?? this.zones.current?.def.dungeon?.floor ?? 1,
+      () => (this.zones.current ? lootTierOf(this.zones.current.def.id) : 1),
       () => this.onInventoryChanged(),
       (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
     );

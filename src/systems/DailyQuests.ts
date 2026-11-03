@@ -1,4 +1,5 @@
 import type { Rarity, ZoneId } from '@/data/types';
+import { STAGES, zoneName, zonesForLevel } from '@/data/zones';
 
 /**
  * 每日任務（純邏輯，可單元測試）
@@ -24,13 +25,8 @@ export interface DailyState {
   bonusClaimed: boolean;
 }
 
-export const ZONE_NAMES: Partial<Record<ZoneId, string>> = {
-  grassland: '阿卡迪亞草原',
-  dungeon_1: '波賽頓海岸',
-  dungeon_2: '賽蓮海蝕洞',
-  dungeon_3: '赫菲斯托斯熔爐',
-  mistwood: '多多納聖林',
-};
+/** 任務文字用的地名（由關卡資料產生） */
+export const ZONE_NAMES: Partial<Record<ZoneId, string>> = Object.fromEntries(STAGES.filter((st) => !st.zone.safe).map((st) => [st.zone.id, zoneName(st.zone.id)]));
 
 export function questText(q: Quest): string {
   switch (q.kind) {
@@ -67,15 +63,8 @@ function seeded(str: string) {
   return () => ((s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296);
 }
 
-/** 目前等級適合打的區域（給「在某區擊倒」任務用） */
-export function zonesForLevel(level: number, bossesDefeated: ZoneId[]): ZoneId[] {
-  const out: ZoneId[] = [];
-  if (level <= 8) out.push('grassland', 'dungeon_1');
-  if (level >= 5 && level <= 13 && bossesDefeated.includes('dungeon_1')) out.push('dungeon_2');
-  if (level >= 10 && level <= 18 && bossesDefeated.includes('dungeon_2')) out.push('dungeon_3');
-  if (level >= 11) out.push('mistwood');
-  return out.length ? out : ['grassland'];
-}
+/** 目前等級適合打的區域：規則在 data/stages/index.ts（依各關卡的建議等級與解鎖條件自動產生） */
+export { zonesForLevel };
 
 export function generateDaily(date: string, level: number, bossesDefeated: ZoneId[]): DailyState {
   const rnd = seeded(`${date}|${Math.floor(level / 5)}`);

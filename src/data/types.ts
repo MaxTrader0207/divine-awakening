@@ -185,7 +185,7 @@ export interface ZoneDef {
   /** 副本專用 */
   dungeon?: {
     floor: number;
-    bossName: string;
+    /** 敵人防禦（地圖頁顯示用；實際防禦寫在各 EnemyDef） */
     enemyDefense: number;
     /** 擊敗哪一層首領後解鎖；undefined = 預設解鎖 */
     unlockAfter?: ZoneId;
@@ -257,7 +257,19 @@ export type AggroType = 'aggressive' | 'passive';
 
 export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton';
 
-export type BossSkillId = 'claw_slam' | 'charge' | 'ground_slam' | 'tide_rain' | 'leap' | 'lava_spit';
+/** 首領招式 id（招式資料在 data/bossSkills.ts） */
+export type { BossSkillId } from './bossSkills';
+import type { BossSkillId } from './bossSkills';
+
+/**
+ * 關卡：一張地圖＋在這張地圖出現的敵人（小怪與首領）。
+ * 每個關卡一個檔案放在 src/data/stages/，在 stages/index.ts 的 STAGES 登記。見 docs/CONTENT.md。
+ */
+export interface StageDef {
+  zone: ZoneDef;
+  /** 這個關卡的敵人（id → 資料）；id 全遊戲唯一 */
+  enemies: Record<string, EnemyDef>;
+}
 
 export interface EnemyDef {
   id: string;

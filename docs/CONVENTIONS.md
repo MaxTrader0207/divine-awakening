@@ -33,11 +33,8 @@
 
 ## 新增內容的步驟
 
-### 新增區域
-1. `data/types.ts` 的 `ZoneId` 加上新 id。
-2. `data/zones.ts` 寫一個 `ZoneDef`，加入 `ZONES`。
-3. 在既有區域的 `portals` 加一個通往它的傳送點（或加進 `DUNGEON_ORDER`）。
-4. 不需要改任何系統程式。
+### 新增關卡、小怪、首領、招式、敵人造型
+見 **`docs/CONTENT.md`**（一個關卡一個檔案在 `data/stages/`，招式在 `data/bossSkills.ts`，造型在 `entities/enemyShapes/`；`npm test` 的內容一致性檢查會抓出漏接）。
 
 ### 新增場景物件種類
 1. `PropKind` 加上新 kind。
@@ -48,14 +45,8 @@
 1. `core/EventBus.ts` 的 `GameEvents` 加一行：`'名稱': payload 型別`。
 2. 發出：`bus.emit('名稱', {...})`；接收：`bus.on('名稱', fn)`（回傳值可取消訂閱）。
 
-### 新增敵人
-1. `data/enemies.ts` 加一筆（`shape` 用既有造型，或在 `Enemy.buildBody()` 加新造型）。
-2. 在區域的 `spawns` 放進去（`count`、`spread`）。
-3. 首領：`boss: true` 並在 `bossSkills` 列出技能；新技能寫在 `BossController.cast()`。
-4. 改完跑 `docs/BALANCE.md` 的模擬。
-
-### 新增裝備
-`data/items.ts` 的底材表依 slot × tier 自動產生；改 `T1`（基礎屬性）或 `NAMES` 即可。
+### 新增裝備 / 道具
+裝備命名在 `data/gear.ts`（各職業標準裝前綴、每欄位 10 件神話裝），屬性在 `data/items.ts` 自動算；道具在 `data/consumables.ts`。
 
 ### 改存檔欄位
 1. 改 `GameState` 介面與 `newGameState()`。
