@@ -181,6 +181,17 @@ button { font-family: inherit; color: inherit; border: 0; background: none; padd
   padding: max(70px, env(safe-area-inset-top)) 12px 20px; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s;
 }
 .menu-overlay.open { opacity: 1; visibility: visible; }
+/* 存檔結果小視窗（蓋在選單上） */
+.save-pop { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: 0 var(--gutter, 16px); background: rgba(5, 8, 14, 0.35); opacity: 0; transition: opacity 0.18s; }
+.save-pop.show { opacity: 1; }
+.save-pop-box { min-width: 220px; max-width: 300px; display: grid; justify-items: center; gap: 6px; padding: 18px 20px 14px; text-align: center; background: rgba(28, 36, 54, 0.98); border: 1px solid rgba(120, 220, 150, 0.55); border-radius: 16px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55); transform: scale(0.86); transition: transform 0.22s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.save-pop.show .save-pop-box { transform: scale(1); }
+.save-pop-ico { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; font-weight: 900; color: #fff; background: #3fb36b; box-shadow: 0 0 0 5px rgba(63, 179, 107, 0.22); }
+.save-pop b { font-size: 17px; color: #fff; }
+.save-pop p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.save-pop .go { margin-top: 6px; min-width: 96px; }
+.save-pop.bad .save-pop-box { border-color: rgba(240, 110, 90, 0.6); }
+.save-pop.bad .save-pop-ico { background: #d9553f; box-shadow: 0 0 0 5px rgba(217, 85, 63, 0.22); }
 .menu-panel {
   width: 100%; max-height: 100%; display: flex; flex-direction: column;
   background: rgba(22, 28, 42, 0.97); border-radius: 16px; border: 1px solid var(--line); overflow: hidden;

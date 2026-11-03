@@ -437,16 +437,16 @@ export class Menu {
       }
       const row = h('div', { class: 'card-row' });
       if (isActive) {
-        row.append(h('button', { class: 'go small', onclick: () => { sv.saveTo(n); toast(`已存到存檔 ${n}`); rerender(); } }, '立即存檔'));
+        row.append(h('button', { class: 'go small', onclick: () => { this.savedPopup(n, sv.saveTo(n)); rerender(); } }, '立即存檔'));
       } else if (info.empty) {
         row.append(
-          h('button', { class: 'go ghost small', onclick: () => { if (sv.saveTo(n)) toast(`目前進度已另存到存檔 ${n}`); else toast('存檔失敗（瀏覽器可能封鎖了儲存空間）'); rerender(); } }, '把目前進度存到這格'),
+          h('button', { class: 'go ghost small', onclick: () => { this.savedPopup(n, sv.saveTo(n), '目前進度已另存到這格'); rerender(); } }, '把目前進度存到這格'),
           h('button', { class: 'go ghost small', onclick: () => sv.newGame(n) }, '在這格開新遊戲'),
         );
       } else {
         row.append(
           info.corrupt ? h('span', {}, '') : this.confirmBtn('讀取', '再按一次切換到這格', 'go small', () => sv.load(n)),
-          this.confirmBtn('覆蓋存到這格', '再按一次覆蓋', 'go ghost small', () => { if (sv.saveTo(n)) toast(`目前進度已覆蓋存檔 ${n}`); rerender(); }),
+          this.confirmBtn('覆蓋存到這格', '再按一次覆蓋', 'go ghost small', () => { this.savedPopup(n, sv.saveTo(n), '已覆蓋這格的舊存檔'); rerender(); }),
           this.confirmBtn('刪除', '再按一次刪除', 'go danger small', () => { sv.remove(n); toast(`已刪除存檔 ${n}`); rerender(); }),
         );
       }
@@ -456,6 +456,42 @@ export class Menu {
     out.push(h('div', { class: 'card-row' }, [h('button', { class: 'go ghost', onclick: () => sv.toTitle() }, '存檔並回到開頭畫面')]));
     out.push(h('p', { class: 'version' }, '存檔存在這台裝置的瀏覽器裡。換裝置請用「設定 → 雲端存檔」（上傳的是使用中的那一格）。'));
     return out;
+  }
+
+  private popTimer = 0;
+  /**
+   * 存檔結果小視窗（蓋在選單上方，1.8 秒後自動關閉，點一下也會關）。
+   * 不用 toast：選單開著時 HUD 的通知會被選單蓋住，玩家看不到。
+   */
+  private savedPopup(slot: number, ok: boolean, note = '') {
+    this.root.querySelector('.save-pop')?.remove();
+    clearTimeout(this.popTimer);
+    const info = this.actions.saves.list().find((i) => i.slot === slot);
+    const time = new Date(info?.updatedAt ?? Date.now()).toLocaleTimeString('zh-TW', { hour12: false });
+    const lines = ok
+      ? [note || `已存到存檔 ${slot}`, `存檔 ${slot}・Lv.${info?.level ?? this.state.level}・${time}`]
+      : ['瀏覽器可能封鎖了儲存空間，請再試一次', '或用「設定 → 雲端存檔」備份'];
+    const pop = h('div', { class: `save-pop${ok ? '' : ' bad'}`, role: 'alertdialog', 'aria-live': 'assertive' }, [
+      h('div', { class: 'save-pop-box' }, [
+        h('div', { class: 'save-pop-ico' }, ok ? '✔' : '✖'),
+        h('b', {}, ok ? '存檔完畢' : '存檔失敗'),
+        ...lines.map((t) => h('p', {}, t)),
+        h('button', { class: 'go small' }, '確定'),
+      ]),
+    ]);
+    const close = () => {
+      clearTimeout(this.popTimer);
+      pop.classList.remove('show');
+      setTimeout(() => pop.remove(), 200);
+    };
+    pop.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      close();
+    });
+    this.root.appendChild(pop);
+    requestAnimationFrame(() => pop.classList.add('show'));
+    if (ok) this.popTimer = window.setTimeout(close, 1800);
+    if (this.state.settings.vibration !== false) navigator.vibrate?.(ok ? 20 : [30, 40, 30]);
   }
 
   /** 需要按兩次的按鈕（artifact 環境不能用 confirm()） */
