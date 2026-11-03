@@ -15,6 +15,16 @@ import { cyclopsCave } from './dungeon9-cyclops-cave';
 import { thebesWastes } from './dungeon10-thebes-wastes';
 import { hesperidesGarden } from './dungeon11-hesperides-garden';
 import { realmOfHades } from './dungeon12-realm-of-hades';
+import { calydonForest } from './dungeon13-calydon-forest';
+import { messinaStrait } from './dungeon14-messina-strait';
+import { hyperboreanSnowfield } from './dungeon15-hyperborean-snowfield';
+import { ceryneianMountain } from './dungeon16-ceryneian-mountain';
+import { argosPasture } from './dungeon17-argos-pasture';
+import { erytheiaIsle } from './dungeon18-erytheia-isle';
+import { aethiopianCoast } from './dungeon19-aethiopian-coast';
+import { pelionMountain } from './dungeon20-pelion-mountain';
+import { echidnaLair } from './dungeon21-echidna-lair';
+import { othrysBattlefield } from './dungeon22-othrys-battlefield';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -23,7 +33,8 @@ import { realmOfHades } from './dungeon12-realm-of-hades';
  * 其他清單（ZONES、ENEMIES、DUNGEON_ORDER、野外清單、首領查詢…）都由這裡自動產生。
  * 新增關卡：見 docs/CONTENT.md「新增關卡」。
  */
-export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades];
+export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
+  calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 
@@ -88,12 +99,15 @@ export function bossOf(id: ZoneId): EnemyDef | undefined {
 
 /**
  * 這張地圖掉落的裝備階級：有填 lootTier 就用它；副本依層數——
- * 第一～三層 = 1~3 階、第四～六層 = 4 階、第七～九層 = 5 階、第十～十二層 = 6 階（最高 6）
+ * 第一～三層 = 1~3 階、第四～六層 = 4 階、第七～九層 = 5 階、第十～十二層 = 6 階、
+ * 第十三～十七層 = 7 階、第十八～二十二層 = 8 階（最高 8）
  */
 export function lootTierOf(id: ZoneId): number {
   const z = ZONES[id];
   if (z?.lootTier) return Math.min(MAX_TIER, z.lootTier);
   const f = z?.dungeon?.floor ?? 1;
+  if (f >= 18) return Math.min(MAX_TIER, 8);
+  if (f >= 13) return Math.min(MAX_TIER, 7);
   return Math.min(MAX_TIER, f <= 3 ? f : 3 + Math.ceil((f - 3) / 3));
 }
 

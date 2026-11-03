@@ -185,6 +185,140 @@ export const BOSS_SKILLS = {
     pattern: 'multiLine', name: '三首齊噴', desc: '獅火、羊雷、蛇毒三排同時噴出（狂暴時五排）',
     windup: 1.1, power: 1.4, color: 0xff9a3a, angles: [-30, 0, 30], anglesEnraged: [-50, -25, 0, 25, 50], count: 6, start: 2.5, spacing: 2.1, radius: 1.5, stagger: 0.11,
   },
+  /* ---- 第十三層 卡呂冬野豬 ---- */
+  boar_gore: {
+    pattern: 'dash', name: '獠牙突進', desc: '低頭朝玩家狂奔 20 公尺',
+    windup: 1.2, power: 1.9, color: 0xff8a4a, length: 20, width: 3.4,
+  },
+  boar_tusk_sweep: {
+    pattern: 'cone', name: '獠牙橫挑', desc: '前方大範圍挑擊（狂暴時幾乎半圈以上）',
+    windup: 1.1, power: 2.0, color: 0xf4e0b0, range: 7, angle: 140, angleEnraged: 200,
+  },
+  boar_quake: {
+    pattern: 'rain', name: '斷木落石', desc: '撞斷的樹幹與落石砸向玩家附近',
+    windup: 1.5, power: 1.5, color: 0x8a6a3a, pillarColor: 0xd8c08a, count: 7, countEnraged: 10, radius: 2.1, spread: 7, stagger: 0.1,
+  },
+  /* ---- 第十四層 斯庫拉 ---- */
+  scylla_dogs: {
+    pattern: 'spokes', name: '六犬齊咬', desc: '腰間六隻犬頭往四周咬出，犬頭之間是安全區（狂暴時八道）',
+    windup: 1.2, power: 1.7, color: 0x6ad8ff, count: 6, countEnraged: 8, range: 9, angle: 22,
+  },
+  scylla_tentacles: {
+    pattern: 'multiLine', name: '觸手鞭擊', desc: '四條觸手同時往前方拍下（狂暴時六條）',
+    windup: 1.1, power: 1.4, color: 0x4ab8d8, angles: [-36, -12, 12, 36], anglesEnraged: [-50, -30, -10, 10, 30, 50], count: 6, start: 2.5, spacing: 2.1, radius: 1.5, stagger: 0.1,
+  },
+  charybdis_whirl: {
+    pattern: 'nova', name: '卡律布狄斯漩渦', desc: '對岸的漩渦捲起，吞沒周圍（狂暴時範圍更大）',
+    windup: 1.3, power: 1.9, color: 0x8fe3ff, discColor: 0x2a7ab8, radius: 6.5, radiusEnraged: 8.5,
+  },
+  /* ---- 第十五層 獅鷲 ---- */
+  griffin_dive: {
+    pattern: 'leap', name: '鷹王俯衝', desc: '飛上高空後俯衝到玩家位置',
+    windup: 1.5, power: 1.9, color: 0xffe08a, discColor: 0xd8a040, radius: 4,
+  },
+  griffin_talon: {
+    pattern: 'cone', name: '金爪撕裂', desc: '前方扇形撕裂（狂暴時範圍更寬）',
+    windup: 1.0, power: 2.0, color: 0xffc040, range: 7, angle: 120, angleEnraged: 170,
+  },
+  griffin_gale: {
+    pattern: 'line', name: '羽刃狂風', desc: '振翅颳出一排銳利的羽刃（狂暴時更長）',
+    windup: 1.0, power: 1.4, color: 0xe8f4ff, count: 8, countEnraged: 11, start: 2.5, spacing: 2.1, radius: 1.7, stagger: 0.09,
+  },
+  /* ---- 第十六層 刻律涅金角鹿 ---- */
+  hind_charge: {
+    pattern: 'dash', name: '金角衝刺', desc: '快得追不上的衝刺，直線 22 公尺',
+    windup: 1.1, power: 1.9, color: 0xffd040, length: 22, width: 3,
+  },
+  hind_stomp: {
+    pattern: 'nova', name: '銅蹄踏地', desc: '銅蹄重踏，震波擴散（狂暴時範圍更大）',
+    windup: 1.2, power: 1.9, color: 0xd8a060, discColor: 0xb87a30, radius: 6.5, radiusEnraged: 8.5,
+  },
+  hind_moonfall: {
+    pattern: 'rain', name: '月神箭雨', desc: '阿蒂蜜絲為聖鹿降下月光箭雨',
+    windup: 1.5, power: 1.5, color: 0xc8e0ff, pillarColor: 0xf0f6ff, count: 7, countEnraged: 10, radius: 2.1, spread: 7, stagger: 0.09,
+  },
+  /* ---- 第十七層 百眼巨人阿爾戈斯 ---- */
+  argus_gaze: {
+    pattern: 'spokes', name: '百眼凝視', desc: '全身的眼睛同時射出光束，光束之間是安全區（狂暴時更多）',
+    windup: 1.3, power: 1.7, color: 0x9affd8, count: 8, countEnraged: 11, range: 10, angle: 16,
+  },
+  argus_club: {
+    pattern: 'cone', name: '牧杖橫掃', desc: '巨大的牧杖橫掃前方（狂暴時更寬）',
+    windup: 1.2, power: 2.0, color: 0xc8a070, range: 8, angle: 150, angleEnraged: 210,
+  },
+  argus_watch: {
+    pattern: 'rain', name: '不眠之眼', desc: '百隻眼睛盯住玩家，光柱接連落下',
+    windup: 1.4, power: 1.5, color: 0x6affc8, pillarColor: 0xd0fff0, count: 7, countEnraged: 10, radius: 2.1, spread: 7, stagger: 0.1,
+  },
+  /* ---- 第十八層 三身巨人革律翁 ---- */
+  geryon_spears: {
+    pattern: 'multiLine', name: '三身擲矛', desc: '三個身體同時擲出長矛（狂暴時五道）',
+    windup: 1.1, power: 1.5, color: 0xff6a4a, angles: [-30, 0, 30], anglesEnraged: [-50, -25, 0, 25, 50], count: 7, start: 2.5, spacing: 2.1, radius: 1.5, stagger: 0.1,
+  },
+  geryon_sweep: {
+    pattern: 'cone', name: '六臂橫掃', desc: '六條手臂一起掃過（狂暴時超過半圈）',
+    windup: 1.2, power: 2.0, color: 0xff9a5a, range: 7.5, angle: 180, angleEnraged: 240,
+  },
+  geryon_leap: {
+    pattern: 'leap', name: '巨人踐踏', desc: '跳到玩家位置重重踩下',
+    windup: 1.5, power: 1.9, color: 0xd86a3a, discColor: 0xa84a2a, radius: 4.2,
+  },
+  /* ---- 第十九層 海怪刻托斯 ---- */
+  cetus_wave: {
+    pattern: 'line', name: '滔天巨浪', desc: '朝玩家方向掀起一排巨浪（狂暴時更長）',
+    windup: 1.1, power: 1.5, color: 0x4fb8ff, count: 8, countEnraged: 11, start: 2.8, spacing: 2.3, radius: 2.1, stagger: 0.1,
+  },
+  cetus_tail: {
+    pattern: 'nova', name: '巨尾拍海', desc: '巨尾拍擊，浪花炸開（狂暴時範圍更大）',
+    windup: 1.2, power: 2.0, color: 0x8fe3ff, discColor: 0x2a6ab8, radius: 7, radiusEnraged: 9,
+  },
+  cetus_spout: {
+    pattern: 'rain', name: '噴潮水柱', desc: '從海裡噴出的水柱砸向玩家附近',
+    windup: 1.5, power: 1.5, color: 0x6ac8ff, pillarColor: 0xd0f0ff, count: 7, countEnraged: 11, radius: 2.2, spread: 7.5, stagger: 0.09,
+  },
+  /* ---- 第二十層 半人馬涅索斯 ---- */
+  nessus_volley: {
+    pattern: 'multiLine', name: '連珠箭', desc: '張弓同時射出五排箭（狂暴時七排）',
+    windup: 1.1, power: 1.4, color: 0xffd36b, angles: [-40, -20, 0, 20, 40], anglesEnraged: [-54, -36, -18, 0, 18, 36, 54], count: 6, start: 2.5, spacing: 2.2, radius: 1.4, stagger: 0.09,
+  },
+  nessus_trample: {
+    pattern: 'dash', name: '馬蹄踐踏', desc: '四蹄狂奔，朝玩家直線衝撞 20 公尺',
+    windup: 1.2, power: 2.0, color: 0xc88a4a, length: 20, width: 3.2,
+  },
+  nessus_blood: {
+    pattern: 'rain', name: '毒血之雨', desc: '沾了九頭蛇毒的血灑向玩家附近',
+    windup: 1.5, power: 1.6, color: 0x8a2a4a, pillarColor: 0xff6a8a, count: 7, countEnraged: 11, radius: 2.2, spread: 7.5, stagger: 0.09,
+  },
+  /* ---- 第二十一層 萬怪之母厄喀德那 ---- */
+  echidna_brood: {
+    pattern: 'spokes', name: '萬怪之吼', desc: '子嗣的幻影往四周撲出，幻影之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.8, color: 0xc86aff, count: 7, countEnraged: 10, range: 10, angle: 20,
+  },
+  echidna_venom: {
+    pattern: 'multiLine', name: '雙尾毒牙', desc: '兩條蛇尾與本體同時噴出毒液（狂暴時五道）',
+    windup: 1.1, power: 1.5, color: 0x8aff6a, angles: [-28, 0, 28], anglesEnraged: [-48, -24, 0, 24, 48], count: 7, start: 2.5, spacing: 2.1, radius: 1.6, stagger: 0.1,
+  },
+  echidna_coil: {
+    pattern: 'nova', name: '蛇身絞纏', desc: '巨大的蛇身盤繞橫掃周圍（狂暴時範圍更大）',
+    windup: 1.2, power: 2.0, color: 0x6ad87a, discColor: 0x3a8a4a, radius: 7, radiusEnraged: 9,
+  },
+  /* ---- 第二十二層 塔爾塔洛斯獄龍坎佩 ---- */
+  kampe_heads: {
+    pattern: 'spokes', name: '五十獸首', desc: '腰間的獸首往四周撲咬，獸首之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.8, color: 0xff6a3a, count: 9, countEnraged: 12, range: 10, angle: 15,
+  },
+  kampe_sting: {
+    pattern: 'line', name: '蠍尾毒刺', desc: '蠍尾朝玩家刺出一長排毒針（狂暴時更長）',
+    windup: 1.0, power: 1.6, color: 0xb8ff4a, count: 9, countEnraged: 12, start: 2.5, spacing: 2.1, radius: 1.7, stagger: 0.08,
+  },
+  kampe_hellfire: {
+    pattern: 'rain', name: '塔爾塔洛斯獄火', desc: '深淵獄火從地底噴發',
+    windup: 1.5, power: 1.6, color: 0xff4a1a, pillarColor: 0xffb04a, count: 8, countEnraged: 12, radius: 2.2, spread: 8, stagger: 0.08,
+  },
+  kampe_leap: {
+    pattern: 'leap', name: '獄龍降臨', desc: '展開黑翼飛起，砸落在玩家位置',
+    windup: 1.5, power: 2.0, color: 0xff8a3a, discColor: 0x8a1a1a, radius: 4.4,
+  },
 } satisfies Record<string, BossSkillDef>;
 
 export type BossSkillId = keyof typeof BOSS_SKILLS;

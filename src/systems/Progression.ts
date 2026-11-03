@@ -13,7 +13,7 @@ export function expForKill(baseExp: number, playerLevel: number, enemyLevel: num
   return baseExp;
 }
 
-export const MAX_LEVEL = 60;
+export const MAX_LEVEL = 110;
 
 /** 加經驗並處理連續升級；回傳新的等級、經驗與升了幾級 */
 export function addExp(level: number, exp: number, gained: number): { level: number; exp: number; levelsGained: number } {

@@ -22,7 +22,17 @@ export type ZoneId =
   | 'dungeon_9'
   | 'dungeon_10'
   | 'dungeon_11'
-  | 'dungeon_12';
+  | 'dungeon_12'
+  | 'dungeon_13'
+  | 'dungeon_14'
+  | 'dungeon_15'
+  | 'dungeon_16'
+  | 'dungeon_17'
+  | 'dungeon_18'
+  | 'dungeon_19'
+  | 'dungeon_20'
+  | 'dungeon_21'
+  | 'dungeon_22';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
 
@@ -264,7 +274,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe';
 
 /** 首領招式 id（招式資料在 data/bossSkills.ts） */
 export type { BossSkillId } from './bossSkills';

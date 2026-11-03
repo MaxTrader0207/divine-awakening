@@ -146,6 +146,16 @@ export const serpent: ShapeBuild = (b) => {
 | 第十層・底比斯荒原 | `dungeon10-thebes-wastes.ts` | 46-50，防禦 175 | 透墨索斯狐、伊斯墨諾斯龍蛇、安菲翁石衛 | 斯芬克斯 | 獅爪重擊、展翼俯衝、謎語封印 |
 | 第十一層・赫斯珀里得斯聖園 | `dungeon11-hesperides-garden.ts` | 51-55，防禦 195 | 科爾基斯青銅牛、塞壬歌姬、阿特拉斯泰坦衛兵 | 巨龍拉冬 | 金焰吐息、龍尾橫掃、金蘋果流星 |
 | 第十二層・冥王黑帝斯的國度 | `dungeon12-realm-of-hades.ts` | 56-60，防禦 215 | 冥府亡靈戰士、厄里倪厄斯、拉彌亞 | 奇美拉 | 獅首烈焰、三首衝撞、三首齊噴 |
+| 第十三層・卡呂冬森林 | `dungeon13-calydon-forest.ts` | 61-65，防禦 235 | 卡呂冬灰狼、庫瑞忒斯亡魂、卡呂冬母野豬 | 卡呂冬野豬 | 獠牙突進、獠牙橫挑、斷木落石 |
+| 第十四層・墨西拿海峽 | `dungeon14-messina-strait.ts` | 66-70，防禦 255 | 斯庫拉海犬、漩渦巨蟹、墨西拿海蛇 | 斯庫拉 | 六犬齊咬、觸手鞭擊、卡律布狄斯漩渦 |
+| 第十五層・希柏里爾雪原 | `dungeon15-hyperborean-snowfield.ts` | 71-75，防禦 275 | 阿里瑪斯波伊獨眼人、幼獅鷲、希柏里爾雪狼 | 獅鷲 | 鷹王俯衝、金爪撕裂、羽刃狂風 |
+| 第十六層・刻律涅山 | `dungeon16-ceryneian-mountain.ts` | 76-80，防禦 295 | 刻律涅牝鹿、阿蒂蜜絲獵魂、阿卡迪亞山貓 | 刻律涅金角鹿 | 金角衝刺、銅蹄踏地、月神箭雨 |
+| 第十七層・阿爾戈斯牧場 | `dungeon17-argos-pasture.ts` | 81-85，防禦 315 | 伊俄白牛、赫拉牛虻、百眼守望者 | 百眼巨人阿爾戈斯 | 百眼凝視、牧杖橫掃、不眠之眼 |
+| 第十八層・厄律提亞島 | `dungeon18-erytheia-isle.ts` | 86-90，防禦 335 | 厄律提亞守犬、革律翁紅牛、巨人牧工 | 三身巨人革律翁 | 三身擲矛、六臂橫掃、巨人踐踏 |
+| 第十九層・衣索比亞海岸 | `dungeon19-aethiopian-coast.ts` | 91-95，防禦 355 | 刻托斯幼獸、涅瑞伊得斯怨靈、衣索比亞礁蟹 | 海怪刻托斯 | 滔天巨浪、巨尾拍海、噴潮水柱 |
+| 第二十層・佩利翁山 | `dungeon20-pelion-mountain.ts` | 96-100，防禦 375 | 半人馬掠奪者、拉庇泰亡魂、佩利翁山獅 | 半人馬涅索斯 | 連珠箭、馬蹄踐踏、毒血之雨 |
+| 第二十一層・萬怪之母的巢穴 | `dungeon21-echidna-lair.ts` | 101-105，防禦 395 | 蛇母幼蛇、奇美拉幼獸、恩普薩 | 萬怪之母厄喀德那 | 萬怪之吼、雙尾毒牙、蛇身絞纏 |
+| 第二十二層・俄特律斯山 | `dungeon22-othrys-battlefield.ts` | 106-110，防禦 415 | 泰坦戰士、雷霆獨眼巨人、塔爾塔洛斯翼龍 | 塔爾塔洛斯獄龍坎佩 | 五十獸首、蠍尾毒刺、塔爾塔洛斯獄火、獄龍降臨 |
 
 ### 首領招式庫
 
@@ -184,6 +194,37 @@ export const serpent: ShapeBuild = (b) => {
 | `chimera_flame` | 獅首烈焰 | cone | 奇美拉 |
 | `chimera_charge` | 三首衝撞 | dash | 奇美拉 |
 | `chimera_rain` | 三首齊噴 | multiLine | 奇美拉 |
+| `boar_gore` | 獠牙突進 | dash | None |
+| `boar_tusk_sweep` | 獠牙橫挑 | cone | None |
+| `boar_quake` | 斷木落石 | rain | None |
+| `scylla_dogs` | 六犬齊咬 | spokes | 斯庫拉 |
+| `scylla_tentacles` | 觸手鞭擊 | multiLine | 斯庫拉 |
+| `charybdis_whirl` | 卡律布狄斯漩渦 | nova | 斯庫拉 |
+| `griffin_dive` | 鷹王俯衝 | leap | 獅鷲 |
+| `griffin_talon` | 金爪撕裂 | cone | 獅鷲 |
+| `griffin_gale` | 羽刃狂風 | line | 獅鷲 |
+| `hind_charge` | 金角衝刺 | dash | 刻律涅金角鹿 |
+| `hind_stomp` | 銅蹄踏地 | nova | 刻律涅金角鹿 |
+| `hind_moonfall` | 月神箭雨 | rain | 刻律涅金角鹿 |
+| `argus_gaze` | 百眼凝視 | spokes | 百眼巨人阿爾戈斯 |
+| `argus_club` | 牧杖橫掃 | cone | 百眼巨人阿爾戈斯 |
+| `argus_watch` | 不眠之眼 | rain | 百眼巨人阿爾戈斯 |
+| `geryon_spears` | 三身擲矛 | multiLine | 三身巨人革律翁 |
+| `geryon_sweep` | 六臂橫掃 | cone | 三身巨人革律翁 |
+| `geryon_leap` | 巨人踐踏 | leap | 三身巨人革律翁 |
+| `cetus_wave` | 滔天巨浪 | line | 海怪刻托斯 |
+| `cetus_tail` | 巨尾拍海 | nova | 海怪刻托斯 |
+| `cetus_spout` | 噴潮水柱 | rain | 海怪刻托斯 |
+| `nessus_volley` | 連珠箭 | multiLine | 半人馬涅索斯 |
+| `nessus_trample` | 馬蹄踐踏 | dash | 半人馬涅索斯 |
+| `nessus_blood` | 毒血之雨 | rain | 半人馬涅索斯 |
+| `echidna_brood` | 萬怪之吼 | spokes | 萬怪之母厄喀德那 |
+| `echidna_venom` | 雙尾毒牙 | multiLine | 萬怪之母厄喀德那 |
+| `echidna_coil` | 蛇身絞纏 | nova | 萬怪之母厄喀德那 |
+| `kampe_heads` | 五十獸首 | spokes | 塔爾塔洛斯獄龍坎佩 |
+| `kampe_sting` | 蠍尾毒刺 | line | 塔爾塔洛斯獄龍坎佩 |
+| `kampe_hellfire` | 塔爾塔洛斯獄火 | rain | 塔爾塔洛斯獄龍坎佩 |
+| `kampe_leap` | 獄龍降臨 | leap | 塔爾塔洛斯獄龍坎佩 |
 
 ### 敵人造型
 
@@ -192,21 +233,30 @@ export const serpent: ShapeBuild = (b) => {
 | `dummy` | `basic.ts` | 訓練木樁 | 斯巴達訓練木樁 |
 | `slime` | `basic.ts` | 軟泥（跳躍＋擠壓） | 潘神軟泥、特里同珊瑚泥、火神熔泥 |
 | `mushroom` | `basic.ts` | 蘑菇 | 德律阿得菇 |
-| `crab` | `crab.ts` | 螃蟹（6 腳、雙鉗動畫；首領版尖刺皇冠） | 卡基諾斯幼蟹、巨蟹卡基諾斯 |
+| `crab` | `crab.ts` | 螃蟹（6 腳、雙鉗動畫；首領版尖刺皇冠） | 卡基諾斯幼蟹、巨蟹卡基諾斯、漩渦巨蟹、衣索比亞礁蟹 |
 | `frog` | `basic.ts`＋`rigs.ts` | 青蛙（Quaternius 模型，依顏色換色） | 寧芙潮蛙、奇美拉火蛙、堤豐巨蛙、勒拿毒蟾 |
-| `bat` | `basic.ts` | 蝠鳥（翅膀拍動、懸浮） | 斯廷法利斯蝠鳥、刻爾死靈 |
-| `skeleton` | `basic.ts`＋`rigs.ts` | 骷髏（KayKit 模型） | 龍牙兵系列、黑卡蒂亡巫、龍牙將軍、雅典祭品亡魂、格賴埃灰巫、冥府亡靈戰士 |
-| `golem` | `basic.ts` | 魔像（發光核心） | 青銅巨人塔洛斯、代達洛斯機關兵、百臂巨人獄卒、石化戰士、萊斯特律戈涅斯巨人、安菲翁石衛、阿特拉斯泰坦衛兵 |
-| `serpent` | `beasts.ts` | 盤繞的蛇（頸部擺動、張嘴） | 勒拿水蛇、戈爾貢毒蛇、伊斯墨諾斯龍蛇 |
+| `bat` | `basic.ts` | 蝠鳥（翅膀拍動、懸浮） | 斯廷法利斯蝠鳥、刻爾死靈、赫拉牛虻 |
+| `skeleton` | `basic.ts`＋`rigs.ts` | 骷髏（KayKit 模型） | 龍牙兵系列、黑卡蒂亡巫、龍牙將軍、雅典祭品亡魂、格賴埃灰巫、冥府亡靈戰士、庫瑞忒斯亡魂、阿蒂蜜絲獵魂、拉庇泰亡魂 |
+| `golem` | `basic.ts` | 魔像（發光核心） | 青銅巨人塔洛斯、代達洛斯機關兵、百臂巨人獄卒、石化戰士、萊斯特律戈涅斯巨人、安菲翁石衛、阿特拉斯泰坦衛兵、巨人牧工、泰坦戰士 |
+| `serpent` | `beasts.ts` | 盤繞的蛇（頸部擺動、張嘴） | 勒拿水蛇、戈爾貢毒蛇、伊斯墨諾斯龍蛇、墨西拿海蛇、刻托斯幼獸、蛇母幼蛇 |
 | `hydra` | `beasts.ts` | 七頸九頭蛇（中間頭紅眼） | 九頭蛇許德拉 |
-| `harpy` | `beasts.ts` | 鷹身女妖（飛行、拍翅） | 艾洛鷹身女妖、俄庫珀忒鷹身女妖、塞壬歌姬、厄里倪厄斯 |
-| `bull` | `beasts.ts` | 公牛（前搖低頭） | 克里特狂牛、西西里巨角公羊、科爾基斯青銅牛 |
+| `harpy` | `beasts.ts` | 鷹身女妖（飛行、拍翅） | 艾洛鷹身女妖、俄庫珀忒鷹身女妖、塞壬歌姬、厄里倪厄斯、涅瑞伊得斯怨靈 |
+| `bull` | `beasts.ts` | 公牛（前搖低頭） | 克里特狂牛、西西里巨角公羊、科爾基斯青銅牛、伊俄白牛、革律翁紅牛 |
 | `minotaur` | `beasts.ts` | 牛頭人（前搖舉起雙刃斧） | 米諾陶洛斯 |
-| `hound` | `beasts.ts` | 獵犬（首領版三頭、冥火、蛇尾） | 冥界獵犬、刻耳柏洛斯、涅墨亞山狼、透墨索斯狐 |
-| `boar` | `legends.ts` | 野豬（獠牙、背鬃，前搖刨地） | 厄律曼托斯野豬 |
-| `lion` | `legends.ts` | 獅子（鬃毛，前搖伏低張嘴；首領版金紋） | 涅墨亞獅 |
-| `gorgon` | `legends.ts` | 蛇尾人身、蛇髮蠕動（首領版蛇髮更多、拿弓） | 梅杜莎 |
-| `cyclops` | `legends.ts` | 獨眼巨人（巨棒，前搖高舉；首領版羊皮披肩） | 獨眼巨人鍛工、獨眼巨人波呂斐摩斯 |
+| `hound` | `beasts.ts` | 獵犬（首領版三頭、冥火、蛇尾） | 冥界獵犬、刻耳柏洛斯、涅墨亞山狼、透墨索斯狐、卡呂冬灰狼、斯庫拉海犬、希柏里爾雪狼、厄律提亞守犬 |
+| `boar` | `legends.ts` | 野豬（獠牙、背鬃，前搖刨地；首領版長獠牙、火焰背鬃） | 厄律曼托斯野豬、卡呂冬母野豬、卡呂冬野豬 |
+| `lion` | `legends.ts` | 獅子（鬃毛，前搖伏低張嘴；首領版金紋） | 涅墨亞獅、阿卡迪亞山貓、佩利翁山獅 |
+| `gorgon` | `legends.ts` | 蛇尾人身、蛇髮蠕動（首領版蛇髮更多、拿弓） | 梅杜莎、拉彌亞、恩普薩 |
+| `cyclops` | `legends.ts` | 獨眼巨人（巨棒，前搖高舉；首領版羊皮披肩） | 獨眼巨人鍛工、獨眼巨人波呂斐摩斯、阿里瑪斯波伊獨眼人、雷霆獨眼巨人 |
 | `sphinx` | `monsters.ts` | 獅身人面鷹翼（前搖展翼） | 斯芬克斯 |
-| `dragon` | `monsters.ts` | 長身四足巨龍（背刺、長頸，前搖抬頭張嘴） | 巨龍拉冬 |
-| `chimera` | `monsters.ts` | 獅身＋背上山羊頭＋蛇尾（三顆頭都會動） | 奇美拉 |
+| `dragon` | `monsters.ts` | 長身四足巨龍（背刺、長頸，前搖抬頭張嘴） | 巨龍拉冬、塔爾塔洛斯翼龍 |
+| `chimera` | `monsters.ts` | 獅身＋背上山羊頭＋蛇尾（三顆頭都會動） | 奇美拉、奇美拉幼獸 |
+| `scylla` | `wilds.ts` | 海妖上半身＋腰間六犬頭＋觸手（前搖犬頭抬起張嘴） | 斯庫拉 |
+| `griffin` | `wilds.ts` | 獅身鷹首、金爪、大翅膀（前搖展翼） | 幼獅鷲、獅鷲 |
+| `hind` | `wilds.ts` | 細長的鹿、金色分岔鹿角、銅蹄（前搖低頭頂角；首領版鹿角發光） | 刻律涅牝鹿、刻律涅金角鹿 |
+| `cetus` | `wilds.ts` | 無腳長身海獸、巨顎、背鰭尾鰭（身體一節節擺動） | 海怪刻托斯 |
+| `centaur` | `wilds.ts` | 馬身＋人上身＋長弓（前搖拉弓） | 半人馬掠奪者、半人馬涅索斯 |
+| `argus` | `primordials.ts` | 瘦高巨人、全身會眨的眼睛、牧杖（前搖高舉牧杖） | 百眼守望者、百眼巨人阿爾戈斯 |
+| `geryon` | `primordials.ts` | 一個腰上三個身體、三顆羽盔頭、兩支長矛＋圓盾 | 三身巨人革律翁 |
+| `echidna` | `primordials.ts` | 女身＋盤地蛇身＋兩條蛇頭尾巴、頭上有角 | 萬怪之母厄喀德那 |
+| `kampe` | `primordials.ts` | 龍身四足、腰間一圈獸首、蛇髮、蠍尾、黑翼（最終首領） | 塔爾塔洛斯獄龍坎佩 |

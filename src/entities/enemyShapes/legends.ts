@@ -4,7 +4,7 @@ import { fourLegs } from './beasts';
 
 /**
  * 英雄試煉的怪物造型（v1.31 第七～九層）：
- *  boar    厄律曼托斯野豬（四足、獠牙、背鬃，出手前低頭刨地）
+ *  boar    厄律曼托斯野豬（四足、獠牙、背鬃，出手前低頭刨地；首領版卡呂冬野豬獠牙更長、背鬃冒火）
  *  lion    涅墨亞獅（首領：金色鬃毛、刀槍不入的獅皮，出手前伏低張嘴）
  *  gorgon  戈爾貢（蛇尾人身、蛇髮會蠕動、雙眼發光；首領版梅杜莎更大、蛇髮更多、拿弓）
  *  cyclops 獨眼巨人（獨眼、粗棒；首領版波呂斐摩斯有羊皮披肩、出手前高舉巨棒）
@@ -29,6 +29,14 @@ export const boar: ShapeBuild = (b) => {
   const legs = fourLegs(b, b.dark, 0x1e1a18, 0.24, 0.4, -0.45, 0.45, 0.45, 0.09);
   const tail = b.group(0, 0.8, -0.72);
   b.add(new THREE.TorusGeometry(0.06, 0.02, 4, 8, Math.PI * 1.5), b.dark, 0, 0, -0.04, tail);
+  if (b.boss) {
+    // 卡呂冬野豬：一對更長的獠牙、背鬃燃著阿蒂蜜絲的怒火
+    for (const sx of [-1, 1]) {
+      const big = b.add(new THREE.ConeGeometry(0.07, 0.55, 6), 0xf8f4e4, sx * 0.22, -0.02, 0.38, head);
+      big.rotation.set(-0.9, 0, sx * -0.35);
+    }
+    for (let i = 0; i < 5; i++) b.glow(new THREE.ConeGeometry(0.05, 0.22, 4), i % 2 ? 0xffb04a : 0xff5a2a, 0, 1.24 - Math.abs(i - 2) * 0.03, 0.35 - i * 0.18).rotation.x = -0.4;
+  }
   return {
     height: 1.25,
     animate: ({ t, moving, winding, lean, body }) => {

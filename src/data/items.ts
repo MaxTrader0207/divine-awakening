@@ -7,7 +7,7 @@ import { CLASS_GEAR, MAX_TIER, NAMED_TIERS, TIERS, type GearProfile, type Tier }
  * ------------------------------------------------------------
  * 裝備 = 底材（slot × tier）× 稀有度倍率 × 強化倍率。
  * tier 1 = 阿卡迪亞草原 / 第一層、tier 2 = 第二層、tier 3 = 第三層、tier 4 = 第四～六層（與多多納聖林）、
- * tier 5 = 第七～九層、tier 6 = 第十～十二層。
+ * tier 5 = 第七～九層、tier 6 = 第十～十二層、tier 7 = 第十三～十七層、tier 8 = 第十八～二十二層。
  * 「穿透」集中在帽子與戒指：這是突破第二、三層防禦的關鍵。
  */
 
@@ -69,8 +69,8 @@ const T1: Record<EquipSlot, Partial<Stats>> = {
 };
 
 /** 平坦數值與百分比數值的 tier 成長不同，避免百分比爆掉 */
-const FLAT_SCALE = [1, 2.2, 3.6, 5.4, 7.6, 10.2];
-const PCT_SCALE = [1, 1.6, 2.2, 2.8, 3.4, 4.0];
+const FLAT_SCALE = [1, 2.2, 3.6, 5.4, 7.6, 10.2, 13.2, 16.6];
+const PCT_SCALE = [1, 1.6, 2.2, 2.8, 3.4, 4.0, 4.6, 5.2];
 const PCT_KEYS: (keyof Stats)[] = ['pen', 'critRate', 'critDmg', 'moveSpeed'];
 
 const ICONS: Record<EquipSlot, string> = { ...CLASS_GEAR.mage.icons };
@@ -132,7 +132,7 @@ for (const slot of SLOT_ORDER) {
     ITEM_BASES[id] = { id, slot, tier, name: `${CLASS_GEAR.mage.prefixes[tier - 1]}${CLASS_GEAR.mage.slotNames[slot]}`, icon: ICONS[slot], stats: scaled(slot, tier) };
   }
 }
-// 神話裝：每個職業 × 每個欄位 × 15 件
+// 神話裝：每個職業 × 每個欄位 × 20 件
 const NAMED_INDEX = new Map<string, string[]>();
 for (const [cls, g] of Object.entries(CLASS_GEAR) as [HeroClass, (typeof CLASS_GEAR)[HeroClass]][]) {
   for (const slot of SLOT_ORDER) {
@@ -156,7 +156,9 @@ export function tierForLevel(level: number): Tier {
   if (level <= 18) return 3;
   if (level <= 30) return 4;
   if (level <= 45) return 5;
-  return 6;
+  if (level <= 60) return 6;
+  if (level <= 85) return 7;
+  return 8;
 }
 
 /** 強化：每 +1 全屬性 +8%；成功率與費用 */

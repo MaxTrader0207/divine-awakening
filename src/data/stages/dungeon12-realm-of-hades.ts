@@ -67,7 +67,7 @@ const zone: ZoneDef = {
   ],
   portals: [{ x: 0, z: 30, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 24 },
-  tips: ['這層敵人有防禦 215，是最深的副本', '忘川不能走，左右各有一座橋', '三首衝撞很長，往側邊閃，不要往後退', '厄里倪厄斯會成群追殺，用範圍技能'],
+  tips: ['這層敵人有防禦 215，擊敗奇美拉後通往更遠的遠征', '忘川不能走，左右各有一座橋', '三首衝撞很長，往側邊閃，不要往後退', '厄里倪厄斯會成群追殺，用範圍技能'],
   spawns: [
     { enemy: 'hades_shade', x: -12, z: 20, count: 3, spread: 3 },
     { enemy: 'erinys', x: 10, z: 18, count: 3, spread: 3 },

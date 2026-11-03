@@ -10,7 +10,7 @@ import { fourLegs } from './beasts';
  */
 
 /** 翅膀：pivot 在肩膀，羽毛沿 ±x 展開 */
-function wing(b: ShapeBuilder, side: number, x: number, y: number, z: number, color: number, tip: number, size = 1): THREE.Group {
+export function wing(b: ShapeBuilder, side: number, x: number, y: number, z: number, color: number, tip: number, size = 1): THREE.Group {
   const p = b.group(x, y, z);
   // 一片大翼膜＋三排羽毛
   const base = b.add(new THREE.BoxGeometry(0.8 * size, 0.05, 0.55 * size), color, side * 0.42 * size, 0.08, -0.2 * size, p);
