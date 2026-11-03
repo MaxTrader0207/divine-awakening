@@ -14,6 +14,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
  * - 材質統一換成 Lambert（跟程式產生的物件光影一致、手機上較便宜），並標記為共用，
  *   讓 Zone.mergeStatic() 可以依材質合併、切換區域時不被釋放。
  * - 任何一個模型載入失敗都不影響遊戲：呼叫端用 has() 判斷，沒有就用原本的程式模型。
+ * - 單一 HTML 版的模型是內嵌的 data: 網址。claude.ai Artifact 的安全政策（2026-11 起）不允許用 fetch 讀 data: / blob: 網址，
+ *   所以這裡自己把 base64 解碼成 ArrayBuffer 交給 GLTFLoader.parse()，貼圖也用 createImageBitmap 直接從記憶體解碼（inMemoryTextures），完全不經過 fetch。
  */
 const URLS = import.meta.glob('@models/*.glb', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
 /** 單一 HTML 版的模型沒有 meshopt 壓縮，不載入解壓器（避免在禁止 WebAssembly 的頁面報錯） */
@@ -45,6 +47,7 @@ class AssetLibrary {
 
   async loadAll(onProgress?: (done: number, total: number) => void): Promise<void> {
     const loader = new GLTFLoader();
+    if (Object.values(URLS).some((u) => u.startsWith('data:'))) loader.register(inMemoryTextures);
     if (NEEDS_MESHOPT) {
       try {
         const { MeshoptDecoder } = await import('three/examples/jsm/libs/meshopt_decoder.module.js');
@@ -59,7 +62,7 @@ class AssetLibrary {
       entries.map(async ([path, url]) => {
         const id = path.split('/').pop()!.replace('.glb', '');
         try {
-          const gltf = await loader.loadAsync(url);
+          const gltf = url.startsWith('data:') ? await loader.parseAsync(decodeDataUrl(url), '') : await loader.loadAsync(url);
           this.prepare(gltf);
           this.gltfs.set(id, gltf);
           const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -230,3 +233,60 @@ function toFloat(a: THREE.BufferAttribute): THREE.BufferAttribute {
 }
 
 export const Assets = new AssetLibrary();
+
+/** data:…;base64,… → ArrayBuffer（不經過 fetch） */
+function decodeDataUrl(url: string): ArrayBuffer {
+  const comma = url.indexOf(',');
+  const meta = url.slice(0, comma);
+  const body = url.slice(comma + 1);
+  if (!meta.endsWith(';base64')) return new TextEncoder().encode(decodeURIComponent(body)).buffer as ArrayBuffer;
+  const bin = atob(body);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+
+const GL_FILTER: Record<number, THREE.MagnificationTextureFilter | THREE.MinificationTextureFilter> = {
+  9728: THREE.NearestFilter,
+  9729: THREE.LinearFilter,
+  9984: THREE.NearestMipmapNearestFilter,
+  9985: THREE.LinearMipmapNearestFilter,
+  9986: THREE.NearestMipmapLinearFilter,
+  9987: THREE.LinearMipmapLinearFilter,
+};
+const GL_WRAP: Record<number, THREE.Wrapping> = { 33071: THREE.ClampToEdgeWrapping, 33648: THREE.MirroredRepeatWrapping, 10497: THREE.RepeatWrapping };
+
+/**
+ * GLTFLoader 外掛：GLB 內嵌的貼圖直接從記憶體解碼（createImageBitmap(Blob)），
+ * 取代預設「建 blob: 網址再 fetch」的做法（Artifact 禁止 fetch blob: / data:）。
+ */
+function inMemoryTextures(parser: import('three/examples/jsm/loaders/GLTFLoader.js').GLTFParser) {
+  return {
+    name: 'in_memory_textures',
+    loadTexture(textureIndex: number): Promise<THREE.Texture> | null {
+      const json = parser.json;
+      const def = json.textures[textureIndex];
+      const img = json.images?.[def.source];
+      if (!img || img.bufferView === undefined) return null; // 不是內嵌貼圖：交給預設流程
+      return parser.getDependency('bufferView', img.bufferView).then(async (buf: ArrayBuffer) => {
+        const blob = new Blob([buf], { type: img.mimeType || 'image/png' });
+        let bmp: ImageBitmap;
+        try {
+          bmp = await createImageBitmap(blob, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+        } catch {
+          bmp = await createImageBitmap(blob);
+        }
+        const tex = new THREE.Texture(bmp);
+        tex.flipY = false;
+        tex.name = def.name || img.name || '';
+        const sampler = json.samplers?.[def.sampler] ?? {};
+        tex.magFilter = (GL_FILTER[sampler.magFilter] as THREE.MagnificationTextureFilter) ?? THREE.LinearFilter;
+        tex.minFilter = (GL_FILTER[sampler.minFilter] as THREE.MinificationTextureFilter) ?? THREE.LinearMipmapLinearFilter;
+        tex.wrapS = GL_WRAP[sampler.wrapS] ?? THREE.RepeatWrapping;
+        tex.wrapT = GL_WRAP[sampler.wrapT] ?? THREE.RepeatWrapping;
+        tex.needsUpdate = true;
+        return tex;
+      });
+    },
+  };
+}
