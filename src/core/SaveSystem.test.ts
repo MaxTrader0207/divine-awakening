@@ -94,10 +94,11 @@ describe('擴充為 10 格', () => {
   });
 });
 
-describe('存檔 v6', () => {
+describe('存檔 v6 / v7', () => {
   it('舊存檔補上左手模式與介面大小的預設值，原本的設定保留', () => {
     const old = migrate({ version: 5, level: 2, settings: { zoom: 1.3, showFps: true, musicVolume: 0.2, sfxVolume: 0.4, quality: 'low' } } as never)!;
-    expect(old.version).toBe(6);
+    expect(old.version).toBe(7);
+    expect(old.settings.vibration).toBe(true);
     expect(old.settings.leftHanded).toBe(false);
     expect(old.settings.uiScale).toBe(1);
     expect(old.settings.zoom).toBe(1.3);

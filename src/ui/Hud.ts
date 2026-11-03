@@ -140,6 +140,7 @@ export class Hud {
       btn.querySelector('.ico')!.textContent = sk.icon;
       if (sk.slot === 'basic') btn.appendChild(h('small', { class: 'basic-label' }, '普攻'));
       btn.title = sk.name;
+      btn.style.setProperty('--sc', `#${sk.color.toString(16).padStart(6, '0')}`); // 外框與底色帶一點技能顏色
       const cd = h('div', { class: 'cd' });
       const num = h('b', { class: 'cd-num' });
       btn.append(cd, num);

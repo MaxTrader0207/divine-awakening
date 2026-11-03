@@ -73,6 +73,7 @@ src/
 │  ├─ Zone.ts                 依 ZoneDef 建場景、高台與石階、碰撞、heightAt()
 │  ├─ Props.ts                低多邊形物件工廠（含首領石圈、水晶）＋ 碰撞尺寸
 │  ├─ GreekProps.ts           古希臘風格物件：神殿、石柱、雕像、橄欖樹、柏樹、花圃、長椅、市集攤位、陶罐、樹籬
+│  ├─ LabelDodger.ts          地點標籤（userData.dodge 的 Sprite）被 HUD 按鈕蓋住時自動往上抬
 │  ├─ GuideArrow.ts           新手指引：玩家腳邊的金色箭頭＋目標光柱
 │  ├─ Critters.ts             城裡的小動物（ZoneDef.critters）：貓狗雞鴿子貓頭鷹蝴蝶，全部合成 1 個動態網格
 │  ├─ Collision.ts            2D 碰撞世界
@@ -151,9 +152,9 @@ raw  = atk × 技能倍率
 - 首領技能傷害 = 公式 × 技能倍率（1.4~2.2），只有預警結算時站在範圍內才會受傷。
 - AUTO 只會察覺 65% 的預警（`AUTO_DODGE_CHANCE`），手動操作可以全部閃掉。
 
-## 存檔（v6）
+## 存檔（v7）
 
-- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）、v5 新手指引（`tutorial`；舊存檔 Lv.3 以上或打過首領的視為完成並隱藏）、v6 設定新增 `leftHanded`、`uiScale`。舊存檔讀入時自動遷移。
+- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）、v5 新手指引（`tutorial`；舊存檔 Lv.3 以上或打過首領的視為完成並隱藏）、v6 設定新增 `leftHanded`、`uiScale`、v7 設定新增 `vibration`。舊存檔讀入時自動遷移。
 
 
 - 多存檔：`SaveSlots` 管 10 格（localStorage `little-mage.save.slot1`~`slot10`；v1.19 前是 5 格，鍵名相同所以舊存檔直接沿用），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。

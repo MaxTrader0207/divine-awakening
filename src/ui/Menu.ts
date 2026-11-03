@@ -228,6 +228,13 @@ export class Menu {
       bus.emit('settings:changed');
       bus.emit('save:request');
     });
+    const vib = h('input', { type: 'checkbox' });
+    vib.checked = s.vibration !== false;
+    vib.addEventListener('change', () => {
+      s.vibration = vib.checked;
+      if (vib.checked) navigator.vibrate?.(30);
+      bus.emit('save:request');
+    });
     const scales = [0.9, 1, 1.1, 1.2];
     const scaleRow = h(
       'div',
@@ -259,6 +266,8 @@ export class Menu {
         h('p', {}, '搖桿換到右邊、技能換到左邊。'),
         h('div', { class: 'set-row' }, [h('span', {}, '介面大小')]),
         scaleRow,
+        h('label', { class: 'set-row' }, [h('span', {}, '震動回饋'), vib]),
+        h('p', {}, '被重擊、首領放大招、升級時手機會輕震（iPhone 的瀏覽器不支援）。'),
       ]),
       renderCloudCard(this.cloudCtx()),
       this.renderQuality(),

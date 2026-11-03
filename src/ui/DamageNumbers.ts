@@ -12,6 +12,9 @@ interface Num {
   t: number;
   pos: THREE.Vector3;
   driftX: number;
+  /** 文字類（金幣 / 經驗）：種類與數值，短時間內同類合併 */
+  kind?: string;
+  value?: number;
 }
 
 const POOL = 40;
@@ -42,19 +45,33 @@ export class DamageNumbers {
     n.t = 0;
     n.pos.set(x, y, z);
     n.driftX = (Math.random() - 0.5) * 30;
+    n.kind = undefined;
     n.el.textContent = crit ? `${amount}!` : String(amount);
     n.el.className = `dmg${crit ? ' crit' : ''}${onPlayer ? ' hurt' : ''}`;
     n.el.style.opacity = '1';
   }
 
   spawnText(x: number, y: number, z: number, text: string, kind: string) {
+    // AOE 一次打倒好幾隻：0.45 秒內、6 公尺內的「+金幣 / +EXP」合併成一個數字
+    const m = /^\+(\d+)\s*(.*)$/.exec(text);
+    if (m && (kind === 'gold' || kind === 'exp')) {
+      const prev = this.nums.find((q) => q.active && q.kind === kind && q.t < 0.45 && q.pos.distanceTo(this.v.set(x, y, z)) < 6);
+      if (prev && prev.value !== undefined) {
+        prev.value += Number(m[1]);
+        prev.el.textContent = `+${prev.value} ${m[2]}`;
+        prev.t = 0.05; // 重新彈一下
+        return;
+      }
+    }
     const n = this.nums.find((q) => !q.active) ?? this.nums.reduce((a, b) => (a.t > b.t ? a : b));
+    n.kind = kind;
+    n.value = m ? Number(m[1]) : undefined;
     n.active = true;
     n.t = 0;
     n.pos.set(x, y, z);
     n.driftX = 0;
     n.el.textContent = text;
-    n.el.className = `dmg txt ${kind}`;
+    n.el.className = `dmg ftxt ${kind}`; // 不用 .txt：那是雲端存檔輸入框的樣式
     n.el.style.opacity = '1';
   }
 

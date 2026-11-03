@@ -278,6 +278,7 @@ export class Zone {
     g.add(ring);
 
     const label = makeLabelSprite(p.label, { fontSize: 40, color: '#fff7d6', bg: 'rgba(30,36,52,0.72)', scale: 1.1 });
+    label.userData.dodge = true; // 被 HUD 按鈕蓋住時自動往上抬（LabelDodger）
     label.position.y = p.style === 'stone' ? 3.6 : 3.8;
     g.add(label);
     return g;

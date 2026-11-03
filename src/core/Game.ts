@@ -39,6 +39,7 @@ import { applyClassWeaponNames } from '@/data/items';
 import { currentStep, targetFor, tutorialEvent, type TutorialEvent } from '@/systems/Tutorial';
 import { rewardText } from '@/data/tutorial';
 import { GuideArrow } from '@/world/GuideArrow';
+import { LabelDodger } from '@/world/LabelDodger';
 
 /** 被攻擊後自動反擊的持續秒數 */
 const COUNTER_TIME = 3;
@@ -65,6 +66,8 @@ export class Game {
   /** 新手指引：腳邊箭頭與目標光柱 */
   private guideArrow = new GuideArrow();
   private guideLast = { x: 0, z: 0 };
+  /** 地點標籤避開 HUD */
+  private labelDodger!: LabelDodger;
   readonly enemies: EnemyManager;
   readonly projectiles: ProjectileSystem;
   /** 召喚物（召喚師的骷髏） */
@@ -140,6 +143,7 @@ export class Game {
     this.projectiles = new ProjectileSystem(this.scene, this.enemies);
     this.targets = new TargetSelector(this.scene, this.enemies);
     this.damageNumbers = new DamageNumbers(uiRoot, container);
+    this.labelDodger = new LabelDodger(container);
     this.effects = new Effects(this.scene);
     this.telegraphs = new Telegraphs(this.scene);
     this.audio = new AudioSystem(this.state.settings);
@@ -323,6 +327,12 @@ export class Game {
       hitMinion: (e, m, power) => this.hitMinion(e, m, power),
     };
 
+    // ---- 震動回饋（手機；設定可關閉）----
+    bus.on('player:hurt', ({ amount }) => amount >= this.player.stats.maxHp * 0.08 && this.haptic(25));
+    bus.on('boss:cast', () => this.haptic([30, 50, 30]));
+    bus.on('player:levelup', () => this.haptic([40, 60, 40]));
+    bus.on('player:died', () => this.haptic(150));
+
     // ---- 新手指引 ----
     const tut = (ev: TutorialEvent) => this.tutorial(ev);
     bus.on('enemy:killed', () => tut({ type: 'kill' }));
@@ -487,6 +497,7 @@ export class Game {
     this.zones.update(dt, this.player.pos.x, this.player.pos.z);
     this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
     this.updateGuide(dt);
+    this.labelDodger.update(dt, this.rig.camera);
     this.followSun();
     this.damageNumbers.update(dt, this.rig.camera);
     const boss = this.enemies.engagedBoss();
@@ -597,6 +608,16 @@ export class Game {
       });
   }
 
+  /** 震動（不支援的瀏覽器，例如 iPhone Safari，會直接忽略） */
+  private haptic(pattern: number | number[]) {
+    if (!this.state.settings.vibration) return;
+    try {
+      navigator.vibrate?.(pattern);
+    } catch {
+      /* 忽略 */
+    }
+  }
+
   /** HUD 增益列：守護、嗜血、狂暴、召喚物數量、無敵 */
   private buffList(): BuffInfo[] {
     const p = this.player;
@@ -683,7 +704,7 @@ export class Game {
     s.exp = r.exp;
     if (gold > 0) bus.emit('float:text', { x: k.x, y: 1.4, z: k.z, text: `+${gold} 金幣`, kind: 'gold' });
     if (exp > 0) bus.emit('float:text', { x: this.player.pos.x, y: 2.6, z: this.player.pos.z, text: `+${exp} EXP`, kind: 'exp' });
-    if (k.gems > 0) bus.emit('toast', { text: `獲得 ${k.gems} 鑽石` });
+    if (k.gems > 0) bus.emit('toast', { text: `💎 獲得 ${k.gems} 寶石`, kind: 'reward' });
     if (r.levelsGained > 0) {
       s.level = r.level;
       this.recalcStats();
@@ -819,6 +840,7 @@ export class Game {
     this.player.update(0, { x: 0, z: 0 }, zone.collision); // 確保出生點不在障礙物內
     this.rig.snapTo(this.player.pos.x, this.player.pos.z);
     this.hud.currentZone = zone.def;
+    this.labelDodger.setRoot(zone.group);
     this.hud.setZone(zone.def);
     const def = zone.def;
     const range = def.levelRange ? `（Lv.${def.levelRange[0]}-${def.levelRange[1]}）` : '';

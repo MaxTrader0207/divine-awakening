@@ -79,6 +79,7 @@ function finishModel(p: PropDef, obj: THREE.Object3D, size: THREE.Vector3, w: nu
   g.add(obj);
   if (p.sign) {
     const label = makeLabelSprite(p.sign, { fontSize: 44, color: '#fff7d6', bg: 'rgba(30,36,52,0.75)', scale: 1.2 });
+    label.userData.dodge = true;
     label.position.set(0, size.y * s + 0.6, d / 2);
     g.add(label);
   }
@@ -145,6 +146,7 @@ export function buildProp(p: PropDef): THREE.Object3D {
         board.position.z = d / 2 + 0.12;
         g.add(board);
         const label = makeLabelSprite(p.sign, { fontSize: 44, color: '#ffffff', bg: 'rgba(0,0,0,0)', scale: 1.3 });
+        label.userData.dodge = true;
         label.position.set(0, wallH - 0.4, d / 2 + 0.3);
         g.add(label);
       }

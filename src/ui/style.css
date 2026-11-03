@@ -235,10 +235,10 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 @media (prefers-reduced-motion: reduce) { .hurt-vignette.on { animation-duration: 0.2s; } }
 .auto-btn.on { background: linear-gradient(#ffe07a, #f0a92a); box-shadow: 0 0 0 3px rgba(244, 198, 78, 0.45), 0 0 18px rgba(244, 198, 78, 0.8); animation: autoPulse 1.2s ease-in-out infinite; }
 @keyframes autoPulse { 50% { box-shadow: 0 0 0 5px rgba(244, 198, 78, 0.25), 0 0 26px rgba(244, 198, 78, 0.9); } }
-.dmg.txt { font-size: 14px; }
-.dmg.txt.gold { color: var(--gold); }
-.dmg.txt.exp { color: #b7f08a; }
-.dmg.txt.info { color: #9fe0ff; }
+.dmg.ftxt { font-size: 14px; }
+.dmg.ftxt.gold { color: var(--gold); }
+.dmg.ftxt.exp { color: #b7f08a; }
+.dmg.ftxt.info { color: #9fe0ff; }
 
 /* ---------------- 撿寶訊息 ---------------- */
 .loot-feed { position: absolute; left: var(--gutter); top: 52%; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
@@ -617,3 +617,21 @@ html.lefty .joystick { left: auto; right: calc(var(--gutter) + 6px); }
 .hud.lefty .auto-btn { right: auto; left: 2px; }
 .hud.lefty .skill-tip { right: auto; left: 0; }
 .hud.lefty .loot-feed { left: auto; right: var(--gutter); align-items: flex-end; }
+
+/* ---- 按鈕外觀統一（v1.24.1）：深色圓底＋各自的主題色外框；AUTO 維持金色當作主開關 ---- */
+.hud .act.skill, .hud .act.potion {
+  background: radial-gradient(circle at 38% 28%, color-mix(in srgb, var(--sc, #8a93a8) 42%, #2e3548), #161b27 80%);
+  border: 2px solid color-mix(in srgb, var(--sc, #ffffff) 75%, transparent);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.hud .act.potion.red { --sc: #ff6a5a; }
+.hud .act.potion.blue { --sc: #5cb2ff; }
+.hud .act.skill.slot-basic { border-width: 3px; }
+.hud .act .key, .hud .act em { background: #161b27; border: 1px solid rgba(255, 255, 255, 0.35); }
+.hud .icon-btn {
+  background: linear-gradient(#2e3548, #1b2130); border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35); border-radius: 12px;
+}
+.hud .wallet { border: 1px solid rgba(255, 255, 255, 0.1); }
+/* 藥水跟搖桿拉開距離，推搖桿時不容易誤觸 */
+.potions { bottom: calc(max(22px, env(safe-area-inset-bottom)) + 156px); }

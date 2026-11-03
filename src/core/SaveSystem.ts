@@ -211,6 +211,7 @@ export function migrate(data: Partial<GameState>): GameState | null {
   if (!data.tutorial || typeof data.tutorial !== 'object') merged.tutorial = tutorialForExisting(merged.level, merged.bossesDefeated ?? []);
   else merged.tutorial = { ...base.tutorial, ...data.tutorial };
   // v5 → v6：設定新增 leftHanded、uiScale（上面 settings 合併時已補預設值）
-  // 未來版本：if ((data.version ?? 0) < 7) { ... }
+  // v6 → v7：設定新增 vibration（同上，合併時補預設值 true）
+  // 未來版本：if ((data.version ?? 0) < 8) { ... }
   return merged;
 }
