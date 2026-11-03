@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">古希臘探險</string>
-    <string name="title_activity_main">古希臘探險</string>
+    <string name="app_name">神格覺醒</string>
+    <string name="title_activity_main">神格覺醒</string>
     <string name="package_name">com.weistudio.littlemage</string>
     <string name="custom_url_scheme">com.weistudio.littlemage</string>
 </resources>

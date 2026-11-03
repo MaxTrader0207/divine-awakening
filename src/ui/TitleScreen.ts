@@ -104,7 +104,7 @@ export function showTitleScreen(app: HTMLElement, slots: SaveSlots, version: str
 
       el.replaceChildren(
         h('div', { class: 'ts-box' }, [
-          h('div', { class: 'ts-logo' }, [h('span', { class: 'ts-orb' }, '🏛️'), h('h1', {}, '古希臘探險'), h('p', {}, 'ANCIENT GREEK ADVENTURE')]),
+          h('div', { class: 'ts-logo' }, [h('span', { class: 'ts-orb' }, '⚡'), h('h1', {}, '神格覺醒'), h('p', {}, 'DIVINE AWAKENING')]),
           main,
           h('div', { class: 'ts-title' }, '選擇存檔'),
           h('div', { class: 'ts-list' }, rows),

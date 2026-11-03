@@ -3,7 +3,7 @@
 每次開新對話繼續開發時，先讀這份，再讀 `docs/ROADMAP.md` 找到目前週次。
 
 ## 專案
-古希臘探險 Ancient Greek Adventure（v1.35 起；之前叫戰鬥法師 Battle Mage、更早叫小法師 Little Mage）：手機直式 3D 低多邊形動作 RPG，Three.js + TypeScript + Vite，部署 GitHub Pages。
+神格覺醒 Divine Awakening（v1.36 起；曾名古希臘探險 v1.35、戰鬥法師 Battle Mage、最早叫小法師 Little Mage）：手機直式 3D 低多邊形動作 RPG，Three.js + TypeScript + Vite，部署 GitHub Pages。
 開發者 Max（Wei Studio），一律用**繁體中文**溝通與撰寫註解、UI 文字。
 
 ## 必讀
@@ -29,7 +29,7 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.35.0。10 週 MVP 完成，加上 v1.1~v1.35（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 版本 v1.36.0。10 週 MVP 完成，加上 v1.1~v1.36（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
 - 測試：`npm test`（Vitest 85 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
 - 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。暫停中（`__game.paused`）`frame()` 不呼叫 `tick()`，但 `debugAdvance()` 仍會推進。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
