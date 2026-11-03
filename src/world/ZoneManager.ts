@@ -65,7 +65,7 @@ export class ZoneManager {
     }
   }
 
-  update(dt: number) {
-    this.current?.update(dt);
+  update(dt: number, px = 0, pz = 0) {
+    this.current?.update(dt, px, pz);
   }
 }

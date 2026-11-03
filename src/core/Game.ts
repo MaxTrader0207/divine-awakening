@@ -463,7 +463,7 @@ export class Game {
     this.state.stats.playTime += dt;
     this.projectiles.update(dt, this.rig.camera);
     this.targets.update(dt);
-    this.zones.update(dt);
+    this.zones.update(dt, this.player.pos.x, this.player.pos.z);
     this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
     this.followSun();
     this.damageNumbers.update(dt, this.rig.camera);

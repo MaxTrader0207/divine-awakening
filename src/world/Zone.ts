@@ -7,6 +7,7 @@ const RAMP = 3.5;
 import { CollisionWorld } from './Collision';
 import { buildProp, PROP_DEFAULTS, mat } from './Props';
 import { makeLabelSprite } from './Label';
+import { Critters } from './Critters';
 
 /**
  * Zone：一個已載入的區域（場景物件 + 碰撞 + 傳送點）。
@@ -17,6 +18,9 @@ export class Zone {
   readonly group = new THREE.Group();
   readonly collision = new CollisionWorld();
   private animated: { obj: THREE.Object3D; kind: 'spin' | 'pulse'; phase: number }[] = [];
+  /** 城裡的小動物（ZoneDef.critters） */
+  critters: Critters | null = null;
+  private critterEnv = { collision: this.collision, heightAt: (x: number, z: number) => this.heightAt(x, z), bounds: this.collision.bounds };
   private t = 0;
 
   constructor(def: ZoneDef) {
@@ -75,6 +79,11 @@ export class Zone {
 
     for (const portal of def.portals) this.group.add(this.buildPortal(portal));
     this.mergeStatic();
+    if (def.critters?.length) {
+      this.critterEnv.bounds = this.collision.bounds;
+      this.critters = new Critters(def.critters, this.critterEnv);
+      this.group.add(this.critters.mesh);
+    }
     if (def.mist) this.buildMist();
     for (const t of def.triggers ?? []) {
       const ring = new THREE.Mesh(
@@ -274,8 +283,10 @@ export class Zone {
     return g;
   }
 
-  update(dt: number) {
+  /** px / pz：玩家位置（小動物會對玩家有反應） */
+  update(dt: number, px = 0, pz = 0) {
     this.t += dt;
+    this.critters?.update(dt, px, pz, this.critterEnv);
     const hw = this.def.size.w / 2 + 7;
     for (const m of this.mist) {
       m.position.x += m.userData.speed * dt;

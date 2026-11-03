@@ -37,6 +37,17 @@ export type PropKind =
   | 'pillar'
   | 'stonering'
   | 'crystal'
+  /* 古希臘風格（程式模型，雅典城用） */
+  | 'column'
+  | 'temple'
+  | 'statue'
+  | 'olive'
+  | 'cypress'
+  | 'flowers'
+  | 'bench'
+  | 'stall'
+  | 'amphora'
+  | 'hedge'
   /** 純裝飾模型（桶子、箱子、火把、帳篷…），一定要指定 model */
   | 'decor';
 
@@ -59,6 +70,23 @@ export interface PropDef {
   solid?: boolean;
   /** 使用 KayKit 模型 id（src/assets/models/<id>.glb）；沒載入時退回程式模型 */
   model?: string;
+}
+
+/** 城裡隨機走動的小動物（純裝飾，不影響玩法） */
+export type CritterKind = 'cat' | 'dog' | 'chicken' | 'chick' | 'pigeon' | 'owl' | 'butterfly';
+
+export interface CritterDef {
+  kind: CritterKind;
+  x: number;
+  z: number;
+  /** 活動範圍（中心 x/z、寬 w、深 d）；沒填時是整張地圖 */
+  area?: { x: number; z: number; w: number; d: number };
+  /** 毛色 / 花色樣式（同種動物不同外觀） */
+  variant?: number;
+  /** 停在高處（貓頭鷹）：固定高度 */
+  perchY?: number;
+  /** 面向（弧度） */
+  rot?: number;
 }
 
 /** 地面上不同材質的色塊（道路、沙地、水面…） */
@@ -152,6 +180,8 @@ export interface ZoneDef {
   fogRange?: [number, number];
   /** 飄動的霧氣 */
   mist?: boolean;
+  /** 隨機走動的小動物 */
+  critters?: CritterDef[];
   /** 副本專用 */
   dungeon?: {
     floor: number;

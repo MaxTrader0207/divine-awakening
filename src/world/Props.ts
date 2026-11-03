@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { PropDef } from '@/data/types';
 import { makeLabelSprite } from './Label';
 import { Assets } from '@/assets/Assets';
+import { buildGreekProp } from './GreekProps';
 
 /**
  * 場景物件工廠
@@ -24,6 +25,16 @@ export const PROP_DEFAULTS: Record<PropDef['kind'], { w: number; d: number; h: n
   stonering: { w: 9, d: 9, h: 0.1, solid: false, round: true },
   crystal: { w: 1.2, d: 1.2, h: 2.2, solid: true, round: true },
   decor: { w: 1, d: 1, h: 1, solid: true, round: true },
+  column: { w: 1.4, d: 1.4, h: 3.6, solid: true, round: true },
+  temple: { w: 13, d: 8, h: 7, solid: true, round: false },
+  statue: { w: 1.6, d: 1.6, h: 3.6, solid: true, round: false },
+  olive: { w: 3, d: 3, h: 3.4, solid: true, round: true },
+  cypress: { w: 1.4, d: 1.4, h: 5.5, solid: true, round: true },
+  flowers: { w: 3, d: 1.2, h: 0.8, solid: true, round: false },
+  bench: { w: 2.2, d: 0.7, h: 0.6, solid: true, round: false },
+  stall: { w: 3.2, d: 2, h: 2.3, solid: true, round: false },
+  amphora: { w: 0.7, d: 0.7, h: 1.1, solid: true, round: true },
+  hedge: { w: 4, d: 0.9, h: 1, solid: true, round: false },
 };
 
 /** kind → 預設模型（多個時依座標固定挑一個，看起來不會全部一樣） */
@@ -108,6 +119,12 @@ export function buildProp(p: PropDef): THREE.Object3D {
     }
   }
   const g = new THREE.Group();
+
+  if (buildGreekProp(p, g, w, d, h)) {
+    g.position.set(p.x, 0, p.z);
+    if (p.rot) g.rotation.y = p.rot;
+    return g;
+  }
 
   switch (p.kind) {
     case 'decor':

@@ -69,6 +69,8 @@ src/
 │  ├─ ZoneManager.ts          載入 / 卸載區域、天空與霧、傳送點、商店入口
 │  ├─ Zone.ts                 依 ZoneDef 建場景、高台與石階、碰撞、heightAt()
 │  ├─ Props.ts                低多邊形物件工廠（含首領石圈、水晶）＋ 碰撞尺寸
+│  ├─ GreekProps.ts           古希臘風格物件：神殿、石柱、雕像、橄欖樹、柏樹、花圃、長椅、市集攤位、陶罐、樹籬
+│  ├─ Critters.ts             城裡的小動物（ZoneDef.critters）：貓狗雞鴿子貓頭鷹蝴蝶，全部合成 1 個動態網格
 │  ├─ Collision.ts            2D 碰撞世界
 │  └─ Label.ts                Canvas 文字 Sprite
 └─ ui/

@@ -49,9 +49,12 @@ export class Minimap {
     }
     for (const p of def.props) {
       const pd = PROP_DEFAULTS[p.kind];
-      const w = (p.w ?? pd.w) * s;
-      const d = (p.d ?? pd.d) * s;
-      g.fillStyle = p.kind === 'house' ? '#e9e2d4' : p.kind === 'tree' || p.kind === 'palm' || p.kind === 'bush' ? '#3f8a45' : '#9a8f7a';
+      // 轉 90° 的物件（長椅、柵欄）寬深對調
+      const turned = Math.abs(Math.sin(p.rot ?? 0)) > 0.7;
+      const w = (turned ? p.d ?? pd.d : p.w ?? pd.w) * s;
+      const d = (turned ? p.w ?? pd.w : p.d ?? pd.d) * s;
+      const green = ['tree', 'palm', 'bush', 'olive', 'cypress', 'hedge', 'flowers'].includes(p.kind);
+      g.fillStyle = p.kind === 'house' || p.kind === 'temple' ? '#e9e2d4' : green ? '#3f8a45' : '#9a8f7a';
       if (pd.round) {
         g.beginPath();
         g.arc(ox + p.x * s, oz + p.z * s, Math.max(1.5, w / 2), 0, Math.PI * 2);
