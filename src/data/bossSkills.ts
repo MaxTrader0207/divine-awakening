@@ -107,6 +107,45 @@ export const BOSS_SKILLS = {
     pattern: 'rain', name: '冥火落雨', desc: '塔爾塔洛斯的冥火從天而降',
     windup: 1.4, power: 1.4, color: 0x9a5aff, pillarColor: 0xff9a3c, count: 5, countEnraged: 8, radius: 2.2, spread: 6, stagger: 0.12,
   },
+  /* ---- 第七層 涅墨亞獅 ---- */
+  lion_claw: {
+    pattern: 'cone', name: '獅爪撕裂', desc: '前方扇形撕裂（狂暴時範圍更寬）',
+    windup: 1.0, power: 1.9, color: 0xffb34a, range: 6.5, angle: 110, angleEnraged: 160,
+  },
+  lion_pounce: {
+    pattern: 'leap', name: '金鬃猛撲', desc: '撲到玩家位置',
+    windup: 1.5, power: 1.7, color: 0xffd36b, discColor: 0xffa02a, radius: 3.6,
+  },
+  lion_roar: {
+    pattern: 'nova', name: '震天獅吼', desc: '自身周圍的怒吼震波（狂暴時範圍更大）',
+    windup: 1.2, power: 1.8, color: 0xffe08a, discColor: 0xffb34a, radius: 6, radiusEnraged: 8,
+  },
+  /* ---- 第八層 梅杜莎 ---- */
+  gorgon_gaze: {
+    pattern: 'cone', name: '石化凝視', desc: '前方長距離的窄扇形凝視（狂暴時更寬）',
+    windup: 1.3, power: 2.0, color: 0xc8ff6a, range: 11, angle: 40, angleEnraged: 70,
+  },
+  snake_hair: {
+    pattern: 'spokes', name: '蛇髮亂舞', desc: '蛇髮往四周咬出，蛇與蛇之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.6, color: 0x7ad35a, count: 6, countEnraged: 8, range: 8, angle: 22,
+  },
+  gorgon_arrows: {
+    pattern: 'multiLine', name: '毒蛇箭雨', desc: '拉弓同時射出四排毒箭（狂暴時六排）',
+    windup: 1.1, power: 1.3, color: 0x9aff5a, angles: [-36, -12, 12, 36], anglesEnraged: [-50, -30, -10, 10, 30, 50], count: 5, start: 2.5, spacing: 2.2, radius: 1.4, stagger: 0.1,
+  },
+  /* ---- 第九層 獨眼巨人波呂斐摩斯 ---- */
+  club_sweep: {
+    pattern: 'cone', name: '巨棒橫掃', desc: '大範圍橫掃（狂暴時幾乎半圈以上）',
+    windup: 1.2, power: 2.0, color: 0xd8a86a, range: 7.5, angle: 160, angleEnraged: 220,
+  },
+  boulder_toss: {
+    pattern: 'rain', name: '投擲巨石', desc: '把洞口的巨石丟向玩家（範圍大、數量少）',
+    windup: 1.6, power: 1.8, color: 0xa89878, pillarColor: 0xe8dcc0, count: 3, countEnraged: 5, radius: 3.2, spread: 7, stagger: 0.25,
+  },
+  cyclops_stomp: {
+    pattern: 'line', name: '撼地重踏', desc: '重踏地面，裂痕朝玩家延伸（狂暴時更長）',
+    windup: 1.0, power: 1.4, color: 0xff8a4a, count: 6, countEnraged: 9, start: 2.5, spacing: 2.3, radius: 1.8, stagger: 0.12,
+  },
 } satisfies Record<string, BossSkillDef>;
 
 export type BossSkillId = keyof typeof BOSS_SKILLS;

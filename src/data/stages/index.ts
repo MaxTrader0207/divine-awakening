@@ -8,6 +8,9 @@ import { dodonaGrove } from './dodona-grove';
 import { lernaSwamp } from './dungeon4-lerna-swamp';
 import { knossosLabyrinth } from './dungeon5-knossos-labyrinth';
 import { tartarusAbyss } from './dungeon6-tartarus-abyss';
+import { nemeanValley } from './dungeon7-nemean-valley';
+import { gorgonIsle } from './dungeon8-gorgon-isle';
+import { cyclopsCave } from './dungeon9-cyclops-cave';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -16,7 +19,7 @@ import { tartarusAbyss } from './dungeon6-tartarus-abyss';
  * 其他清單（ZONES、ENEMIES、DUNGEON_ORDER、野外清單、首領查詢…）都由這裡自動產生。
  * 新增關卡：見 docs/CONTENT.md「新增關卡」。
  */
-export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss];
+export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 

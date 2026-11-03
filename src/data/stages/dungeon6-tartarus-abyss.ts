@@ -62,7 +62,7 @@ const zone: ZoneDef = {
   ],
   portals: [{ x: 0, z: 27, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 21 },
-  tips: ['這層敵人有防禦 95，是目前最難的副本', '冥河只有中間一座橋能過，小心在橋上被包圍', '三頭冥火會往三個方向噴，站到火線之間', '冥火坑不能踩'],
+  tips: ['這層敵人有防禦 95', '冥河只有中間一座橋能過，小心在橋上被包圍', '三頭冥火會往三個方向噴，站到火線之間', '冥火坑不能踩'],
   spawns: [
     { enemy: 'hellhound', x: -6, z: 16, count: 3, spread: 3 },
     { enemy: 'keres', x: 8, z: 12, count: 2, spread: 3 },

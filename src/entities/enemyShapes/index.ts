@@ -3,6 +3,7 @@ import type { ShapeBuild } from './types';
 import { bat, dummy, frog, golem, mushroom, skeleton, slime } from './basic';
 import { crab } from './crab';
 import { bull, harpy, hound, hydra, minotaur, serpent } from './beasts';
+import { boar, cyclops, gorgon, lion } from './legends';
 
 /**
  * 敵人程式模型登記表：EnemyDef.shape → 建造函式。
@@ -23,6 +24,10 @@ export const ENEMY_SHAPES: Record<EnemyShape, ShapeBuild> = {
   bull,
   minotaur,
   hound,
+  boar,
+  lion,
+  gorgon,
+  cyclops,
 };
 
 export type { ShapeBuild, ShapeBuilder, ShapeAnimState, ShapeResult } from './types';

@@ -154,7 +154,7 @@ export const harpy: ShapeBuild = (b) => {
 };
 
 /** 四足動物的腳：回傳 4 個 pivot（前左、前右、後左、後右） */
-function fourLegs(b: ShapeBuilder, color: number, hoof: number, w: number, front: number, back: number, hipY: number, len: number, r: number): THREE.Group[] {
+export function fourLegs(b: ShapeBuilder, color: number, hoof: number, w: number, front: number, back: number, hipY: number, len: number, r: number): THREE.Group[] {
   const out: THREE.Group[] = [];
   for (const [x, z] of [[-w, front], [w, front], [-w, back], [w, back]]) {
     const p = b.group(x, hipY, z);

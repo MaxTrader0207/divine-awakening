@@ -16,7 +16,10 @@ export type ZoneId =
   | 'mistwood'
   | 'dungeon_4'
   | 'dungeon_5'
-  | 'dungeon_6';
+  | 'dungeon_6'
+  | 'dungeon_7'
+  | 'dungeon_8'
+  | 'dungeon_9';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
 
@@ -258,7 +261,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops';
 
 /** 首領招式 id（招式資料在 data/bossSkills.ts） */
 export type { BossSkillId } from './bossSkills';

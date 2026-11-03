@@ -138,6 +138,9 @@ export const serpent: ShapeBuild = (b) => {
 | 第四層・勒拿沼澤 | `dungeon4-lerna-swamp.ts` | 16-20，防禦 55 | 勒拿水蛇、勒拿毒蟾、艾洛鷹身女妖 | 九頭蛇許德拉 | 毒液噴吐、九頭齊咬、毒霧落下 |
 | 第五層・克諾索斯迷宮 | `dungeon5-knossos-labyrinth.ts` | 21-25，防禦 75 | 代達洛斯機關兵、克里特狂牛、雅典祭品亡魂 | 米諾陶洛斯 | 雙刃斧橫掃、狂牛衝撞、迷宮落石 |
 | 第六層・塔爾塔洛斯深淵 | `dungeon6-tartarus-abyss.ts` | 26-30，防禦 95 | 冥界獵犬、刻爾死靈、百臂巨人獄卒 | 刻耳柏洛斯 | 三頭冥火、冥犬撲擊、冥火落雨 |
+| 第七層・涅墨亞山谷 | `dungeon7-nemean-valley.ts` | 31-35，防禦 115 | 涅墨亞山狼、厄律曼托斯野豬、俄庫珀忒鷹身女妖 | 涅墨亞獅 | 獅爪撕裂、金鬃猛撲、震天獅吼 |
+| 第八層・戈爾貢之島 | `dungeon8-gorgon-isle.ts` | 36-40，防禦 135 | 戈爾貢毒蛇、石化戰士、格賴埃灰巫 | 梅杜莎 | 石化凝視、蛇髮亂舞、毒蛇箭雨 |
+| 第九層・獨眼巨人洞窟 | `dungeon9-cyclops-cave.ts` | 41-45，防禦 155 | 西西里巨角公羊、獨眼巨人鍛工、萊斯特律戈涅斯巨人 | 獨眼巨人波呂斐摩斯 | 巨棒橫掃、投擲巨石、撼地重踏 |
 
 ### 首領招式庫
 
@@ -158,6 +161,15 @@ export const serpent: ShapeBuild = (b) => {
 | `hellfire_breath` | 三頭冥火 | multiLine | 刻耳柏洛斯 |
 | `cerberus_pounce` | 冥犬撲擊 | leap | 刻耳柏洛斯 |
 | `underworld_flames` | 冥火落雨 | rain | 刻耳柏洛斯 |
+| `lion_claw` | 獅爪撕裂 | cone | 涅墨亞獅 |
+| `lion_pounce` | 金鬃猛撲 | leap | 涅墨亞獅 |
+| `lion_roar` | 震天獅吼 | nova | 涅墨亞獅 |
+| `gorgon_gaze` | 石化凝視 | cone | 梅杜莎 |
+| `snake_hair` | 蛇髮亂舞 | spokes | 梅杜莎 |
+| `gorgon_arrows` | 毒蛇箭雨 | multiLine | 梅杜莎 |
+| `club_sweep` | 巨棒橫掃 | cone | 獨眼巨人波呂斐摩斯 |
+| `boulder_toss` | 投擲巨石 | rain | 獨眼巨人波呂斐摩斯 |
+| `cyclops_stomp` | 撼地重踏 | line | 獨眼巨人波呂斐摩斯 |
 
 ### 敵人造型
 
@@ -169,11 +181,15 @@ export const serpent: ShapeBuild = (b) => {
 | `crab` | `crab.ts` | 螃蟹（6 腳、雙鉗動畫；首領版尖刺皇冠） | 卡基諾斯幼蟹、巨蟹卡基諾斯 |
 | `frog` | `basic.ts`＋`rigs.ts` | 青蛙（Quaternius 模型，依顏色換色） | 寧芙潮蛙、奇美拉火蛙、堤豐巨蛙、勒拿毒蟾 |
 | `bat` | `basic.ts` | 蝠鳥（翅膀拍動、懸浮） | 斯廷法利斯蝠鳥、刻爾死靈 |
-| `skeleton` | `basic.ts`＋`rigs.ts` | 骷髏（KayKit 模型） | 龍牙兵系列、黑卡蒂亡巫、龍牙將軍、雅典祭品亡魂 |
-| `golem` | `basic.ts` | 魔像（發光核心） | 青銅巨人塔洛斯、代達洛斯機關兵、百臂巨人獄卒 |
-| `serpent` | `beasts.ts` | 盤繞的蛇（頸部擺動、張嘴） | 勒拿水蛇 |
+| `skeleton` | `basic.ts`＋`rigs.ts` | 骷髏（KayKit 模型） | 龍牙兵系列、黑卡蒂亡巫、龍牙將軍、雅典祭品亡魂、格賴埃灰巫 |
+| `golem` | `basic.ts` | 魔像（發光核心） | 青銅巨人塔洛斯、代達洛斯機關兵、百臂巨人獄卒、石化戰士、萊斯特律戈涅斯巨人 |
+| `serpent` | `beasts.ts` | 盤繞的蛇（頸部擺動、張嘴） | 勒拿水蛇、戈爾貢毒蛇 |
 | `hydra` | `beasts.ts` | 七頸九頭蛇（中間頭紅眼） | 九頭蛇許德拉 |
-| `harpy` | `beasts.ts` | 鷹身女妖（飛行、拍翅） | 艾洛鷹身女妖 |
-| `bull` | `beasts.ts` | 公牛（前搖低頭） | 克里特狂牛 |
+| `harpy` | `beasts.ts` | 鷹身女妖（飛行、拍翅） | 艾洛鷹身女妖、俄庫珀忒鷹身女妖 |
+| `bull` | `beasts.ts` | 公牛（前搖低頭） | 克里特狂牛、西西里巨角公羊 |
 | `minotaur` | `beasts.ts` | 牛頭人（前搖舉起雙刃斧） | 米諾陶洛斯 |
-| `hound` | `beasts.ts` | 獵犬（首領版三頭、冥火、蛇尾） | 冥界獵犬、刻耳柏洛斯 |
+| `hound` | `beasts.ts` | 獵犬（首領版三頭、冥火、蛇尾） | 冥界獵犬、刻耳柏洛斯、涅墨亞山狼 |
+| `boar` | `legends.ts` | 野豬（獠牙、背鬃，前搖刨地） | 厄律曼托斯野豬 |
+| `lion` | `legends.ts` | 獅子（鬃毛，前搖伏低張嘴；首領版金紋） | 涅墨亞獅 |
+| `gorgon` | `legends.ts` | 蛇尾人身、蛇髮蠕動（首領版蛇髮更多、拿弓） | 梅杜莎 |
+| `cyclops` | `legends.ts` | 獨眼巨人（巨棒，前搖高舉；首領版羊皮披肩） | 獨眼巨人鍛工、獨眼巨人波呂斐摩斯 |
