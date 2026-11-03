@@ -300,6 +300,22 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('summoner', 'persephone_crown', '普西芬妮冥后冠', '👑', '獲得最大 HP 40% 的護盾（30 秒）', '冥后頭上的水仙花冠', 200, { type: 'shield', ratio: 0.4, duration: 30 }, 3),
   c('summoner', 'nyx_veil', '尼克斯夜幕面紗', '🌑', '4 秒內無敵', '連宙斯都畏懼的黑夜女神', 190, { type: 'invuln', duration: 4 }, 3),
   c('summoner', 'erebus_mist', '厄瑞玻斯冥霧', '🌫️', '對周圍 7 公尺造成 3 倍傷害並緩速', '冥府最深處的黑暗之霧', 170, { type: 'nova', power: 3, radius: 7, color: 0x7a5aaa, slow: 3 }, 4),
+  // ---- 劍俠：爆擊、冷卻、身法 ----
+  c('swordsman', 'icaria_wine', '伊卡里亞葡萄酒', '🍷', '立即回復 50% HP', '酒神第一次把葡萄酒交給人間的村莊', 45, { type: 'heal', hp: 0.5 }, 12),
+  c('swordsman', 'castalia_spring', '卡斯塔利亞聖泉', '💧', '立即回復 50% MP', '德爾菲山腳下、詩人與劍客都來飲的泉水', 40, { type: 'heal', mp: 0.5 }, 12),
+  c('swordsman', 'panacea_herb', '帕納刻萬靈草', '🌿', '20 秒內持續回復共 80% HP', '醫神之女帕納刻，能治百病的藥草', 110, { type: 'regen', total: 0.8, duration: 20 }, 8),
+  c('swordsman', 'hermes_strap', '赫密士鞋帶', '🪢', '40 秒內移動速度 +40%', '從信使之神的飛翼涼鞋拆下的鞋帶', 100, { type: 'buff', stat: 'speed', value: 0.4, duration: 40 }, 6),
+  c('swordsman', 'nemesis_whetstone', '涅墨西斯磨劍石', '🪨', '60 秒內爆擊率 +20%', '復仇女神用來磨利審判之劍的石頭', 150, { type: 'buff', stat: 'crit', value: 0.2, duration: 60 }, 4),
+  c('swordsman', 'peleus_oil', '珀琉斯劍油', '🛢️', '60 秒內攻擊力 +25%', '阿基里斯之父擦拭神賜之劍的油', 160, { type: 'buff', stat: 'atk', value: 0.25, duration: 60 }, 4),
+  c('swordsman', 'palamedes_dice', '帕拉墨得斯骰子', '🎲', '30 秒內技能冷卻快 30%', '特洛伊戰場上，智者發明來打發時間的骰子', 150, { type: 'buff', stat: 'cdr', value: 0.3, duration: 30 }, 4),
+  c('swordsman', 'harpe_shard', '珀耳修斯金鐮碎片', '🌙', '60 秒內爆擊傷害 +50%', '斬下梅杜莎頭顱的金鐮刃上掉下的碎片', 170, { type: 'buff', stat: 'critDmg', value: 0.5, duration: 60 }, 4),
+  c('swordsman', 'boreas_gust', '玻瑞阿斯北風', '🌬️', '對周圍 7 公尺造成 3 倍傷害並緩速', '北風之神一口氣吹出的劍風', 130, { type: 'nova', power: 3, radius: 7, color: 0xb8f0ff, slow: 3 }, 5),
+  c('swordsman', 'ariadne_thread', '阿里阿德涅線團', '🧶', '所有技能冷卻立即轉好', '帶忒修斯走出迷宮的線團', 200, { type: 'cdReset' }, 3),
+  c('swordsman', 'dioscuri_star', '狄俄斯庫里雙星', '✨', '3 秒內無敵', '守護航海者與劍士的雙子星', 160, { type: 'invuln', duration: 3 }, 3),
+  c('swordsman', 'meleager_brand', '墨勒阿革洛斯命運木', '🪵', '45 秒內造成傷害的 12% 回血', '燒完就會帶走主人性命的那根木柴', 180, { type: 'buff', stat: 'leech', value: 0.12, duration: 45 }, 3),
+  c('swordsman', 'thetis_veil', '忒提斯海紗', '🌊', '獲得最大 HP 45% 的護盾（30 秒）', '海之女神披在兒子身上的海紗', 210, { type: 'shield', ratio: 0.45, duration: 30 }, 3),
+  c('swordsman', 'fleece_thread', '金羊毛絲線', '🐑', '立即回復 100% HP 與 MP', '從科爾基斯金羊毛上抽出的一縷金絲', 250, { type: 'heal', hp: 1, mp: 1 }, 2),
+  c('swordsman', 'cronus_harpe', '克洛諾斯鐮刃', '🌘', '對周圍 7 公尺造成 5 倍攻擊力的傷害', '泰坦之王推翻天空時揮出的第一把鐮刃', 260, { type: 'nova', power: 5, radius: 7, color: 0x8fd8ff }, 2),
 ];
 
 /** 某職業看得到的所有道具（共用＋專屬） */

@@ -48,6 +48,7 @@ export const CLASS_CLEAR: Record<HeroClass, ClassClear> = {
   knight: { title: '雅典的守護騎士', color: '#b8d4f4', glow: '#4a78b8' },
   berserker: { title: '阿瑞斯的狂戰士', color: '#ff9a6a', glow: '#c83a1a' },
   summoner: { title: '冥府的召喚師', color: '#d09aff', glow: '#7a2ab8' },
+  swordsman: { title: '浪跡赫拉斯的劍俠', color: '#7fe0ff', glow: '#2a8ab8' },
 };
 
 type Quotes = Partial<Record<ZoneId, string>>;
@@ -127,5 +128,20 @@ export const CLEAR_QUOTES: Record<HeroClass, Quotes> = {
     dungeon_10: '謎底是「人」——而亡者，早已超越了人。',
     dungeon_11: '連守護的巨龍，也會在黃昏時沉睡。',
     dungeon_12: '黑帝斯的國度，今天起聽我號令。',
+  },
+  swordsman: {
+    dungeon_1: '一劍破甲——蟹殼再硬，也有縫隙。',
+    dungeon_2: '青銅巨人再高，也只是一座會走路的雕像。',
+    dungeon_3: '劍要在火裡淬過，才會更利。',
+    mistwood: '龍牙兵千千萬萬，我只需要一劍。',
+    dungeon_4: '九顆頭，九道劍光，一個不留。',
+    dungeon_5: '迷宮千迴百轉，我的劍只走直線。',
+    dungeon_6: '冥府的看門犬，也攔不住浪跡天涯的人。',
+    dungeon_7: '刀槍不入？那是你還沒見過真正的劍意。',
+    dungeon_8: '閉著眼也能出劍——心中有劍，何須用眼。',
+    dungeon_9: '洞窟太小，容不下我的劍氣。',
+    dungeon_10: '謎底是人——而人，可以練成一把劍。',
+    dungeon_11: '金蘋果我收下了，巨龍就留在黃昏裡吧。',
+    dungeon_12: '萬劍歸宗，冥府之門也得為我讓路。',
   },
 };

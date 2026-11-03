@@ -17,7 +17,7 @@ describe('職業裝備', () => {
         }
       }
     }
-    expect(all.size).toBe(450);
+    expect(all.size).toBe(CLASS_LIST.length * 6 * 15);
   });
 
   it('神話裝比同階標準裝略強（預算 ×1.08，容許取整誤差），但不超過下一階', () => {

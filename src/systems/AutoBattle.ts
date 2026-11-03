@@ -164,7 +164,7 @@ export class AutoBattle {
         const expiring = mm.list.filter((m) => m.alive && m.life < 1.5 && Math.hypot(m.pos.x - target.pos.x, m.pos.z - target.pos.z) < 4).length;
         if (alive >= 1 && (p.hp / p.stats.maxHp < 0.35 || expiring >= 2) && skills.cast(slot, true)) return true;
       } else if (sk.auto === 'burst') {
-        if (p.berserkT > 0) continue;
+        if (p.berserkT > 0 || p.swordIntentT > 0) continue;
         if ((bossNear || near >= 3) && skills.cast(slot, true)) return true;
       }
     }

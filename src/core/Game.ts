@@ -830,6 +830,7 @@ export class Game {
     if (p.guardT > 0) out.push({ icon: '🛡', label: '守護', t: p.guardT });
     if (p.bloodlustT > 0) out.push({ icon: '🩸', label: '嗜血', t: p.bloodlustT });
     if (p.berserkT > 0) out.push({ icon: '🔥', label: '狂暴', t: p.berserkT });
+    if (p.swordIntentT > 0) out.push({ icon: '☯', label: '人劍合一', t: p.swordIntentT });
     if (p.invulnerable > 0.4) out.push({ icon: '✨', label: '無敵', t: p.invulnerable });
     const BUFF_ICON: Record<BuffStat, [string, string]> = {
       atk: ['⚔️', '攻擊'], def: ['🫒', '減傷'], speed: ['💨', '移速'], crit: ['🎯', '爆擊'],

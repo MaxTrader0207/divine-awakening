@@ -1,7 +1,7 @@
 /**
  * 素材管線：把 KayKit（CC0）原始模型精簡後輸出到 src/assets/models/
  * ------------------------------------------------------------
- * 用法：node scripts/build-assets.mjs <素材來源資料夾>
+ * 用法：node scripts/build-assets.mjs <素材來源資料夾> [只建這些,逗號分隔]（例如 swordsman,sword_1h）
  *   來源資料夾內要有（git clone 自 github.com/KayKit-Game-Assets）：
  *     KayKit-Character-Pack-Adventures-1.0
  *     KayKit-Character-Pack-Skeletons-1.0
@@ -49,6 +49,7 @@ const ROGUE_ANIMS = ['Idle', 'Running_A', '2H_Ranged_Shoot', 'Throw', 'Hit_A', '
 const KNIGHT_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Chop', 'Block_Attack', '2H_Melee_Attack_Spin', 'Blocking', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
 const BARB_ANIMS = ['2H_Melee_Idle', 'Running_A', '2H_Melee_Attack_Slice', '2H_Melee_Attack_Chop', 'Jump_Full_Short', 'Cheer', 'Hit_A', 'Death_A', 'Dodge_Forward'];
 const SUMMONER_ANIMS = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Spellcast_Raise', 'Spellcast_Long', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
+const SWORDSMAN_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Stab', '2H_Melee_Attack_Spinning', 'Dodge_Forward', 'Jump_Full_Short', 'Hit_A', 'Death_A', 'Cheer'];
 const SKEL_ANIMS = ['Idle', 'Walking_D_Skeletons', '1H_Melee_Attack_Chop', 'Hit_A', 'Death_C_Skeletons'];
 const SKEL_MAGE_ANIMS = [...SKEL_ANIMS, 'Spellcast_Shoot'];
 
@@ -59,6 +60,8 @@ const CHARACTERS = [
   ['knight', 'Knight.glb', KNIGHT_ANIMS, ['1H_Sword_Offhand', 'Rectangle_Shield', 'Round_Shield', 'Spike_Shield', '2H_Sword']],
   ['barbarian', 'Barbarian.glb', BARB_ANIMS, ['1H_Axe_Offhand', 'Barbarian_Round_Shield', '1H_Axe', 'Mug']],
   ['summoner', 'Rogue_Hooded.glb', SUMMONER_ANIMS, ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable']],
+  // 劍俠：盜賊模型（披風）拿掉匕首弩，手上另外掛 sword_1h
+  ['swordsman', 'Rogue.glb', SWORDSMAN_ANIMS, ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable']],
   ['skeleton_minion', 'Skeleton_Minion.glb', SKEL_ANIMS, []],
   ['skeleton_warrior', 'Skeleton_Warrior.glb', SKEL_ANIMS, []],
   ['skeleton_rogue', 'Skeleton_Rogue.glb', SKEL_ANIMS, []],
@@ -74,6 +77,8 @@ const PROPS = [
   ['skel_staff', 'Skeleton_Staff.gltf'],
   ['skel_shield_small', 'Skeleton_Shield_Small_A.gltf'],
   ['skel_shield_large', 'Skeleton_Shield_Large_A.gltf'],
+  // 劍俠的長劍
+  ['sword_1h', 'sword_1handed.gltf'],
   ['building_blacksmith', 'building_blacksmith_blue.gltf'],
   ['building_market', 'building_market_blue.gltf'],
   ['building_tavern', 'building_tavern_blue.gltf'],
@@ -138,6 +143,7 @@ async function run(outName, file, keepAnims, dropNodes) {
   console.log(`${basename(out).padEnd(28)} ${kb.toFixed(0).padStart(5)} KB  免WASM ${(statSync(outPlain).size / 1024).toFixed(0).padStart(5)} KB  ${keepAnims ? root.listAnimations().map((a) => a.getName()).join(',') : ''}`);
 }
 
-for (const [o, f, a, d] of CHARACTERS) await run(o, f, a, d);
-for (const [o, f] of PROPS) await run(o, f, null, null);
+const ONLY = process.argv[3]?.split(',');
+for (const [o, f, a, d] of CHARACTERS) if (!ONLY || ONLY.includes(o)) await run(o, f, a, d);
+for (const [o, f] of PROPS) if (!ONLY || ONLY.includes(o)) await run(o, f, null, null);
 console.log(`合計 ${(total / 1024).toFixed(2)} MB（免 WASM 版 ${(totalPlain / 1024).toFixed(2)} MB）`);

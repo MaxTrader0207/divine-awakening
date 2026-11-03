@@ -152,6 +152,8 @@ export class Player {
   bloodlustT = 0;
   /** 狂暴剩餘秒數：攻擊力提升、普攻變快 */
   berserkT = 0;
+  /** 劍俠「人劍合一」剩餘秒數 */
+  swordIntentT = 0;
 
   castBig() {
     this.rig?.playOnce(this.anims.castBig, { timeScale: 1.6 });
@@ -185,6 +187,7 @@ export class Player {
     this.guardT = 0;
     this.bloodlustT = 0;
     this.berserkT = 0;
+    this.swordIntentT = 0;
     this.hp = this.stats.maxHp;
     this.mp = this.stats.maxMp;
     this.invulnerable = 2;
@@ -226,6 +229,7 @@ export class Player {
     if (this.guardT > 0) this.guardT = Math.max(0, this.guardT - dt);
     if (this.bloodlustT > 0) this.bloodlustT = Math.max(0, this.bloodlustT - dt);
     if (this.berserkT > 0) this.berserkT = Math.max(0, this.berserkT - dt);
+    if (this.swordIntentT > 0) this.swordIntentT = Math.max(0, this.swordIntentT - dt);
     this.sinceHurt += dt;
     this.rig?.update(dt);
     if (!this.alive) {

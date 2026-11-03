@@ -6,7 +6,7 @@ import type { SkillDef, Stats } from './types';
  * 新增職業：在 CLASSES 加一筆（屬性、技能、模型動畫、武器名稱），
  * 技能效果寫在 systems/SkillSystem.ts 的 cast()（依 skill.id 分派）。
  */
-export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker' | 'summoner';
+export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker' | 'summoner' | 'swordsman';
 
 /** 模型動畫名稱對應（KayKit 動畫名） */
 export interface HeroAnimSet {
@@ -136,6 +136,22 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
     ],
     anims: { model: 'summoner', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 275, light: 0.8 }, prop: { id: 'skel_staff', length: 1.9, hand: 'r' } },
   },
+  swordsman: {
+    id: 'swordsman',
+    name: '劍俠',
+    desc: '一劍走天涯的大俠：快劍三連斬、劍氣遠攻、凌波微步穿梭敵陣',
+    icon: '🗡️',
+    base: { maxHp: 270, maxMp: 110, atk: 24, def: 8, pen: 0.04, moveSpeed: 6.9, critRate: 0.12, critDmg: 1.7 },
+    perLevel: { maxHp: 50, maxMp: 11, atk: 3.8, def: 1.8 },
+    skills: [
+      { id: 'sword_strike', name: '快劍', slot: 'basic', mpCost: 0, cooldown: 0.42, power: 0.92, range: 2.7, shape: 'cone', arc: 1.9, icon: '🗡', color: 0xd8f4ff, auto: 'single', anim: '1H_Melee_Attack_Slice_Diagonal' },
+      { id: 'sword_qi', name: '劍氣斬', slot: 'Q', mpCost: 12, cooldown: 4, power: 2.1, range: 10, shape: 'projectile', icon: '🌙', color: 0x8fe8ff, auto: 'single', anim: '1H_Melee_Attack_Slice_Horizontal' },
+      { id: 'swift_step', name: '凌波微步', slot: 'W', mpCost: 12, cooldown: 6, power: 1.7, range: 7, shape: 'dash', icon: '💨', color: 0xb8f0ff, auto: 'gap', anim: 'Dodge_Forward' },
+      { id: 'sword_rain', name: '萬劍歸宗', slot: 'E', mpCost: 32, cooldown: 11, power: 1.0, range: 9, shape: 'circle', radius: 3.6, waves: 4, icon: '⚔', color: 0x6ad8ff, auto: 'target-aoe', anim: '2H_Melee_Attack_Spinning' },
+      { id: 'sword_intent', name: '人劍合一', slot: 'R', mpCost: 25, cooldown: 30, power: 0, range: 0, shape: 'circle', duration: 8, icon: '☯', color: 0xffe9a0, auto: 'burst', anim: 'Cheer' },
+    ],
+    anims: { model: 'swordsman', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.15, hand: 'r' } },
+  },
 };
 
-export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker', 'summoner'];
+export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker', 'summoner', 'swordsman'];

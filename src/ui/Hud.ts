@@ -22,6 +22,7 @@ const CLASS_TINT: Record<string, [string, string]> = {
   knight: ['#a9c4e8', '#3a5276'],
   berserker: ['#ff8a5a', '#8a2a1a'],
   summoner: ['#c38bff', '#4a1f6a'],
+  swordsman: ['#7fe0ff', '#1f5a7a'],
 };
 
 /**

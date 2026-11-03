@@ -62,8 +62,8 @@ describe('道具', () => {
       expect(consumablesFor(cls)).toHaveLength(30);
     }
     const names = [...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.name);
-    expect(new Set(names).size).toBe(90);
-    expect(new Set([...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.id)).size).toBe(90);
+    expect(new Set(names).size).toBe(15 + CLASS_LIST.length * 15);
+    expect(new Set([...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.id)).size).toBe(15 + CLASS_LIST.length * 15);
   });
 
   it('掉落只會出現共用或自己職業的道具', () => {

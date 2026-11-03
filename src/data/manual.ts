@@ -42,6 +42,11 @@ export const SKILL_HELP: Record<string, string> = {
   raise_mage: '召喚 1 隻遠程亡靈，最多 2 隻。',
   raise_guard: '召喚 1 隻高血量的坦克亡靈，出場時吸引附近敵人。',
   bone_burst: '讓所有召喚物原地爆炸造成範圍傷害，每爆一隻回復你一些血量。',
+  sword_strike: '前方快速劈砍，每第三下變成突刺，傷害更高、距離更遠。',
+  sword_qi: '揮出一道劍氣，直線貫穿路上所有敵人。',
+  swift_step: '往前（或搖桿方向）疾步穿過敵陣，沿路的敵人受傷並緩速，期間短暫無敵。',
+  sword_rain: '目標附近連續落下四波飛劍，傷害範圍內所有敵人。',
+  sword_intent: '8 秒內普攻變快、爆擊率 +20%、爆擊傷害 +20%，快劍每一下都會附帶一道小劍氣。',
 };
 
 const SLOT_KEYS: Record<string, string> = { basic: '普攻', Q: 'Q', W: 'W', E: 'E', R: 'R' };

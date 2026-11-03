@@ -61,6 +61,8 @@ export const BLOODLUST_LEECH = 0.18;
 export const BERSERK = { atk: 1.25, basicCd: 0.6, rage: 1.5 };
 /** 斬殺：低血量門檻與倍率 */
 export const EXECUTE = { threshold: 0.35, mul: 2 };
+/** 劍俠：快劍第三下突刺（倍率、距離）；人劍合一（普攻冷卻、爆擊率、爆擊傷害、附帶劍氣倍率） */
+export const SWORD = { thrustMul: 1.5, thrustRange: 3.6, intentCd: 0.75, intentCrit: 0.2, intentCritDmg: 0.2, intentQi: 0.3 };
 
 export interface SkillContext {
   player: Player;
@@ -130,11 +132,11 @@ export class SkillSystem {
     this.potionCd = Math.max(0, this.potionCd - dt);
     // 守護（藍）/ 嗜血（紅）/ 狂暴（橘）：腳下持續出現光圈
     const p = this.ctx.player;
-    if (p.guardT > 0 || p.bloodlustT > 0 || p.berserkT > 0) {
+    if (p.guardT > 0 || p.bloodlustT > 0 || p.berserkT > 0 || p.swordIntentT > 0) {
       this.guardFx -= dt;
       if (this.guardFx <= 0) {
         this.guardFx = 0.35;
-        const color = p.guardT > 0 ? 0x8fd4ff : p.berserkT > 0 ? 0xff6a2a : 0xff4a5a;
+        const color = p.guardT > 0 ? 0x8fd4ff : p.berserkT > 0 ? 0xff6a2a : p.swordIntentT > 0 ? 0x8fe8ff : 0xff4a5a;
         this.ctx.effects.ring(p.pos.x, p.pos.z, 1.5, 1.1, color, 0.35);
       }
     }
@@ -234,10 +236,25 @@ export class SkillSystem {
       case 'bone_burst':
         ok = this.castBoneBurst(sk);
         break;
+      case 'sword_strike':
+        ok = this.castSwordStrike(sk);
+        break;
+      case 'sword_qi':
+        ok = this.castSwordQi(sk);
+        break;
+      case 'swift_step':
+        ok = this.castSwiftStep(sk);
+        break;
+      case 'sword_rain':
+        ok = this.castSwordRain(sk);
+        break;
+      case 'sword_intent':
+        ok = this.castSwordIntent(sk);
+        break;
     }
     if (!ok) return false;
     p.mp -= sk.mpCost;
-    this.cd[slot] = sk.cooldown * (slot === 'basic' && p.berserkT > 0 ? BERSERK.basicCd : 1);
+    this.cd[slot] = sk.cooldown * (slot === 'basic' && p.berserkT > 0 ? BERSERK.basicCd : 1) * (slot === 'basic' && p.swordIntentT > 0 ? SWORD.intentCd : 1);
     bus.emit('skill:cast', { slot, id: sk.id });
     if (sk.mpCost > 0) bus.emit('player:changed');
     return true;
@@ -714,6 +731,141 @@ export class SkillSystem {
     const n = mm.detonateAll();
     bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: `冥府骨爆 ×${n}`, kind: 'info' });
     bus.emit('player:changed');
+    return true;
+  }
+
+  /* ---------------- 劍俠 ---------------- */
+
+  /** 快劍連段（0、1 = 斜劈 / 橫劈，2 = 突刺）；停手 1.2 秒就重新數 */
+  private swordCombo = 0;
+  private swordComboT = 0;
+
+  /** 人劍合一中：爆擊率、爆擊傷害提高 */
+  private swordStats() {
+    const p = this.ctx.player;
+    return p.swordIntentT > 0 ? { ...p.stats, critRate: p.stats.critRate + SWORD.intentCrit, critDmg: p.stats.critDmg + SWORD.intentCritDmg } : p.stats;
+  }
+
+  /** 一道會貫穿的劍氣（劍氣斬、人劍合一的普攻附帶） */
+  private fireQi(dx: number, dz: number, power: number, range: number, size: number) {
+    return this.ctx.projectiles.fire({ from: this.fireFrom(dx, dz), dirX: dx, dirZ: dz, target: null, attacker: this.swordStats(), power, range, color: 0x8fe8ff, speed: 26, size, arrow: false, pierce: true });
+  }
+
+  private castSwordStrike(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const now = performance.now() / 1000;
+    if (now - this.swordComboT > 1.2) this.swordCombo = 0;
+    this.swordComboT = now;
+    const step = this.swordCombo % 3;
+    this.swordCombo++;
+    const thrust = step === 2;
+    const range = thrust ? SWORD.thrustRange : sk.range;
+    const { dx, dz } = this.meleeAim(range);
+    p.cast(dx, dz);
+    p.act(thrust ? '1H_Melee_Attack_Stab' : step === 0 ? '1H_Melee_Attack_Slice_Diagonal' : '1H_Melee_Attack_Slice_Horizontal', p.swordIntentT > 0 ? 2.8 : 2.3);
+    const facing = Math.atan2(dx, dz);
+    const fx = this.ctx.effects;
+    if (thrust) {
+      fx.arc(p.pos.x, p.pos.z, facing, 0.25, range, 0xffffff, 0.2, 1.0 + p.groundY);
+      fx.ring(p.pos.x + dx * range * 0.8, p.pos.z + dz * range * 0.8, 0.2, 1, sk.color, 0.25);
+    } else fx.arc(p.pos.x, p.pos.z, facing + (step === 0 ? 0.25 : -0.25), 0.85, range, sk.color, 0.18, 1.0 + p.groundY);
+    damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, range, thrust ? 0.9 : sk.arc ?? 1.9, this.swordStats(), sk.power * (thrust ? SWORD.thrustMul : 1));
+    // 人劍合一：每一劍都送出一道小劍氣
+    if (p.swordIntentT > 0) this.fireQi(dx, dz, sk.power * SWORD.intentQi, 8, 1.1);
+    return true;
+  }
+
+  private castSwordQi(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.aim(sk.range);
+    p.cast(dx, dz);
+    p.act(sk.anim, 2.2);
+    const fx = this.ctx.effects;
+    fx.arc(p.pos.x, p.pos.z, Math.atan2(dx, dz), 1.1, 2.4, sk.color, 0.25, 1.1 + p.groundY);
+    return this.fireQi(dx, dz, sk.power, sk.range, 2);
+  }
+
+  private castSwiftStep(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const mv = this.ctx.moveInput();
+    const l = Math.hypot(mv.x, mv.z);
+    let dx: number;
+    let dz: number;
+    if (l > 0.1) {
+      dx = mv.x / l;
+      dz = mv.z / l;
+    } else {
+      const a = this.aim(sk.range + 2);
+      dx = a.dx;
+      dz = a.dz;
+    }
+    const fx = this.ctx.effects;
+    p.dodge();
+    // 殘影：起點、中間各留一道光
+    fx.pillar(p.pos.x, p.pos.z, 0.5, sk.color, 0.35);
+    const col = this.ctx.collision();
+    const hit = new Set<Enemy>();
+    const steps = 28;
+    for (let i = 0; i < steps; i++) {
+      p.pos.x += (dx * sk.range) / steps;
+      p.pos.z += (dz * sk.range) / steps;
+      col.resolve(p.pos, p.radius);
+      for (const e of this.ctx.enemies.enemies) {
+        if (!e.alive || hit.has(e)) continue;
+        if (Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z) < e.radius + 1.3) hit.add(e);
+      }
+      if (i % 6 === 2) fx.ring(p.pos.x, p.pos.z, 0.3, 0.9, sk.color, 0.25);
+    }
+    const stats = this.swordStats();
+    for (const e of hit) {
+      damageEnemy(e, stats, sk.power);
+      e.applySlow(2, 0.5);
+      fx.arc(e.pos.x, e.pos.z, Math.atan2(dx, dz) + Math.PI / 2, 0.5, 1.6, 0xffffff, 0.2, 1 + e.groundY);
+    }
+    p.facing = Math.atan2(dx, dz);
+    p.invulnerable = Math.max(p.invulnerable, 0.45);
+    fx.pillar(p.pos.x, p.pos.z, 0.5, sk.color, 0.35);
+    return true;
+  }
+
+  private castSwordRain(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const r = sk.radius ?? 3.6;
+    const { target, dx, dz } = this.aim(sk.range);
+    const x = target ? target.pos.x : p.pos.x + dx * 5;
+    const z = target ? target.pos.z : p.pos.z + dz * 5;
+    p.cast(dx, dz);
+    p.act(sk.anim, 1.6);
+    const fx = this.ctx.effects;
+    fx.ring(x, z, r * 1.3, r, sk.color, 0.4);
+    const stats = this.swordStats();
+    const waves = sk.waves ?? 4;
+    for (let w = 0; w < waves; w++) {
+      this.delayed.push({
+        t: 0.3 + w * 0.28,
+        run: () => {
+          fx.disc(x, z, r, 0x4ab8e8, 0.28, 0.35);
+          // 從天而降的飛劍（細長光柱）
+          for (let k = 0; k < 5; k++) {
+            const a = Math.random() * Math.PI * 2;
+            const d = Math.random() * r * 0.9;
+            fx.pillar(x + Math.cos(a) * d, z + Math.sin(a) * d, 0.08, 0xe8fbff, 0.22);
+          }
+          damageArea(this.ctx.enemies.enemies, x, z, r, stats, sk.power);
+        },
+      });
+    }
+    return true;
+  }
+
+  private castSwordIntent(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    p.swordIntentT = sk.duration ?? 8;
+    p.act(sk.anim, 1.8);
+    const fx = this.ctx.effects;
+    fx.pillar(p.pos.x, p.pos.z, 0.9, 0x8fe8ff, 0.6);
+    fx.ring(p.pos.x, p.pos.z, 0.5, 3.5, sk.color, 0.5);
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '人劍合一', kind: 'info' });
     return true;
   }
 }
