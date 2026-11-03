@@ -25,11 +25,11 @@ export interface DailyState {
 }
 
 export const ZONE_NAMES: Partial<Record<ZoneId, string>> = {
-  grassland: '新手草原',
-  dungeon_1: '海岸古道',
-  dungeon_2: '珊瑚洞窟',
-  dungeon_3: '熔心火山口',
-  mistwood: '迷霧森林',
+  grassland: '阿卡迪亞草原',
+  dungeon_1: '波賽頓海岸',
+  dungeon_2: '賽蓮海蝕洞',
+  dungeon_3: '赫菲斯托斯熔爐',
+  mistwood: '多多納聖林',
 };
 
 export function questText(q: Quest): string {

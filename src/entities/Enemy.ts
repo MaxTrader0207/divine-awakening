@@ -197,7 +197,7 @@ export class Enemy {
     this.anims = anims;
     const h = anims.height;
     inst.root.scale.setScalar(h / Assets.height(id));
-    // 青蛙：身體顏色換成這種怪的顏色（泡咪潮蛙藍綠、火山蛙紅…），肚子用淡一點的同色系
+    // 青蛙：身體顏色換成這種怪的顏色（寧芙潮蛙藍綠、奇美拉火蛙紅…），肚子用淡一點的同色系
     if (id === 'frog') {
       const body = new THREE.Color(this.def.color);
       for (const m of inst.materials) {
@@ -413,7 +413,7 @@ export class Enemy {
   /**
    * 程式螃蟹（沒有可用的 CC0 螃蟹模型）：
    * 扁圓甲殼＋可動的 6 隻腳（走路交替擺動）＋兩隻大鉗（下顎會開合、出手前高舉）＋眼柄。
-   * 寄居蟹背螺旋殼；首領「巨鉗蟹王」改成尖刺甲殼、特大右鉗、小皇冠。
+   * 卡基諾斯幼蟹背螺旋殼；首領「巨蟹卡基諾斯」改成尖刺甲殼、特大右鉗、小皇冠。
    * 會動的零件掛在 pivot 群組下，不會被 mergeBody 合併。
    */
   private buildCrab(c: number, dark: number): number {
@@ -435,7 +435,7 @@ export class Enemy {
       for (let i = 0; i < 5; i++) this.add(new THREE.ConeGeometry(0.05, 0.16, 4), 0xf4c64e, -0.16 + i * 0.08, 0.78, 0.05);
       this.add(new THREE.CylinderGeometry(0.22, 0.22, 0.06, 10), 0xf4c64e, 0, 0.7, 0.05);
     } else {
-      // 寄居蟹：背上的螺旋殼（一圈圈縮小的環＋尖端）
+      // 卡基諾斯幼蟹：背上的螺旋殼（一圈圈縮小的環＋尖端）
       const shell = new THREE.Group();
       shell.position.set(0, 0.7, -0.18);
       shell.rotation.x = -0.55;

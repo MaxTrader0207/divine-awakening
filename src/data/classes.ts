@@ -73,7 +73,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'blink', name: '閃現', slot: 'R', mpCost: 15, cooldown: 8, power: 0, range: 6, shape: 'dash', icon: '➶', color: 0xb48cff, auto: 'none' },
     ],
     anims: { model: 'mage', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
-    weaponNames: ['見習法杖', '珊瑚法杖', '熔心法杖', '霧森法杖'],
+    weaponNames: ['見習法杖', '海神法杖', '火神法杖', '宙斯法杖'],
     weaponIcon: '🪄',
   },
   archer: {
@@ -91,7 +91,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'backstep', name: '後跳', slot: 'R', mpCost: 12, cooldown: 7, power: 0, range: 6, shape: 'dash', icon: '↶', color: 0x8fe8c0, auto: 'none' },
     ],
     anims: { model: 'rogue', idle: 'Idle', run: 'Running_A', cast: '2H_Ranged_Shoot', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Backward', cheer: 'Cheer' },
-    weaponNames: ['見習短弩', '珊瑚弩', '熔心弩', '霧影弩'],
+    weaponNames: ['見習短弩', '海神弩', '火神弩', '宙斯弩'],
     weaponIcon: '🏹',
   },
   knight: {
@@ -109,7 +109,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'charge', name: '衝鋒', slot: 'R', mpCost: 12, cooldown: 7, power: 1.8, range: 7, shape: 'dash', icon: '➤', color: 0xffb36b, auto: 'gap', anim: 'Dodge_Forward' },
     ],
     anims: { model: 'knight', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Horizontal', castBig: '1H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
-    weaponNames: ['見習長劍', '珊瑚劍', '熔心劍', '霧森聖劍'],
+    weaponNames: ['見習長劍', '海神劍', '火神劍', '宙斯聖劍'],
     weaponIcon: '🗡️',
   },
   berserker: {
@@ -128,7 +128,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'berserk', name: '狂暴', slot: 'R', mpCost: 0, cooldown: 30, power: 0, range: 0, shape: 'circle', duration: 8, icon: '🔥', color: 0xff5a2a, auto: 'burst', anim: 'Cheer' },
     ],
     anims: { model: 'barbarian', idle: '2H_Melee_Idle', run: 'Running_A', cast: '2H_Melee_Attack_Slice', castBig: '2H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
-    weaponNames: ['見習戰斧', '珊瑚戰斧', '熔心戰斧', '霧森巨斧'],
+    weaponNames: ['見習戰斧', '海神戰斧', '火神戰斧', '宙斯巨斧'],
     weaponIcon: '🪓',
   },
   summoner: {
@@ -146,7 +146,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'bone_burst', name: '白骨爆裂', slot: 'R', mpCost: 10, cooldown: 10, power: 1.8, range: 0, shape: 'circle', radius: 2.6, icon: '💥', color: 0xd8c8ff, auto: 'detonate', anim: 'Spellcast_Shoot' },
     ],
     anims: { model: 'summoner', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 275, light: 0.8 }, prop: { id: 'skel_staff', length: 1.9, hand: 'r' } },
-    weaponNames: ['見習骨杖', '珊瑚骨杖', '熔心骨杖', '霧森冥杖'],
+    weaponNames: ['見習骨杖', '海神骨杖', '火神骨杖', '冥王骨杖'],
     weaponIcon: '🦴',
   },
 };

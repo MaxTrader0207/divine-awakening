@@ -26,7 +26,7 @@ export interface AiContext {
   collision: CollisionWorld;
   /** 敵人普攻命中玩家 */
   hitPlayer: (e: Enemy, power: number) => void;
-  /** 遠程怪（骷髏法師）出手：在目標腳下放預警，前搖結束時結算 */
+  /** 遠程怪（黑卡蒂亡巫）出手：在目標腳下放預警，前搖結束時結算 */
   rangedAttack?: (e: Enemy, windup: number, tx: number, tz: number) => void;
   /** 敵人普攻命中召喚物（召喚師的骷髏） */
   hitMinion?: (e: Enemy, m: Minion, power: number) => void;

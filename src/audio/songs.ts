@@ -58,10 +58,10 @@ export interface TrackDef {
   order: string[];
 }
 
-/* ======================= 主城：艾爾芙的午後 ======================= */
+/* ======================= 主城：雅典的午後 ======================= */
 const town: TrackDef = {
   id: 'town',
-  name: '艾爾芙的午後',
+  name: '雅典的午後',
   bpm: 96,
   level: 1.25,
   lead: { inst: 'flute', vol: 0.2 },
@@ -102,10 +102,10 @@ const town: TrackDef = {
   order: ['A', 'B', 'A', 'B'],
 };
 
-/* ======================= 新手草原：草原小冒險 ======================= */
+/* ======================= 阿卡迪亞草原：阿卡迪亞小冒險 ======================= */
 const grassland: TrackDef = {
   id: 'grassland',
-  name: '草原小冒險',
+  name: '阿卡迪亞小冒險',
   bpm: 128,
   lead: { inst: 'chip', vol: 0.19 },
   pad: { inst: 'pad', vol: 0.04, octave: 3 },
@@ -146,10 +146,10 @@ const grassland: TrackDef = {
   order: ['A', 'B'],
 };
 
-/* ======================= 迷霧森林：霧中小徑 ======================= */
+/* ======================= 多多納聖林：聖林小徑 ======================= */
 const forest: TrackDef = {
   id: 'forest',
-  name: '霧中小徑',
+  name: '聖林小徑',
   bpm: 112,
   level: 1.2,
   lead: { inst: 'flute', vol: 0.19 },
@@ -190,10 +190,10 @@ const forest: TrackDef = {
   order: ['A', 'B'],
 };
 
-/* ======================= 副本：古道探險 ======================= */
+/* ======================= 副本：神殿探險 ======================= */
 const dungeon: TrackDef = {
   id: 'dungeon',
-  name: '古道探險',
+  name: '神殿探險',
   bpm: 120,
   lead: { inst: 'chip', vol: 0.18 },
   pad: { inst: 'pad', vol: 0.045, octave: 3 },

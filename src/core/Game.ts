@@ -364,8 +364,8 @@ export class Game {
     this.enterZone(this.state.zoneId, this.state.pos);
     this.resize();
     if (firstTime) {
-      setTimeout(() => bus.emit('banner', { text: '歡迎來到艾爾芙大陸' }), 600);
-      setTimeout(() => bus.emit('toast', { text: '用左下搖桿移動，往南走進入新手草原', duration: 4 }), 3200);
+      setTimeout(() => bus.emit('banner', { text: '歡迎來到赫拉斯大陸' }), 600);
+      setTimeout(() => bus.emit('toast', { text: '用左下搖桿移動，往南走進入阿卡迪亞草原', duration: 4 }), 3200);
     }
   }
 

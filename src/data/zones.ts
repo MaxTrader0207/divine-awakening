@@ -9,9 +9,9 @@ const town: ZoneDef = {
   id: 'town',
   music: 'town',
   kind: 'town',
-  name: '艾爾芙大陸',
-  subtitle: '主城艾爾芙・安全區',
-  region: '艾爾芙大陸',
+  name: '赫拉斯大陸',
+  subtitle: '雅典城・安全區',
+  region: '赫拉斯大陸',
   safe: true,
   size: { w: 56, d: 64 },
   groundColor: 0x9fbf6a,
@@ -43,7 +43,7 @@ const town: ZoneDef = {
     ...row('tree', 14, -28, 6, 0, 3),
   ],
   portals: [
-    { x: 0, z: 30, radius: 2.6, to: 'grassland', arrive: { x: 0, z: -24 }, label: '新手草原', style: 'edge' },
+    { x: 0, z: 30, radius: 2.6, to: 'grassland', arrive: { x: 0, z: -24 }, label: '阿卡迪亞草原', style: 'edge' },
     { x: 0, z: 1.5, radius: 1.6, to: 'dungeon_1', arrive: { x: 0, z: 20 }, label: '傳送石', style: 'stone' },
   ],
   spawn: { x: 0, z: 14 },
@@ -53,16 +53,16 @@ const town: ZoneDef = {
     { x: -22, z: -12.6, radius: 1.2, tab: 'shop', label: '道具店' },
     { x: 22, z: -12.6, radius: 1.2, tab: 'enhance', label: '強化屋' },
   ],
-  tips: ['主城中央的傳送石可以前往海岸古道等副本地區', '商店街就在主城的東西大街上', '往南走可以進入新手草原'],
+  tips: ['主城中央的傳送石可以前往波賽頓海岸等副本地區', '商店街就在主城的東西大街上', '往南走可以進入阿卡迪亞草原'],
 };
 
 const grassland: ZoneDef = {
   id: 'grassland',
   music: 'grassland',
   kind: 'field',
-  name: '艾爾芙大陸',
-  subtitle: '新手草原・Lv.1-10',
-  region: '艾爾芙大陸',
+  name: '赫拉斯大陸',
+  subtitle: '阿卡迪亞草原・Lv.1-10',
+  region: '赫拉斯大陸',
   levelRange: [1, 10],
   safe: false,
   size: { w: 70, d: 60 },
@@ -94,11 +94,11 @@ const grassland: ZoneDef = {
     { kind: 'decor', x: 2, z: -14, h: 1.4, model: 'weaponrack' },
   ],
   portals: [
-    { x: 0, z: -28, radius: 2.6, to: 'town', arrive: { x: 0, z: 26 }, label: '主城艾爾芙', style: 'edge' },
-    { x: 33, z: 4, radius: 2.4, to: 'mistwood', arrive: { x: -29, z: 20 }, label: '迷霧森林 Lv.11', style: 'edge' },
+    { x: 0, z: -28, radius: 2.6, to: 'town', arrive: { x: 0, z: 26 }, label: '雅典城', style: 'edge' },
+    { x: 33, z: 4, radius: 2.4, to: 'mistwood', arrive: { x: -29, z: 20 }, label: '多多納聖林 Lv.11', style: 'edge' },
   ],
   spawn: { x: 0, z: -24 },
-  tips: ['訓練木樁在草原東側，可以測試不同防禦下的傷害', '敵人防禦越高越需要穿透', '按住普攻鍵可以連續攻擊'],
+  tips: ['斯巴達訓練木樁在草原東側，可以測試不同防禦下的傷害', '敵人防禦越高越需要穿透', '按住普攻鍵可以連續攻擊'],
   spawns: [
     { enemy: 'training_dummy', x: 6, z: -16, def: 0, tag: '防禦 0' },
     { enemy: 'training_dummy', x: 11, z: -16, def: 18, tag: '防禦 18' },
@@ -123,9 +123,9 @@ const pillarRing = (cx: number, cz: number, r: number, n: number, color?: number
 const dungeon1: ZoneDef = {
   id: 'dungeon_1',
   kind: 'dungeon',
-  name: '海岸古道',
+  name: '波賽頓海岸',
   subtitle: '第一層・入口與西側',
-  region: '海岸古道',
+  region: '波賽頓海岸',
   levelRange: [1, 5],
   safe: false,
   size: { w: 50, d: 60 },
@@ -163,22 +163,22 @@ const dungeon1: ZoneDef = {
   ],
   portals: [{ x: 0, z: 27, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 21 },
-  tips: ['首領巨鉗蟹王在高台東北的石圈', '被攻擊時會自動反擊最近的敵人', '留意被動怪：泡咪潮蛙受到攻擊才會反擊', '首領出招前地上會出現紅色範圍，用閃現（R）躲開'],
+  tips: ['首領巨蟹卡基諾斯在高台東北的石圈', '被攻擊時會自動反擊最近的敵人', '留意被動怪：寧芙潮蛙受到攻擊才會反擊', '首領出招前地上會出現紅色範圍，用閃現（R）躲開'],
   spawns: [
     { enemy: 'hermit_crab', x: -6, z: 12, count: 3, spread: 4 },
     { enemy: 'bubble_frog', x: 2, z: 0, count: 3, spread: 4 },
     { enemy: 'hermit_crab', x: -15, z: 2, count: 3, spread: 3 },
     { enemy: 'crab_king', x: -2, z: -21 },
   ],
-  dungeon: { floor: 1, bossName: '巨鉗蟹王', enemyDefense: 0 },
+  dungeon: { floor: 1, bossName: '巨蟹卡基諾斯', enemyDefense: 0 },
 };
 
 const dungeon2: ZoneDef = {
   id: 'dungeon_2',
   kind: 'dungeon',
-  name: '珊瑚洞窟',
-  subtitle: '第二層・潮聲洞窟',
-  region: '珊瑚洞窟',
+  name: '賽蓮海蝕洞',
+  subtitle: '第二層・海妖歌聲',
+  region: '賽蓮海蝕洞',
   levelRange: [5, 10],
   safe: false,
   size: { w: 48, d: 60 },
@@ -210,7 +210,7 @@ const dungeon2: ZoneDef = {
   ],
   portals: [{ x: 0, z: 27, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 21 },
-  tips: ['這層敵人有防禦 18，記得堆穿透（帽子、戒指）', '洞窟蝙蝠速度很快，先用冰霜新星緩速', '潮汐古魔像會召喚潮水落下，看到紅圈就跑'],
+  tips: ['這層敵人有防禦 18，記得堆穿透（帽子、戒指）', '斯廷法利斯蝠鳥速度很快，先用冰霜新星緩速', '青銅巨人塔洛斯會召喚潮水落下，看到紅圈就跑'],
   spawns: [
     { enemy: 'coral_slime', x: 4, z: 12, count: 3, spread: 4 },
     { enemy: 'cave_bat', x: -4, z: 0, count: 3, spread: 4 },
@@ -218,15 +218,15 @@ const dungeon2: ZoneDef = {
     { enemy: 'cave_bat', x: 14, z: 18, count: 2, spread: 3 },
     { enemy: 'tide_golem', x: 6, z: -21 },
   ],
-  dungeon: { floor: 2, bossName: '潮汐古魔像', enemyDefense: 18, unlockAfter: 'dungeon_1' },
+  dungeon: { floor: 2, bossName: '青銅巨人塔洛斯', enemyDefense: 18, unlockAfter: 'dungeon_1' },
 };
 
 const dungeon3: ZoneDef = {
   id: 'dungeon_3',
   kind: 'dungeon',
-  name: '熔心火山口',
-  subtitle: '第三層・焦土入口',
-  region: '熔心火山口',
+  name: '赫菲斯托斯熔爐',
+  subtitle: '第三層・埃特納火山',
+  region: '赫菲斯托斯熔爐',
   levelRange: [10, 15],
   safe: false,
   size: { w: 50, d: 60 },
@@ -257,7 +257,7 @@ const dungeon3: ZoneDef = {
   ],
   portals: [{ x: 0, z: 27, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 21 },
-  tips: ['這層敵人有防禦 40，記得堆穿透', '熔岩池不能踩', '熔心巨蛙會跳到你身上，看到紅圈立刻閃開'],
+  tips: ['這層敵人有防禦 40，記得堆穿透', '熔岩池不能踩', '堤豐巨蛙會跳到你身上，看到紅圈立刻閃開'],
   spawns: [
     { enemy: 'lava_slime', x: -6, z: 12, count: 3, spread: 4 },
     { enemy: 'ember_frog', x: 6, z: 0, count: 3, spread: 4 },
@@ -265,11 +265,11 @@ const dungeon3: ZoneDef = {
     { enemy: 'ember_frog', x: 12, z: 16, count: 2, spread: 3 },
     { enemy: 'magma_frog', x: 0, z: -21 },
   ],
-  dungeon: { floor: 3, bossName: '熔心巨蛙', enemyDefense: 40, unlockAfter: 'dungeon_2' },
+  dungeon: { floor: 3, bossName: '堤豐巨蛙', enemyDefense: 40, unlockAfter: 'dungeon_2' },
 };
 
-/* ---------------- 迷霧森林 ----------------
- * 新手草原東側出口進入，需要 Lv.11。大片樹林（隨機但固定的配置）、濃霧、骷髏群，北邊石圈有菁英首領。
+/* ---------------- 多多納聖林 ----------------
+ * 阿卡迪亞草原東側出口進入，需要 Lv.11。大片樹林（隨機但固定的配置）、濃霧、骷髏群，北邊石圈有菁英首領。
  */
 function scatterTrees(seed: number, n: number, w: number, d: number, avoid: { x: number; z: number; r: number }[]): PropDef[] {
   let s = seed;
@@ -302,9 +302,9 @@ const mistwood: ZoneDef = {
   id: 'mistwood',
   music: 'forest',
   kind: 'field',
-  name: '迷霧森林',
-  subtitle: '迷霧森林・Lv.11-25',
-  region: '艾爾芙大陸',
+  name: '多多納聖林',
+  subtitle: '多多納聖林・Lv.11-25',
+  region: '赫拉斯大陸',
   levelRange: [11, 25],
   minLevel: 11,
   lootTier: 4,
@@ -335,9 +335,9 @@ const mistwood: ZoneDef = {
     { kind: 'decor', x: 12, z: -26, h: 1.3, model: 'chest_gold' },
     { kind: 'decor', x: -12, z: 18, h: 1.0, model: 'rubble', solid: false },
   ],
-  portals: [{ x: -33, z: 20, radius: 2.6, to: 'grassland', arrive: { x: 29, z: 4 }, label: '新手草原', style: 'edge' }],
+  portals: [{ x: -33, z: 20, radius: 2.6, to: 'grassland', arrive: { x: 29, z: 4 }, label: '阿卡迪亞草原', style: 'edge' }],
   spawn: { x: -29, z: 20 },
-  tips: ['迷霧森林需要 Lv.11', '骷髏法師會從遠處施法，看到腳下紅圈就移動', '北邊石圈的骷髏騎士長非常強，建議 Lv.22 以上', '這裡掉落第 4 階裝備'],
+  tips: ['多多納聖林需要 Lv.11', '黑卡蒂亡巫會從遠處施法，看到腳下紅圈就移動', '北邊石圈的龍牙將軍非常強，建議 Lv.22 以上', '這裡掉落第 4 階裝備'],
   spawns: [
     { enemy: 'skeleton_minion', x: -14, z: 14, count: 4, spread: 4 },
     { enemy: 'skeleton_rogue', x: 8, z: 18, count: 3, spread: 4 },
@@ -360,19 +360,19 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
 
 /** 世界地圖上的野外區域（含尚未實作者，僅供地圖頁顯示） */
 export const WORLD_FIELDS: { name: string; range: string; zone?: ZoneId }[] = [
-  { name: '主城（安全區）', range: '', zone: 'town' },
-  { name: '新手草原', range: 'Lv.1-10', zone: 'grassland' },
-  { name: '迷霧森林', range: 'Lv.11-25', zone: 'mistwood' },
-  { name: '黑暗山谷', range: 'Lv.26-45' },
-  { name: '魔王領地', range: 'Lv.46-60' },
+  { name: '雅典城（安全區）', range: '', zone: 'town' },
+  { name: '阿卡迪亞草原', range: 'Lv.1-10', zone: 'grassland' },
+  { name: '多多納聖林', range: 'Lv.11-25', zone: 'mistwood' },
+  { name: '塔爾塔洛斯深淵', range: 'Lv.26-45' },
+  { name: '冥王黑帝斯的國度', range: 'Lv.46-60' },
 ];
 
 export const DUNGEON_ORDER: ZoneId[] = ['dungeon_1', 'dungeon_2', 'dungeon_3'];
 
-/** 給存檔欄位用的短地名：主城艾爾芙、新手草原、第一層・海岸古道… */
+/** 給存檔欄位用的短地名：雅典城、阿卡迪亞草原、第一層・波賽頓海岸… */
 export function zoneLabel(id: string | undefined): string {
   const def = id ? ZONES[id as ZoneId] : undefined;
-  if (!def) return '主城艾爾芙';
+  if (!def) return '雅典城';
   if (def.kind === 'dungeon' && def.dungeon) return `第${'一二三四五'[def.dungeon.floor - 1]}層・${def.name}`;
   return def.subtitle.split('・')[0];
 }

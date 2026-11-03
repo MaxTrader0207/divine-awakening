@@ -12,9 +12,9 @@ import type { Telegraphs } from './Telegraphs';
  * - 血量低於 50% 進入第二階段：冷卻縮短、部分技能加強，並顯示「狂暴」。
  * - 所有傷害都經過紅色預警（Telegraphs），結算時玩家在範圍內才受傷。
  *
- *  巨鉗蟹王  claw_slam 前方扇形重擊       charge 直線衝撞
- *  潮汐古魔像 ground_slam 自身周圍震地     tide_rain 潮水落下（多個圓）
- *  熔心巨蛙  leap 跳到玩家位置砸地         lava_spit 一排熔岩彈
+ *  巨蟹卡基諾斯  claw_slam 前方扇形重擊       charge 直線衝撞
+ *  青銅巨人塔洛斯 ground_slam 自身周圍震地     tide_rain 潮水落下（多個圓）
+ *  堤豐巨蛙  leap 跳到玩家位置砸地         lava_spit 一排熔岩彈
  */
 export const SKILL_CD = 5.5;
 export const PHASE2_CD_MUL = 0.65;

@@ -4,7 +4,7 @@ import type { EquipSlot, Rarity, Stats } from './types';
  * 裝備資料
  * ------------------------------------------------------------
  * 裝備 = 底材（slot × tier）× 稀有度倍率 × 強化倍率。
- * tier 1 = 新手草原 / 第一層、tier 2 = 第二層、tier 3 = 第三層。
+ * tier 1 = 阿卡迪亞草原 / 第一層、tier 2 = 第二層、tier 3 = 第三層。
  * 「穿透」集中在帽子與戒指：這是突破第二、三層防禦的關鍵。
  */
 
@@ -64,12 +64,12 @@ const PCT_SCALE = [1, 1.6, 2.2, 2.8];
 const PCT_KEYS: (keyof Stats)[] = ['pen', 'critRate', 'critDmg', 'moveSpeed'];
 
 const NAMES: Record<EquipSlot, [string, string, string, string]> = {
-  weapon: ['見習法杖', '珊瑚法杖', '熔心法杖', '霧森法杖'],
-  hat: ['見習尖帽', '潮汐尖帽', '熔岩尖帽', '霧影尖帽'],
-  robe: ['見習法袍', '珊瑚法袍', '熔心法袍', '冥霧法袍'],
-  gloves: ['布手套', '潮風手套', '焰紋手套', '骨紋手套'],
-  boots: ['布靴', '浪行靴', '焦土靴', '霧行靴'],
-  ring: ['銅戒', '珍珠戒', '火紋戒', '冥火戒'],
+  weapon: ['見習法杖', '海神法杖', '火神法杖', '宙斯法杖'],
+  hat: ['見習尖帽', '海神尖帽', '火神尖帽', '宙斯尖帽'],
+  robe: ['見習法袍', '海神法袍', '火神法袍', '宙斯法袍'],
+  gloves: ['布手套', '海神手套', '火神手套', '宙斯手套'],
+  boots: ['布靴', '海神靴', '火神靴', '宙斯靴'],
+  ring: ['銅戒', '海神戒', '火神戒', '宙斯戒'],
 };
 
 const ICONS: Record<EquipSlot, string> = { weapon: '🪄', hat: '🎩', robe: '🥻', gloves: '🧤', boots: '🥾', ring: '💍' };

@@ -142,16 +142,16 @@ export class Menu {
     const fieldList = WORLD_FIELDS.map((f) => `${f.name}${f.range ? ' ' + f.range : ''}`).join('、');
     const out: HTMLElement[] = [
       h('div', { class: 'card' }, [
-        h('h3', {}, '艾爾芙大陸・主城與野外'),
+        h('h3', {}, '赫拉斯大陸・雅典與野外'),
         h('p', {}, fieldList),
         h('div', { class: 'card-row' }, [
           here === 'town' ? h('span', { class: 'pill' }, '目前位置') : h('button', { class: 'go', onclick: () => this.travel('town') }, '回到主城'),
-          here === 'grassland' ? h('span', { class: 'pill' }, '目前位置') : h('button', { class: 'go ghost', onclick: () => this.travel('grassland') }, '新手草原'),
+          here === 'grassland' ? h('span', { class: 'pill' }, '目前位置') : h('button', { class: 'go ghost', onclick: () => this.travel('grassland') }, '阿卡迪亞草原'),
           here === 'mistwood'
             ? h('span', { class: 'pill' }, '目前位置')
             : s.level < (ZONES.mistwood.minLevel ?? 0)
-              ? h('span', { class: 'pill locked' }, `🔒 迷霧森林 Lv.${ZONES.mistwood.minLevel}`)
-              : h('button', { class: 'go ghost', onclick: () => this.travel('mistwood') }, '迷霧森林'),
+              ? h('span', { class: 'pill locked' }, `🔒 多多納聖林 Lv.${ZONES.mistwood.minLevel}`)
+              : h('button', { class: 'go ghost', onclick: () => this.travel('mistwood') }, '多多納聖林'),
         ]),
       ]),
       h('div', { class: 'section-title' }, '副本（原本的地區）'),
@@ -428,7 +428,7 @@ export class Menu {
     ]);
   }
 
-  /** 穿透測試：切換後到新手草原打三根不同防禦的木樁比較傷害 */
+  /** 穿透測試：切換後到阿卡迪亞草原打三根不同防禦的木樁比較傷害 */
   private renderPenTester(): HTMLElement {
     const stats = h('p', {}, this.actions.getStatsText());
     const row = h('div', { class: 'card-row' });

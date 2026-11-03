@@ -104,7 +104,7 @@ export interface SpawnDef {
   enemy: string;
   x: number;
   z: number;
-  /** 覆寫該隻敵人的防禦（訓練木樁用來展示穿透） */
+  /** 覆寫該隻敵人的防禦（斯巴達訓練木樁用來展示穿透） */
   def?: number;
   /** 顯示名稱後綴，例如「防禦 40」 */
   tag?: string;
@@ -120,9 +120,9 @@ export interface ZoneDef {
   id: ZoneId;
   kind: ZoneKind;
   name: string;
-  /** HUD 第二行顯示，例如「主城艾爾芙・安全區」 */
+  /** HUD 第二行顯示，例如「雅典城・安全區」 */
   subtitle: string;
-  /** 大區域名稱，例如「艾爾芙大陸」 */
+  /** 大區域名稱，例如「赫拉斯大陸」 */
   region: string;
   /** 背景音樂（audio/songs.ts 的曲子 id）；沒填時依 kind 決定 */
   music?: string;
@@ -248,7 +248,7 @@ export interface EnemyDef {
   bossSkills?: BossSkillId[];
   /** KayKit 骨架模型 id（shape = 'skeleton' 時使用） */
   model?: string;
-  /** 遠程攻擊（骷髏法師）：在距離內放魔法彈，而不是近戰 */
+  /** 遠程攻擊（黑卡蒂亡巫）：在距離內放魔法彈，而不是近戰 */
   ranged?: boolean;
   /** 近戰攻擊：距離、出手前搖（秒）、冷卻 */
   attack?: { range: number; windup: number; cooldown: number };

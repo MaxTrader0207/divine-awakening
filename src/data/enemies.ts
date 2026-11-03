@@ -14,45 +14,45 @@ const melee = (range: number, windup: number, cooldown: number) => ({ range, win
 
 export const ENEMIES: Record<string, EnemyDef> = {
   training_dummy: {
-    id: 'training_dummy', name: '訓練木樁', level: 1, aggro: 'none', shape: 'dummy',
+    id: 'training_dummy', name: '斯巴達訓練木樁', level: 1, aggro: 'none', shape: 'dummy',
     radius: 0.6, respawn: 2.5, scale: 1.25, color: 0xb0814f,
     stats: { maxHp: 400, atk: 0, def: 0, moveSpeed: 0 },
     exp: 0, gold: [0, 0],
   },
 
-  /* ---------- 新手草原 Lv.1-10 ---------- */
+  /* ---------- 阿卡迪亞草原 Lv.1-10 ---------- */
   green_slime: {
-    id: 'green_slime', name: '草原史萊姆', level: 2, aggro: 'aggressive', shape: 'slime',
+    id: 'green_slime', name: '潘神軟泥', level: 2, aggro: 'aggressive', shape: 'slime',
     radius: 0.6, respawn: 12, scale: 1, color: 0x6fd36a,
     stats: { maxHp: 130, atk: 16, def: 0, moveSpeed: 2.6 },
     attack: melee(1.1, 0.5, 1.6),
     exp: 14, gold: [3, 6],
   },
   meadow_mushroom: {
-    id: 'meadow_mushroom', name: '草原蘑菇', level: 4, aggro: 'passive', shape: 'mushroom',
+    id: 'meadow_mushroom', name: '德律阿得菇', level: 4, aggro: 'passive', shape: 'mushroom',
     radius: 0.6, respawn: 12, scale: 1.1, color: 0xd9584a,
     stats: { maxHp: 230, atk: 22, def: 3, moveSpeed: 2.4 },
     attack: melee(1.2, 0.6, 1.8),
     exp: 24, gold: [5, 9],
   },
 
-  /* ---------- 第一層 海岸古道 Lv.1-5，防禦 0 ---------- */
+  /* ---------- 第一層 波賽頓海岸 Lv.1-5，防禦 0 ---------- */
   hermit_crab: {
-    id: 'hermit_crab', name: '寄居蟹', level: 3, aggro: 'aggressive', shape: 'crab',
+    id: 'hermit_crab', name: '卡基諾斯幼蟹', level: 3, aggro: 'aggressive', shape: 'crab',
     radius: 0.6, respawn: 12, scale: 1, color: 0xe2703a,
     stats: { maxHp: 180, atk: 26, def: 0, moveSpeed: 2.8 },
     attack: melee(1.2, 0.45, 1.5),
     exp: 18, gold: [4, 8],
   },
   bubble_frog: {
-    id: 'bubble_frog', name: '泡咪潮蛙', level: 4, aggro: 'passive', shape: 'frog', model: 'frog',
+    id: 'bubble_frog', name: '寧芙潮蛙', level: 4, aggro: 'passive', shape: 'frog', model: 'frog',
     radius: 0.6, respawn: 12, scale: 1, color: 0x4fc3c9,
     stats: { maxHp: 250, atk: 30, def: 0, moveSpeed: 3.2 },
     attack: melee(1.3, 0.5, 1.6),
     exp: 26, gold: [5, 10],
   },
   crab_king: {
-    id: 'crab_king', name: '巨鉗蟹王', level: 6, aggro: 'aggressive', shape: 'crab', boss: true,
+    id: 'crab_king', name: '巨蟹卡基諾斯', level: 6, aggro: 'aggressive', shape: 'crab', boss: true,
     radius: 0.62, respawn: 90, scale: 2.6, color: 0xd9452a,
     stats: { maxHp: 8800, atk: 72, def: 0, moveSpeed: 2.6 },
     attack: melee(2.4, 0.6, 1.8),
@@ -60,23 +60,23 @@ export const ENEMIES: Record<string, EnemyDef> = {
     bossSkills: ['claw_slam', 'charge'],
   },
 
-  /* ---------- 第二層 珊瑚洞窟 Lv.5-10，防禦 18 ---------- */
+  /* ---------- 第二層 賽蓮海蝕洞 Lv.5-10，防禦 18 ---------- */
   coral_slime: {
-    id: 'coral_slime', name: '珊瑚史萊姆', level: 6, aggro: 'aggressive', shape: 'slime',
+    id: 'coral_slime', name: '特里同珊瑚泥', level: 6, aggro: 'aggressive', shape: 'slime',
     radius: 0.65, respawn: 12, scale: 1.15, color: 0xf08a9a,
     stats: { maxHp: 470, atk: 58, def: 18, moveSpeed: 2.6 },
     attack: melee(1.2, 0.5, 1.6),
     exp: 42, gold: [10, 16],
   },
   cave_bat: {
-    id: 'cave_bat', name: '洞窟蝙蝠', level: 7, aggro: 'aggressive', shape: 'bat',
+    id: 'cave_bat', name: '斯廷法利斯蝠鳥', level: 7, aggro: 'aggressive', shape: 'bat',
     radius: 0.5, respawn: 12, scale: 1, color: 0x5a4a7a,
     stats: { maxHp: 380, atk: 62, def: 18, moveSpeed: 4 },
     attack: melee(1.1, 0.35, 1.3),
     exp: 46, gold: [10, 18],
   },
   tide_golem: {
-    id: 'tide_golem', name: '潮汐古魔像', level: 10, aggro: 'aggressive', shape: 'golem', boss: true,
+    id: 'tide_golem', name: '青銅巨人塔洛斯', level: 10, aggro: 'aggressive', shape: 'golem', boss: true,
     radius: 0.7, respawn: 90, scale: 2.4, color: 0x6a9ab0,
     stats: { maxHp: 24000, atk: 130, def: 18, moveSpeed: 2.2 },
     attack: melee(2.6, 0.7, 2),
@@ -84,23 +84,23 @@ export const ENEMIES: Record<string, EnemyDef> = {
     bossSkills: ['ground_slam', 'tide_rain'],
   },
 
-  /* ---------- 第三層 熔心火山口 Lv.10-15，防禦 40 ---------- */
+  /* ---------- 第三層 赫菲斯托斯熔爐 Lv.10-15，防禦 40 ---------- */
   lava_slime: {
-    id: 'lava_slime', name: '熔岩史萊姆', level: 11, aggro: 'aggressive', shape: 'slime',
+    id: 'lava_slime', name: '火神熔泥', level: 11, aggro: 'aggressive', shape: 'slime',
     radius: 0.7, respawn: 12, scale: 1.25, color: 0xff6a2a,
     stats: { maxHp: 860, atk: 96, def: 40, moveSpeed: 2.6 },
     attack: melee(1.3, 0.5, 1.6),
     exp: 95, gold: [22, 34],
   },
   ember_frog: {
-    id: 'ember_frog', name: '火山蛙', level: 12, aggro: 'aggressive', shape: 'frog', model: 'frog',
+    id: 'ember_frog', name: '奇美拉火蛙', level: 12, aggro: 'aggressive', shape: 'frog', model: 'frog',
     radius: 0.65, respawn: 12, scale: 1.15, color: 0xc9442a,
     stats: { maxHp: 790, atk: 104, def: 40, moveSpeed: 3.4 },
     attack: melee(1.3, 0.45, 1.5),
     exp: 105, gold: [24, 38],
   },
   magma_frog: {
-    id: 'magma_frog', name: '熔心巨蛙', level: 15, aggro: 'aggressive', shape: 'frog', model: 'frog', boss: true,
+    id: 'magma_frog', name: '堤豐巨蛙', level: 15, aggro: 'aggressive', shape: 'frog', model: 'frog', boss: true,
     radius: 0.7, respawn: 90, scale: 2.8, color: 0xb8321e,
     stats: { maxHp: 46000, atk: 185, def: 40, moveSpeed: 3 },
     attack: melee(2.6, 0.6, 1.8),
@@ -108,37 +108,37 @@ export const ENEMIES: Record<string, EnemyDef> = {
     bossSkills: ['leap', 'lava_spit'],
   },
 
-  /* ---------- 迷霧森林 Lv.11-25（KayKit 骷髏模型）---------- */
+  /* ---------- 多多納聖林 Lv.11-25（KayKit 骷髏模型）---------- */
   skeleton_minion: {
-    id: 'skeleton_minion', name: '骷髏小兵', level: 14, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_minion',
+    id: 'skeleton_minion', name: '龍牙兵', level: 14, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_minion',
     radius: 0.55, respawn: 12, scale: 1, color: 0xe8e2d0,
     stats: { maxHp: 1100, atk: 112, def: 30, moveSpeed: 2.8 },
     attack: melee(1.4, 0.55, 1.6),
     exp: 220, gold: [30, 46],
   },
   skeleton_rogue: {
-    id: 'skeleton_rogue', name: '骷髏盜賊', level: 16, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_rogue',
+    id: 'skeleton_rogue', name: '冥河盜骸', level: 16, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_rogue',
     radius: 0.55, respawn: 12, scale: 1, color: 0xe8e2d0,
     stats: { maxHp: 1000, atk: 126, def: 30, moveSpeed: 4.2 },
     attack: melee(1.3, 0.4, 1.3),
     exp: 260, gold: [34, 52],
   },
   skeleton_warrior: {
-    id: 'skeleton_warrior', name: '骷髏戰士', level: 19, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior',
+    id: 'skeleton_warrior', name: '龍牙重裝兵', level: 19, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior',
     radius: 0.6, respawn: 12, scale: 1.1, color: 0xe8e2d0,
     stats: { maxHp: 1750, atk: 148, def: 46, moveSpeed: 2.6 },
     attack: melee(1.5, 0.6, 1.7),
     exp: 340, gold: [42, 64],
   },
   skeleton_mage: {
-    id: 'skeleton_mage', name: '骷髏法師', level: 21, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
+    id: 'skeleton_mage', name: '黑卡蒂亡巫', level: 21, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
     radius: 0.55, respawn: 12, scale: 1, color: 0xe8e2d0,
     stats: { maxHp: 1300, atk: 162, def: 34, moveSpeed: 2.4 },
     attack: { range: 7, windup: 0.9, cooldown: 2.4 },
     exp: 380, gold: [46, 70],
   },
   skeleton_lord: {
-    id: 'skeleton_lord', name: '骷髏騎士長', level: 24, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior', boss: true,
+    id: 'skeleton_lord', name: '龍牙將軍', level: 24, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior', boss: true,
     radius: 0.62, respawn: 120, scale: 1.7, color: 0xe8e2d0,
     stats: { maxHp: 60000, atk: 230, def: 55, moveSpeed: 2.8 },
     attack: melee(2.2, 0.6, 1.6),
