@@ -2,7 +2,7 @@
 
 v1.29 起，遊戲內容依「關卡」組織：**一個關卡一個檔案**，裡面放地圖和這張地圖的所有敵人。
 世界地圖、副本順序、每日任務的區域、說明頁、小地圖的首領標記，全部由登記表自動產生。
-改完跑 `npm test`：`src/data/content.test.ts` 會檢查有沒有漏接，失敗訊息會告訴你要改哪裡。
+改完跑 `npm test`：`src/data/content.test.ts` 會檢查有沒有漏接（包括「從入口走得到首領與傳送點」，牆、水、高台不會把路堵死），失敗訊息會告訴你要改哪裡。
 
 ## 資料放在哪裡
 
@@ -89,6 +89,8 @@ hydra: {
 | `rain` | 玩家附近隨機落下多個圓（第一個在腳下） | `count`、`countEnraged`、`radius`、`spread`、`stagger` |
 | `leap` | 跳到玩家位置砸地 | `radius`、`discColor` |
 | `line` | 往玩家方向一排圓依序爆開 | `count`、`countEnraged`、`start`、`spacing`、`radius`、`stagger` |
+| `spokes` | 以自己為中心平均分布的多道窄扇形（之間是安全區） | `count`、`countEnraged`、`range`、`angle` |
+| `multiLine` | 同時好幾排 line（角度相對玩家方向） | `angles`、`anglesEnraged`、`count`、`start`、`spacing`、`radius`、`stagger` |
 
 共通參數：`name`、`desc`、`windup`（預警秒數，至少 0.9；遠程職業難躲的招給長一點）、`power`（傷害倍率，一般 1.2~2.2）、`color`。
 
@@ -133,6 +135,9 @@ export const serpent: ShapeBuild = (b) => {
 | 第二層・賽蓮海蝕洞 | `dungeon2-siren-grotto.ts` | 5-10，防禦 18 | 特里同珊瑚泥、斯廷法利斯蝠鳥 | 青銅巨人塔洛斯 | 震地、潮水落下 |
 | 第三層・赫菲斯托斯熔爐 | `dungeon3-hephaestus-forge.ts` | 10-15，防禦 40 | 火神熔泥、奇美拉火蛙 | 堤豐巨蛙 | 飛撲砸地、熔岩噴吐 |
 | 多多納聖林 | `dodona-grove.ts` | 11-25（需 Lv.11） | 龍牙兵、冥河盜骸、龍牙重裝兵、黑卡蒂亡巫 | 龍牙將軍（菁英） | 衝撞、震地 |
+| 第四層・勒拿沼澤 | `dungeon4-lerna-swamp.ts` | 16-20，防禦 55 | 勒拿水蛇、勒拿毒蟾、艾洛鷹身女妖 | 九頭蛇許德拉 | 毒液噴吐、九頭齊咬、毒霧落下 |
+| 第五層・克諾索斯迷宮 | `dungeon5-knossos-labyrinth.ts` | 21-25，防禦 75 | 代達洛斯機關兵、克里特狂牛、雅典祭品亡魂 | 米諾陶洛斯 | 雙刃斧橫掃、狂牛衝撞、迷宮落石 |
+| 第六層・塔爾塔洛斯深淵 | `dungeon6-tartarus-abyss.ts` | 26-30，防禦 95 | 冥界獵犬、刻爾死靈、百臂巨人獄卒 | 刻耳柏洛斯 | 三頭冥火、冥犬撲擊、冥火落雨 |
 
 ### 首領招式庫
 
@@ -144,6 +149,15 @@ export const serpent: ShapeBuild = (b) => {
 | `tide_rain` | 潮水落下 | rain | 青銅巨人塔洛斯 |
 | `leap` | 飛撲砸地 | leap | 堤豐巨蛙 |
 | `lava_spit` | 熔岩噴吐 | line | 堤豐巨蛙 |
+| `venom_spit` | 毒液噴吐 | line | 九頭蛇許德拉 |
+| `hydra_heads` | 九頭齊咬 | spokes | 九頭蛇許德拉 |
+| `poison_rain` | 毒霧落下 | rain | 九頭蛇許德拉 |
+| `labrys_sweep` | 雙刃斧橫掃 | cone | 米諾陶洛斯 |
+| `bull_rush` | 狂牛衝撞 | dash | 米諾陶洛斯 |
+| `labyrinth_quake` | 迷宮落石 | rain | 米諾陶洛斯 |
+| `hellfire_breath` | 三頭冥火 | multiLine | 刻耳柏洛斯 |
+| `cerberus_pounce` | 冥犬撲擊 | leap | 刻耳柏洛斯 |
+| `underworld_flames` | 冥火落雨 | rain | 刻耳柏洛斯 |
 
 ### 敵人造型
 
@@ -153,7 +167,13 @@ export const serpent: ShapeBuild = (b) => {
 | `slime` | `basic.ts` | 軟泥（跳躍＋擠壓） | 潘神軟泥、特里同珊瑚泥、火神熔泥 |
 | `mushroom` | `basic.ts` | 蘑菇 | 德律阿得菇 |
 | `crab` | `crab.ts` | 螃蟹（6 腳、雙鉗動畫；首領版尖刺皇冠） | 卡基諾斯幼蟹、巨蟹卡基諾斯 |
-| `frog` | `basic.ts`＋`rigs.ts` | 青蛙（Quaternius 模型，依顏色換色） | 寧芙潮蛙、奇美拉火蛙、堤豐巨蛙 |
-| `bat` | `basic.ts` | 蝠鳥（翅膀拍動、懸浮） | 斯廷法利斯蝠鳥 |
-| `skeleton` | `basic.ts`＋`rigs.ts` | 骷髏（KayKit 模型） | 龍牙兵系列、黑卡蒂亡巫、龍牙將軍 |
-| `golem` | `basic.ts` | 魔像（發光核心） | 青銅巨人塔洛斯 |
+| `frog` | `basic.ts`＋`rigs.ts` | 青蛙（Quaternius 模型，依顏色換色） | 寧芙潮蛙、奇美拉火蛙、堤豐巨蛙、勒拿毒蟾 |
+| `bat` | `basic.ts` | 蝠鳥（翅膀拍動、懸浮） | 斯廷法利斯蝠鳥、刻爾死靈 |
+| `skeleton` | `basic.ts`＋`rigs.ts` | 骷髏（KayKit 模型） | 龍牙兵系列、黑卡蒂亡巫、龍牙將軍、雅典祭品亡魂 |
+| `golem` | `basic.ts` | 魔像（發光核心） | 青銅巨人塔洛斯、代達洛斯機關兵、百臂巨人獄卒 |
+| `serpent` | `beasts.ts` | 盤繞的蛇（頸部擺動、張嘴） | 勒拿水蛇 |
+| `hydra` | `beasts.ts` | 七頸九頭蛇（中間頭紅眼） | 九頭蛇許德拉 |
+| `harpy` | `beasts.ts` | 鷹身女妖（飛行、拍翅） | 艾洛鷹身女妖 |
+| `bull` | `beasts.ts` | 公牛（前搖低頭） | 克里特狂牛 |
+| `minotaur` | `beasts.ts` | 牛頭人（前搖舉起雙刃斧） | 米諾陶洛斯 |
+| `hound` | `beasts.ts` | 獵犬（首領版三頭、冥火、蛇尾） | 冥界獵犬、刻耳柏洛斯 |

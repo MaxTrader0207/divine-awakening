@@ -8,7 +8,7 @@ import { MinionManager } from '@/systems/MinionManager';
 import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
-import { ZONES, DUNGEON_ORDER, lootTierOf } from '@/data/zones';
+import { ZONES, DUNGEON_ORDER, lootTierOf, floorLabel } from '@/data/zones';
 import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
 import { InputManager } from '@/input/InputManager';
@@ -994,7 +994,7 @@ export class Game {
     this.hud.setZone(zone.def);
     const def = zone.def;
     const range = def.levelRange ? `（Lv.${def.levelRange[0]}-${def.levelRange[1]}）` : '';
-    const name = def.kind === 'dungeon' ? `第${'一二三四五'[def.dungeon!.floor - 1]}層・${def.name}` : def.subtitle.split('・')[0];
+    const name = def.kind === 'dungeon' ? `${floorLabel(def.dungeon!.floor)}・${def.name}` : def.subtitle.split('・')[0];
     bus.emit('banner', { text: def.kind === 'town' ? `回到${name}` : `進入 ${name}${range}` });
     bus.emit('zone:enter', { zoneId: id });
   }

@@ -2,10 +2,9 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { PlatformDef, PortalDef, ZoneDef } from '@/data/types';
 
-/** 石階長度（公尺） */
-const RAMP = 3.5;
 import { CollisionWorld } from './Collision';
-import { buildProp, PROP_DEFAULTS, mat } from './Props';
+import { buildProp, mat } from './Props';
+import { buildZoneCollision, RAMP } from './zoneCollision';
 import { makeLabelSprite } from './Label';
 import { Critters } from './Critters';
 
@@ -31,7 +30,7 @@ export class Zone {
   private build() {
     const { def } = this;
     const { w, d } = def.size;
-    this.collision.bounds = { minX: -w / 2, maxX: w / 2, minZ: -d / 2, maxZ: d / 2 };
+    buildZoneCollision(def, this.collision); // 碰撞與畫面分開建（world/zoneCollision.ts）
 
     // 地面：比可走範圍大一圈，避免鏡頭看到邊界外的虛空
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(w + 60, d + 60), mat(darken(def.groundColor, 0.88)));
@@ -55,10 +54,7 @@ export class Zone {
       m.position.set(p.x, 0.01 + i * 0.004, p.z);
       m.receiveShadow = true;
       this.group.add(m);
-      if (p.water) {
-        this.collision.addBox(p.x, p.z, p.w, p.d);
-        this.animated.push({ obj: m, kind: 'pulse', phase: i });
-      }
+      if (p.water) this.animated.push({ obj: m, kind: 'pulse', phase: i });
     });
 
     for (const pf of def.platforms ?? []) this.buildPlatform(pf);
@@ -68,13 +64,6 @@ export class Zone {
       const obj = buildProp(p);
       obj.position.y = this.heightAt(p.x, p.z);
       this.group.add(obj);
-      const pd = PROP_DEFAULTS[p.kind];
-      if (!(p.solid ?? pd.solid)) continue;
-      const pw = p.w ?? pd.w;
-      const pdd = p.d ?? pd.d;
-      if (pd.round) this.collision.addCircle(p.x, p.z, Math.max(pw, pdd) * 0.45);
-      else if (p.rot && Math.abs(Math.sin(p.rot)) > 0.7) this.collision.addBox(p.x, p.z, pdd, pw);
-      else this.collision.addBox(p.x, p.z, pw, pdd);
     }
 
     for (const portal of def.portals) this.group.add(this.buildPortal(portal));
@@ -205,25 +194,11 @@ export class Zone {
       this.group.add(r);
     }
 
-    const hw = pf.w / 2;
     const hd = pf.d / 2;
-    const T = 0.5;
-    // 北、西、東三邊整段擋住
-    this.collision.addBox(pf.x, pf.z - hd, pf.w + T, T);
-    this.collision.addBox(pf.x - hw, pf.z, T, pf.d + T);
-    this.collision.addBox(pf.x + hw, pf.z, T, pf.d + T);
-    // 南邊：留出石階缺口
     if (pf.stairs) {
       const s = pf.stairs;
       const gapL = s.x - s.width / 2;
       const gapR = s.x + s.width / 2;
-      const leftW = gapL - (pf.x - hw);
-      const rightW = pf.x + hw - gapR;
-      if (leftW > 0) this.collision.addBox(pf.x - hw + leftW / 2, pf.z + hd, leftW, T);
-      if (rightW > 0) this.collision.addBox(gapR + rightW / 2, pf.z + hd, rightW, T);
-      // 石階兩側的矮牆
-      this.collision.addBox(gapL - 0.2, pf.z + hd + RAMP / 2, 0.4, RAMP);
-      this.collision.addBox(gapR + 0.2, pf.z + hd + RAMP / 2, 0.4, RAMP);
       const steps = 6;
       const stepD = RAMP / steps;
       for (let i = 0; i < steps; i++) {
@@ -240,7 +215,8 @@ export class Zone {
         wall.castShadow = true;
         this.group.add(wall);
       }
-    } else this.collision.addBox(pf.x, pf.z + hd, pf.w + T, T);
+    }
+
   }
 
   private buildPortal(p: PortalDef): THREE.Object3D {

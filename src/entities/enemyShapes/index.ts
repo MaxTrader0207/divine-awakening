@@ -2,6 +2,7 @@ import type { EnemyShape } from '@/data/types';
 import type { ShapeBuild } from './types';
 import { bat, dummy, frog, golem, mushroom, skeleton, slime } from './basic';
 import { crab } from './crab';
+import { bull, harpy, hound, hydra, minotaur, serpent } from './beasts';
 
 /**
  * 敵人程式模型登記表：EnemyDef.shape → 建造函式。
@@ -16,6 +17,12 @@ export const ENEMY_SHAPES: Record<EnemyShape, ShapeBuild> = {
   bat,
   skeleton,
   golem,
+  serpent,
+  hydra,
+  harpy,
+  bull,
+  minotaur,
+  hound,
 };
 
 export type { ShapeBuild, ShapeBuilder, ShapeAnimState, ShapeResult } from './types';

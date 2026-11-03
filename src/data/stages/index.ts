@@ -5,6 +5,9 @@ import { poseidonCoast } from './dungeon1-poseidon-coast';
 import { sirenGrotto } from './dungeon2-siren-grotto';
 import { hephaestusForge } from './dungeon3-hephaestus-forge';
 import { dodonaGrove } from './dodona-grove';
+import { lernaSwamp } from './dungeon4-lerna-swamp';
+import { knossosLabyrinth } from './dungeon5-knossos-labyrinth';
+import { tartarusAbyss } from './dungeon6-tartarus-abyss';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -13,7 +16,7 @@ import { dodonaGrove } from './dodona-grove';
  * 其他清單（ZONES、ENEMIES、DUNGEON_ORDER、野外清單、首領查詢…）都由這裡自動產生。
  * 新增關卡：見 docs/CONTENT.md「新增關卡」。
  */
-export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove];
+export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 
@@ -35,7 +38,6 @@ export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dunge
 
 /** 還沒做的地區（只在地圖頁列出名稱） */
 export const UPCOMING_FIELDS: { name: string; range: string }[] = [
-  { name: '塔爾塔洛斯深淵', range: 'Lv.26-45' },
   { name: '冥王黑帝斯的國度', range: 'Lv.46-60' },
 ];
 

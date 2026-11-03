@@ -3,6 +3,7 @@ import { DUNGEON_ORDER, ENEMIES, STAGES, ZONES, bossOf } from './stages';
 import { BOSS_SKILLS } from './bossSkills';
 import { ENEMY_SHAPES, RIG_ANIMS } from '@/entities/enemyShapes';
 import { SONGS } from '@/audio/songs';
+import { buildZoneCollision, reachable } from '@/world/zoneCollision';
 
 /**
  * 內容一致性檢查：新增關卡、小怪、首領、招式後跑 `npm test`，這裡會抓出漏接的地方。
@@ -83,6 +84,15 @@ describe('內容一致性（關卡 / 小怪 / 首領 / 招式）', () => {
         if (p.arrive) expect(Math.abs(p.arrive.x) <= to.size.w / 2 && Math.abs(p.arrive.z) <= to.size.d / 2, `${st.zone.id} → ${p.to} 的抵達點在地圖外`).toBe(true);
       }
       if (st.zone.music) expect(SONGS[st.zone.music as keyof typeof SONGS], `${st.zone.id} 的音樂「${st.zone.music}」不存在`).toBeTruthy();
+    }
+  });
+
+  it('從入口走得到首領與每個傳送點（牆、水、高台不會把路堵死）', () => {
+    for (const st of STAGES) {
+      const col = buildZoneCollision(st.zone);
+      const boss = (st.zone.spawns ?? []).find((sp) => ENEMIES[sp.enemy]?.boss);
+      if (boss) expect(reachable(col, st.zone.spawn, boss, 0.55, 3.5), `${st.zone.id}：從入口走不到首領 ${boss.enemy}`).toBe(true);
+      for (const p of st.zone.portals) expect(reachable(col, st.zone.spawn, p, 0.55, p.radius + 1), `${st.zone.id}：從入口走不到傳送點 ${p.label}`).toBe(true);
     }
   });
 

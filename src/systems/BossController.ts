@@ -171,6 +171,34 @@ export class BossController {
         }
         return t + n * sk.stagger;
       }
+      case 'spokes': {
+        const n = enraged ? (sk.countEnraged ?? sk.count) : sk.count;
+        const angle = sk.angle * (Math.PI / 180);
+        for (let i = 0; i < n; i++) {
+          const a = dir + (i / n) * Math.PI * 2;
+          tg.add({ kind: 'cone', x: e.pos.x, z: e.pos.z, dir: a, angle, r: sk.range }, t, (inside) => {
+            hit(inside);
+            fx.ring(e.pos.x + Math.sin(a) * sk.range * 0.6, e.pos.z + Math.cos(a) * sk.range * 0.6, 0.4, 2, sk.color, 0.4);
+          });
+        }
+        return t;
+      }
+      case 'multiLine': {
+        const angles = enraged ? (sk.anglesEnraged ?? sk.angles) : sk.angles;
+        for (const deg of angles) {
+          const a = dir + deg * (Math.PI / 180);
+          for (let i = 0; i < sk.count; i++) {
+            const d = sk.start + i * sk.spacing;
+            const x = e.pos.x + Math.sin(a) * d;
+            const z = e.pos.z + Math.cos(a) * d;
+            tg.add({ kind: 'circle', x, z, r: sk.radius }, t + i * sk.stagger, (inside) => {
+              hit(inside);
+              fx.disc(x, z, sk.radius, sk.color, 0.35, 0.7);
+            });
+          }
+        }
+        return t + sk.count * sk.stagger;
+      }
     }
   }
 }
