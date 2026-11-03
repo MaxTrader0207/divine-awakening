@@ -37,6 +37,8 @@ export class Player {
   private hurtT = 0;
   /** 0~1，目前移動強度（給動畫用） */
   private moveAmount = 0;
+  /** 目前速度（公尺 / 秒）：起步、停下有很短的加減速，動作比較順 */
+  private vel = { x: 0, z: 0 };
   private bobT = 0;
   private body: THREE.Group;
   private staffTip: THREE.Mesh;
@@ -165,11 +167,11 @@ export class Player {
   }
 
   dodge() {
-    this.rig?.playOnce(this.anims.dodge, { timeScale: 1.4 });
+    this.rig?.playOnce(this.anims.dodge, { timeScale: 1.4, layer: false });
   }
 
   cheer() {
-    this.rig?.playOnce(this.anims.cheer, { priority: false });
+    this.rig?.playOnce(this.anims.cheer, { priority: false, layer: false });
   }
 
   get alive() {
@@ -200,6 +202,7 @@ export class Player {
     this.object.visible = true;
     this.body.rotation.set(0, 0, 0);
     this.body.position.y = 0;
+    this.vel.x = this.vel.z = 0;
     this.rig?.revive(this.anims.idle);
   }
 
@@ -210,6 +213,7 @@ export class Player {
   }
 
   teleport(x: number, z: number) {
+    this.vel.x = this.vel.z = 0;
     this.pos.x = x;
     this.pos.z = z;
     this.object.position.set(x, this.groundY, z);
@@ -245,10 +249,14 @@ export class Player {
       return;
     }
     const len = Math.hypot(move.x, move.z);
+    // 加減速：約 0.1 秒到全速、0.07 秒停下（搖桿放開不會瞬間定格）
+    const k = 1 - Math.exp(-dt * (len > 0.001 ? 22 : 32));
+    this.vel.x += (move.x * this.stats.moveSpeed - this.vel.x) * k;
+    this.vel.z += (move.z * this.stats.moveSpeed - this.vel.z) * k;
+    if (len <= 0.001 && Math.hypot(this.vel.x, this.vel.z) < 0.05) this.vel.x = this.vel.z = 0;
+    this.pos.x += this.vel.x * dt;
+    this.pos.z += this.vel.z * dt;
     if (len > 0.001) {
-      const speed = this.stats.moveSpeed * len;
-      this.pos.x += move.x * speed * dt;
-      this.pos.z += move.z * speed * dt;
       if (this.lockTimer <= 0) {
         const target = Math.atan2(move.x, move.z);
         this.facing = lerpAngle(this.facing, target, 1 - Math.exp(-dt * 14));
@@ -261,6 +269,7 @@ export class Player {
     pushOut?.(this.pos, this.radius); // 敵人等動態障礙
     collision.resolve(this.pos, this.radius);
 
+    const speedNow = Math.hypot(this.vel.x, this.vel.z);
     this.moveAmount += ((len > 0.001 ? 1 : 0) - this.moveAmount) * Math.min(1, dt * 10);
     this.bobT += dt * (4 + this.moveAmount * 8);
 
@@ -268,9 +277,11 @@ export class Player {
     this.object.rotation.y = this.facing;
     this.object.visible = this.invulnerable > 0.05 ? Math.floor(this.invulnerable * 12) % 2 === 0 : true;
     if (this.rig) {
-      // 有模型：跑步動畫速度跟著移動速度
-      if (this.moveAmount > 0.3) this.rig.setLoop(this.anims.run, 0.15, 0.8 + 0.4 * Math.min(1.5, this.stats.moveSpeed / 6.5));
-      else this.rig.setLoop(this.anims.idle, 0.2);
+      // 有模型：跑步動畫速度跟著「目前」速度（加速中腳步也跟得上，不會滑步）
+      const full = 0.8 + 0.4 * Math.min(1.5, this.stats.moveSpeed / 6.5);
+      const ratio = Math.min(1, speedNow / Math.max(0.1, this.stats.moveSpeed));
+      if (this.moveAmount > 0.3 && speedNow > 0.4) this.rig.setLoop(this.anims.run, 0.18, full * (0.55 + 0.45 * ratio));
+      else this.rig.setLoop(this.anims.idle, 0.22);
       return;
     }
     // 走路：上下彈跳＋前傾；待機：呼吸
