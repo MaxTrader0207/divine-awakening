@@ -44,7 +44,7 @@ export interface MinionDef {
 export const MINIONS: Record<MinionId, MinionDef> = {
   skeleton_minion: {
     id: 'skeleton_minion',
-    name: '骷髏兵',
+    name: '斯巴達亡靈',
     model: 'skeleton_minion',
     height: 2.1,
     radius: 0.45,
@@ -63,7 +63,7 @@ export const MINIONS: Record<MinionId, MinionDef> = {
   },
   skeleton_mage: {
     id: 'skeleton_mage',
-    name: '骷髏法師',
+    name: '提瑞西阿斯亡靈',
     model: 'skeleton_mage',
     height: 2.2,
     radius: 0.45,
@@ -83,7 +83,7 @@ export const MINIONS: Record<MinionId, MinionDef> = {
   },
   skeleton_warrior: {
     id: 'skeleton_warrior',
-    name: '骷髏巨衛',
+    name: '埃阿斯亡靈',
     model: 'skeleton_warrior',
     height: 2.8,
     radius: 0.65,

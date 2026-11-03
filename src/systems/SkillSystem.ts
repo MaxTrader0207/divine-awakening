@@ -43,11 +43,11 @@ import { MINIONS, type MinionId } from '@/data/minions';
  *  E     斬殺       前方重擊，目標血量低於 35% 時傷害 ×2
  *  R     狂暴       8 秒攻擊力 +25%、普攻冷卻 ×0.6、怒氣獲得 ×1.5
  * 召喚師（召喚物 AI 在 MinionManager）
- *  普攻  暗影箭     追蹤單體（傷害較低，主力是召喚物）
- *  Q     骷髏兵     召喚 2 隻近戰骷髏（上限 4，存在 20 秒）
- *  W     骷髏法師   召喚 1 隻遠程骷髏（上限 2）
- *  E     骷髏巨衛   召喚 1 隻高血量坦克（上限 1，出場嘲諷周圍小怪）
- *  R     白骨爆裂   所有召喚物原地爆炸（範圍傷害），每隻回復主人 8% HP；沒有召喚物時不能用
+ *  普攻  冥河暗箭     追蹤單體（傷害較低，主力是召喚物）
+ *  Q     斯巴達亡靈     召喚 2 隻近戰骷髏（上限 4，存在 20 秒）
+ *  W     提瑞西阿斯亡靈   召喚 1 隻遠程骷髏（上限 2）
+ *  E     埃阿斯亡靈   召喚 1 隻高血量坦克（上限 1，出場嘲諷周圍小怪）
+ *  R     冥府骨爆   所有召喚物原地爆炸（範圍傷害），每隻回復主人 8% HP；沒有召喚物時不能用
  */
 export const POTION_COOLDOWN = 2;
 export const POTION_HEAL_RATIO = 0.35;
@@ -712,7 +712,7 @@ export class SkillSystem {
     const p = this.ctx.player;
     p.act(sk.anim, 2);
     const n = mm.detonateAll();
-    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: `白骨爆裂 ×${n}`, kind: 'info' });
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: `冥府骨爆 ×${n}`, kind: 'info' });
     bus.emit('player:changed');
     return true;
   }

@@ -13,7 +13,7 @@ describe('召喚師與召喚物資料', () => {
     }
   });
 
-  it('巨衛是坦克（血最多、防禦最高、會嘲諷），骷髏法師是遠程', () => {
+  it('巨衛是坦克（血最多、防禦最高、會嘲諷），提瑞西阿斯亡靈是遠程', () => {
     const { skeleton_warrior: w, skeleton_minion: m, skeleton_mage: mage } = MINIONS;
     expect(w.hpMul).toBeGreaterThan(m.hpMul);
     expect(w.defMul).toBeGreaterThan(m.defMul);

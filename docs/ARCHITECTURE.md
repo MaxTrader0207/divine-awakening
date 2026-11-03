@@ -27,7 +27,7 @@ src/
 │  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
 │  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
 │  ├─ classes.ts              職業（法師、弓手、騎士、狂戰士、召喚師）、怒氣規則 RAGE
-│  ├─ minions.ts              召喚物（骷髏兵、骷髏法師、骷髏巨衛）：屬性倍率、存在時間、上限、嘲諷：屬性、成長、技能表、模型動畫、武器名稱
+│  ├─ minions.ts              召喚物（斯巴達亡靈、提瑞西阿斯亡靈、埃阿斯亡靈）：屬性倍率、存在時間、上限、嘲諷：屬性、成長、技能表、模型動畫、武器名稱
 │  └─ player.ts               經驗曲線、statsForLevel(level, class)
 ├─ input/                     InputManager（鍵盤 + 搖桿 + 按住）、VirtualJoystick
 ├─ entities/
@@ -45,7 +45,7 @@ src/
 │  ├─ TargetSelector.ts       鎖定目標、腳下紅圈
 │  ├─ EnemyManager.ts         生怪（數量、散佈）、AI 更新、互相推擠、查詢
 │  ├─ EnemyAI.ts              小怪狀態機 idle / wander / chase / attack / return；被嘲諷時改打召喚物
-│  ├─ MinionManager.ts        召喚物 AI：跟隨、選目標、攻擊、嘲諷、白骨爆裂
+│  ├─ MinionManager.ts        召喚物 AI：跟隨、選目標、攻擊、嘲諷、冥府骨爆
 │  ├─ BossController.ts       首領技能輪替、二階段狂暴
 │  ├─ Telegraphs.ts           紅色範圍預警（圓 / 扇形 / 長方形）與判定
 │  ├─ AutoBattle.ts           AUTO：喝藥、閃預警、撿東西、選目標、技能優先序、沿牆繞路

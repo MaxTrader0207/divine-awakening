@@ -148,7 +148,7 @@ export class AutoBattle {
         const want = near >= 3 || (near >= 1 && p.hp / p.stats.maxHp < 0.6) || bossNear || bossCasting;
         if (want && skills.cast(slot, true)) return true;
       } else if (sk.auto === 'summon') {
-        // 召喚物不足就補（骷髏兵少於上限、巨衛不在場…）
+        // 召喚物不足就補（斯巴達亡靈少於上限、巨衛不在場…）
         const id = sk.summon as MinionId | undefined;
         const mm = this.ctx.minions;
         if (!id || !mm || !MINIONS[id]) continue;

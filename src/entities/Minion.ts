@@ -10,7 +10,7 @@ import type { Enemy } from './Enemy';
  * 外觀細節（和敵人的骷髏區分）：
  * - 程式骷髏（entities/BoneSkeleton.ts）：細長手腳骨、肋骨、有眼窩與牙齒的頭骨，關節會動。
  *   （KayKit 骷髏是Q版大頭，在斜俯視鏡頭下看起來像一根柱子，所以不用）
- *   骷髏兵：劍；骷髏法師：紫色尖帽＋法杖＋杖頂光球；骷髏巨衛：有角鐵盔、肩甲、斧＋大盾。
+ *   斯巴達亡靈：劍；提瑞西阿斯亡靈：紫色尖帽＋法杖＋杖頂光球；埃阿斯亡靈：有角鐵盔、肩甲、斧＋大盾。
  * - 眼窩裡的紫色靈魂之火、身邊往上飄的靈魂火焰。
  * - 腳下旋轉的召喚法陣：存在時間越少，法陣越小越淡（看得出還能留多久）。
  * - 出場：法陣先亮起，骷髏從地底爬出來；倒下：沉入地面、冒紫煙、碎骨四散。
@@ -195,7 +195,7 @@ export class Minion {
       this.bones.head.add(sp);
       this.eyes.push(sp);
     }
-    // 骷髏法師：杖頂光球
+    // 提瑞西阿斯亡靈：杖頂光球
     if (this.bones.staffTip && this.bones.weapon) {
       this.orb = glowSprite(0xb48cff, 0.55);
       this.owned.push(this.orb.material);
@@ -266,7 +266,7 @@ export class Minion {
     return dealt;
   }
 
-  /** 倒下（時間到、被打死、白骨爆裂）：沉入地面、冒紫煙、碎骨四散 */
+  /** 倒下（時間到、被打死、冥府骨爆）：沉入地面、冒紫煙、碎骨四散 */
   die() {
     if (this.dying > 0) return;
     this.dying = DEATH_TIME;

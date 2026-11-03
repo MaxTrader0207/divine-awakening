@@ -99,7 +99,7 @@ function weaponModel(id: string, length: number, owned: { dispose(): void }[], g
 
 export function buildBoneSkeleton(style: BoneStyle, height: number, glow: number): BoneRig {
   const owned: { dispose(): void }[] = [];
-  const u = height / 2.1; // 以 2.1m 的骷髏兵為基準
+  const u = height / 2.1; // 以 2.1m 的斯巴達亡靈為基準
   // 一副骷髏只用一個材質（頂點顏色）：受擊閃白只要改這個材質的 emissive
   const bone = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: new THREE.Color(glow * 0.3, glow * 0.1, glow * 0.45), flatShading: true });
   owned.push(bone);
@@ -294,7 +294,7 @@ export function poseBones(r: BoneRig, p: BonePose, dt: number, style: BoneStyle)
     p.swingT = Math.max(0, p.swingT - dt);
     const k = 1 - p.swingT / p.swingTotal; // 0 → 1
     if (p.cast) {
-      // 骷髏法師：雙手舉杖
+      // 提瑞西阿斯亡靈：雙手舉杖
       const up = k < p.windupFrac ? k / p.windupFrac : 1 - (k - p.windupFrac) / (1 - p.windupFrac);
       armR = -2.3 * up;
       r.armL.rotation.x = -2.1 * up;

@@ -16,7 +16,7 @@ import type { TargetSelector } from './TargetSelector';
  * AI（每隻每幀）：
  *   1. 離主人太遠（> LEASH）→ 放棄目標跑回去；超過 TELEPORT 直接傳回主人身邊。
  *   2. 選目標：主人鎖定的敵人優先，否則主人周圍 SEARCH 內最近的敵人（不主動打還沒開戰的首領、木樁）。
- *   3. 走到攻擊距離 → 前搖 → 出手（近戰直接結算、骷髏法師發射投射物）。
+ *   3. 走到攻擊距離 → 前搖 → 出手（近戰直接結算、提瑞西阿斯亡靈發射投射物）。
  *   4. 沒有目標：在主人身後排隊跟隨。
  * 嘲諷：骷髏打到小怪時，小怪會改打骷髏（Enemy.aggroMinion，見 EnemyAI）；首領不受嘲諷。
  * 敵人與首領技能打骷髏：Game.hitMinion() / hitMinionsInside()。
@@ -24,7 +24,7 @@ import type { TargetSelector } from './TargetSelector';
 export const MINION_LEASH = 14;
 export const MINION_TELEPORT = 26;
 export const MINION_SEARCH = 11;
-/** 白骨爆裂：每隻爆炸半徑、倍率、主人回血（最大 HP 比例） */
+/** 冥府骨爆：每隻爆炸半徑、倍率、主人回血（最大 HP 比例） */
 export const DETONATE = { radius: 2.6, power: 1.8, heal: 0.08 };
 
 export interface MinionContext {
@@ -74,7 +74,7 @@ export class MinionManager {
       fx.ring(m.pos.x, m.pos.z, 0.2, 1.4, 0xa58cff, 0.5);
       fx.pillar(m.pos.x, m.pos.z, 0.45, 0x8a5aff, 0.5);
     }
-    // 骷髏巨衛：出場時把周圍小怪拉過來
+    // 埃阿斯亡靈：出場時把周圍小怪拉過來
     if (def.tauntOnSummon) {
       const guard = this.list[this.list.length - 1];
       for (const e of this.ctx.enemies.enemies) {
@@ -88,7 +88,7 @@ export class MinionManager {
     }
   }
 
-  /** 白骨爆裂：所有召喚物原地爆炸，回傳爆炸數量 */
+  /** 冥府骨爆：所有召喚物原地爆炸，回傳爆炸數量 */
   detonateAll(): number {
     const p = this.ctx.player;
     const fx = this.ctx.effects;
