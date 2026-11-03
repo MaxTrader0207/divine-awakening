@@ -124,7 +124,7 @@ export const serpent: ShapeBuild = (b) => {
 2. `enemyShapes/index.ts` 的 `ENEMY_SHAPES` 登記；`data/types.ts` 的 `EnemyShape` 加名稱。
 3. 可用的工具：`b.add()`（零件）、`b.glow()`（發光零件）、`b.group()`（會動的 pivot）、`b.eyes()`、`b.color / b.dark / b.light`、`b.boss`（首領版可以加裝飾）。
 4. 效能：直接掛在 body 上的零件會合併成 1 個 draw call；pivot 下的零件各自一個，盡量少。
-5. 首領（`def.boss`）會自動精緻化（`enemyShapes/refine.ts`）：球、圓柱、圓錐、圓環分段加倍、方塊變圓角、平滑著色，姿勢與轉身經 `PoseSmoother` 平滑。照小怪的分段數寫就好；想保留尖角的零件（牙、角、火焰）用 4 段以下。動畫的角度不要用 `% (2π)` 這類會突然跳號的寫法，平滑會把跳號當成反向轉一圈。
+5. 首領（`def.boss`）會自動精緻化（`enemyShapes/refine.ts`、`bossLook.ts`）：球、圓柱、圓錐、圓環分段加倍、方塊變圓角、平滑著色＋高光＋地面遮蔽＋輪廓光（外部模型也會重算平滑法線），姿勢與轉身經 `PoseSmoother` 平滑。照小怪的分段數寫就好；想保留尖角的零件（牙、角、火焰）用 4 段以下。動畫的角度不要用 `% (2π)` 這類會突然跳號的寫法，平滑會把跳號當成反向轉一圈。
 
 ## 目前的內容
 

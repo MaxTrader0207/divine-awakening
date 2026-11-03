@@ -6,6 +6,9 @@ import { Assets } from '@/assets/Assets';
 import { CharacterRig } from './CharacterRig';
 import { DEFAULT_RIG, ENEMY_SHAPES, RIG_ANIMS, type RigAnims, type ShapeAnimState, type ShapeBuilder } from './enemyShapes';
 import { PoseSmoother, refineGeometry } from './enemyShapes/refine';
+import { BossLook, smoothNormals } from './enemyShapes/bossLook';
+
+type LitMaterial = THREE.MeshLambertMaterial | THREE.MeshPhongMaterial;
 
 export type EnemyState = 'alive' | 'dying' | 'dead';
 /** AI 狀態（見 systems/EnemyAI.ts） */
@@ -56,7 +59,7 @@ export class Enemy {
   slowMul = 1;
 
   private body = new THREE.Group();
-  private materials: THREE.MeshLambertMaterial[] = [];
+  private materials: LitMaterial[] = [];
   private flash = 0;
   private tinted = false;
   private shake = 0;
@@ -75,6 +78,8 @@ export class Enemy {
   /** 首領：動作平滑（程式模型）與轉身平滑 */
   private smoother: PoseSmoother | null = null;
   private yaw = 0;
+  /** 首領材質（高光、地面遮蔽、邊緣光） */
+  private look: BossLook | null = null;
 
   constructor(def: EnemyDef, spawn: SpawnDef) {
     this.def = def;
@@ -87,6 +92,7 @@ export class Enemy {
     this.hp = def.stats.maxHp;
     this.facing = Math.random() * Math.PI * 2;
 
+    if (def.boss) this.look = new BossLook(new THREE.Color(def.color).lerp(new THREE.Color(0xffe8d0), 0.45).getHex());
     this.height = this.buildRig() ?? this.buildBody() * def.scale;
     if (!this.rig) this.mergeBody();
     if (def.boss && !this.rig) {
@@ -192,6 +198,17 @@ export class Enemy {
         else if (role === 'belly') m.color.copy(body).lerp(new THREE.Color(0xfff2c4), 0.55);
       }
     }
+    // 首領（堤豐巨蛙）：平面著色的模型重算平滑法線，並套用首領材質
+    if (this.look) {
+      inst.root.traverse((o) => {
+        const sm = o as THREE.SkinnedMesh;
+        if (sm.isSkinnedMesh) sm.geometry = smoothNormals(sm.geometry);
+      });
+      for (const m of inst.materials) {
+        m.flatShading = false;
+        this.look.apply(m);
+      }
+    }
     this.body.add(inst.root);
     this.rig = new CharacterRig(inst);
     this.materials.push(...inst.materials);
@@ -256,6 +273,7 @@ export class Enemy {
 
     if (this.state === 'alive') this.animate(dt);
     this.object.position.set(this.pos.x, this.groundY, this.pos.z);
+    this.look?.update(this.groundY + this.body.position.y, this.height);
   }
 
   /** 依造型的待機 / 移動 / 前搖動畫 */
@@ -331,9 +349,9 @@ export class Enemy {
     this.windup = 0;
   }
 
-  private m(color: number): THREE.MeshLambertMaterial {
-    // 首領用平滑著色（配合 refineGeometry 的高分段），小怪維持低多邊形的平面著色
-    const mat = new THREE.MeshLambertMaterial({ color, flatShading: !this.def.boss });
+  private m(color: number): LitMaterial {
+    // 首領：平滑著色＋高光＋地面遮蔽＋邊緣光（配合 refineGeometry 的高分段）；小怪維持低多邊形的平面著色
+    const mat = this.look ? this.look.material({ color }) : new THREE.MeshLambertMaterial({ color, flatShading: true });
     this.materials.push(mat);
     return mat;
   }
@@ -354,7 +372,7 @@ export class Enemy {
     const parts: THREE.Mesh[] = [];
     for (const c of this.body.children) {
       const m = c as THREE.Mesh;
-      if (m.isMesh && m.material instanceof THREE.MeshLambertMaterial) parts.push(m);
+      if (m.isMesh && (m.material instanceof THREE.MeshLambertMaterial || m.material instanceof THREE.MeshPhongMaterial)) parts.push(m);
     }
     if (parts.length < 2) return;
     const geos: THREE.BufferGeometry[] = [];
@@ -362,7 +380,7 @@ export class Enemy {
       m.updateMatrix();
       const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrix);
       for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
-      const col = (m.material as THREE.MeshLambertMaterial).color;
+      const col = (m.material as LitMaterial).color;
       const n = g.attributes.position.count;
       const arr = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) arr.set([col.r, col.g, col.b], i * 3);
@@ -375,10 +393,10 @@ export class Enemy {
     for (const m of parts) {
       m.geometry.dispose();
       (m.material as THREE.Material).dispose();
-      this.materials.splice(this.materials.indexOf(m.material as THREE.MeshLambertMaterial), 1);
+      this.materials.splice(this.materials.indexOf(m.material as LitMaterial), 1);
       m.removeFromParent();
     }
-    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: !this.def.boss });
+    const mat = this.look ? this.look.material({ vertexColors: true }) : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     this.materials.push(mat);
     const mesh = new THREE.Mesh(merged, mat);
     mesh.castShadow = true;
@@ -414,6 +432,8 @@ export class Enemy {
         self.add(new THREE.SphereGeometry(size * 1.5, 6, 4), 0xffffff, gap, y, z);
         self.add(new THREE.SphereGeometry(size, 6, 4), 0x1b2433, -gap, y, z + size);
         self.add(new THREE.SphereGeometry(size, 6, 4), 0x1b2433, gap, y, z + size);
+        // 首領：瞳孔上的反光點，眼神比較有精神
+        if (self.def.boss) for (const sx of [-1, 1]) builder.glow(new THREE.SphereGeometry(size * 0.32, 6, 4), 0xffffff, sx * gap + size * 0.3, y + size * 0.35, z + size * 1.85);
       },
     };
     const build = ENEMY_SHAPES[this.def.shape] ?? ENEMY_SHAPES.slime;

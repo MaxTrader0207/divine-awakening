@@ -14,7 +14,7 @@ export function refineGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry 
   if (!p) return geo;
   const up = (n: number, size: number, lo: number, hi: number) => {
     if (n < 5) return n;
-    const cap = size < 0.06 ? 8 : size < 0.12 ? 12 : hi;
+    const cap = size < 0.06 ? 10 : size < 0.12 ? 14 : hi;
     return Math.max(n, Math.min(cap, Math.max(lo, n * 2)));
   };
   let out: THREE.BufferGeometry | null = null;
@@ -22,12 +22,12 @@ export function refineGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry 
     case 'BoxGeometry': {
       const m = Math.min(p.width, p.height, p.depth);
       if (m < 0.06) return geo;
-      out = new RoundedBoxGeometry(p.width, p.height, p.depth, m > 0.18 ? 2 : 1, Math.min(0.1, m * 0.22));
+      out = new RoundedBoxGeometry(p.width, p.height, p.depth, m > 0.18 ? 3 : m > 0.1 ? 2 : 1, Math.min(0.12, m * 0.24));
       break;
     }
     case 'SphereGeometry': {
       if (p.widthSegments < 5) return geo;
-      const w = up(p.widthSegments, p.radius, 16, 28);
+      const w = up(p.widthSegments, p.radius, 20, 36);
       const h = Math.max(p.heightSegments, Math.round(w * 0.7));
       out = new THREE.SphereGeometry(p.radius, w, h, p.phiStart, p.phiLength, p.thetaStart, p.thetaLength);
       break;
@@ -35,17 +35,17 @@ export function refineGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry 
     case 'CylinderGeometry': {
       if (p.radialSegments < 5) return geo;
       const r = Math.max(p.radiusTop, p.radiusBottom);
-      out = new THREE.CylinderGeometry(p.radiusTop, p.radiusBottom, p.height, up(p.radialSegments, r, 12, 24), p.heightSegments, p.openEnded, p.thetaStart, p.thetaLength);
+      out = new THREE.CylinderGeometry(p.radiusTop, p.radiusBottom, p.height, up(p.radialSegments, r, 16, 32), p.heightSegments, p.openEnded, p.thetaStart, p.thetaLength);
       break;
     }
     case 'ConeGeometry': {
       if (p.radialSegments < 5) return geo;
-      out = new THREE.ConeGeometry(p.radius, p.height, up(p.radialSegments, p.radius, 12, 24), p.heightSegments, p.openEnded, p.thetaStart, p.thetaLength);
+      out = new THREE.ConeGeometry(p.radius, p.height, up(p.radialSegments, p.radius, 16, 32), p.heightSegments, p.openEnded, p.thetaStart, p.thetaLength);
       break;
     }
     case 'TorusGeometry': {
       if (p.radialSegments < 5) return geo;
-      out = new THREE.TorusGeometry(p.radius, p.tube, up(p.radialSegments, p.tube, 8, 14), Math.min(48, Math.max(p.tubularSegments, p.tubularSegments * 2)), p.arc);
+      out = new THREE.TorusGeometry(p.radius, p.tube, up(p.radialSegments, p.tube, 10, 16), Math.min(64, Math.max(p.tubularSegments, p.tubularSegments * 2)), p.arc);
       break;
     }
   }
