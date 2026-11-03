@@ -146,6 +146,45 @@ export const BOSS_SKILLS = {
     pattern: 'line', name: '撼地重踏', desc: '重踏地面，裂痕朝玩家延伸（狂暴時更長）',
     windup: 1.0, power: 1.4, color: 0xff8a4a, count: 6, countEnraged: 9, start: 2.5, spacing: 2.3, radius: 1.8, stagger: 0.12,
   },
+  /* ---- 第十層 斯芬克斯 ---- */
+  sphinx_swipe: {
+    pattern: 'cone', name: '獅爪重擊', desc: '前方扇形重擊（狂暴時更寬）',
+    windup: 1.0, power: 2.0, color: 0xf0c060, range: 6.5, angle: 120, angleEnraged: 170,
+  },
+  sphinx_dive: {
+    pattern: 'leap', name: '展翼俯衝', desc: '飛起後俯衝到玩家位置',
+    windup: 1.5, power: 1.8, color: 0xf0e0b0, discColor: 0xd8b060, radius: 3.8,
+  },
+  riddle_seal: {
+    pattern: 'spokes', name: '謎語封印', desc: '答錯謎語的懲罰：符文往四周射出，符文之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.7, color: 0x7ad8ff, count: 6, countEnraged: 9, range: 9, angle: 20,
+  },
+  /* ---- 第十一層 巨龍拉冬 ---- */
+  dragon_breath: {
+    pattern: 'line', name: '金焰吐息', desc: '朝玩家方向一長排金色火焰（狂暴時更長）',
+    windup: 1.0, power: 1.4, color: 0xffc040, count: 7, countEnraged: 10, start: 2.5, spacing: 2.2, radius: 1.9, stagger: 0.1,
+  },
+  dragon_tail: {
+    pattern: 'nova', name: '龍尾橫掃', desc: '甩動長尾掃過周圍（狂暴時範圍更大）',
+    windup: 1.1, power: 1.9, color: 0xd8a040, discColor: 0xb87a20, radius: 6, radiusEnraged: 7.5,
+  },
+  golden_meteor: {
+    pattern: 'rain', name: '金蘋果流星', desc: '聖樹上的金蘋果化成流星砸下',
+    windup: 1.5, power: 1.5, color: 0xffd040, pillarColor: 0xfff0a0, count: 6, countEnraged: 9, radius: 2.2, spread: 7, stagger: 0.1,
+  },
+  /* ---- 第十二層 奇美拉 ---- */
+  chimera_flame: {
+    pattern: 'cone', name: '獅首烈焰', desc: '獅頭噴出大範圍火焰（狂暴時更寬）',
+    windup: 1.1, power: 2.0, color: 0xff6a1a, range: 8, angle: 70, angleEnraged: 110,
+  },
+  chimera_charge: {
+    pattern: 'dash', name: '三首衝撞', desc: '朝玩家直線衝撞 18 公尺',
+    windup: 1.3, power: 1.9, color: 0xff8a3a, length: 18, width: 3.2,
+  },
+  chimera_rain: {
+    pattern: 'multiLine', name: '三首齊噴', desc: '獅火、羊雷、蛇毒三排同時噴出（狂暴時五排）',
+    windup: 1.1, power: 1.4, color: 0xff9a3a, angles: [-30, 0, 30], anglesEnraged: [-50, -25, 0, 25, 50], count: 6, start: 2.5, spacing: 2.1, radius: 1.5, stagger: 0.11,
+  },
 } satisfies Record<string, BossSkillDef>;
 
 export type BossSkillId = keyof typeof BOSS_SKILLS;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DUNGEON_ORDER, ENEMIES, STAGES, ZONES, bossOf } from './stages';
+import { DUNGEON_ORDER, ENEMIES, STAGES, ZONES, bossOf, floorLabel } from './stages';
 import { BOSS_SKILLS } from './bossSkills';
 import { ENEMY_SHAPES, RIG_ANIMS } from '@/entities/enemyShapes';
 import { SONGS } from '@/audio/songs';
@@ -100,5 +100,6 @@ describe('內容一致性（關卡 / 小怪 / 首領 / 招式）', () => {
     expect(bossOf('dungeon_1')?.name).toBe('巨蟹卡基諾斯');
     expect(bossOf('mistwood')?.name).toBe('龍牙將軍');
     expect(bossOf('town')).toBeUndefined();
+    expect([1, 10, 11, 12, 20, 25].map(floorLabel)).toEqual(['第一層', '第十層', '第十一層', '第十二層', '第二十層', '第二十五層']);
   });
 });

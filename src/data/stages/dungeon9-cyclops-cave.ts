@@ -56,7 +56,7 @@ const zone: ZoneDef = {
   ],
   portals: [{ x: 0, z: 29, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 23 },
-  tips: ['這層敵人有防禦 155，是目前最難的副本', '洞中兩道岩牆，從中間或兩側繞過', '投擲巨石範圍很大但很慢，看到影子就走開', '萊斯特律戈涅斯巨人血很厚，可以先繞開'],
+  tips: ['這層敵人有防禦 155', '洞中兩道岩牆，從中間或兩側繞過', '投擲巨石範圍很大但很慢，看到影子就走開', '萊斯特律戈涅斯巨人血很厚，可以先繞開'],
   spawns: [
     { enemy: 'sicilian_ram', x: -13, z: 15, count: 3, spread: 2.5 },
     { enemy: 'cyclops_smith', x: 8, z: 13, count: 2, spread: 3 },

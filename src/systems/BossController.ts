@@ -5,6 +5,7 @@ import type { Player } from '@/entities/Player';
 import type { CollisionWorld } from '@/world/Collision';
 import type { Effects } from './Effects';
 import type { Telegraphs } from './Telegraphs';
+import { LEASH } from './EnemyAI';
 
 /**
  * 首領技能控制（招式資料在 data/bossSkills.ts）
@@ -110,11 +111,15 @@ export class BossController {
         const sz = e.pos.z;
         tg.add({ kind: 'rect', x: sx, z: sz, dir, length: sk.length, width: sk.width }, t, (inside) => {
           hit(inside);
-          // 衝到終點（分段碰撞，不會穿牆）
+          // 衝到終點（分段碰撞，不會穿牆；不會衝出脫戰範圍，否則首領會回家補滿血）
           const col = this.ctx.collision();
+          const maxHome = LEASH * 2 - 3;
           for (let i = 0; i < 24; i++) {
-            e.pos.x += (Math.sin(dir) * sk.length) / 24;
-            e.pos.z += (Math.cos(dir) * sk.length) / 24;
+            const nx = e.pos.x + (Math.sin(dir) * sk.length) / 24;
+            const nz = e.pos.z + (Math.cos(dir) * sk.length) / 24;
+            if (Math.hypot(nx - e.home.x, nz - e.home.z) > maxHome) break;
+            e.pos.x = nx;
+            e.pos.z = nz;
             col.resolve(e.pos, e.radius);
           }
           fx.ring(e.pos.x, e.pos.z, 0.5, 3, sk.color, 0.4);

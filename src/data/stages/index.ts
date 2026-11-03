@@ -11,6 +11,9 @@ import { tartarusAbyss } from './dungeon6-tartarus-abyss';
 import { nemeanValley } from './dungeon7-nemean-valley';
 import { gorgonIsle } from './dungeon8-gorgon-isle';
 import { cyclopsCave } from './dungeon9-cyclops-cave';
+import { thebesWastes } from './dungeon10-thebes-wastes';
+import { hesperidesGarden } from './dungeon11-hesperides-garden';
+import { realmOfHades } from './dungeon12-realm-of-hades';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -19,7 +22,7 @@ import { cyclopsCave } from './dungeon9-cyclops-cave';
  * 其他清單（ZONES、ENEMIES、DUNGEON_ORDER、野外清單、首領查詢…）都由這裡自動產生。
  * 新增關卡：見 docs/CONTENT.md「新增關卡」。
  */
-export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave];
+export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 
@@ -41,7 +44,6 @@ export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dunge
 
 /** 還沒做的地區（只在地圖頁列出名稱） */
 export const UPCOMING_FIELDS: { name: string; range: string }[] = [
-  { name: '冥王黑帝斯的國度', range: 'Lv.46-60' },
 ];
 
 /** 世界地圖上的野外清單（已開放＋即將開放） */
@@ -60,9 +62,13 @@ export function zoneName(id: ZoneId | string | undefined): string {
   return def.kind === 'dungeon' ? def.name : def.subtitle.split('・')[0];
 }
 
-/** 層數的中文：一、二、三… */
+/** 層數的中文：一、二…十、十一…二十、二十一…（最多 99） */
 export function floorLabel(floor: number): string {
-  return `第${'一二三四五六七八九十'[floor - 1] ?? floor}層`;
+  const D = '零一二三四五六七八九';
+  const t = Math.floor(floor / 10);
+  const o = floor % 10;
+  const s = floor < 10 ? D[floor] : floor >= 100 ? String(floor) : `${t > 1 ? D[t] : ''}十${o ? D[o] : ''}`;
+  return `第${s}層`;
 }
 
 /** 存檔欄位用的地名：副本加上層數（第一層・波賽頓海岸） */

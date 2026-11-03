@@ -19,6 +19,8 @@ import type { Minion } from '@/entities/Minion';
  */
 export const AGGRO_RANGE = 6.5;
 export const LEASH = 16;
+/** 回家最多走幾秒，超過就直接回到原位（避免被地形卡住、血量凍結） */
+export const RETURN_TIMEOUT = 6;
 export const WANDER_RADIUS = 3;
 
 export interface AiContext {
@@ -50,10 +52,11 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
 
   // 共通：脫戰條件
   if (e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') {
-    const leash = e.def.boss ? LEASH * 1.5 : LEASH;
+    const leash = e.def.boss ? LEASH * 2 : LEASH; // 首領有衝撞、飛撲，活動範圍大一點
     if (!p.alive || homeDist > leash) {
       e.ai = 'return';
       e.windup = 0;
+      e.aiTimer = RETURN_TIMEOUT;
     }
   }
 
@@ -119,8 +122,14 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
     case 'boss':
       break; // BossController 控制中
     case 'return': {
+      // 直線走回家；被高台、牆卡住走不回去時（例如首領衝撞衝下高台），逾時直接回到原位
+      e.aiTimer -= dt;
       const arrived = moveToward(e, e.home.x, e.home.z, Math.max(speed, 3) * 1.6, dt, ctx.collision);
-      if (arrived) {
+      if (!arrived && e.aiTimer <= 0) {
+        e.pos.x = e.home.x;
+        e.pos.z = e.home.z;
+      }
+      if (arrived || e.aiTimer <= 0) {
         e.resetToHome();
         e.ai = 'idle';
         e.aiTimer = 1;

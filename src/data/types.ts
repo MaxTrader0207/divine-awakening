@@ -19,7 +19,10 @@ export type ZoneId =
   | 'dungeon_6'
   | 'dungeon_7'
   | 'dungeon_8'
-  | 'dungeon_9';
+  | 'dungeon_9'
+  | 'dungeon_10'
+  | 'dungeon_11'
+  | 'dungeon_12';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
 
@@ -261,7 +264,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera';
 
 /** 首領招式 id（招式資料在 data/bossSkills.ts） */
 export type { BossSkillId } from './bossSkills';
