@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newGameState } from './GameState';
+import { newGameState, SAVE_VERSION } from './GameState';
 import { LocalSave, SaveSlots, SLOT_COUNT, migrate, type KV } from './SaveSystem';
 
 function memKV(init: Record<string, string> = {}): KV & { data: Record<string, string> } {
@@ -97,7 +97,7 @@ describe('擴充為 10 格', () => {
 describe('存檔 v6 / v7', () => {
   it('舊存檔補上左手模式與介面大小的預設值，原本的設定保留', () => {
     const old = migrate({ version: 5, level: 2, settings: { zoom: 1.3, showFps: true, musicVolume: 0.2, sfxVolume: 0.4, quality: 'low' } } as never)!;
-    expect(old.version).toBe(8);
+    expect(old.version).toBe(SAVE_VERSION);
     expect(old.settings.vibration).toBe(true);
     expect(old.settings.leftHanded).toBe(false);
     expect(old.settings.uiScale).toBe(1);

@@ -215,6 +215,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   // v7 → v8：新增道具與長時間加成；老玩家送 2 個神饌、1 根赫密士之羽當作見面禮
   if (!data.consumables || typeof data.consumables !== 'object') merged.consumables = (data.version ?? 1) < 8 ? { ambrosia: 2, hermes_feather: 1 } : {};
   merged.boosts = { exp: 0, gold: 0, ...(data.boosts ?? {}) };
-  // 未來版本：if ((data.version ?? 0) < 9) { ... }
+  // v8 → v9：新增破關紀錄（舊存檔從零開始記錄，已擊敗的首領照樣保留）
+  merged.clears = data.clears && typeof data.clears === 'object' ? { ...data.clears } : {};
+  // 未來版本：if ((data.version ?? 0) < 10) { ... }
   return merged;
 }

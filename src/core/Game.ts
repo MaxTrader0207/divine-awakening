@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { bus } from './EventBus';
-import { newGameState, type GameState } from './GameState';
+import { isZoneUnlocked, newGameState, type GameState } from './GameState';
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
 import { PauseScreen } from '@/ui/PauseScreen';
@@ -38,6 +38,9 @@ import { CLASSES, RAGE, type HeroClass } from '@/data/classes';
 import { applyClassGear } from '@/data/items';
 import { currentStep, targetFor, tutorialEvent, type TutorialEvent } from '@/systems/Tutorial';
 import { rewardText } from '@/data/tutorial';
+import { StageClearScreen, type ClearInfo } from '@/ui/StageClearScreen';
+import { finishClear, type BossFight } from '@/systems/StageClear';
+import { CLASS_CLEAR } from '@/data/stageClear';
 import { GuideArrow } from '@/world/GuideArrow';
 import { consume, cannotUse } from '@/systems/Consumables';
 import type { BuffStat } from '@/data/consumables';
@@ -109,6 +112,13 @@ export class Game {
   private aiCtx!: AiContext;
   private fadeEl: HTMLElement;
   private pauseScreen!: PauseScreen;
+  /** 破關畫面（v1.34）：首領戰紀錄 → 慢動作特寫 → 結算畫面 */
+  private clearScreen!: StageClearScreen;
+  private bossFight: BossFight | null = null;
+  private clearSeq: { t: number; info: ClearInfo } | null = null;
+  /** 特寫時暫時藏起來的名牌、地名（Sprite）與敵人 */
+  private hiddenSprites: THREE.Object3D[] = [];
+  private cheerT = 0;
   /** 怒氣職業：距離上次戰鬥（打人 / 被打）的秒數 */
   private rageIdle = 0;
   private get usesRage() {
@@ -319,6 +329,18 @@ export class Game {
     });
     bus.on('pause:toggle', () => this.setPaused(!this.paused));
 
+    this.clearScreen = new StageClearScreen(uiRoot, {
+      close: () => this.endClearScreen(),
+      goNext: (id) => {
+        this.endClearScreen();
+        void this.changeZone(id);
+      },
+      goTown: () => {
+        this.endClearScreen();
+        void this.changeZone('town');
+      },
+    });
+
     this.fadeEl = document.createElement('div');
     this.fadeEl.className = 'fade';
     uiRoot.appendChild(this.fadeEl);
@@ -425,6 +447,31 @@ export class Game {
     const realDt = this.timer.getDelta();
     if (this.paused) {
       this.pausedFrame();
+    } else if (this.clearSeq) {
+      // 擊敗首領：1.5 秒慢動作，鏡頭轉到角色正面，接著出現破關畫面
+      this.clearSeq.t -= realDt;
+      this.tick(Math.min(0.05, realDt) * 0.3);
+      if (this.clearSeq.t <= 0) {
+        const info = { ...this.clearSeq.info, auto: this.auto.on };
+        this.clearSeq = null;
+        this.clearScreen.show(info);
+        // 特寫畫面不要有名牌、地名標籤、首領屍體、小怪擋在鏡頭前（關閉時還原）
+        this.hiddenSprites = [];
+        for (const e of this.enemies.enemies) {
+          if (e.object.visible) {
+            e.object.visible = false;
+            if (e.alive) this.hiddenSprites.push(e.object);
+          }
+        }
+        this.scene.traverse((o) => {
+          if ((o as THREE.Sprite).isSprite && o.visible) {
+            o.visible = false;
+            this.hiddenSprites.push(o);
+          }
+        });
+      }
+    } else if (this.clearScreen.open) {
+      this.showcaseFrame(Math.min(0.05, realDt));
     } else {
       this.quality.sample(realDt);
       this.tick(Math.min(0.05, realDt));
@@ -442,6 +489,35 @@ export class Game {
     if (v) this.persist();
     else this.menu.close();
     this.pauseScreen.setVisible(v && !this.menu.isOpen);
+  }
+
+  /** 破關畫面開著：世界暫停，只讓角色動畫、特效、鏡頭繼續（角色擺勝利姿勢、鏡頭慢慢繞） */
+  private showcaseFrame(dt: number) {
+    this.input.update();
+    this.input.clearPressed();
+    // 每 3 秒再歡呼一次
+    this.cheerT -= dt;
+    if (this.cheerT <= 0) {
+      this.cheerT = 3;
+      this.player.cheer();
+    }
+    this.player.update(dt, { x: 0, z: 0 }, this.zones.current!.collision);
+    this.effects.update(dt);
+    this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
+  }
+
+  private endClearScreen() {
+    this.clearScreen.hide();
+    this.rig.setCinematic(false);
+    for (const o of this.hiddenSprites) o.visible = true;
+    this.hiddenSprites = [];
+    this.player.invulnerable = Math.max(this.player.invulnerable, 1.5);
+  }
+
+  /** 藥水＋道具總數（首領戰用了幾個） */
+  private itemCount(): number {
+    const s = this.state;
+    return s.potions.hp + s.potions.mp + Object.values(s.consumables).reduce((a, b) => a + b, 0);
   }
 
   /** 暫停中的每一幀：只處理「繼續」按鍵，選單開著時隱藏暫停畫面 */
@@ -498,6 +574,10 @@ export class Game {
     const zoneNow = this.zones.current!;
     this.player.groundY += (zoneNow.heightAt(this.player.pos.x, this.player.pos.z) - this.player.groundY) * Math.min(1, dt * 14);
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
+    // 首領戰紀錄：開戰時開始計時；首領脫戰回家就作廢（擊敗時在 onBossDefeated 結算）
+    const eb = this.enemies.engagedBoss();
+    if (eb && !this.bossFight) this.bossFight = { zoneId: this.state.zoneId, start: this.state.stats.playTime, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
+    else if (!eb && this.bossFight && !this.clearSeq) this.bossFight = null;
     this.minions.update(dt, this.rig.camera);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
@@ -829,10 +909,10 @@ export class Game {
   private onEnemyKilled(k: { x: number; z: number; level: number; exp: number; gold: [number, number]; gems: number; boss: boolean; name: string }) {
     const s = this.state;
     s.stats.kills++;
-    if (k.boss) this.onBossDefeated(k.name);
     // 道具加成：謬思蜂蜜（經驗）、堤喀幸運金幣（金幣）
     const exp = Math.round(expForKill(k.exp, s.level, k.level) * (s.boosts.exp > 0 ? 1.3 : 1));
     const gold = Math.round(rollGold(k.gold) * (s.boosts.gold > 0 ? 1.5 : 1));
+    if (k.boss) this.onBossDefeated(k.name, exp, gold, k.gems);
     if (exp <= 0 && gold <= 0) return;
     s.gold += gold;
     s.gems += k.gems;
@@ -857,17 +937,47 @@ export class Game {
     bus.emit('player:changed');
   }
 
-  /** 首領首次擊敗：記錄並解鎖下一層 */
-  private onBossDefeated(name: string) {
-    const zoneId = this.state.zoneId;
-    const first = !this.state.bossesDefeated.includes(zoneId);
-    if (first) this.state.bossesDefeated.push(zoneId);
+  /** 擊敗首領：記錄、解鎖下一層，進入破關特寫與破關畫面 */
+  private onBossDefeated(name: string, exp: number, gold: number, gems: number) {
+    const s = this.state;
+    const zoneId = s.zoneId;
+    const first = !s.bossesDefeated.includes(zoneId);
+    if (first) s.bossesDefeated.push(zoneId);
     const idx = DUNGEON_ORDER.indexOf(zoneId);
     const next = idx >= 0 ? DUNGEON_ORDER[idx + 1] : undefined;
-    if (first && next) bus.emit('banner', { text: `擊敗${name}！解鎖${ZONES[next].name}` });
-    else if (first && idx === DUNGEON_ORDER.length - 1) bus.emit('banner', { text: `擊敗${name}！完成全部副本` });
-    else bus.emit('banner', { text: `擊敗${name}！` });
+    const allDone = first && idx === DUNGEON_ORDER.length - 1;
+    bus.emit('banner', { text: `擊敗${name}！` });
     bus.emit('boss:defeated', { zoneId, first });
+    // 結算（沒有開戰紀錄時——例如一擊必殺——當作 1 秒）
+    const now = s.stats.playTime;
+    const fight = this.bossFight?.zoneId === zoneId ? this.bossFight : { zoneId, start: now - 1, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
+    this.bossFight = null;
+    const result = finishClear(s.clears, fight, now, this.itemCount());
+    this.clearSeq = {
+      t: 1.5,
+      info: {
+        result,
+        heroClass: s.heroClass,
+        playerName: s.playerName,
+        bossName: name,
+        exp,
+        gold,
+        gems,
+        unlocked: first ? next : undefined,
+        allDone,
+        next: next && isZoneUnlocked(s, next) ? next : undefined,
+        auto: this.auto.on,
+      },
+    };
+    // 慢動作特寫：鏡頭繞到角色正面、角色歡呼、職業顏色的光柱與光環
+    this.rig.setCinematic(true, this.player.facing);
+    this.player.cheer();
+    const { x, z } = this.player.pos;
+    const col = parseInt(CLASS_CLEAR[s.heroClass].color.slice(1), 16);
+    this.effects.pillar(x, z, 1.4, col, 1.6);
+    this.effects.ring(x, z, 0.5, 5, 0xffe9a0, 1);
+    this.effects.ring(x, z, 0.5, 3.2, col, 0.8);
+    this.player.invulnerable = 0; // 不要閃爍（特寫期間 hitPlayer 直接忽略傷害）
     this.persist();
     this.cloudAutoUpload();
   }
@@ -881,6 +991,11 @@ export class Game {
 
   private hitPlayer(e: Enemy, power: number) {
     const p = this.player;
+    if (this.clearSeq) return; // 破關慢動作中不受傷
+    if (this.bossFight && e.def.boss && p.invulnerable <= 0) {
+      this.bossFight.hits++;
+      if (power !== 1) this.bossFight.skillHits++;
+    }
     const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
     // 道具「雅典娜橄欖油」：減傷 25%
     if (this.cbuff.def) res.amount = Math.max(1, Math.round(res.amount * (1 - this.cbuff.def.v)));
@@ -968,6 +1083,7 @@ export class Game {
   }
 
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
+    this.bossFight = null;
     this.projectiles.clear();
     this.effects.clear();
     this.telegraphs?.clear();

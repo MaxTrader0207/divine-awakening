@@ -3,7 +3,7 @@ import { CLASS_CONSUMABLES, CONSUMABLES, MAX_STACK, consumablesFor, rollConsumab
 import { CLASS_LIST } from '@/data/classes';
 import { addConsumable, cannotUse, consume, type UseContext } from './Consumables';
 import { migrate } from '@/core/SaveSystem';
-import { newGameState } from '@/core/GameState';
+import { newGameState, SAVE_VERSION } from '@/core/GameState';
 
 const field: UseContext = { safe: false, bossFight: false, hpFull: false, mpFull: false, potionCd: false, alive: true };
 
@@ -48,7 +48,7 @@ describe('道具', () => {
   it('存檔 v8：新遊戲有新手道具，舊存檔送見面禮、加成歸零', () => {
     expect(newGameState('mage').consumables.hestia_bread).toBe(2);
     const old = migrate({ version: 7, level: 9 } as never)!;
-    expect(old.version).toBe(8);
+    expect(old.version).toBe(SAVE_VERSION);
     expect(old.consumables).toEqual({ ambrosia: 2, hermes_feather: 1 });
     expect(old.boosts).toEqual({ exp: 0, gold: 0 });
     const kept = migrate({ version: 8, consumables: { nectar: 3 }, boosts: { exp: 120, gold: 0 } } as never)!;

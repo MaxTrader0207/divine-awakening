@@ -3,6 +3,7 @@ import type { ItemInstance } from '@/systems/Inventory';
 import type { DailyState } from '@/systems/DailyQuests';
 import { newTutorial, type TutorialState } from '@/systems/Tutorial';
 import { CLASSES, type HeroClass } from '@/data/classes';
+import type { ClearRecord } from '@/systems/StageClear';
 import { DUNGEON_ORDER, ZONES } from '@/data/zones';
 
 /**
@@ -11,7 +12,7 @@ import { DUNGEON_ORDER, ZONES } from '@/data/zones';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -58,6 +59,8 @@ export interface GameState {
   boosts: { exp: number; gold: number };
   /** v5：新手指引進度 */
   tutorial: TutorialState;
+  /** v9：每個關卡的破關紀錄（次數、最快時間、最佳評價） */
+  clears: Partial<Record<ZoneId, ClearRecord>>;
   /** 統計（結算畫面、平衡用） */
   stats: { kills: number; deaths: number; playTime: number };
   settings: Settings;
@@ -85,6 +88,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     inventory: [],
     equipment: { weapon: { uid: 1, base: 'weapon_t1', rarity: 'common', plus: 0 } },
     nextUid: 2,
+    clears: {},
     tutorial: newTutorial(),
     // 新手先送幾個道具，讓玩家知道有這個東西
     consumables: { hestia_bread: 2, hermes_feather: 1 },

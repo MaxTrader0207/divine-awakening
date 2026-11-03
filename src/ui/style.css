@@ -698,3 +698,55 @@ html.lefty .joystick { left: auto; right: calc(var(--gutter) + 6px); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255, 255, 255, 0.07); color: var(--muted); border: 1px solid transparent; }
 .chip.on { background: rgba(244, 198, 78, 0.16); color: var(--gold); border-color: rgba(244, 198, 78, 0.6); }
+
+/* ---- 破關畫面（v1.34）：背景取關卡顏色，光芒 / 花瓣 / 徽章取職業顏色 ---- */
+.clear-screen { position: absolute; inset: 0; z-index: 32; display: flex; align-items: flex-end; justify-content: center; padding: max(14px, env(safe-area-inset-top)) var(--gutter) max(14px, env(safe-area-inset-bottom)); opacity: 0; visibility: hidden; transition: opacity 0.45s, visibility 0.45s; overflow: hidden; }
+.clear-screen.show { opacity: 1; visibility: visible; }
+/* 上方約三成透出 3D 特寫（角色擺勝利姿勢），往下漸暗到關卡地面色 */
+.cs-bg { position: absolute; inset: 0; background: radial-gradient(90% 40% at 50% 16%, color-mix(in srgb, var(--cs-glow) 40%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--cs-sky) 25%, transparent) 0%, color-mix(in srgb, var(--cs-sky) 35%, rgba(8, 10, 16, 0.3)) 26%, rgba(8, 10, 16, 0.72) 48%, color-mix(in srgb, var(--cs-ground) 55%, #000) 100%); }
+.cs-rays { position: absolute; left: 50%; top: 17%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--cs-cls) 22%, transparent) 0deg 7deg, transparent 7deg 18deg); animation: cs-spin 40s linear infinite; mask: radial-gradient(circle, transparent 7%, #000 12%, transparent 40%); -webkit-mask: radial-gradient(circle, transparent 7%, #000 12%, transparent 40%); opacity: 0.55; }
+@keyframes cs-spin { to { transform: rotate(360deg); } }
+.cs-petal { position: absolute; top: -20px; width: 9px; height: 13px; border-radius: 9px 0 9px 0; background: var(--cs-cls); opacity: 0.75; animation: cs-fall linear infinite; }
+.cs-petal:nth-child(3n) { background: #ffe08a; width: 7px; height: 7px; border-radius: 50%; }
+@keyframes cs-fall { 0% { transform: translate(0, -20px) rotate(0); } 100% { transform: translate(40px, 105vh) rotate(540deg); } }
+.cs-card { position: relative; width: 100%; max-width: 360px; max-height: 100%; overflow-y: auto; display: grid; gap: 7px; text-align: center; padding: 12px 14px 12px; border-radius: 20px; background: rgba(14, 18, 28, 0.78); border: 1px solid color-mix(in srgb, var(--cs-cls) 55%, transparent); box-shadow: 0 0 0 4px rgba(244, 198, 78, 0.12), 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 0 40px color-mix(in srgb, var(--cs-glow) 25%, transparent); transform: translateY(24px) scale(0.96); transition: transform 0.5s cubic-bezier(0.2, 1.4, 0.4, 1); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.clear-screen.show .cs-card { transform: none; }
+.cs-place { justify-self: center; font-size: 12px; font-weight: 800; letter-spacing: 1px; padding: 3px 12px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); color: var(--muted); }
+.cs-title { margin: -2px 0 0; font-size: 36px; line-height: 1.05; letter-spacing: 8px; font-weight: 900; background: linear-gradient(180deg, #fff6cf 10%, #f4c64e 55%, #b98a1d 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.35)); }
+.clear-screen.show .cs-title { animation: cs-pop 0.6s 0.15s both cubic-bezier(0.2, 1.6, 0.4, 1); }
+@keyframes cs-pop { from { transform: scale(1.8); opacity: 0; } to { transform: none; opacity: 1; } }
+.cs-epi { font-size: 15px; font-weight: 800; color: #fff2c4; letter-spacing: 2px; }
+.cs-epi::before, .cs-epi::after { content: '❦'; color: var(--gold); opacity: 0.7; margin: 0 8px; }
+.cs-hero { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: rgba(255, 255, 255, 0.05); }
+.cs-medal { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; background: radial-gradient(circle at 35% 30%, var(--cs-cls), var(--cs-glow)); box-shadow: 0 0 0 3px #f4c64e, 0 0 18px var(--cs-cls); }
+.clear-screen.show .cs-medal { animation: cs-medal 2.4s ease-in-out infinite; }
+@keyframes cs-medal { 50% { box-shadow: 0 0 0 3px #fff2c4, 0 0 30px var(--cs-cls); } }
+.cs-who { display: grid; text-align: left; gap: 1px; min-width: 0; }
+.cs-who small { font-size: 11px; color: var(--cs-cls); font-weight: 800; }
+.cs-who b { font-size: 17px; color: var(--text); }
+.cs-who span { font-size: 12px; color: var(--muted); }
+.cs-rank { display: grid; justify-items: center; }
+.cs-rank small { font-size: 10px; color: var(--muted); }
+.cs-rank b { font-size: 40px; line-height: 1; font-weight: 900; font-style: italic; color: #d8dbe2; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
+.rank-S .cs-rank b { color: #ffd84a; text-shadow: 0 0 14px rgba(255, 216, 74, 0.8), 0 2px 0 #8a5a00; }
+.rank-A .cs-rank b { color: #c38bff; text-shadow: 0 0 10px rgba(195, 139, 255, 0.7); }
+.rank-B .cs-rank b { color: #5cb2ff; }
+.clear-screen.show .cs-rank b { animation: cs-stamp 0.5s 0.7s both cubic-bezier(0.3, 1.8, 0.5, 1); }
+@keyframes cs-stamp { from { transform: scale(3) rotate(-25deg); opacity: 0; } to { transform: rotate(-8deg); opacity: 1; } }
+.cs-quote { margin: 0; padding: 9px 12px; border-left: 3px solid var(--cs-cls); border-radius: 0 10px 10px 0; background: color-mix(in srgb, var(--cs-glow) 18%, transparent); font-size: 14px; line-height: 1.55; font-weight: 700; color: #fff; text-align: left; }
+.cs-myth { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--muted); font-style: italic; }
+.cs-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.cs-stat { display: grid; align-content: start; gap: 1px; padding: 5px 4px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); }
+.cs-stat small { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.cs-stat b { font-size: 15px; }
+.cs-stat em { font-style: normal; font-size: 10.5px; color: var(--gold); font-weight: 800; }
+.cs-rewards { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.cs-rewards span { padding: 4px 10px; border-radius: 99px; font-size: 13px; font-weight: 800; background: rgba(244, 198, 78, 0.14); color: #ffe7a0; }
+.cs-loot { margin: -2px 0 0; font-size: 11px; color: var(--muted); }
+.cs-unlock { padding: 7px 10px; border-radius: 10px; font-size: 13px; font-weight: 800; color: #c8ffd0; background: rgba(80, 200, 120, 0.16); border: 1px solid rgba(80, 200, 120, 0.35); }
+.cs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cs-btn { padding: 11px 8px; border-radius: 11px; font-size: 14px; font-weight: 800; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); }
+.cs-btn.main { padding: 13px; font-size: 16px; letter-spacing: 1px; background: linear-gradient(#ffe07a, var(--gold)); color: #4a3308; border: none; }
+.cs-auto { margin: 0; font-size: 11px; color: var(--muted); }
+@media (max-height: 700px) { .cs-title { font-size: 30px; } .cs-myth { display: none; } .cs-card { gap: 5px; padding: 10px; } }
+html.clear-open .hud { opacity: 0; pointer-events: none; transition: opacity 0.3s; }

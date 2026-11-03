@@ -14,6 +14,11 @@ export class CameraRig {
   private current = new THREE.Vector3();
   /** 基準偏移（zoom = 1 時） */
   private readonly offset = new THREE.Vector3(0, 36, 25);
+  /** 破關特寫：0 = 一般俯視，1 = 低角度繞到角色正面（cineTarget 決定往哪邊過渡） */
+  private cine = 0;
+  private cineTarget = 0;
+  private cineAngle = 0;
+  private tmp = new THREE.Vector3();
 
   constructor(aspect: number) {
     this.camera = new THREE.PerspectiveCamera(42, aspect, 0.5, 220);
@@ -32,7 +37,20 @@ export class CameraRig {
   update(dt: number, x: number, z: number, y = 0) {
     this.target.set(x, y, z);
     this.current.lerp(this.target, 1 - Math.exp(-dt * 8));
+    this.cine += (this.cineTarget - this.cine) * (1 - Math.exp(-dt * 2.2));
+    if (this.cineTarget === 0 && this.cine < 0.002) this.cine = 0;
+    this.cineAngle += dt * 0.18; // 特寫時慢慢繞
     this.apply();
+  }
+
+  /** 破關特寫：facing 是角色面向（弧度），鏡頭從角色正面偏一點的位置開始慢慢繞 */
+  setCinematic(on: boolean, facing = 0) {
+    if (on && this.cineTarget === 0) this.cineAngle = facing - 0.45;
+    this.cineTarget = on ? 1 : 0;
+  }
+
+  get cinematic() {
+    return this.cine > 0.01;
   }
 
   resize(aspect: number) {
@@ -45,6 +63,14 @@ export class CameraRig {
   private apply() {
     const off = this.offset.clone().multiplyScalar(1 / this.zoom);
     this.camera.position.copy(this.current).add(off);
+    if (this.cine > 0) {
+      // 特寫位置：角色前上方（前 11 公尺、高 7 公尺，高過石柱不會被擋）；看向角色腳下偏低處，讓角色出現在畫面上方（下方是破關卡片）
+      const c = this.cine * this.cine * (3 - 2 * this.cine);
+      this.tmp.set(this.current.x + Math.sin(this.cineAngle) * 11, this.current.y + 7, this.current.z + Math.cos(this.cineAngle) * 11);
+      this.camera.position.lerp(this.tmp, c);
+      this.camera.lookAt(this.current.x, this.current.y + 0.8 - c * 4.2, this.current.z);
+      return;
+    }
     this.camera.lookAt(this.current.x, this.current.y + 0.8, this.current.z);
   }
 }

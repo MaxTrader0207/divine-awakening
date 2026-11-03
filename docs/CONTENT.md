@@ -16,6 +16,7 @@ v1.29 起，遊戲內容依「關卡」組織：**一個關卡一個檔案**，�
 | 敵人程式模型 | `src/entities/enemyShapes/` | 一種造型一個建造函式，`index.ts` 登記 |
 | 外部骨架模型 | `src/entities/enemyShapes/rigs.ts` | KayKit / Quaternius 模型的動畫名稱、身高、換色 |
 | 命名典故 | `docs/NAMES.md` | 古希臘主題，新內容沿用 |
+| 破關畫面文字 | `src/data/stageClear.ts` | 關卡結局、職業稱號、職業 × 關卡台詞 |
 
 舊的 `@/data/zones`、`@/data/enemies` 仍可 import（轉接到 stages）。
 
@@ -30,8 +31,9 @@ v1.29 起，遊戲內容依「關卡」組織：**一個關卡一個檔案**，�
    - `enemies`：這張地圖的小怪與首領（見下節）。
 3. **登記**：在 `stages/index.ts` 的 `STAGES` 加進去（位置 = 地圖頁、每日任務的順序）。
 4. **入口**：副本自動出現在地圖頁 / 傳送石，不用改；野外要在相鄰地圖的 `portals` 加一個傳送點，並在新地圖加回程傳送點。
-5. **文字**：`docs/NAMES.md` 補地名與典故；`CHANGELOG.md`。
-6. `npm test` → `npm run build` → 手機尺寸實際走一遍。
+5. **破關畫面**（有首領的關卡）：`src/data/stageClear.ts` 補 `STAGE_EPILOGUE`（結局標題、神話尾聲、徽記）與 `CLEAR_QUOTES` 每個職業一句台詞（`stageClear.test.ts` 會檢查）。
+6. **文字**：`docs/NAMES.md` 補地名與典故；`CHANGELOG.md`。
+7. `npm test` → `npm run build` → 手機尺寸實際走一遍。
 
 不需要改：地圖頁、每日任務、說明頁、小地圖、掉落、解鎖流程（全部讀資料）。
 
