@@ -40,7 +40,8 @@ import { currentStep, targetFor, tutorialEvent, type TutorialEvent } from '@/sys
 import { rewardText } from '@/data/tutorial';
 import { GuideArrow } from '@/world/GuideArrow';
 import { consume, cannotUse } from '@/systems/Consumables';
-import { CONSUMABLE_MAP } from '@/data/consumables';
+import type { BuffStat } from '@/data/consumables';
+import { damageArea } from '@/systems/Damage';
 import { POTION_COOLDOWN } from '@/systems/SkillSystem';
 import { LabelDodger } from '@/world/LabelDodger';
 
@@ -70,8 +71,11 @@ export class Game {
   private guideArrow = new GuideArrow();
   private guideLast = { x: 0, z: 0 };
   /** 道具的暫時增益（剩餘秒數）與持續回復 */
-  private cbuff = { atk: 0, def: 0, speed: 0 };
+  private cbuff: Partial<Record<BuffStat, { t: number; v: number }>> = {};
+  /** 護盾（埃阿斯塔盾護符）：剩餘吸收量與時間 */
+  private shield = { hp: 0, t: 0 };
   private hot = { t: 0, rate: 0 };
+  private hotMp = { t: 0, rate: 0 };
   /** 地點標籤避開 HUD */
   private labelDodger!: LabelDodger;
   readonly enemies: EnemyManager;
@@ -370,6 +374,7 @@ export class Game {
       if (!hit.targetIsPlayer && p.bloodlustT > 0 && p.alive) {
         p.hp = Math.min(p.stats.maxHp, p.hp + hit.amount * BLOODLUST_LEECH);
       }
+      if (!hit.targetIsPlayer && this.cbuff.leech && p.alive) p.hp = Math.min(p.stats.maxHp, p.hp + hit.amount * this.cbuff.leech.v);
       if (!this.usesRage) return;
       this.rageIdle = 0;
       const gain = (hit.targetIsPlayer ? RAGE.perHurt : RAGE.perHit) * (p.berserkT > 0 ? BERSERK.rage : 1);
@@ -468,7 +473,7 @@ export class Game {
 
     const collision = this.zones.current!.collision;
     const pushOut = (pos: { x: number; z: number }, r: number) => this.enemies.pushOut(pos, r);
-    this.skills.update(dt);
+    this.skills.update(dt * (1 + (this.cbuff.cdr?.v ?? 0))); // 道具「冷卻快 30%」
     this.counterTimer = Math.max(0, this.counterTimer - dt);
     if (this.deathTimer > 0) {
       this.deathTimer -= dt;
@@ -576,13 +581,23 @@ export class Game {
       this.hot.t -= dt;
       p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * this.hot.rate * dt);
     }
+    if (this.hotMp.t > 0) {
+      this.hotMp.t -= dt;
+      p.mp = Math.min(p.stats.maxMp, p.mp + p.stats.maxMp * this.hotMp.rate * dt);
+    }
     let expired = false;
-    for (const k of ['atk', 'def', 'speed'] as const) {
-      if (this.cbuff[k] <= 0) continue;
-      this.cbuff[k] -= dt;
-      if (this.cbuff[k] <= 0 && k !== 'def') expired = true;
+    for (const [k, b] of Object.entries(this.cbuff) as [BuffStat, { t: number; v: number }][]) {
+      b.t -= dt;
+      if (b.t > 0) continue;
+      delete this.cbuff[k];
+      // 會改到屬性面板的增益結束時要重算
+      if (k === 'atk' || k === 'speed' || k === 'crit' || k === 'pen' || k === 'critDmg') expired = true;
     }
     if (expired) this.recalcStats();
+    if (this.shield.t > 0) {
+      this.shield.t -= dt;
+      if (this.shield.t <= 0) this.shield.hp = 0;
+    }
     const b = this.state.boosts;
     if (b.exp > 0) b.exp = Math.max(0, b.exp - dt);
     if (b.gold > 0) b.gold = Math.max(0, b.gold - dt);
@@ -611,8 +626,12 @@ export class Game {
     p.stats = computeStats(this.state);
     if (this.devPen !== null) p.stats.pen = this.devPen;
     // 道具增益：阿瑞斯戰血（攻擊）、赫密士疾行藥（移速）
-    if (this.cbuff.atk > 0) p.stats.atk = Math.round(p.stats.atk * (1 + (CONSUMABLE_MAP.ares_blood.effect as { value: number }).value));
-    if (this.cbuff.speed > 0) p.stats.moveSpeed *= 1 + (CONSUMABLE_MAP.hermes_tonic.effect as { value: number }).value;
+    const cb = this.cbuff;
+    if (cb.atk) p.stats.atk = Math.round(p.stats.atk * (1 + cb.atk.v));
+    if (cb.speed) p.stats.moveSpeed *= 1 + cb.speed.v;
+    if (cb.crit) p.stats.critRate = Math.min(0.75, p.stats.critRate + cb.crit.v);
+    if (cb.pen) p.stats.pen = Math.min(0.9, p.stats.pen + cb.pen.v);
+    if (cb.critDmg) p.stats.critDmg += cb.critDmg.v;
     p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
     p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));
     bus.emit('player:changed');
@@ -662,13 +681,41 @@ export class Game {
         bus.emit('skill:cast', { slot: 'potion' }); // 每日任務「使用藥水」也算
         break;
       case 'regen':
-        this.hot = { t: e.duration, rate: e.total / e.duration };
-        this.effects.ring(p.pos.x, p.pos.z, 0.4, 1.6, 0xff9a5a, 0.6);
+        if (e.mp) this.hotMp = { t: e.duration, rate: e.total / e.duration };
+        else this.hot = { t: e.duration, rate: e.total / e.duration };
+        this.effects.ring(p.pos.x, p.pos.z, 0.4, 1.6, e.mp ? 0x5cb2ff : 0xff9a5a, 0.6);
         break;
       case 'buff':
-        this.cbuff[e.stat] = e.duration;
+        // 同一種增益再用一次：取效果較強的、時間重新計算
+        this.cbuff[e.stat] = { t: e.duration, v: Math.max(e.value, this.cbuff[e.stat]?.v ?? 0) };
         this.recalcStats();
         this.effects.pillar(p.pos.x, p.pos.z, 0.8, e.stat === 'atk' ? 0xff5a3c : e.stat === 'def' ? 0x9fd36a : 0x8fe3ff, 0.6);
+        break;
+      case 'cdReset':
+        this.skills.reset();
+        this.effects.ring(p.pos.x, p.pos.z, 0.5, 2.6, 0xfff2a0, 0.5);
+        break;
+      case 'invuln':
+        p.invulnerable = Math.max(p.invulnerable, e.duration);
+        this.effects.pillar(p.pos.x, p.pos.z, 1, 0xfff6c4, 0.8);
+        break;
+      case 'nova': {
+        const r = e.radius;
+        this.effects.disc(p.pos.x, p.pos.z, r, e.color, 0.45, 0.6);
+        this.effects.ring(p.pos.x, p.pos.z, 0.5, r, e.color, 0.5);
+        damageArea(this.enemies.enemies, p.pos.x, p.pos.z, r, p.stats, e.power, (en) => {
+          if (e.stun) en.applyStun(e.stun);
+          if (e.slow) en.applySlow(e.slow, 0.5);
+        });
+        this.haptic(30);
+        break;
+      }
+      case 'summon':
+        this.minions.summon(e.minion, e.count);
+        break;
+      case 'shield':
+        this.shield = { hp: Math.round(p.stats.maxHp * e.ratio), t: e.duration };
+        this.effects.ring(p.pos.x, p.pos.z, 0.6, 1.6, 0x8fd4ff, 0.6);
         break;
       case 'town':
         this.setAuto(false);
@@ -704,10 +751,14 @@ export class Game {
     if (p.bloodlustT > 0) out.push({ icon: '🩸', label: '嗜血', t: p.bloodlustT });
     if (p.berserkT > 0) out.push({ icon: '🔥', label: '狂暴', t: p.berserkT });
     if (p.invulnerable > 0.4) out.push({ icon: '✨', label: '無敵', t: p.invulnerable });
-    if (this.cbuff.atk > 0) out.push({ icon: '⚔️', label: '戰血', t: this.cbuff.atk });
-    if (this.cbuff.def > 0) out.push({ icon: '🫒', label: '橄欖油', t: this.cbuff.def });
-    if (this.cbuff.speed > 0) out.push({ icon: '💨', label: '疾行', t: this.cbuff.speed });
+    const BUFF_ICON: Record<BuffStat, [string, string]> = {
+      atk: ['⚔️', '攻擊'], def: ['🫒', '減傷'], speed: ['💨', '移速'], crit: ['🎯', '爆擊'],
+      pen: ['🔱', '穿透'], critDmg: ['💥', '爆傷'], cdr: ['⏳', '冷卻'], leech: ['🍇', '吸血'],
+    };
+    for (const [k, b] of Object.entries(this.cbuff) as [BuffStat, { t: number; v: number }][]) out.push({ icon: BUFF_ICON[k][0], label: BUFF_ICON[k][1], t: b.t });
+    if (this.shield.hp > 0) out.push({ icon: '🛡️', label: `${this.shield.hp}` });
     if (this.hot.t > 0) out.push({ icon: '🍞', label: '回復', t: this.hot.t });
+    if (this.hotMp.t > 0) out.push({ icon: '💧', label: '回魔', t: this.hotMp.t });
     const b = this.state.boosts;
     if (b.exp > 0) out.push({ icon: '🐝', label: `${Math.ceil(b.exp / 60)}分` });
     if (b.gold > 0) out.push({ icon: '🪙', label: `${Math.ceil(b.gold / 60)}分` });
@@ -832,7 +883,14 @@ export class Game {
     const p = this.player;
     const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
     // 道具「雅典娜橄欖油」：減傷 25%
-    if (this.cbuff.def > 0) res.amount = Math.max(1, Math.round(res.amount * (1 - (CONSUMABLE_MAP.athena_oil.effect as { value: number }).value)));
+    if (this.cbuff.def) res.amount = Math.max(1, Math.round(res.amount * (1 - this.cbuff.def.v)));
+    // 道具護盾先吸收
+    if (this.shield.hp > 0) {
+      const absorbed = Math.min(this.shield.hp, res.amount - 1);
+      this.shield.hp -= absorbed;
+      res.amount -= absorbed;
+      this.effects.ring(p.pos.x, p.pos.z, 0.6, 1.2, 0x8fd4ff, 0.2);
+    }
     // 騎士「守護」：減傷
     if (p.guardT > 0) {
       res.amount = Math.max(1, Math.round(res.amount * (1 - GUARD_REDUCTION)));
@@ -848,8 +906,10 @@ export class Game {
   /** 玩家死亡：倒地 1.6 秒（遊戲時間）→ 損失 10% 金幣 → 主城復活 */
   private onPlayerDied() {
     this.state.stats.deaths++;
-    this.cbuff = { atk: 0, def: 0, speed: 0 };
+    this.cbuff = {};
     this.hot = { t: 0, rate: 0 };
+    this.hotMp = { t: 0, rate: 0 };
+    this.shield = { hp: 0, t: 0 };
     this.counterTimer = 0;
     this.targets.clear();
     this.deathTimer = 1.6;

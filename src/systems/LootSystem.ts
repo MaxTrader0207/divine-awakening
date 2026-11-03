@@ -9,6 +9,7 @@ import { addItem, itemName } from './Inventory';
 import { POTION_DROP_CHANCE, rollDrop } from './LootTable';
 import { CONSUMABLE_DROP_CHANCE, CONSUMABLE_MAP, rollConsumable } from '@/data/consumables';
 import { addConsumable } from './Consumables';
+import { INVENTORY_SIZE } from './Inventory';
 import type { Effects } from './Effects';
 
 /**
@@ -59,7 +60,7 @@ export class LootSystem {
       }
       if (k.boss) this.spawn({ type: 'potion', potion: 'hp', count: 5 }, k.x, k.z);
       // 道具：小怪 5%、首領必掉 1 個
-      if (k.boss || (k.gold[1] > 0 && Math.random() < CONSUMABLE_DROP_CHANCE)) this.spawn({ type: 'consumable', id: rollConsumable() }, k.x, k.z);
+      if (k.boss || (k.gold[1] > 0 && Math.random() < CONSUMABLE_DROP_CHANCE)) this.spawn({ type: 'consumable', id: rollConsumable(Math.random, this.state.heroClass) }, k.x, k.z);
     });
   }
 
@@ -106,7 +107,7 @@ export class LootSystem {
   /** 最近的掉落物（AUTO 用；背包滿時忽略裝備） */
   nearest(maxRange = 14): { x: number; z: number } | null {
     const p = this.player.pos;
-    const full = this.state.inventory.length >= 40;
+    const full = this.state.inventory.length >= INVENTORY_SIZE;
     let best: Drop | null = null;
     let bd = maxRange;
     for (const d of this.drops) {
@@ -142,7 +143,7 @@ export class LootSystem {
     const k = d.kind;
     if (k.type === 'consumable') {
       const def = CONSUMABLE_MAP[k.id];
-      addConsumable(this.state, k.id);
+      if (!addConsumable(this.state, k.id)) return false; // 這種道具已經 99 個，留在地上
       bus.emit('toast', { text: `獲得 ${def.icon} ${def.name}`, kind: 'reward' });
       this.onInventoryChanged();
       return true;

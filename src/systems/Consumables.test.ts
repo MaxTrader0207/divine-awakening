@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CONSUMABLES, rollConsumable } from '@/data/consumables';
+import { CLASS_CONSUMABLES, CONSUMABLES, MAX_STACK, consumablesFor, rollConsumable } from '@/data/consumables';
+import { CLASS_LIST } from '@/data/classes';
 import { addConsumable, cannotUse, consume, type UseContext } from './Consumables';
 import { migrate } from '@/core/SaveSystem';
 import { newGameState } from '@/core/GameState';
@@ -53,5 +54,31 @@ describe('道具', () => {
     const kept = migrate({ version: 8, consumables: { nectar: 3 }, boosts: { exp: 120, gold: 0 } } as never)!;
     expect(kept.consumables).toEqual({ nectar: 3 });
     expect(kept.boosts.exp).toBe(120);
+  });
+
+  it('每個職業各有 10 種專屬道具，所有道具名稱不重複', () => {
+    for (const cls of CLASS_LIST) {
+      expect(CLASS_CONSUMABLES.filter((c) => c.cls === cls)).toHaveLength(10);
+      expect(consumablesFor(cls)).toHaveLength(20);
+    }
+    const names = [...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.name);
+    expect(new Set(names).size).toBe(60);
+    expect(new Set([...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.id)).size).toBe(60);
+  });
+
+  it('掉落只會出現共用或自己職業的道具', () => {
+    for (let i = 0; i < 3000; i++) {
+      const id = rollConsumable(Math.random, 'knight');
+      expect(id.startsWith('knight_') || CONSUMABLES.some((c) => c.id === id)).toBe(true);
+    }
+  });
+
+  it('每種最多 99 個；城裡不能用範圍攻擊道具', () => {
+    const bag = { consumables: { mage_promethean_fire: MAX_STACK - 1 } as Record<string, number> };
+    expect(addConsumable(bag, 'mage_promethean_fire')).toBe(true);
+    expect(addConsumable(bag, 'mage_promethean_fire')).toBe(false);
+    expect(bag.consumables.mage_promethean_fire).toBe(99);
+    expect(cannotUse(bag, 'mage_promethean_fire', { ...field, safe: true })).toBe('城裡沒有敵人');
+    expect(cannotUse({ consumables: { berserker_thracian_spirit: 1 } }, 'berserker_thracian_spirit', { ...field, hpFull: true, mpFull: true })).toBe('怒氣已滿');
   });
 });

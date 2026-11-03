@@ -692,3 +692,9 @@ html.lefty .joystick { left: auto; right: calc(var(--gutter) + 6px); }
 
 /* 神話裝標記 */
 .inv-item .star { position: absolute; top: 2px; left: 4px; font-style: normal; font-size: 11px; color: #ffd36b; text-shadow: 0 1px 2px #000; }
+
+/* 裝備頁：背包 / 道具切換、背包分類 */
+.inv-switch { margin-top: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255, 255, 255, 0.07); color: var(--muted); border: 1px solid transparent; }
+.chip.on { background: rgba(244, 198, 78, 0.16); color: var(--gold); border-color: rgba(244, 198, 78, 0.6); }

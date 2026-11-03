@@ -10,7 +10,8 @@ import {
 } from '@/systems/Inventory';
 import { h } from './dom';
 import { PROFILE_LABEL } from '@/data/gear';
-import { CONSUMABLES } from '@/data/consumables';
+import { CONSUMABLES, MAX_STACK, consumablesFor, type ConsumableDef } from '@/data/consumables';
+import { CLASSES } from '@/data/classes';
 import { addConsumable } from '@/systems/Consumables';
 import { bus } from '@/core/EventBus';
 
@@ -31,25 +32,32 @@ export interface InvContext {
   useConsumable(id: string): void;
 }
 
-/** 背包裡的道具（消耗品）：圖示、名稱、數量、效果、使用鈕 */
-function consumableCard(ctx: InvContext): HTMLElement {
+/** 道具區：職業專屬 / 通用兩組，每列：圖示、名稱、數量（上限 99）、效果、使用 */
+function consumableCards(ctx: InvContext): HTMLElement[] {
   const s = ctx.state;
-  const owned = CONSUMABLES.filter((c) => (s.consumables[c.id] ?? 0) > 0);
-  const card = h('div', { class: 'card' }, [h('h4', {}, `🎒 道具（${owned.reduce((a, c) => a + (s.consumables[c.id] ?? 0), 0)} 個）`)]);
-  if (!owned.length) card.appendChild(h('p', {}, '還沒有道具。可以在商城購買，打倒怪物也有機會掉落（首領必掉）。'));
-  for (const c of owned)
-    card.appendChild(
-      h('div', { class: 'shop-row' }, [
-        h('span', { class: 'shop-ico' }, c.icon),
-        h('div', { class: 'shop-main' }, [h('b', {}, `${c.name} ×${s.consumables[c.id]}`), h('small', {}, c.desc)]),
-        h('button', { class: 'go small', onclick: () => ctx.useConsumable(c.id) }, '使用'),
-      ]),
-    );
-  return card;
+  const all = consumablesFor(s.heroClass);
+  const row = (c: ConsumableDef) =>
+    h('div', { class: 'shop-row' }, [
+      h('span', { class: 'shop-ico' }, c.icon),
+      h('div', { class: 'shop-main' }, [h('b', {}, `${c.name} ×${s.consumables[c.id]}`), h('small', {}, c.desc)]),
+      h('button', { class: 'go small', onclick: () => ctx.useConsumable(c.id) }, '使用'),
+    ]);
+  const mine = all.filter((c) => c.cls && (s.consumables[c.id] ?? 0) > 0);
+  const shared = all.filter((c) => !c.cls && (s.consumables[c.id] ?? 0) > 0);
+  const out: HTMLElement[] = [];
+  if (!mine.length && !shared.length) out.push(h('div', { class: 'card' }, [h('p', {}, '還沒有道具。可以在商城購買，打倒怪物也有機會掉落（首領必掉）。每種最多 99 個。')]));
+  if (mine.length) out.push(h('div', { class: 'card' }, [h('h4', {}, `${CLASSES[s.heroClass].icon} ${CLASSES[s.heroClass].name}專屬`), ...mine.map(row)]));
+  if (shared.length) out.push(h('div', { class: 'card' }, [h('h4', {}, '通用道具'), ...shared.map(row)]));
+  out.push(h('p', { class: 'empty-note' }, `每種道具最多 ${MAX_STACK} 個，不佔裝備背包的格子。`));
+  return out;
 }
 
 /** 跨分頁記住選取的物品 */
 let selectedUid: number | null = null;
+/** 裝備頁下半部：裝備背包 / 道具 */
+let invView: 'gear' | 'items' = 'gear';
+/** 背包篩選 */
+let invFilter: 'all' | 'named' | EquipSlot = 'all';
 
 const STAT_KEYS: (keyof Stats)[] = ['atk', 'def', 'maxHp', 'maxMp', 'pen', 'critRate', 'critDmg', 'moveSpeed'];
 
@@ -72,8 +80,13 @@ export function renderEquip(ctx: InvContext): HTMLElement[] {
   }
 
   const items = [...s.inventory].sort((a, b) => SLOT_ORDER.indexOf(ITEM_BASES[a.base].slot) - SLOT_ORDER.indexOf(ITEM_BASES[b.base].slot) || itemScore(b) - itemScore(a));
+  // 背包篩選（100 格時方便找）
+  const shown = items.filter((it) => {
+    const b = ITEM_BASES[it.base];
+    return invFilter === 'all' || (invFilter === 'named' ? !!b.named : b.slot === invFilter);
+  });
   const grid = h('div', { class: 'inv-grid' });
-  for (const it of items) {
+  for (const it of shown) {
     const better = isUpgrade(s, it);
     grid.appendChild(
       h('button', { class: `inv-item${it.uid === selectedUid ? ' sel' : ''}`, style: `--rc:${RARITY[it.rarity].color}`, onclick: () => { selectedUid = it.uid; ctx.rerender(); } }, [
@@ -85,6 +98,7 @@ export function renderEquip(ctx: InvContext): HTMLElement[] {
     );
   }
   if (!items.length) grid.appendChild(h('p', { class: 'empty-note' }, '背包是空的。打倒怪物有機會掉落裝備。'));
+  else if (!shown.length) grid.appendChild(h('p', { class: 'empty-note' }, '這個分類沒有裝備。'));
 
   const out: HTMLElement[] = [
     h('div', { class: 'card' }, [h('h4', {}, `${s.playerName}・Lv.${s.level}`), statsGrid]),
@@ -92,10 +106,32 @@ export function renderEquip(ctx: InvContext): HTMLElement[] {
   ];
   const sel = selectedUid !== null ? findItem(s, selectedUid) : undefined;
   if (sel) out.push(detailCard(ctx, sel));
-  out.push(consumableCard(ctx));
+  // 下半部：裝備背包 / 道具 切換
+  const nItems = Object.values(s.consumables).reduce((a, n) => a + n, 0);
+  out.push(
+    h('div', { class: 'seg seg2 inv-switch' }, [
+      h('button', { class: `seg-btn${invView === 'gear' ? ' on' : ''}`, onclick: () => { invView = 'gear'; ctx.rerender(); } }, `🎒 裝備 ${s.inventory.length}/${INVENTORY_SIZE}`),
+      h('button', { class: `seg-btn${invView === 'items' ? ' on' : ''}`, onclick: () => { invView = 'items'; ctx.rerender(); } }, `🧪 道具 ${nItems}`),
+    ]),
+  );
+  if (invView === 'items') {
+    out.push(...consumableCards(ctx));
+    return out;
+  }
+  const chips: [typeof invFilter, string][] = [['all', '全部'], ['named', '★神話'], ...SLOT_ORDER.map((sl) => [sl, SLOT_NAMES[sl]] as [typeof invFilter, string])];
+  out.push(
+    h(
+      'div',
+      { class: 'chips' },
+      chips.map(([f, label]) => {
+        const n = f === 'all' ? items.length : items.filter((it) => (f === 'named' ? ITEM_BASES[it.base].named : ITEM_BASES[it.base].slot === f)).length;
+        return h('button', { class: `chip${invFilter === f ? ' on' : ''}`, onclick: () => { invFilter = f; ctx.rerender(); } }, `${label} ${n}`);
+      }),
+    ),
+  );
   out.push(
     h('div', { class: 'inv-head' }, [
-      h('span', { class: 'section-title' }, `背包 ${s.inventory.length}/${INVENTORY_SIZE}`),
+      h('span', { class: 'section-title' }, `背包 ${s.inventory.length}/${INVENTORY_SIZE} 格`),
       h('button', {
         class: 'go ghost small',
         onclick: () => {
@@ -214,6 +250,18 @@ export function renderShop(ctx: InvContext): HTMLElement[] {
     ctx.changed();
     ctx.rerender();
   };
+  const shopItemRow = (c: ConsumableDef) =>
+    h('div', { class: 'shop-row' }, [
+      h('span', { class: 'shop-ico' }, c.icon),
+      h('div', { class: 'shop-main' }, [h('b', {}, `${c.name}${s.consumables[c.id] ? `（持有 ${s.consumables[c.id]}/${MAX_STACK}）` : ''}`), h('small', {}, `${c.desc}・${c.lore}`)]),
+      h('button', {
+        class: 'go small',
+        onclick: () => {
+          if ((s.consumables[c.id] ?? 0) >= MAX_STACK) return ctx.toast(`${c.name}最多 ${MAX_STACK} 個`);
+          buy(c.price, () => addConsumable(s, c.id), c.name);
+        },
+      }, String(c.price)),
+    ]);
   const potionRow = (kind: 'hp' | 'mp') =>
     h('div', { class: 'shop-row' }, [
       h('span', { class: 'shop-ico' }, '🧪'),
@@ -227,17 +275,11 @@ export function renderShop(ctx: InvContext): HTMLElement[] {
       h('div', { class: 'wallet-line' }, [h('span', { class: 'coin' }), h('b', {}, String(s.gold)), h('span', { class: 'gem' }), h('b', {}, String(s.gems))]),
     ]),
     h('div', { class: 'section-title' }, '道具店'),
-    h('div', { class: 'card' }, [
-      potionRow('hp'),
-      potionRow('mp'),
-      ...CONSUMABLES.map((c) =>
-        h('div', { class: 'shop-row' }, [
-          h('span', { class: 'shop-ico' }, c.icon),
-          h('div', { class: 'shop-main' }, [h('b', {}, `${c.name}${s.consumables[c.id] ? `（持有 ${s.consumables[c.id]}）` : ''}`), h('small', {}, `${c.desc}・${c.lore}`)]),
-          h('button', { class: 'go small', onclick: () => buy(c.price, () => (addConsumable(s, c.id), true), c.name) }, String(c.price)),
-        ]),
-      ),
-    ]),
+    h('div', { class: 'card' }, [potionRow('hp'), potionRow('mp')]),
+    h('div', { class: 'section-title' }, `${CLASSES[s.heroClass].icon} ${CLASSES[s.heroClass].name}專屬道具`),
+    h('div', { class: 'card' }, consumablesFor(s.heroClass).filter((c) => c.cls).map(shopItemRow)),
+    h('div', { class: 'section-title' }, '通用道具'),
+    h('div', { class: 'card' }, CONSUMABLES.map(shopItemRow)),
     h('div', { class: 'section-title' }, `武器店・防具店（標準裝，擊敗首領解鎖更高階；目前到第 ${maxTier} 階。★神話裝只會從怪物身上掉落）`),
   ];
   const gear = h('div', { class: 'card' });

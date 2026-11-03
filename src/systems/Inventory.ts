@@ -25,7 +25,8 @@ export interface InventoryState {
   heroClass?: import('@/data/classes').HeroClass;
 }
 
-export const INVENTORY_SIZE = 40;
+/** 背包格數（v1.28 從 40 擴充到 100） */
+export const INVENTORY_SIZE = 100;
 
 export function itemName(it: ItemInstance): string {
   const b = ITEM_BASES[it.base];

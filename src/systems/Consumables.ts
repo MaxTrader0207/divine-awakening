@@ -1,4 +1,4 @@
-import { CONSUMABLE_MAP, type ConsumableDef } from '@/data/consumables';
+import { CONSUMABLE_MAP, MAX_STACK, type ConsumableDef } from '@/data/consumables';
 
 /**
  * 道具使用的判斷與扣數量（純邏輯，可單元測試）。效果由 Game 套用。
@@ -30,8 +30,9 @@ export function cannotUse(bag: ConsumableBag, id: string, ctx: UseContext): stri
   if (e.type === 'heal') {
     const hpUseless = !e.hp || ctx.hpFull;
     const mpUseless = !(e.mp || e.rage) || ctx.mpFull;
-    if (hpUseless && mpUseless) return e.hp && e.mp ? 'HP 和 MP 都是滿的' : e.hp ? 'HP 已滿' : 'MP 已滿';
+    if (hpUseless && mpUseless) return e.hp && e.mp ? 'HP 和 MP 都是滿的' : e.hp ? 'HP 已滿' : e.rage && !e.mp ? '怒氣已滿' : 'MP 已滿';
   }
+  if (e.type === 'nova' && ctx.safe) return '城裡沒有敵人';
   if (e.type === 'town') {
     if (ctx.safe) return '已經在城裡了';
     if (ctx.bossFight) return '首領戰中不能傳送';
@@ -47,6 +48,10 @@ export function consume(bag: ConsumableBag, id: string, ctx: UseContext): Consum
   return CONSUMABLE_MAP[id];
 }
 
-export function addConsumable(bag: ConsumableBag, id: string, n = 1) {
-  bag.consumables[id] = (bag.consumables[id] ?? 0) + n;
+/** 加入道具；超過上限（每種 99 個）時不加，回傳 false */
+export function addConsumable(bag: ConsumableBag, id: string, n = 1): boolean {
+  const cur = bag.consumables[id] ?? 0;
+  if (cur + n > MAX_STACK) return false;
+  bag.consumables[id] = cur + n;
+  return true;
 }
