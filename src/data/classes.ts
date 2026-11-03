@@ -21,6 +21,10 @@ export interface HeroAnimSet {
   cheer: string;
   /** 模型自發光顏色（職業靈光） */
   tint?: number;
+  /** 貼圖換色：色相落在 [from, to]（度）的像素轉成 hue 度（召喚師：綠色布料 → 深紫） */
+  recolor?: { from: number; to: number; hue: number; light?: number };
+  /** 手上額外拿的道具（assets/models 的靜態模型 id、長度公尺、右手 r / 左手 l） */
+  prop?: { id: string; length: number; hand: 'r' | 'l' };
 }
 
 export interface ClassDef {
@@ -141,7 +145,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'raise_guard', name: '骷髏巨衛', slot: 'E', mpCost: 32, cooldown: 14, power: 0, range: 0, shape: 'circle', summon: 'skeleton_warrior', count: 1, icon: '🛡', color: 0x9a7aff, auto: 'summon', anim: 'Spellcast_Long' },
       { id: 'bone_burst', name: '白骨爆裂', slot: 'R', mpCost: 10, cooldown: 10, power: 1.8, range: 0, shape: 'circle', radius: 2.6, icon: '💥', color: 0xd8c8ff, auto: 'detonate', anim: 'Spellcast_Shoot' },
     ],
-    anims: { model: 'summoner', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', tint: 0x9a6aff },
+    anims: { model: 'summoner', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 275, light: 0.8 }, prop: { id: 'skel_staff', length: 1.9, hand: 'r' } },
     weaponNames: ['見習骨杖', '珊瑚骨杖', '熔心骨杖', '霧森冥杖'],
     weaponIcon: '🦴',
   },

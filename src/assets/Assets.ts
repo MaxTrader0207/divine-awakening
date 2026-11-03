@@ -152,6 +152,7 @@ class AssetLibrary {
 /** 合併同骨架、同材質、同 bindMatrix 的蒙皮網格 */
 function mergeSkinned(root: THREE.Object3D) {
   root.updateMatrixWorld(true);
+  // 依「材質、骨頭順序、bindMatrix」分組
   const groups = new Map<string, THREE.SkinnedMesh[]>();
   root.traverse((o) => {
     const m = o as THREE.SkinnedMesh;
@@ -165,15 +166,26 @@ function mergeSkinned(root: THREE.Object3D) {
     if (list.length < 2) continue;
     const first = list[0];
     const names = ['position', 'normal', 'uv', 'skinIndex', 'skinWeight'];
-    const geos = list.map((m) => {
+    const parts: THREE.SkinnedMesh[] = [];
+    const geos: THREE.BufferGeometry[] = [];
+    for (const m of list) {
+      // 素材管線量化時，每個蒙皮網格的位置縮放 / 位移被折進「自己的」骨架反綁定矩陣：
+      //   boneInverse(m)_i = boneInverse(first)_i × M（所有骨頭共用同一個 M）
+      // 先把頂點換算到 first 的空間（v' = B⁻¹·M·B·v）才能共用 first 的骨架。
+      // 只比骨頭名稱就直接合併的話，身體、腿、手臂會錯位或縮到看不見（v1.20 前的 bug）。
+      const corr = m === first ? new THREE.Matrix4() : correction(first, m);
+      if (!corr) continue; // 不是同一個 M（不是量化造成的差異）：不合併，保留原網格
       const g = new THREE.BufferGeometry();
       const src = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry;
       for (const n of names) {
         const a = src.getAttribute(n) as THREE.BufferAttribute | undefined;
         if (a) g.setAttribute(n, toFloat(a));
       }
-      return g;
-    });
+      if (m !== first) g.applyMatrix4(corr);
+      parts.push(m);
+      geos.push(g);
+    }
+    if (parts.length < 2) continue;
     const sig = (g: THREE.BufferGeometry) => Object.keys(g.attributes).sort().join();
     if (geos.some((g) => sig(g) !== sig(geos[0]))) continue;
     const merged = mergeGeometries(geos, false);
@@ -183,11 +195,32 @@ function mergeSkinned(root: THREE.Object3D) {
     mesh.receiveShadow = true;
     first.parent!.add(mesh);
     mesh.bind(first.skeleton, first.bindMatrix);
-    for (const m of list) m.removeFromParent();
+    for (const m of parts) m.removeFromParent();
   }
 }
 
-/** 量化（Int16 / normalized）屬性轉回 Float32，合併時型別才一致 */
+/** 把 m 的頂點換算到 first 骨架空間的矩陣；各骨頭算出來不一致時回傳 null（不能合併） */
+function correction(first: THREE.SkinnedMesh, m: THREE.SkinnedMesh): THREE.Matrix4 | null {
+  const A = first.skeleton.boneInverses;
+  const Bm = m.skeleton.boneInverses;
+  let M: THREE.Matrix4 | null = null;
+  for (let i = 0; i < A.length; i++) {
+    const inv = A[i].clone();
+    if (Math.abs(inv.determinant()) < 1e-12) continue;
+    const Mi = inv.invert().multiply(Bm[i]);
+    if (!M) {
+      M = Mi;
+      continue;
+    }
+    // 檢查每根骨頭的 M 都一樣（容許誤差）
+    const scale = Math.max(1e-6, ...M.elements.map(Math.abs));
+    for (let k = 0; k < 16; k++) if (Math.abs(Mi.elements[k] - M.elements[k]) > scale * 2e-3) return null;
+  }
+  if (!M) return null;
+  const B = first.bindMatrix;
+  return B.clone().invert().multiply(M).multiply(B);
+}
+
 function toFloat(a: THREE.BufferAttribute): THREE.BufferAttribute {
   const n = a.count;
   const s = a.itemSize;

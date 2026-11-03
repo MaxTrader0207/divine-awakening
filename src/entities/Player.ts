@@ -87,17 +87,55 @@ export class Player {
     this.body.clear();
     const s = HERO_HEIGHT / Assets.height(this.anims.model);
     inst.root.scale.setScalar(s);
-    // 職業光暈（召喚師：淡淡的紫色靈光）
+    // 職業光暈
     if (this.anims.tint !== undefined) {
       const c = new THREE.Color(this.anims.tint);
       for (const m of inst.materials) m.emissive.copy(c).multiplyScalar(0.22);
+    }
+    // 貼圖換色（召喚師：綠色布料 → 深紫，皮膚與皮革不變）
+    if (this.anims.recolor) {
+      const cache = new Map<THREE.Texture, THREE.Texture>();
+      for (const m of inst.materials) {
+        if (!m.map) continue;
+        let t = cache.get(m.map);
+        if (!t) cache.set(m.map, (t = recolorTexture(m.map, this.anims.recolor)));
+        m.map = t;
+        m.needsUpdate = true;
+      }
+    }
+    // 手上的道具（召喚師的骷髏法杖）
+    const prop = this.anims.prop;
+    if (prop) {
+      const bone = inst.root.getObjectByName(`handslot${prop.hand}`) ?? inst.root.getObjectByName(`hand${prop.hand}`);
+      const w = Assets.cloneStatic(prop.id);
+      if (bone && w) {
+        inst.root.updateMatrixWorld(true);
+        const size = Assets.size(prop.id);
+        const ws = new THREE.Vector3();
+        bone.getWorldScale(ws);
+        w.scale.setScalar(prop.length / Math.max(size.x, size.y, size.z) / ws.x);
+        // 待機姿勢下讓道具在世界座標「直立」（模型本身沿 +y），之後跟著手的動畫一起動
+        const poseRig = new CharacterRig(inst);
+        poseRig.setLoop(this.anims.idle, 0);
+        poseRig.update(0.5);
+        this.rig = poseRig;
+        inst.root.updateMatrixWorld(true);
+        const bq = new THREE.Quaternion();
+        bone.getWorldQuaternion(bq);
+        w.quaternion.copy(bq.invert());
+        // 握在中段：沿世界 y 往下移 35% 長度（換算到骨頭座標）
+        const down = new THREE.Vector3(0, -prop.length * 0.35, 0).applyQuaternion(w.quaternion).divideScalar(ws.x);
+        w.position.copy(down);
+        w.traverse((o) => ((o as THREE.Mesh).isMesh ? ((o as THREE.Mesh).castShadow = true) : null));
+        bone.add(w);
+      }
     }
     this.body.add(inst.root);
     // 法杖頂端改成隱形的定位點（投射物出生點、施法光效）
     this.staffTip.visible = false;
     this.staffTip.position.set(0.45, 1.6, 0.35);
     this.body.add(this.staffTip);
-    this.rig = new CharacterRig(inst);
+    this.rig ??= new CharacterRig(inst);
     this.rig.setLoop(this.anims.idle, 0);
     return true;
   }
@@ -247,4 +285,40 @@ function lerpAngle(a: number, b: number, t: number): number {
   while (d > Math.PI) d -= Math.PI * 2;
   while (d < -Math.PI) d += Math.PI * 2;
   return a + d * t;
+}
+
+/** 貼圖換色：把指定色相範圍的像素轉成新色相（保留明暗與飽和度），回傳新的 CanvasTexture */
+function recolorTexture(src: THREE.Texture, rc: { from: number; to: number; hue: number; light?: number }): THREE.Texture {
+  const img = src.image as CanvasImageSource & { width: number; height: number };
+  if (!img || !img.width) return src;
+  const cv = document.createElement('canvas');
+  cv.width = img.width;
+  cv.height = img.height;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return src;
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = data.data;
+  const c = new THREE.Color();
+  const hsl = { h: 0, s: 0, l: 0 };
+  for (let i = 0; i < d.length; i += 4) {
+    c.setRGB(d[i] / 255, d[i + 1] / 255, d[i + 2] / 255);
+    c.getHSL(hsl);
+    const deg = hsl.h * 360;
+    if (hsl.s < 0.18 || deg < rc.from || deg > rc.to) continue;
+    c.setHSL(rc.hue / 360, Math.min(1, hsl.s * 0.9), hsl.l * (rc.light ?? 1));
+    d[i] = c.r * 255;
+    d[i + 1] = c.g * 255;
+    d[i + 2] = c.b * 255;
+  }
+  ctx.putImageData(data, 0, 0);
+  const t = new THREE.CanvasTexture(cv);
+  t.flipY = src.flipY;
+  t.colorSpace = src.colorSpace;
+  t.wrapS = src.wrapS;
+  t.wrapT = src.wrapT;
+  t.magFilter = src.magFilter;
+  t.minFilter = src.minFilter;
+  t.generateMipmaps = src.generateMipmaps;
+  return t;
 }
