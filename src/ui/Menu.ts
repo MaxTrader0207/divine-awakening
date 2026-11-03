@@ -353,6 +353,7 @@ export class Menu {
                 this.actions.onInventoryChanged();
                 bus.emit('quests:changed');
                 this.show('quests');
+                this.closeSoon();
               },
             }, '領取')
           : h('span', { class: 'pill locked' }, '進行中');
@@ -386,6 +387,7 @@ export class Menu {
                     this.actions.onInventoryChanged();
                     bus.emit('quests:changed');
                     this.show('quests');
+                    this.closeSoon();
                   },
                 }, '開啟')
               : h('span', { class: 'pill locked' }, '未完成'),
@@ -456,6 +458,18 @@ export class Menu {
     out.push(h('div', { class: 'card-row' }, [h('button', { class: 'go ghost', onclick: () => sv.toTitle() }, '存檔並回到開頭畫面')]));
     out.push(h('p', { class: 'version' }, '存檔存在這台裝置的瀏覽器裡。換裝置請用「設定 → 雲端存檔」（上傳的是使用中的那一格）。'));
     return out;
+  }
+
+  private closeTimer = 0;
+  /**
+   * 領完任務獎勵：先讓按鈕變成「已領取」0.6 秒，再自動關閉選單（關掉後就看得到左側的獎勵通知）。
+   * 這段時間內玩家切到別頁或自己關掉選單，就不再關。
+   */
+  private closeSoon(delay = 600) {
+    clearTimeout(this.closeTimer);
+    this.closeTimer = window.setTimeout(() => {
+      if (this.isOpen && this.tab === 'quests') this.close();
+    }, delay);
   }
 
   private popTimer = 0;

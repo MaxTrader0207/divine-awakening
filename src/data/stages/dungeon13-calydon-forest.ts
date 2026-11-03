@@ -13,6 +13,8 @@ const trail = (x: number, z: number): PropDef => ({ kind: 'bush', x, z, color: 0
 const zone: ZoneDef = {
   id: 'dungeon_13',
   kind: 'dungeon',
+  music: 'wild',
+  bossMusic: 'titan',
   name: '卡呂冬森林',
   subtitle: '第十三層・卡呂冬大狩獵',
   region: '卡呂冬森林',

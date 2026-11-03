@@ -14,6 +14,8 @@ const asphodel = (x: number, z: number): PropDef => ({ kind: 'bush', x, z, color
 const zone: ZoneDef = {
   id: 'dungeon_12',
   kind: 'dungeon',
+  music: 'inferno',
+  bossMusic: 'titan',
   name: '冥王黑帝斯的國度',
   subtitle: '第十二層・長春花原野',
   region: '冥王黑帝斯的國度',

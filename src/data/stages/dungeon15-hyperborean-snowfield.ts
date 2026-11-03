@@ -13,6 +13,8 @@ const ice = (x: number, z: number): PropDef => ({ kind: 'crystal', x, z, color: 
 const zone: ZoneDef = {
   id: 'dungeon_15',
   kind: 'dungeon',
+  music: 'wild',
+  bossMusic: 'titan',
   name: '希柏里爾雪原',
   subtitle: '第十五層・北風之外的黃金',
   region: '希柏里爾雪原',

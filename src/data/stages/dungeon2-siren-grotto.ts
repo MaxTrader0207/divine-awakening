@@ -8,6 +8,7 @@ import { melee, pillarRing, row } from './helpers';
 const zone: ZoneDef = {
   id: 'dungeon_2',
   kind: 'dungeon',
+  music: 'sea',
   name: '賽蓮海蝕洞',
   subtitle: '第二層・海妖歌聲',
   region: '賽蓮海蝕洞',

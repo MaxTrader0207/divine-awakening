@@ -8,6 +8,7 @@ import { melee, pillarRing } from './helpers';
 const zone: ZoneDef = {
   id: 'dungeon_3',
   kind: 'dungeon',
+  music: 'inferno',
   name: '赫菲斯托斯熔爐',
   subtitle: '第三層・埃特納火山',
   region: '赫菲斯托斯熔爐',

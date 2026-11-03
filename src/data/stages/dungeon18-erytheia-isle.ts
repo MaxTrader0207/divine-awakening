@@ -13,6 +13,7 @@ const SUNSTONE = 0xd8a080;
 const zone: ZoneDef = {
   id: 'dungeon_18',
   kind: 'dungeon',
+  bossMusic: 'titan',
   name: '厄律提亞島',
   subtitle: '第十八層・日落之島',
   region: '厄律提亞島',

@@ -595,7 +595,7 @@ export class Game {
     const boss = this.enemies.engagedBoss();
     this.hud.setBoss(boss);
     if (boss) {
-      this.audio.setMusic('boss');
+      this.audio.setMusic(zoneNow.def.bossMusic ?? 'boss');
       this.audio.setBossIntensity(boss.hp < boss.def.stats.maxHp * 0.5 ? 1 : 0);
     } else this.audio.setMusic(zoneNow.def.music ?? ({ town: 'town', field: 'grassland', dungeon: 'dungeon' } as const)[zoneNow.def.kind]);
     if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・畫質${this.quality.label}`;

@@ -13,6 +13,8 @@ const TITAN = 0x5a4a44;
 const zone: ZoneDef = {
   id: 'dungeon_22',
   kind: 'dungeon',
+  music: 'inferno',
+  bossMusic: 'final',
   name: '俄特律斯山',
   subtitle: '第二十二層・泰坦之戰的戰場',
   region: '俄特律斯山',

@@ -5,6 +5,8 @@
  * - 以 16 分音符為一格，用 lookahead 排程（每 100ms 排下一段 0.3 秒的音符）。
  * - 換曲時舊曲淡出、新曲淡入；進魔王戰切換較快。
  * - 魔王戰有「二階段」：首領血量低於一半時加入額外聲部（16 分音符踩鈸、弦樂顫音、銅管重音）。
+ * - 混音（v1.44）：每個聲部有自己的聲道（左右聲相）、殘響（程式產生的石廳脈衝響應）與 ping-pong 回音；
+ *   力度與時間有微小隨機（人性化），閉合鈸有強弱。
  * - 同一套引擎也能用 OfflineAudioContext 離線輸出（試聽、測音量用）。
  */
 import { SONGS, type DrumPat, type Inst, type TrackDef } from './songs';
@@ -111,9 +113,42 @@ const BASS_OFF: Record<string, (tones: number[]) => number> = {
   '4': () => 5,
 };
 
+/** 混音聲道：每首曲子切換時各建一組（聲相、殘響量、延遲量） */
+type Ch = 'lead' | 'lead2' | 'padL' | 'padC' | 'padR' | 'bass' | 'arpL' | 'arpR' | 'stab' | 'kick' | 'snare' | 'hat' | 'perc' | 'cym';
+const CHANNELS: Record<Ch, { pan: number; rev: number; dly: number }> = {
+  lead: { pan: 0, rev: 0.3, dly: 0.2 },
+  lead2: { pan: -0.18, rev: 0.32, dly: 0.08 },
+  padL: { pan: -0.6, rev: 0.5, dly: 0 },
+  padC: { pan: 0, rev: 0.5, dly: 0 },
+  padR: { pan: 0.6, rev: 0.5, dly: 0 },
+  bass: { pan: 0, rev: 0.04, dly: 0 },
+  arpL: { pan: -0.42, rev: 0.32, dly: 0.12 },
+  arpR: { pan: 0.42, rev: 0.32, dly: 0.12 },
+  stab: { pan: 0.12, rev: 0.3, dly: 0 },
+  kick: { pan: 0, rev: 0.02, dly: 0 },
+  snare: { pan: 0.06, rev: 0.22, dly: 0 },
+  hat: { pan: 0.3, rev: 0.06, dly: 0 },
+  perc: { pan: -0.24, rev: 0.2, dly: 0 },
+  cym: { pan: 0.1, rev: 0.35, dly: 0 },
+};
+const PAD_CH: Ch[] = ['padL', 'padC', 'padR'];
+const DRUM_CH: Record<keyof DrumPat, Ch> = { k: 'kick', s: 'snare', r: 'snare', h: 'hat', o: 'hat', sh: 'perc', t: 'perc', T: 'perc', c: 'cym' };
+
+/** 一首曲子的混音台：總推桿＋殘響 / 延遲送出，換曲時整組淡入淡出 */
+interface Mix {
+  fader: GainNode;
+  rev: GainNode;
+  dly: GainNode;
+  ch: Record<Ch, GainNode>;
+}
+
 export class MusicPlayer {
   private out: GainNode;
-  private trackGain: GainNode | null = null;
+  private revIn: GainNode;
+  private dlyIn: GainNode;
+  private dlyL: DelayNode;
+  private dlyR: DelayNode;
+  private mix: Mix | null = null;
   private cur: Compiled | null = null;
   private curId: TrackId | null = null;
   private want: TrackId = 'town';
@@ -134,13 +169,64 @@ export class MusicPlayer {
     comp.ratio.value = 4;
     comp.attack.value = 0.005;
     comp.release.value = 0.2;
+    // 低切：去掉聽不到、只會吃掉音量的超低頻
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 32;
+    hp.Q.value = 0.6;
+    hp.connect(comp).connect(dest);
     this.out = ctx.createGain();
-    this.out.gain.value = 1;
-    this.out.connect(comp).connect(dest);
+    this.out.connect(hp);
+
     const len = ctx.sampleRate;
     this.noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+
+    // 殘響：程式產生的立體聲脈衝響應（約 2.4 秒、越後面越暗），像神殿石廳的空間感
+    const conv = ctx.createConvolver();
+    conv.buffer = this.impulse(2.4, 3);
+    this.revIn = ctx.createGain();
+    const revOut = ctx.createGain();
+    revOut.gain.value = 0.7;
+    this.revIn.connect(conv).connect(revOut).connect(hp);
+
+    // 延遲：左右交替（ping-pong）的附點八分音符回音，給主旋律、琶音
+    this.dlyIn = ctx.createGain();
+    this.dlyL = ctx.createDelay(2);
+    this.dlyR = ctx.createDelay(2);
+    const fb = ctx.createGain();
+    fb.gain.value = 0.32;
+    const damp = ctx.createBiquadFilter();
+    damp.type = 'lowpass';
+    damp.frequency.value = 2600;
+    const merge = ctx.createChannelMerger(2);
+    const dlyOut = ctx.createGain();
+    dlyOut.gain.value = 0.55;
+    this.dlyIn.connect(this.dlyL);
+    this.dlyL.connect(merge, 0, 0);
+    this.dlyL.connect(this.dlyR);
+    this.dlyR.connect(merge, 0, 1);
+    this.dlyR.connect(damp).connect(fb).connect(this.dlyL);
+    merge.connect(dlyOut).connect(hp);
+  }
+
+  private impulse(sec: number, decay: number): AudioBuffer {
+    const sr = this.ctx.sampleRate;
+    const len = Math.floor(sr * sec);
+    const pre = Math.floor(sr * 0.012);
+    const buf = this.ctx.createBuffer(2, len, sr);
+    for (let c = 0; c < 2; c++) {
+      const d = buf.getChannelData(c);
+      let lp = 0;
+      for (let i = pre; i < len; i++) {
+        const x = (i - pre) / (len - pre);
+        const n = (Math.random() * 2 - 1) * Math.pow(1 - x, decay);
+        lp += (n - lp) * (0.62 - 0.5 * x); // 高頻衰減得比較快
+        d[i] = lp;
+      }
+    }
+    return buf;
   }
 
   get playing(): TrackId | null {
@@ -190,28 +276,70 @@ export class MusicPlayer {
     }
   }
 
+  private makeMix(def: TrackDef): Mix {
+    const ctx = this.ctx;
+    const fader = ctx.createGain();
+    const rev = ctx.createGain();
+    const dly = ctx.createGain();
+    fader.connect(this.out);
+    rev.connect(this.revIn);
+    dly.connect(this.dlyIn);
+    const revMul = def.reverb ?? 1;
+    const ch = {} as Record<Ch, GainNode>;
+    for (const [name, c] of Object.entries(CHANNELS) as [Ch, (typeof CHANNELS)[Ch]][]) {
+      const g = ctx.createGain();
+      const pan = ctx.createStereoPanner();
+      pan.pan.value = c.pan;
+      g.connect(pan).connect(fader);
+      if (c.rev > 0) {
+        const s = ctx.createGain();
+        s.gain.value = c.rev * revMul;
+        g.connect(s).connect(rev);
+      }
+      if (c.dly > 0) {
+        const s = ctx.createGain();
+        s.gain.value = c.dly * (def.echo ?? 1);
+        g.connect(s).connect(dly);
+      }
+      ch[name] = g;
+    }
+    return { fader, rev, dly, ch };
+  }
+
   private switchTo(id: TrackId) {
     const ctx = this.ctx;
     const t = Math.max(ctx.currentTime, 0);
-    const toBoss = id === 'boss' || id === 'victory';
+    const toBoss = SONGS[id].bossFight === true || id === 'victory';
     const fade = toBoss ? 0.25 : 0.7;
-    if (this.trackGain) {
-      const g = this.trackGain;
-      g.gain.cancelScheduledValues(t);
-      g.gain.setValueAtTime(g.gain.value, t);
-      g.gain.linearRampToValueAtTime(0, t + fade);
-      setTimeout(() => g.disconnect(), (fade + 4) * 1000);
+    if (this.mix) {
+      const old = this.mix;
+      for (const g of [old.fader, old.rev, old.dly]) {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0, t + fade);
+      }
+      setTimeout(() => {
+        old.fader.disconnect();
+        old.rev.disconnect();
+        old.dly.disconnect();
+      }, (fade + 4) * 1000);
     }
-    const g = ctx.createGain();
-    g.connect(this.out);
-    const lvl = SONGS[id].level ?? 1;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(lvl, t + (toBoss ? 0.15 : fade));
-    this.trackGain = g;
+    const def = SONGS[id];
+    const mix = this.makeMix(def);
+    const lvl = def.level ?? 1;
+    for (const g of [mix.fader, mix.rev, mix.dly]) {
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(lvl, t + (toBoss ? 0.15 : fade));
+    }
+    this.mix = mix;
     this.cur = this.get(id);
     this.curId = id;
     this.step = 0;
     this.nextTime = t + (toBoss ? 0.08 : fade * 0.6);
+    // 回音跟著曲速：附點八分音符
+    const echo = Math.min(1.5, this.cur.stepDur * 3);
+    this.dlyL.delayTime.setTargetAtTime(echo, t, 0.05);
+    this.dlyR.delayTime.setTargetAtTime(echo, t, 0.05);
     // 不循環的短曲：直接算出結束時間（不依賴排程進度）
     this.jingleEnd = this.cur.def.loop === false ? this.nextTime + this.cur.bars.length * 16 * this.cur.stepDur + 0.4 : 0;
   }
@@ -222,19 +350,28 @@ export class MusicPlayer {
     return c;
   }
 
-  private playStep(c: Compiled, step: number, t: number) {
+  /** 人性化：力度 ±7%、時間 0~4ms 的微小偏差，聽起來比較像真人演奏 */
+  private human(v: number): number {
+    return v * (0.93 + Math.random() * 0.14);
+  }
+
+  private playStep(c: Compiled, step: number, t0: number) {
     const def = c.def;
     const bar = c.bars[Math.floor(step / 16) % c.bars.length];
     const s = step % 16;
     const sd = c.stepDur;
+    // 搖擺：反拍的八分音符稍微延後（輕快的曲子用）
+    const t = t0 + (def.swing && s % 4 === 2 ? def.swing * sd : 0);
     const chord = this.chordAt(bar, s);
     const p2 = this.intensity > 0;
+    const jit = () => t + Math.random() * 0.004;
 
-    // 和聲墊音：和弦開始時
+    // 和聲墊音：和弦開始時（三個和弦音分到左、中、右，聲音比較寬）
     if (def.pad && bar.chords.some((ch) => ch.step === s)) {
       const next = bar.chords.find((ch) => ch.step > s)?.step ?? 16;
       const base = 12 * (def.pad.octave + 1) + chord.root;
-      for (const iv of chord.tones.slice(0, 3)) this.note(def.pad.inst, base + iv, t, (next - s) * sd, def.pad.vol);
+      chord.tones.slice(0, 3).forEach((iv, i) => this.note(def.pad!.inst, base + iv, t, (next - s) * sd, def.pad!.vol, PAD_CH[i]));
+      if (def.pad2) chord.tones.slice(0, 3).forEach((iv, i) => this.note(def.pad2!.inst, 12 * (def.pad2!.octave + 1) + chord.root + iv, t, (next - s) * sd, def.pad2!.vol, PAD_CH[2 - i]));
     }
     // 貝斯
     const bt = def.bass.pattern[s];
@@ -242,15 +379,16 @@ export class MusicPlayer {
       let len = 1;
       while (s + len < 16 && def.bass.pattern[s + len] === '.' && len < 4) len++;
       const off = BASS_OFF[bt]?.(chord.tones) ?? 0;
-      this.note(def.bass.inst, 12 * ((def.bass.octave ?? 2) + 1) + chord.root + off, t, len * sd * 0.92, def.bass.vol);
+      this.note(def.bass.inst, 12 * ((def.bass.octave ?? 2) + 1) + chord.root + off, t, len * sd * 0.92, this.human(def.bass.vol) * (s % 4 ? 0.88 : 1), 'bass');
     }
-    // 琶音
+    // 琶音（左右交替）
     for (const arp of def.arps ?? []) {
       if (arp.phase2 && !p2) continue;
       if (s % arp.grid) continue;
-      const idx = arp.pattern[(s / arp.grid) % arp.pattern.length];
+      const k = s / arp.grid;
+      const idx = arp.pattern[k % arp.pattern.length];
       const tone = chord.tones[idx % chord.tones.length] + 12 * Math.floor(idx / chord.tones.length);
-      this.note(arp.inst, 12 * (arp.octave + 1) + chord.root + tone, t, arp.grid * sd * (arp.gate ?? 0.8), arp.vol);
+      this.note(arp.inst, 12 * (arp.octave + 1) + chord.root + tone, jit(), arp.grid * sd * (arp.gate ?? 0.8), this.human(arp.vol) * (s % 4 ? 0.85 : 1), k % 2 ? 'arpR' : 'arpL');
     }
     // 和弦重音（銅管）
     for (const st of def.stabs ?? []) {
@@ -258,14 +396,15 @@ export class MusicPlayer {
       if (st.pattern[s] !== 'x' && st.pattern[s] !== 'X') continue;
       const base = 12 * (st.octave + 1) + chord.root;
       const v = st.pattern[s] === 'X' ? st.vol * 1.3 : st.vol;
-      for (const iv of chord.tones.slice(0, 3)) this.note(st.inst, base + iv, t, sd * 1.6, v);
+      for (const iv of chord.tones.slice(0, 3)) this.note(st.inst, base + iv, t, sd * 1.6, v, 'stab');
     }
-    // 主旋律
+    // 主旋律（強拍稍微重一點）
     const ev = bar.melody.get(s);
     if (ev) {
       const up = p2 && def.phase2LeadUp ? 12 : 0;
-      this.note(def.lead.inst, ev.midi + up, t, ev.len * sd * 0.95, def.lead.vol);
-      if (def.lead.double) this.note(def.lead.double, ev.midi + up - 12, t, ev.len * sd * 0.95, def.lead.vol * 0.45);
+      const accent = s === 0 ? 1.08 : s % 4 ? 0.92 : 1;
+      this.note(def.lead.inst, ev.midi + up, jit(), ev.len * sd * 0.95, this.human(def.lead.vol) * accent, 'lead');
+      if (def.lead.double) this.note(def.lead.double, ev.midi + up - 12, jit(), ev.len * sd * 0.95, def.lead.vol * 0.45, 'lead2');
     }
     // 鼓
     this.drums(bar.drums, s, t, def.drumVol ?? 1);
@@ -276,7 +415,9 @@ export class MusicPlayer {
     for (const [k, pat] of Object.entries(p) as [keyof DrumPat, string][]) {
       const ch = pat?.[s];
       if (!ch || ch === '.') continue;
-      this.drum(k, t, (ch === 'X' ? 1.35 : 1) * vol);
+      // 閉合鈸：反拍輕一點、加一點隨機，聽起來不像機器
+      const groove = k === 'h' ? (s % 4 === 0 ? 1 : s % 2 ? 0.62 : 0.8) * (0.85 + Math.random() * 0.3) : 1;
+      this.drum(k, t, (ch === 'X' ? 1.35 : 1) * vol * groove, DRUM_CH[k]);
     }
   }
 
@@ -303,29 +444,40 @@ export class MusicPlayer {
     return o;
   }
 
-  note(inst: Inst, midi: number, t: number, dur: number, vol: number) {
+  /** 延遲出現的顫音（長音才會抖） */
+  private vibrato(o: OscillatorNode, t: number, end: number, dur: number, rate: number, cents: number) {
+    if (dur < 0.3) return;
+    const lfo = this.ctx.createOscillator();
+    const lg = this.ctx.createGain();
+    lfo.frequency.value = rate;
+    lg.gain.setValueAtTime(0, t);
+    lg.gain.linearRampToValueAtTime(cents, t + Math.min(0.4, dur));
+    lfo.connect(lg).connect(o.detune);
+    lfo.start(t);
+    lfo.stop(end);
+  }
+
+  private gainTo(dest: AudioNode, v: number): GainNode {
+    const g = this.ctx.createGain();
+    g.gain.value = v;
+    g.connect(dest);
+    return g;
+  }
+
+  note(inst: Inst, midi: number, t: number, dur: number, vol: number, channel: Ch = 'lead') {
     const ctx = this.ctx;
-    const dest = this.trackGain ?? this.out;
+    const dest = this.mix?.ch[channel] ?? this.out;
     const f = midiFreq(midi);
     const g = ctx.createGain();
     g.connect(dest);
     switch (inst) {
       case 'flute': {
-        // 三角波＋延遲顫音：溫暖的木管
+        // 三角波＋延遲顫音＋起音的氣音：溫暖的木管
         const end = this.env(g, t, vol, 0.035, 0.2, 0.75, dur, 0.12);
         const o = this.osc('triangle', f, t, end, g);
-        const lfo = ctx.createOscillator();
-        const lg = ctx.createGain();
-        lfo.frequency.value = 5.2;
-        lg.gain.setValueAtTime(0, t);
-        lg.gain.linearRampToValueAtTime(dur > 0.3 ? 14 : 0, t + Math.min(0.35, dur));
-        lfo.connect(lg).connect(o.detune);
-        lfo.start(t);
-        lfo.stop(end);
-        const g2 = ctx.createGain();
-        g2.gain.value = 0.12;
-        g2.connect(g);
-        this.osc('sine', f * 2, t, end, g2);
+        this.vibrato(o, t, end, dur, 5.2, 14);
+        this.osc('sine', f * 2, t, end, this.gainTo(g, 0.12));
+        this.noiseHit(t, 0.07, 'bandpass', Math.min(6000, f * 3), vol * 0.22, 1.5, g);
         break;
       }
       case 'chip': {
@@ -347,29 +499,72 @@ export class MusicPlayer {
         lp.connect(g);
         const end = this.env(g, t, vol, 0.004, 0.18, 0.0001, Math.min(dur, 0.3), 0.08);
         this.osc('triangle', f, t, end, lp);
-        const sg = ctx.createGain();
-        sg.gain.value = 0.35;
-        sg.connect(lp);
-        this.osc('sawtooth', f, t, end, sg, 6);
+        this.osc('sawtooth', f, t, end, this.gainTo(lp, 0.35), 6);
+        break;
+      }
+      case 'lyre': {
+        // 里拉琴（古希臘豎琴）：明亮的撥弦，泛音快速變暗、尾音比 pluck 長
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(5200, t);
+        lp.frequency.exponentialRampToValueAtTime(1100, t + 0.45);
+        lp.connect(g);
+        const end = this.env(g, t, vol, 0.003, 0.8, 0.0001, Math.min(dur, 1.1), 0.35);
+        this.osc('triangle', f, t, end, lp);
+        this.osc('sine', f * 2, t, end, this.gainTo(lp, 0.28));
+        this.osc('sawtooth', f, t, end, this.gainTo(lp, 0.16), 5);
         break;
       }
       case 'bell': {
         const end = this.env(g, t, vol, 0.003, 0.5, 0.0001, Math.min(dur, 0.5), 0.3);
         this.osc('sine', f, t, end, g);
-        const g2 = ctx.createGain();
-        g2.gain.value = 0.3;
-        g2.connect(g);
-        this.osc('sine', f * 3.01, t, end, g2);
+        this.osc('sine', f * 3.01, t, end, this.gainTo(g, 0.3));
         break;
       }
       case 'pad': {
+        // 兩個微走音的鋸齒波＋三角波，低通後很柔：比原本的三角波墊音厚
         const lp = ctx.createBiquadFilter();
         lp.type = 'lowpass';
-        lp.frequency.value = 1400;
+        lp.frequency.value = 1000;
+        lp.Q.value = 0.4;
         lp.connect(g);
-        const end = this.env(g, t, vol, 0.25, 0.5, 0.8, dur, 0.5);
-        this.osc('triangle', f, t, end, lp, -6);
-        this.osc('sine', f, t, end, lp, 6);
+        const end = this.env(g, t, vol, 0.3, 0.5, 0.8, dur, 0.6);
+        this.osc('sawtooth', f, t, end, this.gainTo(lp, 0.35), -9);
+        this.osc('sawtooth', f, t, end, this.gainTo(lp, 0.35), 9);
+        this.osc('triangle', f, t, end, lp);
+        break;
+      }
+      case 'choir': {
+        // 合唱「啊」：鋸齒波經過三個共振峰（母音 a），慢起音＋顫音，神殿氣氛
+        const end = this.env(g, t, vol, 0.35, 0.6, 0.85, dur, 0.6);
+        const mixIn = ctx.createGain();
+        for (const [fq, q, a] of [[700, 5, 1], [1150, 7, 0.55], [2700, 9, 0.22]] as const) {
+          const bp = ctx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.value = fq;
+          bp.Q.value = q;
+          mixIn.connect(bp).connect(this.gainTo(g, a * 2.2));
+        }
+        const o1 = this.osc('sawtooth', f, t, end, mixIn, -10);
+        const o2 = this.osc('sawtooth', f, t, end, mixIn, 11);
+        this.vibrato(o1, t, end, dur, 4.6, 9);
+        this.vibrato(o2, t, end, dur, 5.1, 9);
+        break;
+      }
+      case 'aulos': {
+        // 阿夫洛斯管（古希臘雙簧管）：帶鼻音的簧片聲
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = Math.min(3200, Math.max(900, f * 2.2));
+        bp.Q.value = 0.9;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 3400;
+        bp.connect(lp).connect(g);
+        const end = this.env(g, t, vol * 1.5, 0.03, 0.25, 0.8, dur, 0.1);
+        const o = this.osc('sawtooth', f, t, end, bp);
+        this.osc('square', f, t, end, this.gainTo(bp, 0.45), 6);
+        this.vibrato(o, t, end, dur, 5.8, 18);
         break;
       }
       case 'strings': {
@@ -395,7 +590,7 @@ export class MusicPlayer {
         break;
       }
       case 'brass': {
-        // 兩個鋸齒波＋濾波器包絡：銅管
+        // 兩個鋸齒波＋濾波器包絡：銅管（長音會微微顫）
         const lp = ctx.createBiquadFilter();
         lp.type = 'lowpass';
         lp.Q.value = 1.2;
@@ -404,8 +599,9 @@ export class MusicPlayer {
         lp.frequency.setTargetAtTime(1300, t + 0.06, 0.15);
         lp.connect(g);
         const end = this.env(g, t, vol, 0.03, 0.25, 0.75, dur, 0.1);
-        this.osc('sawtooth', f, t, end, lp, -7);
+        const o = this.osc('sawtooth', f, t, end, lp, -7);
         this.osc('sawtooth', f, t, end, lp, 7);
+        this.vibrato(o, t, end, dur, 5, 8);
         break;
       }
       case 'bass': {
@@ -433,7 +629,7 @@ export class MusicPlayer {
     }
   }
 
-  private noiseHit(t: number, dur: number, type: BiquadFilterType, freq: number, vol: number, q = 0.8) {
+  private noiseHit(t: number, dur: number, type: BiquadFilterType, freq: number, vol: number, q = 0.8, dest?: AudioNode) {
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuf;
     const f = this.ctx.createBiquadFilter();
@@ -443,12 +639,12 @@ export class MusicPlayer {
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(f).connect(g).connect(this.trackGain ?? this.out);
+    src.connect(f).connect(g).connect(dest ?? this.out);
     src.start(t, Math.random() * 0.5);
     src.stop(t + dur + 0.02);
   }
 
-  private sweep(t: number, f0: number, f1: number, dur: number, vol: number, type: OscillatorType = 'sine') {
+  private sweep(t: number, f0: number, f1: number, dur: number, vol: number, type: OscillatorType, dest: AudioNode) {
     const o = this.ctx.createOscillator();
     o.type = type;
     o.frequency.setValueAtTime(f0, t);
@@ -456,22 +652,36 @@ export class MusicPlayer {
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    o.connect(g).connect(this.trackGain ?? this.out);
+    o.connect(g).connect(dest);
     o.start(t);
     o.stop(t + dur + 0.02);
   }
 
-  private drum(k: keyof DrumPat, t: number, v: number) {
+  private drum(k: keyof DrumPat, t: number, v: number, channel: Ch) {
+    const d = this.mix?.ch[channel] ?? this.out;
     switch (k) {
-      case 'k': this.sweep(t, 140, 42, 0.16, 0.9 * v); break;
-      case 's': this.noiseHit(t, 0.16, 'bandpass', 1900, 0.5 * v, 0.6); this.sweep(t, 220, 160, 0.08, 0.25 * v, 'triangle'); break;
-      case 'r': this.noiseHit(t, 0.05, 'bandpass', 3200, 0.35 * v, 2); break; // 邊擊 / 拍手
-      case 'h': this.noiseHit(t, 0.035, 'highpass', 7500, 0.22 * v); break;
-      case 'o': this.noiseHit(t, 0.22, 'highpass', 6500, 0.18 * v); break;
-      case 'sh': this.noiseHit(t, 0.06, 'bandpass', 6000, 0.14 * v, 1.2); break; // 沙鈴
-      case 't': this.sweep(t, 110, 62, 0.3, 0.7 * v); this.noiseHit(t, 0.08, 'lowpass', 700, 0.25 * v); break; // 太鼓
-      case 'T': this.sweep(t, 190, 120, 0.2, 0.5 * v); break;
-      case 'c': this.noiseHit(t, 1.2, 'highpass', 4500, 0.28 * v, 0.5); break;
+      case 'k': // 大鼓：低頻掃頻＋起音的「喀」
+        this.sweep(t, 150, 44, 0.22, 0.9 * v, 'sine', d);
+        this.noiseHit(t, 0.014, 'highpass', 3000, 0.22 * v, 0.7, d);
+        break;
+      case 's': // 小鼓：響弦噪音＋鼓皮音＋高頻的「啪」
+        this.noiseHit(t, 0.18, 'bandpass', 1800, 0.48 * v, 0.6, d);
+        this.noiseHit(t, 0.06, 'highpass', 5200, 0.2 * v, 0.7, d);
+        this.sweep(t, 210, 165, 0.1, 0.28 * v, 'triangle', d);
+        break;
+      case 'r': this.noiseHit(t, 0.05, 'bandpass', 3200, 0.35 * v, 2, d); break; // 邊擊 / 拍手
+      case 'h': this.noiseHit(t, 0.032, 'highpass', 8000, 0.24 * v, 0.7, d); break;
+      case 'o': this.noiseHit(t, 0.26, 'highpass', 6500, 0.18 * v, 0.7, d); break;
+      case 'sh': this.noiseHit(t, 0.06, 'bandpass', 6000, 0.14 * v, 1.2, d); break; // 沙鈴
+      case 't': // 太鼓：深沉的鼓身＋鼓皮
+        this.sweep(t, 108, 54, 0.42, 0.75 * v, 'sine', d);
+        this.noiseHit(t, 0.1, 'lowpass', 600, 0.3 * v, 0.8, d);
+        break;
+      case 'T': this.sweep(t, 190, 118, 0.24, 0.5 * v, 'sine', d); break;
+      case 'c': // 銅鈸：寬頻噪音＋高頻閃爍
+        this.noiseHit(t, 1.6, 'highpass', 4200, 0.26 * v, 0.5, d);
+        this.noiseHit(t, 0.9, 'bandpass', 9000, 0.12 * v, 1.5, d);
+        break;
     }
   }
 }

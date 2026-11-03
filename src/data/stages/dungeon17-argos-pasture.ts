@@ -13,6 +13,8 @@ const MARBLE = 0xe8e2d4;
 const zone: ZoneDef = {
   id: 'dungeon_17',
   kind: 'dungeon',
+  music: 'wild',
+  bossMusic: 'titan',
   name: '阿爾戈斯牧場',
   subtitle: '第十七層・百眼巨人的看守',
   region: '阿爾戈斯牧場',

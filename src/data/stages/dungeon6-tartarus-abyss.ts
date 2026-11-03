@@ -12,6 +12,7 @@ const FIRE = 0xff5a1a;
 const zone: ZoneDef = {
   id: 'dungeon_6',
   kind: 'dungeon',
+  music: 'inferno',
   name: '塔爾塔洛斯深淵',
   subtitle: '第六層・冥界之門',
   region: '塔爾塔洛斯深淵',

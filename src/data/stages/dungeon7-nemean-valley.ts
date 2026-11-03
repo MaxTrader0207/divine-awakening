@@ -12,6 +12,7 @@ const ROCK = 0x8a7a5a;
 const zone: ZoneDef = {
   id: 'dungeon_7',
   kind: 'dungeon',
+  music: 'wild',
   name: '涅墨亞山谷',
   subtitle: '第七層・獅子的巢穴',
   region: '涅墨亞山谷',

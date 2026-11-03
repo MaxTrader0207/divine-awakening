@@ -13,6 +13,7 @@ const mesa = (x: number, z: number, w: number, d: number, h = 3): PropDef => ({ 
 const zone: ZoneDef = {
   id: 'dungeon_10',
   kind: 'dungeon',
+  music: 'wild',
   name: '底比斯荒原',
   subtitle: '第十層・斯芬克斯之謎',
   region: '底比斯荒原',

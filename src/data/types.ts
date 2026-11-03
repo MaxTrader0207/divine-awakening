@@ -173,6 +173,8 @@ export interface ZoneDef {
   region: string;
   /** 背景音樂（audio/songs.ts 的曲子 id）；沒填時依 kind 決定 */
   music?: string;
+  /** 首領戰音樂（audio/songs.ts，bossFight 曲）；沒填時用 'boss' */
+  bossMusic?: string;
   levelRange?: [number, number];
   safe: boolean;
   /** 地圖大小（x 寬 × z 深），原點在中心 */

@@ -12,6 +12,8 @@ const MARBLE = 0xe8e2d4;
 const zone: ZoneDef = {
   id: 'dungeon_16',
   kind: 'dungeon',
+  music: 'wild',
+  bossMusic: 'titan',
   name: '刻律涅山',
   subtitle: '第十六層・阿蒂蜜絲的聖林',
   region: '刻律涅山',

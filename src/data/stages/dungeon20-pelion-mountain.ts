@@ -13,6 +13,8 @@ const CLIFF = 0x5a5a52;
 const zone: ZoneDef = {
   id: 'dungeon_20',
   kind: 'dungeon',
+  music: 'wild',
+  bossMusic: 'titan',
   name: '佩利翁山',
   subtitle: '第二十層・半人馬的松林',
   region: '佩利翁山',

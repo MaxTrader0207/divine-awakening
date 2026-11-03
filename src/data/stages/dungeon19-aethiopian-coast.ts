@@ -13,6 +13,8 @@ const reef = (x: number, z: number): PropDef => ({ kind: 'rock', x, z, color: 0x
 const zone: ZoneDef = {
   id: 'dungeon_19',
   kind: 'dungeon',
+  music: 'sea',
+  bossMusic: 'titan',
   name: '衣索比亞海岸',
   subtitle: '第十九層・安朵美達的岩石',
   region: '衣索比亞海岸',

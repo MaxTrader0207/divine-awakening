@@ -84,6 +84,7 @@ describe('內容一致性（關卡 / 小怪 / 首領 / 招式）', () => {
         if (p.arrive) expect(Math.abs(p.arrive.x) <= to.size.w / 2 && Math.abs(p.arrive.z) <= to.size.d / 2, `${st.zone.id} → ${p.to} 的抵達點在地圖外`).toBe(true);
       }
       if (st.zone.music) expect(SONGS[st.zone.music as keyof typeof SONGS], `${st.zone.id} 的音樂「${st.zone.music}」不存在`).toBeTruthy();
+      if (st.zone.bossMusic) expect((SONGS as Record<string, { bossFight?: boolean }>)[st.zone.bossMusic]?.bossFight, `${st.zone.id} 的首領音樂「${st.zone.bossMusic}」不存在或不是首領戰曲`).toBe(true);
     }
   });
 

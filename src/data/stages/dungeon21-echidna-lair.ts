@@ -13,6 +13,8 @@ const VENOM = 0x5aa83a;
 const zone: ZoneDef = {
   id: 'dungeon_21',
   kind: 'dungeon',
+  music: 'inferno',
+  bossMusic: 'titan',
   name: '萬怪之母的巢穴',
   subtitle: '第二十一層・阿里摩伊的深洞',
   region: '萬怪之母的巢穴',

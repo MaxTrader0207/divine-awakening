@@ -10,6 +10,7 @@ import { melee, pillarRing } from './helpers';
 const zone: ZoneDef = {
   id: 'dungeon_1',
   kind: 'dungeon',
+  music: 'sea',
   name: '波賽頓海岸',
   subtitle: '第一層・入口與西側',
   region: '波賽頓海岸',
