@@ -689,3 +689,6 @@ html.lefty .joystick { left: auto; right: calc(var(--gutter) + 6px); }
 .status-head .status-title { flex: 1; }
 .status-head .exp-pct { flex: none; }
 .nowrap { white-space: nowrap; }
+
+/* 神話裝標記 */
+.inv-item .star { position: absolute; top: 2px; left: 4px; font-style: normal; font-size: 11px; color: #ffd36b; text-shadow: 0 1px 2px #000; }

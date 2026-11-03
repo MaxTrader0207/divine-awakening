@@ -31,7 +31,7 @@ describe('Inventory', () => {
     const e = addItem(s, 'weapon_t1', 'epic', 5)!;
     expect(itemStats(c).atk).toBe(8);
     expect(itemStats(e).atk).toBeCloseTo(8 * 2.2 * 1.4);
-    expect(itemName(e)).toBe('史詩・見習法杖 +5');
+    expect(itemName(e)).toBe('史詩・阿卡迪亞法杖 +5');
   });
 
   it('穿透上限 90%', () => {

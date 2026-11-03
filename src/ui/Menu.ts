@@ -40,6 +40,7 @@ export interface MenuActions {
   /** 背包 / 金錢變動 */
   onInventoryChanged(): void;
   onCelebrate(): void;
+  onUseConsumable(id: string): void;
   onVolume(kind: 'music' | 'sfx', v: number): void;
   /** 回傳目前實際畫質（高 / 中 / 低） */
   onQuality(q: 'auto' | 'high' | 'medium' | 'low'): string;
@@ -149,6 +150,7 @@ export class Menu {
       },
       goTab: (t) => this.show(t),
       celebrate: () => this.actions.onCelebrate(),
+      useConsumable: (id) => this.actions.onUseConsumable(id),
     };
     if (tab === 'equip') return renderEquip(ctx);
     if (tab === 'enhance') return renderEnhance(ctx);
@@ -371,7 +373,7 @@ export class Menu {
                   class: 'go small',
                   onclick: () => {
                     const tier = Math.max(1, Math.min(4, Math.ceil(s.level / 6)));
-                    const drop = rollDrop(tier, true);
+                    const drop = rollDrop(tier, true, Math.random, s.heroClass);
                     const it = drop ? addItem(s, drop.base, drop.rarity) : null;
                     if (!it && drop) return bus.emit('toast', { text: '背包已滿，先清出空間再領取' });
                     d.bonusClaimed = true;

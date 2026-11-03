@@ -35,10 +35,13 @@ import { Quality, type QualitySetting } from '@/systems/Quality';
 import { ensureToday, progressQuests, questText, type QuestEvent } from '@/systems/DailyQuests';
 import { Cloud } from '@/net/Cloud';
 import { CLASSES, RAGE, type HeroClass } from '@/data/classes';
-import { applyClassWeaponNames } from '@/data/items';
+import { applyClassGear } from '@/data/items';
 import { currentStep, targetFor, tutorialEvent, type TutorialEvent } from '@/systems/Tutorial';
 import { rewardText } from '@/data/tutorial';
 import { GuideArrow } from '@/world/GuideArrow';
+import { consume, cannotUse } from '@/systems/Consumables';
+import { CONSUMABLE_MAP } from '@/data/consumables';
+import { POTION_COOLDOWN } from '@/systems/SkillSystem';
 import { LabelDodger } from '@/world/LabelDodger';
 
 /** 被攻擊後自動反擊的持續秒數 */
@@ -66,6 +69,9 @@ export class Game {
   /** 新手指引：腳邊箭頭與目標光柱 */
   private guideArrow = new GuideArrow();
   private guideLast = { x: 0, z: 0 };
+  /** 道具的暫時增益（剩餘秒數）與持續回復 */
+  private cbuff = { atk: 0, def: 0, speed: 0 };
+  private hot = { t: 0, rate: 0 };
   /** 地點標籤避開 HUD */
   private labelDodger!: LabelDodger;
   readonly enemies: EnemyManager;
@@ -110,7 +116,7 @@ export class Game {
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement, initialClass: HeroClass = 'mage') {
     this.state = this.save.load() ?? newGameState(initialClass);
     const cls = CLASSES[this.state.heroClass] ?? CLASSES.mage;
-    applyClassWeaponNames(cls.weaponNames, cls.weaponIcon);
+    applyClassGear(CLASSES[this.state.heroClass] ? this.state.heroClass : 'mage'); // 裝備名稱、圖示、欄位名稱依職業改寫
     this.player = new Player(cls.anims);
 
     // ---- Renderer ----
@@ -227,6 +233,7 @@ export class Game {
         bus.emit('toast', { text: `穿透設為 ${Math.round(pen * 100)}%（測試用，重新整理後還原）` });
       },
       onInventoryChanged: () => this.onInventoryChanged(),
+      onUseConsumable: (id) => this.useConsumable(id),
       onCelebrate: () => {
         this.audio.play('enhance');
         const { x, z } = this.player.pos;
@@ -564,6 +571,21 @@ export class Game {
       this.rageIdle += dt;
       if (this.rageIdle > RAGE.idleDelay && p.mp > 0) p.mp = Math.max(0, p.mp - RAGE.decay * dt);
     } else if (p.mp < p.stats.maxMp) p.mp = Math.min(p.stats.maxMp, p.mp + (2 + p.stats.maxMp * 0.01) * dt);
+    // 道具：持續回復、增益倒數、長時間加成（遊戲時間）
+    if (this.hot.t > 0) {
+      this.hot.t -= dt;
+      p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * this.hot.rate * dt);
+    }
+    let expired = false;
+    for (const k of ['atk', 'def', 'speed'] as const) {
+      if (this.cbuff[k] <= 0) continue;
+      this.cbuff[k] -= dt;
+      if (this.cbuff[k] <= 0 && k !== 'def') expired = true;
+    }
+    if (expired) this.recalcStats();
+    const b = this.state.boosts;
+    if (b.exp > 0) b.exp = Math.max(0, b.exp - dt);
+    if (b.gold > 0) b.gold = Math.max(0, b.gold - dt);
     const safe = this.zones.current?.def.safe;
     if (p.hp < p.stats.maxHp && (safe || p.sinceHurt > 5)) p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * (safe ? 0.1 : 0.02) * dt);
   }
@@ -588,6 +610,9 @@ export class Game {
     const mpR = p.stats.maxMp > 0 ? p.mp / p.stats.maxMp : 1;
     p.stats = computeStats(this.state);
     if (this.devPen !== null) p.stats.pen = this.devPen;
+    // 道具增益：阿瑞斯戰血（攻擊）、赫密士疾行藥（移速）
+    if (this.cbuff.atk > 0) p.stats.atk = Math.round(p.stats.atk * (1 + (CONSUMABLE_MAP.ares_blood.effect as { value: number }).value));
+    if (this.cbuff.speed > 0) p.stats.moveSpeed *= 1 + (CONSUMABLE_MAP.hermes_tonic.effect as { value: number }).value;
     p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
     p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));
     bus.emit('player:changed');
@@ -608,6 +633,59 @@ export class Game {
       });
   }
 
+  /** 使用道具（選單「裝備 → 道具」、商城旁） */
+  useConsumable(id: string): boolean {
+    const p = this.player;
+    const s = this.state;
+    const ctx = {
+      safe: !!this.zones.current?.def.safe,
+      bossFight: !!this.enemies.engagedBoss(),
+      hpFull: p.hp >= p.stats.maxHp,
+      mpFull: p.mp >= p.stats.maxMp,
+      potionCd: this.skills.potionCd > 0,
+      alive: p.alive,
+    };
+    const why = cannotUse(s, id, ctx);
+    if (why) {
+      bus.emit('toast', { text: why });
+      return false;
+    }
+    const def = consume(s, id, ctx)!;
+    const e = def.effect;
+    switch (e.type) {
+      case 'heal':
+        if (e.hp) p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * e.hp);
+        if (this.usesRage && e.rage) p.mp = Math.min(p.stats.maxMp, p.mp + e.rage);
+        else if (e.mp) p.mp = Math.min(p.stats.maxMp, p.mp + p.stats.maxMp * e.mp);
+        this.skills.potionCd = POTION_COOLDOWN;
+        this.effects.ring(p.pos.x, p.pos.z, 0.4, 1.8, 0xffd36b, 0.6);
+        bus.emit('skill:cast', { slot: 'potion' }); // 每日任務「使用藥水」也算
+        break;
+      case 'regen':
+        this.hot = { t: e.duration, rate: e.total / e.duration };
+        this.effects.ring(p.pos.x, p.pos.z, 0.4, 1.6, 0xff9a5a, 0.6);
+        break;
+      case 'buff':
+        this.cbuff[e.stat] = e.duration;
+        this.recalcStats();
+        this.effects.pillar(p.pos.x, p.pos.z, 0.8, e.stat === 'atk' ? 0xff5a3c : e.stat === 'def' ? 0x9fd36a : 0x8fe3ff, 0.6);
+        break;
+      case 'town':
+        this.setAuto(false);
+        this.changeZone('town', ZONES.town.spawn);
+        break;
+      case 'boost':
+        s.boosts[e.stat] += e.duration;
+        break;
+    }
+    if (e.type !== 'heal') this.audio.play('potion'); // 回復類已由 skill:cast 播過
+    bus.emit('toast', { text: `${def.icon} 使用 ${def.name}：${def.desc}`, duration: 2.4 });
+    bus.emit('player:changed');
+    this.menu.refreshIfOpen();
+    this.persist();
+    return true;
+  }
+
   /** 震動（不支援的瀏覽器，例如 iPhone Safari，會直接忽略） */
   private haptic(pattern: number | number[]) {
     if (!this.state.settings.vibration) return;
@@ -626,6 +704,13 @@ export class Game {
     if (p.bloodlustT > 0) out.push({ icon: '🩸', label: '嗜血', t: p.bloodlustT });
     if (p.berserkT > 0) out.push({ icon: '🔥', label: '狂暴', t: p.berserkT });
     if (p.invulnerable > 0.4) out.push({ icon: '✨', label: '無敵', t: p.invulnerable });
+    if (this.cbuff.atk > 0) out.push({ icon: '⚔️', label: '戰血', t: this.cbuff.atk });
+    if (this.cbuff.def > 0) out.push({ icon: '🫒', label: '橄欖油', t: this.cbuff.def });
+    if (this.cbuff.speed > 0) out.push({ icon: '💨', label: '疾行', t: this.cbuff.speed });
+    if (this.hot.t > 0) out.push({ icon: '🍞', label: '回復', t: this.hot.t });
+    const b = this.state.boosts;
+    if (b.exp > 0) out.push({ icon: '🐝', label: `${Math.ceil(b.exp / 60)}分` });
+    if (b.gold > 0) out.push({ icon: '🪙', label: `${Math.ceil(b.gold / 60)}分` });
     const n = this.minions?.count() ?? 0;
     if (n > 0) out.push({ icon: '💀', label: `×${n}` });
     return out;
@@ -694,8 +779,9 @@ export class Game {
     const s = this.state;
     s.stats.kills++;
     if (k.boss) this.onBossDefeated(k.name);
-    const exp = expForKill(k.exp, s.level, k.level);
-    const gold = rollGold(k.gold);
+    // 道具加成：謬思蜂蜜（經驗）、堤喀幸運金幣（金幣）
+    const exp = Math.round(expForKill(k.exp, s.level, k.level) * (s.boosts.exp > 0 ? 1.3 : 1));
+    const gold = Math.round(rollGold(k.gold) * (s.boosts.gold > 0 ? 1.5 : 1));
     if (exp <= 0 && gold <= 0) return;
     s.gold += gold;
     s.gems += k.gems;
@@ -745,6 +831,8 @@ export class Game {
   private hitPlayer(e: Enemy, power: number) {
     const p = this.player;
     const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
+    // 道具「雅典娜橄欖油」：減傷 25%
+    if (this.cbuff.def > 0) res.amount = Math.max(1, Math.round(res.amount * (1 - (CONSUMABLE_MAP.athena_oil.effect as { value: number }).value)));
     // 騎士「守護」：減傷
     if (p.guardT > 0) {
       res.amount = Math.max(1, Math.round(res.amount * (1 - GUARD_REDUCTION)));
@@ -760,6 +848,8 @@ export class Game {
   /** 玩家死亡：倒地 1.6 秒（遊戲時間）→ 損失 10% 金幣 → 主城復活 */
   private onPlayerDied() {
     this.state.stats.deaths++;
+    this.cbuff = { atk: 0, def: 0, speed: 0 };
+    this.hot = { t: 0, rate: 0 };
     this.counterTimer = 0;
     this.targets.clear();
     this.deathTimer = 1.6;

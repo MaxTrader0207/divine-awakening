@@ -28,8 +28,8 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.26.0。10 週 MVP 完成，加上 v1.1~v1.26（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
-- 測試：`npm test`（Vitest 59 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
+- 版本 v1.27.0。10 週 MVP 完成，加上 v1.1~v1.27（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 測試：`npm test`（Vitest 68 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
 - 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。暫停中（`__game.paused`）`frame()` 不呼叫 `tick()`，但 `debugAdvance()` 仍會推進。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
 - 美術：KayKit CC0（`src/assets/models/` meshopt 版給一般建置、`src/assets/models-plain/` 免 WebAssembly 版給單一 HTML——claude.ai Artifact 禁止 WebAssembly，meshopt 模型會全部載入失敗；兩者都由 `scripts/build-assets.mjs` 產生，`@models` 別名在 vite.config.ts 依模式切換）；青蛙用 Quaternius CC0 模型；史萊姆、寄居蟹（會動的程式模型）、魔像、蝙蝠、蘑菇仍是程式模型。
@@ -38,4 +38,5 @@ npm test             # 單元測試
 - 雅典城佈置：古希臘物件在 `world/GreekProps.ts`（新 PropKind，只用 `mat()` 共用顏色，會被 mergeStatic 合併）；小動物在 `world/Critters.ts`，資料寫在 `ZoneDef.critters`（kind、位置、活動範圍 area、花色 variant）。所有動物合成 1 個網格，每幀在 CPU 換算頂點（約 1.7 萬頂點、0.2ms）；新增動物種類＝加一個 build 函式＋行為分支。`__game.zones.current.critters.debug()` 看狀態。城裡 draw call 約 80~106（全景 116）。
 - 新手指引：步驟資料 `data/tutorial.ts`、邏輯 `systems/Tutorial.ts`（`GameState.tutorial`，存檔 v5），Game 監聽事件呼叫 `game.tutorial(ev)` 發獎勵；HUD 左上卡片（縮放鈕下方，寬度扣掉右側三顆按鈕）、地上金色箭頭 `world/GuideArrow.ts`（步驟的 `targets` 依區域）、選單「指引」分頁 `ui/GuideTab.ts`＋說明文字 `data/manual.ts`（新增技能要補 `SKILL_HELP`）。測試時可用 `__game.tutorial({ type: 'move', meters: 12 })` 直接推進。
 - HUD（v1.24 排版）：左上 `.top-left` 是 flex 直排（狀態框 → 增益列 → 指引），不要再用寫死的 top 疊元件；上方中央只有一個插槽（首領血條在 136px、提示在 172px，首領戰與戰鬥中不顯示提示）；一般訊息走 `toast` 佇列（最多 2 則、同文合併），獎勵訊息用 `bus.emit('toast', { text, kind: 'reward' })` 進左側清單。搖桿是浮動式（`.joy-zone` 感應區）。介面大小用 CSS 變數 `--ui`（各角落 transform scale），左手模式是 `.hud.lefty` / `html.lefty`。鏡頭遠近：雙指開合、滾輪、設定滑桿（畫面上不再有 − / +）。地點標籤 Sprite 設 `userData.dodge = true` 就會自動避開 HUD（`world/LabelDodger.ts`）。按鈕統一用 `--sc` 主題色（技能取 `skill.color`）。漂浮文字的 class 是 `.ftxt`（不要用 `.txt`，那是輸入框樣式）。存檔 v7（設定 `vibration`）。左上狀態框是按鈕（點了開「裝備」）：職業頭像（`CLASS_TINT` 底色，外圈 conic-gradient 是經驗進度 `--exp`）、HP 條有受傷殘影（`<u>` 延遲縮短）。
+- 裝備：標準裝 id `${slot}_t${tier}` 全職業共用，`applyClassGear(職業)` 啟動時改寫名稱 / 圖示 / `SLOT_NAMES`；★神話裝 id `${職業}_${slot}_${01~10}`，名稱在 `data/gear.ts`，屬性由 profile 自動算（同階標準裝戰力 ×1.08）。`rollDrop(tier, boss, rng, 職業)` 有 35%（首領 60%）掉神話裝。道具在 `data/consumables.ts`（`state.consumables`、`state.boosts`，存檔 v8），效果在 `Game.useConsumable()`，暫時增益 `cbuff` 在 `recalcStats()` / `hitPlayer()` 套用。
 - 音效是 Web Audio 合成（`audio/Audio.ts`）；背景音樂是 `audio/Music.ts` 合成引擎播 `audio/songs.ts` 曲譜（6 首），區域用 `ZoneDef.music` 指定。`?debug` 下 `await __renderMusic('boss', 30, 1)` 可離線輸出 WAV 試聽。換正式音檔時保留 `play(id)` / `setMusic(id)` / `setBossIntensity(v)`。

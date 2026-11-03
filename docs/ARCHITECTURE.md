@@ -27,6 +27,8 @@ src/
 │  ├─ enemies.ts              木樁 + 8 種小怪 + 3 首領
 │  ├─ items.ts                裝備底材（6 欄 × 3 階）、稀有度、強化、價格、屬性顯示
 │  ├─ classes.ts              職業（法師、弓手、騎士、狂戰士、召喚師）、怒氣規則 RAGE
+│  ├─ gear.ts                 各職業裝備命名（標準裝前綴、每欄位 10 件神話裝、能力偏向）
+│  ├─ consumables.ts          10 種道具（效果、價格、掉落權重）
 │  ├─ tutorial.ts             新手指引的 11 個步驟（目標、說明、獎勵、箭頭目標位置）
 │  ├─ manual.ts               選單「指引」的遊戲說明文字與每個技能的一句話說明
 │  ├─ minions.ts              召喚物（斯巴達亡靈、提瑞西阿斯亡靈、埃阿斯亡靈）：屬性倍率、存在時間、上限、嘲諷：屬性、成長、技能表、模型動畫、武器名稱
@@ -56,6 +58,7 @@ src/
 │  ├─ LootTable.ts            掉落擲骰（純函式）
 │  ├─ LootSystem.ts           地上掉落物、自動拾取
 │  ├─ DailyQuests.ts          每日任務（純函式）
+│  ├─ Consumables.ts          道具能不能用、扣數量（純函式）；效果由 Game.useConsumable() 套用
 │  ├─ Tutorial.ts             新手指引進度（純函式：事件推進、狀態型目標自動完成、獎勵只發一次）
 │  └─ Quality.ts              畫質分級與自動降級
 ├─ audio/
@@ -152,9 +155,9 @@ raw  = atk × 技能倍率
 - 首領技能傷害 = 公式 × 技能倍率（1.4~2.2），只有預警結算時站在範圍內才會受傷。
 - AUTO 只會察覺 65% 的預警（`AUTO_DODGE_CHANCE`），手動操作可以全部閃掉。
 
-## 存檔（v7）
+## 存檔（v8）
 
-- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）、v5 新手指引（`tutorial`；舊存檔 Lv.3 以上或打過首領的視為完成並隱藏）、v6 設定新增 `leftHanded`、`uiScale`、v7 設定新增 `vibration`。舊存檔讀入時自動遷移。
+- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）、v5 新手指引（`tutorial`；舊存檔 Lv.3 以上或打過首領的視為完成並隱藏）、v6 設定新增 `leftHanded`、`uiScale`、v7 設定新增 `vibration`、v8 道具 `consumables` 與長時間加成 `boosts`（舊存檔送 2 個神饌、1 根赫密士之羽）。舊存檔讀入時自動遷移。
 
 
 - 多存檔：`SaveSlots` 管 10 格（localStorage `little-mage.save.slot1`~`slot10`；v1.19 前是 5 格，鍵名相同所以舊存檔直接沿用），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。

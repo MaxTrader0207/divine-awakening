@@ -1,5 +1,5 @@
 import type { EquipSlot, Rarity, Stats } from '@/data/types';
-import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice } from '@/data/items';
+import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore } from '@/data/items';
 import { statsForLevel } from '@/data/player';
 import { CLASSES, RAGE } from '@/data/classes';
 
@@ -62,8 +62,7 @@ export function computeStats(s: InventoryState): Stats {
 
 /** 戰力：粗略評分，排序與比較用 */
 export function itemScore(it: ItemInstance): number {
-  const s = itemStats(it);
-  return (s.atk ?? 0) * 3 + (s.def ?? 0) * 2.5 + (s.maxHp ?? 0) * 0.25 + (s.maxMp ?? 0) * 0.2 + (s.pen ?? 0) * 400 + (s.critRate ?? 0) * 300 + (s.critDmg ?? 0) * 120 + (s.moveSpeed ?? 0) * 40;
+  return statScore(itemStats(it));
 }
 
 export function addItem(s: InventoryState, base: string, rarity: Rarity, plus = 0): ItemInstance | null {

@@ -212,6 +212,9 @@ export function migrate(data: Partial<GameState>): GameState | null {
   else merged.tutorial = { ...base.tutorial, ...data.tutorial };
   // v5 → v6：設定新增 leftHanded、uiScale（上面 settings 合併時已補預設值）
   // v6 → v7：設定新增 vibration（同上，合併時補預設值 true）
-  // 未來版本：if ((data.version ?? 0) < 8) { ... }
+  // v7 → v8：新增道具與長時間加成；老玩家送 2 個神饌、1 根赫密士之羽當作見面禮
+  if (!data.consumables || typeof data.consumables !== 'object') merged.consumables = (data.version ?? 1) < 8 ? { ambrosia: 2, hermes_feather: 1 } : {};
+  merged.boosts = { exp: 0, gold: 0, ...(data.boosts ?? {}) };
+  // 未來版本：if ((data.version ?? 0) < 9) { ... }
   return merged;
 }

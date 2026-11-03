@@ -7,6 +7,8 @@ import type { Player } from '@/entities/Player';
 import { makeLabelSprite } from '@/world/Label';
 import { addItem, itemName } from './Inventory';
 import { POTION_DROP_CHANCE, rollDrop } from './LootTable';
+import { CONSUMABLE_DROP_CHANCE, CONSUMABLE_MAP, rollConsumable } from '@/data/consumables';
+import { addConsumable } from './Consumables';
 import type { Effects } from './Effects';
 
 /**
@@ -15,7 +17,7 @@ import type { Effects } from './Effects';
  * - 玩家靠近 1.8m 自動撿起（手機上不必再按鍵）；AUTO 會主動走過來撿。
  * - 60 秒沒撿會消失；切換區域時全部清除。
  */
-type DropKind = { type: 'item'; base: string; rarity: Rarity } | { type: 'potion'; potion: 'hp' | 'mp'; count: number };
+type DropKind = { type: 'item'; base: string; rarity: Rarity } | { type: 'potion'; potion: 'hp' | 'mp'; count: number } | { type: 'consumable'; id: string };
 
 interface Drop {
   kind: DropKind;
@@ -49,13 +51,15 @@ export class LootSystem {
       const tier = this.zoneTier();
       const n = k.boss ? 2 : 1;
       for (let i = 0; i < n; i++) {
-        const d = rollDrop(tier, k.boss);
+        const d = rollDrop(tier, k.boss, Math.random, this.state.heroClass);
         if (d) this.spawn({ type: 'item', ...d }, k.x, k.z);
       }
       if (!k.boss && k.gold[1] > 0 && Math.random() < POTION_DROP_CHANCE) {
         this.spawn({ type: 'potion', potion: Math.random() < 0.6 ? 'hp' : 'mp', count: 1 }, k.x, k.z);
       }
       if (k.boss) this.spawn({ type: 'potion', potion: 'hp', count: 5 }, k.x, k.z);
+      // 道具：小怪 5%、首領必掉 1 個
+      if (k.boss || (k.gold[1] > 0 && Math.random() < CONSUMABLE_DROP_CHANCE)) this.spawn({ type: 'consumable', id: rollConsumable() }, k.x, k.z);
     });
   }
 
@@ -66,7 +70,7 @@ export class LootSystem {
     const pz = z + Math.sin(a) * r;
     const g = new THREE.Group();
     g.position.set(px, this.heightAt(px, pz), pz);
-    const color = kind.type === 'item' ? new THREE.Color(RARITY[kind.rarity].color).getHex() : kind.potion === 'hp' ? 0xff6a55 : 0x5cb2ff;
+    const color = kind.type === 'item' ? new THREE.Color(RARITY[kind.rarity].color).getHex() : kind.type === 'consumable' ? 0xffd36b : kind.potion === 'hp' ? 0xff6a55 : 0x5cb2ff;
     const bob = new THREE.Group();
     g.add(bob);
     if (kind.type === 'item') {
@@ -106,7 +110,7 @@ export class LootSystem {
     let best: Drop | null = null;
     let bd = maxRange;
     for (const d of this.drops) {
-      if (full && d.kind.type === 'item') continue;
+      if (full && d.kind.type === 'item') continue; // 道具、藥水不佔背包格
       const dist = Math.hypot(d.x - p.x, d.z - p.z);
       if (dist < bd) {
         bd = dist;
@@ -136,6 +140,13 @@ export class LootSystem {
 
   private pickup(d: Drop): boolean {
     const k = d.kind;
+    if (k.type === 'consumable') {
+      const def = CONSUMABLE_MAP[k.id];
+      addConsumable(this.state, k.id);
+      bus.emit('toast', { text: `獲得 ${def.icon} ${def.name}`, kind: 'reward' });
+      this.onInventoryChanged();
+      return true;
+    }
     if (k.type === 'potion') {
       this.state.potions[k.potion] += k.count;
       bus.emit('float:text', { x: d.x, y: 1.4, z: d.z, text: `+${k.count} ${k.potion === 'hp' ? '紅藥水' : '藍藥水'}`, kind: 'info' });
