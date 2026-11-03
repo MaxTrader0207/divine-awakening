@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGameState } from './GameState';
-import { LocalSave, SaveSlots, SLOT_COUNT, type KV } from './SaveSystem';
+import { LocalSave, SaveSlots, SLOT_COUNT, migrate, type KV } from './SaveSystem';
 
 function memKV(init: Record<string, string> = {}): KV & { data: Record<string, string> } {
   const data = { ...init };
@@ -91,5 +91,15 @@ describe('擴充為 10 格', () => {
     expect(kv.data['little-mage.save.slot3']).toBeTruthy();
     expect(s.write(11, a)).toBe(false);
     expect(s.list().filter((i) => !i.empty).map((i) => i.slot)).toEqual([3, 10]);
+  });
+});
+
+describe('存檔 v6', () => {
+  it('舊存檔補上左手模式與介面大小的預設值，原本的設定保留', () => {
+    const old = migrate({ version: 5, level: 2, settings: { zoom: 1.3, showFps: true, musicVolume: 0.2, sfxVolume: 0.4, quality: 'low' } } as never)!;
+    expect(old.version).toBe(6);
+    expect(old.settings.leftHanded).toBe(false);
+    expect(old.settings.uiScale).toBe(1);
+    expect(old.settings.zoom).toBe(1.3);
   });
 });

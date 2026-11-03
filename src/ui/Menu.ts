@@ -220,12 +220,46 @@ export class Menu {
       });
       return h('div', { class: 'card' }, [h('label', { class: 'set-row', for: `vol-${kind}` }, [h('span', {}, label), out]), sl]);
     };
+    // 介面：左手模式、介面大小
+    const lefty = h('input', { type: 'checkbox' });
+    lefty.checked = !!s.leftHanded;
+    lefty.addEventListener('change', () => {
+      s.leftHanded = lefty.checked;
+      bus.emit('settings:changed');
+      bus.emit('save:request');
+    });
+    const scales = [0.9, 1, 1.1, 1.2];
+    const scaleRow = h(
+      'div',
+      { class: 'seg' },
+      scales.map((v) =>
+        h('button', {
+          class: `seg-btn${Math.abs((s.uiScale || 1) - v) < 0.01 ? ' on' : ''}`,
+          onclick: () => {
+            s.uiScale = v;
+            bus.emit('settings:changed');
+            bus.emit('save:request');
+            this.show('settings');
+          },
+        }, `${Math.round(v * 100)}%`),
+      ),
+    );
     const fps = h('input', { type: 'checkbox' });
     fps.checked = s.showFps;
     fps.addEventListener('change', () => this.actions.onToggleFps(fps.checked));
 
     return [
-      h('div', { class: 'card' }, [h('label', { class: 'set-row' }, [h('span', {}, '鏡頭縮放'), zoomVal]), slider]),
+      h('div', { class: 'card' }, [
+        h('label', { class: 'set-row' }, [h('span', {}, '鏡頭縮放'), zoomVal]),
+        slider,
+        h('p', {}, '遊戲中也可以用兩根手指開合（電腦：滑鼠滾輪）調整遠近。'),
+      ]),
+      h('div', { class: 'card' }, [
+        h('label', { class: 'set-row' }, [h('span', {}, '左手模式'), lefty]),
+        h('p', {}, '搖桿換到右邊、技能換到左邊。'),
+        h('div', { class: 'set-row' }, [h('span', {}, '介面大小')]),
+        scaleRow,
+      ]),
       renderCloudCard(this.cloudCtx()),
       this.renderQuality(),
       vol('music', '音樂音量', s.musicVolume),

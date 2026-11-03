@@ -78,7 +78,7 @@ src/
 │  ├─ Collision.ts            2D 碰撞世界
 │  └─ Label.ts                Canvas 文字 Sprite
 └─ ui/
-   ├─ Hud.ts                  狀態框、小地圖、貨幣、提示、橫幅、撿寶訊息、首領血條、冷卻遮罩、AUTO
+   ├─ Hud.ts                  左上欄（狀態框、增益列、指引）、右上（暫停/選單、小地圖、金幣）、首領血條/提示插槽、通知佇列、獎勵清單、低血量警告、技能冷卻與長按說明、AUTO、左手模式與介面大小
    ├─ Menu.ts                 選單殼與「地圖 / 設定」分頁
    ├─ InventoryTabs.ts        「裝備 / 強化 / 商城」分頁
    ├─ GuideTab.ts             「指引」分頁：新手指引步驟清單＋可展開的遊戲說明
@@ -151,9 +151,9 @@ raw  = atk × 技能倍率
 - 首領技能傷害 = 公式 × 技能倍率（1.4~2.2），只有預警結算時站在範圍內才會受傷。
 - AUTO 只會察覺 65% 的預警（`AUTO_DODGE_CHANCE`），手動操作可以全部閃掉。
 
-## 存檔（v5）
+## 存檔（v6）
 
-- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）、v5 新手指引（`tutorial`；舊存檔 Lv.3 以上或打過首領的視為完成並隱藏）。舊存檔讀入時自動遷移。
+- v2 背包與裝備、v3 每日任務（`daily`）、v4 職業（`heroClass`）、v5 新手指引（`tutorial`；舊存檔 Lv.3 以上或打過首領的視為完成並隱藏）、v6 設定新增 `leftHanded`、`uiScale`。舊存檔讀入時自動遷移。
 
 
 - 多存檔：`SaveSlots` 管 10 格（localStorage `little-mage.save.slot1`~`slot10`；v1.19 前是 5 格，鍵名相同所以舊存檔直接沿用），使用中欄位記在 `little-mage.activeSlot`。選單「存檔」分頁可立即存檔、另存、讀取（切換欄位會重新載入頁面）、在空格開新遊戲、刪除。

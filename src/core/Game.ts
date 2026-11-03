@@ -13,7 +13,7 @@ import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
 import { InputManager } from '@/input/InputManager';
 import { ZoneManager } from '@/world/ZoneManager';
-import { Hud } from '@/ui/Hud';
+import { Hud, type BuffInfo } from '@/ui/Hud';
 import { Menu } from '@/ui/Menu';
 import { DamageNumbers } from '@/ui/DamageNumbers';
 import { EnemyManager } from '@/systems/EnemyManager';
@@ -496,6 +496,7 @@ export class Game {
       this.audio.setBossIntensity(boss.hp < boss.def.stats.maxHp * 0.5 ? 1 : 0);
     } else this.audio.setMusic(zoneNow.def.music ?? ({ town: 'town', field: 'grassland', dungeon: 'dungeon' } as const)[zoneNow.def.kind]);
     if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・畫質${this.quality.label}`;
+    this.hud.setBuffs(this.buffList());
     this.hud.update(dt);
     this.input.endFrame();
 
@@ -596,6 +597,19 @@ export class Game {
       });
   }
 
+  /** HUD 增益列：守護、嗜血、狂暴、召喚物數量、無敵 */
+  private buffList(): BuffInfo[] {
+    const p = this.player;
+    const out: BuffInfo[] = [];
+    if (p.guardT > 0) out.push({ icon: '🛡', label: '守護', t: p.guardT });
+    if (p.bloodlustT > 0) out.push({ icon: '🩸', label: '嗜血', t: p.bloodlustT });
+    if (p.berserkT > 0) out.push({ icon: '🔥', label: '狂暴', t: p.berserkT });
+    if (p.invulnerable > 0.4) out.push({ icon: '✨', label: '無敵', t: p.invulnerable });
+    const n = this.minions?.count() ?? 0;
+    if (n > 0) out.push({ icon: '💀', label: `×${n}` });
+    return out;
+  }
+
   /** 推進新手指引；完成的步驟發獎勵、顯示訊息 */
   tutorial(ev: TutorialEvent | null) {
     const s = this.state;
@@ -611,7 +625,7 @@ export class Game {
         s.potions.hp += r.hp ?? 0;
         s.potions.mp += r.mp ?? 0;
       }
-      if (!t.hidden) bus.emit('toast', { text: `✔ 指引完成：${c.step.title}${c.rewarded ? `　獲得 ${rewardText(r)}` : ''}`, duration: 3 });
+      if (!t.hidden) bus.emit('toast', { text: `✔ 指引完成：${c.step.title}${c.rewarded ? `　${rewardText(r)}` : ''}`, duration: 3, kind: 'reward' });
     }
     if (done.length) {
       this.audio.play(t.done ? 'levelup' : 'coin');
@@ -643,7 +657,7 @@ export class Game {
   quest(ev: QuestEvent) {
     if (!this.state.daily) return;
     const done = progressQuests(this.state.daily, ev);
-    for (const q of done) bus.emit('toast', { text: `每日任務完成：${questText(q)}（到選單「任務」領取）`, duration: 3 });
+    for (const q of done) bus.emit('toast', { text: `📋 每日任務完成：${questText(q)}`, duration: 3, kind: 'reward' });
     bus.emit('quests:changed');
   }
 

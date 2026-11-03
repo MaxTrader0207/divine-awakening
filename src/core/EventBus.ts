@@ -11,7 +11,8 @@ export interface GameEvents {
   'zone:request': { zoneId: ZoneId; arrive?: { x: number; z: number } };
   'player:changed': void;
   'wallet:changed': void;
-  toast: { text: string; duration?: number };
+  /** kind: 'reward' 走左側獎勵清單；其他排隊顯示在上方中央 */
+  toast: { text: string; duration?: number; kind?: 'info' | 'reward' };
   banner: { text: string };
   'menu:open': { tab?: MenuTab };
   /** HUD 暫停鈕 */

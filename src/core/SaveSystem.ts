@@ -210,6 +210,7 @@ export function migrate(data: Partial<GameState>): GameState | null {
   // v4 → v5：新增新手指引；已經玩過一段（Lv.3 以上或打過首領）的視為完成、不顯示
   if (!data.tutorial || typeof data.tutorial !== 'object') merged.tutorial = tutorialForExisting(merged.level, merged.bossesDefeated ?? []);
   else merged.tutorial = { ...base.tutorial, ...data.tutorial };
-  // 未來版本：if ((data.version ?? 0) < 6) { ... }
+  // v5 → v6：設定新增 leftHanded、uiScale（上面 settings 合併時已補預設值）
+  // 未來版本：if ((data.version ?? 0) < 7) { ... }
   return merged;
 }

@@ -1,3 +1,4 @@
+import { bus } from '@/core/EventBus';
 import { VirtualJoystick } from './VirtualJoystick';
 
 /**
@@ -41,10 +42,56 @@ export class InputManager {
       if (action) this.justPressed.add(action);
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
+    this.bindPinchZoom();
     window.addEventListener('blur', () => {
       this.keys.clear();
       this.uiHeld.clear();
     });
+  }
+
+  /**
+   * 鏡頭遠近：手機雙指開合、電腦滑鼠滾輪（取代原本常駐在畫面上的 − / + 按鈕）。
+   * 只在 3D 畫面本身（canvas）上觸發，不會跟搖桿、技能按鈕搶觸控。
+   */
+  private bindPinchZoom() {
+    const pts = new Map<number, { x: number; y: number }>();
+    let lastDist = 0;
+    const canvas = () => document.getElementById('game-canvas');
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target !== canvas()) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        lastDist = Math.hypot(a.x - b.x, a.y - b.y);
+      }
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size !== 2 || lastDist <= 0) return;
+      const [a, b] = [...pts.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      // 每開合 60px 約變 0.1
+      const delta = (d - lastDist) / 600;
+      if (Math.abs(delta) >= 0.01) {
+        bus.emit('camera:zoom', { delta });
+        lastDist = d;
+      }
+    });
+    const up = (e: PointerEvent) => {
+      pts.delete(e.pointerId);
+      if (pts.size < 2) lastDist = 0;
+    };
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.target !== canvas()) return;
+        bus.emit('camera:zoom', { delta: e.deltaY > 0 ? -0.05 : 0.05 });
+      },
+      { passive: true },
+    );
   }
 
   /** UI 按鈕呼叫，等同按下一次動作鍵 */

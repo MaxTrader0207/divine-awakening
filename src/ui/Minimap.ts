@@ -1,5 +1,6 @@
 import type { ZoneDef } from '@/data/types';
 import { PROP_DEFAULTS } from '@/world/Props';
+import { ENEMIES } from '@/data/enemies';
 
 /**
  * 小地圖：整張區域縮放進方框。
@@ -67,7 +68,24 @@ export class Minimap {
       g.arc(ox + p.x * s, oz + p.z * s, Math.max(3, p.radius * s), 0, Math.PI * 2);
       g.fill();
     }
+    // 商店入口（金色圓點）、首領位置（紅色骷髏點）
+    const dot = (x: number, z: number, r: number, fill: string, stroke = '#1b2433') => {
+      g.fillStyle = fill;
+      g.strokeStyle = stroke;
+      g.lineWidth = Math.max(1, this.size * 0.012);
+      g.beginPath();
+      g.arc(ox + x * s, oz + z * s, r, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+    };
+    const u = this.size * 0.035;
+    for (const t of def.triggers ?? []) dot(t.x, t.z, u, t.tab === 'enhance' ? '#c38bff' : '#f4c64e');
+    for (const sp of def.spawns ?? []) if (ENEMIES[sp.enemy]?.boss) dot(sp.x, sp.z, u * 1.5, '#e5533d', '#fff2c4');
   }
+
+  /** 新手指引目標（金色脈動圈），由 Hud 每幀設定 */
+  target: { x: number; z: number } | null = null;
+  private t = 0;
 
   draw(px: number, pz: number, facing: number) {
     const def = this.def;
@@ -75,6 +93,21 @@ export class Minimap {
     const ctx = this.ctx;
     ctx.drawImage(this.staticLayer, 0, 0);
     const s = this.size / Math.max(def.size.w, def.size.d);
+    if (this.target) {
+      this.t += 1 / 60;
+      const k = (this.t * 0.9) % 1;
+      const tx = this.size / 2 + this.target.x * s;
+      const ty = this.size / 2 + this.target.z * s;
+      ctx.strokeStyle = `rgba(255, 211, 107, ${1 - k})`;
+      ctx.lineWidth = this.size * 0.025;
+      ctx.beginPath();
+      ctx.arc(tx, ty, this.size * (0.04 + k * 0.08), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#ffd36b';
+      ctx.beginPath();
+      ctx.arc(tx, ty, this.size * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+    }
     const x = this.size / 2 + px * s;
     const y = this.size / 2 + pz * s;
     const r = this.size * 0.05;
