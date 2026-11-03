@@ -22,7 +22,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 // 載入畫面：模型載完（或失敗）才開始遊戲；失敗的模型會自動改用程式模型
 const loading = document.createElement('div');
 loading.className = 'loading';
-loading.innerHTML = '<div class="loading-box"><b>戰鬥法師</b><span>載入中…</span><i><em></em></i><small>Wei Studio</small></div>';
+loading.innerHTML = '<div class="loading-box"><b>古希臘探險</b><span>載入中…</span><i><em></em></i><small>Wei Studio</small></div>';
 app.appendChild(loading);
 const bar = loading.querySelector('em') as HTMLElement;
 const label = loading.querySelector('span') as HTMLElement;

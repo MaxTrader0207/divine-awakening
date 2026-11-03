@@ -1,7 +1,7 @@
 {
   "name": "little-mage",
-  "version": "1.34.0",
-  "description": "戰鬥法師 Battle Mage（原名小法師 Little Mage）— 手機直式 3D 動作 RPG（Three.js + TypeScript）",
+  "version": "1.35.0",
+  "description": "古希臘探險 Ancient Greek Adventure（原名戰鬥法師 Battle Mage、小法師 Little Mage）— 手機直式 3D 動作 RPG（Three.js + TypeScript）",
   "scripts": {
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",

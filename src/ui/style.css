@@ -373,7 +373,7 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .title-screen.done { opacity: 0; pointer-events: none; }
 .ts-box { width: 100%; max-width: 420px; display: grid; gap: 14px; align-content: start; }
 .ts-logo { display: grid; justify-items: center; gap: 2px; margin: 18px 0 10px; }
-.ts-orb { font-size: 54px; filter: drop-shadow(0 0 18px rgba(180, 140, 255, 0.7)); animation: ts-float 3s ease-in-out infinite; }
+.ts-orb { font-size: 54px; filter: drop-shadow(0 0 18px rgba(244, 198, 78, 0.7)); animation: ts-float 3s ease-in-out infinite; }
 @keyframes ts-float { 50% { transform: translateY(-6px); } }
 .ts-logo h1 { margin: 6px 0 0; font-size: 40px; letter-spacing: 8px; color: #fff2c4; text-shadow: 0 2px 14px rgba(244, 198, 78, 0.55); }
 .ts-logo p { margin: 0; font-size: 12px; letter-spacing: 6px; color: var(--muted); }

@@ -6,7 +6,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'com.weistudio.littlemage',
-  appName: '戰鬥法師',
+  appName: '古希臘探險',
   webDir: 'dist',
   backgroundColor: '#0e131c',
   android: {
