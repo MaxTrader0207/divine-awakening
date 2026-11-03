@@ -3,7 +3,7 @@
 每次開新對話繼續開發時，先讀這份，再讀 `docs/ROADMAP.md` 找到目前週次。
 
 ## 專案
-神格覺醒 Divine Awakening（v1.36 起；曾名古希臘探險 v1.35、戰鬥法師 Battle Mage、最早叫小法師 Little Mage）：手機直式 3D 低多邊形動作 RPG，Three.js + TypeScript + Vite，部署 GitHub Pages。
+神格覺醒 Divine Awakening（v1.36 起；曾名古希臘探險 v1.35、戰鬥法師 Battle Mage、最早叫小法師 Little Mage）：手機直式 3D 低多邊形動作 RPG，Three.js + TypeScript + Vite，部署 GitHub Pages：https://maxtrader0207.github.io/divine-awakening/ （GitHub 專案 `MaxTrader0207/divine-awakening`，原名 `little-mage`；localStorage 鍵名仍是 `little-mage.*`，同網域所以改名不影響存檔，不要改鍵名）。
 開發者 Max（Wei Studio），一律用**繁體中文**溝通與撰寫註解、UI 文字。
 
 ## 必讀

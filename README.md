@@ -1,12 +1,14 @@
 # 神格覺醒 Divine Awakening（曾名古希臘探險、戰鬥法師、小法師）
 
-手機直式、3D 低多邊形、俯視角的單機動作 RPG。
-主城 → 阿卡迪亞草原 → 三層副本（擊敗首領解鎖下一層），法師職業，搖桿 + Q/W/E/R 技能 + AUTO 自動戰鬥，
+**立即遊玩：https://maxtrader0207.github.io/divine-awakening/**
+
+手機直式、3D 低多邊形、俯視角的單機動作 RPG（古希臘神話主題）。
+雅典城 → 阿卡迪亞草原、多多納聖林 → 十二層副本（Lv.1-60，擊敗首領解鎖下一層），搖桿 + Q/W/E/R 技能 + AUTO 自動戰鬥，
 掉寶、裝備、強化、商店、首領紅色預警、每日任務、雲端存檔與排行榜。五個職業：法師、弓手、騎士、狂戰士、召喚師。
 
 - 引擎：**Three.js**（WebGL）＋ **TypeScript** ＋ **Vite**
 - 平台：手機瀏覽器（直式），桌機會以手機比例置中顯示
-- 部署：GitHub Pages（推到 `main` 自動部署）；支援 PWA（加到主畫面、離線）
+- 部署：GitHub Pages（推到 `main` 自動部署，網址 https://maxtrader0207.github.io/divine-awakening/ ；GitHub 專案 `MaxTrader0207/divine-awakening`，v1.36 前叫 `little-mage`）；支援 PWA（加到主畫面、離線）
 - 開發商：Wei Studio
 
 ## 快速開始
