@@ -8,10 +8,10 @@ import { newGameState } from '@/core/GameState';
 const field: UseContext = { safe: false, bossFight: false, hpFull: false, mpFull: false, potionCd: false, alive: true };
 
 describe('道具', () => {
-  it('共 10 種，id 與名稱不重複', () => {
-    expect(CONSUMABLES).toHaveLength(10);
-    expect(new Set(CONSUMABLES.map((c) => c.id)).size).toBe(10);
-    expect(new Set(CONSUMABLES.map((c) => c.name)).size).toBe(10);
+  it('共 15 種，id 與名稱不重複', () => {
+    expect(CONSUMABLES).toHaveLength(15);
+    expect(new Set(CONSUMABLES.map((c) => c.id)).size).toBe(15);
+    expect(new Set(CONSUMABLES.map((c) => c.name)).size).toBe(15);
   });
 
   it('使用會扣數量，用完就不能用', () => {
@@ -41,7 +41,7 @@ describe('道具', () => {
       const id = rollConsumable();
       n[id] = (n[id] ?? 0) + 1;
     }
-    expect(Object.keys(n)).toHaveLength(10);
+    expect(Object.keys(n)).toHaveLength(15);
     expect(n.hestia_bread).toBeGreaterThan(n.muse_honey * 3);
   });
 
@@ -56,14 +56,14 @@ describe('道具', () => {
     expect(kept.boosts.exp).toBe(120);
   });
 
-  it('每個職業各有 10 種專屬道具，所有道具名稱不重複', () => {
+  it('每個職業各有 15 種專屬道具，所有道具名稱不重複', () => {
     for (const cls of CLASS_LIST) {
-      expect(CLASS_CONSUMABLES.filter((c) => c.cls === cls)).toHaveLength(10);
-      expect(consumablesFor(cls)).toHaveLength(20);
+      expect(CLASS_CONSUMABLES.filter((c) => c.cls === cls)).toHaveLength(15);
+      expect(consumablesFor(cls)).toHaveLength(30);
     }
     const names = [...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.name);
-    expect(new Set(names).size).toBe(60);
-    expect(new Set([...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.id)).size).toBe(60);
+    expect(new Set(names).size).toBe(90);
+    expect(new Set([...CONSUMABLES, ...CLASS_CONSUMABLES].map((c) => c.id)).size).toBe(90);
   });
 
   it('掉落只會出現共用或自己職業的道具', () => {

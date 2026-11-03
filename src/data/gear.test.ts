@@ -5,19 +5,19 @@ import { CLASS_LIST } from './classes';
 import { rollDrop } from '@/systems/LootTable';
 
 describe('職業裝備', () => {
-  it('每個職業、每個欄位都有 10 件神話裝，名稱不重複', () => {
+  it('每個職業、每個欄位都有 15 件神話裝，名稱不重複', () => {
     const all = new Set<string>();
     for (const cls of CLASS_LIST) {
       for (const slot of SLOT_ORDER) {
         const names = CLASS_GEAR[cls].named[slot];
-        expect(names).toHaveLength(10);
+        expect(names).toHaveLength(15);
         for (const n of names) {
           expect(all.has(n), `重複的名稱：${n}`).toBe(false);
           all.add(n);
         }
       }
     }
-    expect(all.size).toBe(300);
+    expect(all.size).toBe(450);
   });
 
   it('神話裝比同階標準裝略強（預算 ×1.08，容許取整誤差），但不超過下一階', () => {
@@ -27,7 +27,7 @@ describe('職業裝備', () => {
       const s = statScore(b.stats);
       expect(s).toBeGreaterThan(std * 0.92);
       expect(s).toBeLessThan(std * NAMED_BUDGET * 1.15);
-      if (b.tier < 4) expect(s).toBeLessThan(statScore(ITEM_BASES[`${b.slot}_t${b.tier + 1}`].stats));
+      if (b.tier < 6) expect(s).toBeLessThan(statScore(ITEM_BASES[`${b.slot}_t${b.tier + 1}`].stats));
     }
   });
 
@@ -54,5 +54,19 @@ describe('職業裝備', () => {
     }
     expect(named).toBeGreaterThan(1500);
     expect(namedGearIds('mage', 'weapon', 4)).toHaveLength(2);
+    expect(namedGearIds('mage', 'weapon', 5)).toHaveLength(3);
+    expect(namedGearIds('mage', 'weapon', 6)).toHaveLength(2);
+  });
+
+  it('裝備 6 階：每階都比上一階強；第 5、6 階有掉落', () => {
+    for (const slot of SLOT_ORDER)
+      for (let t = 2; t <= 6; t++) expect(statScore(ITEM_BASES[`${slot}_t${t}`].stats)).toBeGreaterThan(statScore(ITEM_BASES[`${slot}_t${t - 1}`].stats));
+    expect(ITEM_BASES[rollDrop(6, true, () => 0.99, 'mage')!.base].tier).toBe(6);
+    expect(ITEM_BASES[rollDrop(9, true, () => 0.99)!.base].tier).toBe(6); // 超過上限會被限制在 6
+    applyClassGear('knight');
+    expect(ITEM_BASES.weapon_t6.name).toBe('卡俄斯長劍');
+    applyClassGear('summoner');
+    expect(ITEM_BASES.ring_t6.name).toBe('冥王護符');
+    applyClassGear('mage');
   });
 });

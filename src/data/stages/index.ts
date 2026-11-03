@@ -1,4 +1,5 @@
 import type { EnemyDef, StageDef, ZoneDef, ZoneId } from '../types';
+import { MAX_TIER } from '../gear';
 import { town } from './town';
 import { grassland } from './grassland';
 import { poseidonCoast } from './dungeon1-poseidon-coast';
@@ -85,10 +86,15 @@ export function bossOf(id: ZoneId): EnemyDef | undefined {
   return undefined;
 }
 
-/** 這張地圖掉落的裝備階級（lootTier → 副本層數 → 1），最高 4 */
+/**
+ * 這張地圖掉落的裝備階級：有填 lootTier 就用它；副本依層數——
+ * 第一～三層 = 1~3 階、第四～六層 = 4 階、第七～九層 = 5 階、第十～十二層 = 6 階（最高 6）
+ */
 export function lootTierOf(id: ZoneId): number {
   const z = ZONES[id];
-  return Math.min(4, z?.lootTier ?? z?.dungeon?.floor ?? 1);
+  if (z?.lootTier) return Math.min(MAX_TIER, z.lootTier);
+  const f = z?.dungeon?.floor ?? 1;
+  return Math.min(MAX_TIER, f <= 3 ? f : 3 + Math.ceil((f - 3) / 3));
 }
 
 /** 每日任務「在某區擊倒」會出的區域：等級落在 [建議下限, 建議上限 + 3]，且已解鎖、達到進入等級 */

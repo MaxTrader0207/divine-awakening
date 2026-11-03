@@ -37,7 +37,6 @@ export interface ClassDef {
   perLevel: Partial<Stats>;
   skills: SkillDef[];
   anims: HeroAnimSet;
-  /** 武器欄的名稱（第 1~4 階）與圖示 */
   /** 資源：mp 魔力（自然回復）；rage 怒氣（上限 100，打人 / 被打累積，脫戰消退） */
   resource?: 'mp' | 'rage';
 }

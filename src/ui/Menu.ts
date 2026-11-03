@@ -6,6 +6,7 @@ import { h } from './dom';
 import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
 import { BONUS_GEMS, canClaim, ensureToday, questText } from '@/systems/DailyQuests';
 import { rollDrop } from '@/systems/LootTable';
+import { tierForLevel } from '@/data/items';
 import { addItem, itemName } from '@/systems/Inventory';
 import { renderCloudCard, renderLeaderboard, type CloudContext } from './CloudTabs';
 import type { Cloud } from '@/net/Cloud';
@@ -375,7 +376,7 @@ export class Menu {
               ? h('button', {
                   class: 'go small',
                   onclick: () => {
-                    const tier = Math.max(1, Math.min(4, Math.ceil(s.level / 6)));
+                    const tier = tierForLevel(s.level);
                     const drop = rollDrop(tier, true, Math.random, s.heroClass);
                     const it = drop ? addItem(s, drop.base, drop.rarity) : null;
                     if (!it && drop) return bus.emit('toast', { text: '背包已滿，先清出空間再領取' });

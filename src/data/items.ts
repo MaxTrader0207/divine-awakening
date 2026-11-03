@@ -1,19 +1,20 @@
 import type { EquipSlot, Rarity, Stats } from './types';
 import type { HeroClass } from './classes';
-import { CLASS_GEAR, NAMED_TIERS, type GearProfile } from './gear';
+import { CLASS_GEAR, MAX_TIER, NAMED_TIERS, TIERS, type GearProfile, type Tier } from './gear';
 
 /**
  * 裝備資料
  * ------------------------------------------------------------
  * 裝備 = 底材（slot × tier）× 稀有度倍率 × 強化倍率。
- * tier 1 = 阿卡迪亞草原 / 第一層、tier 2 = 第二層、tier 3 = 第三層。
+ * tier 1 = 阿卡迪亞草原 / 第一層、tier 2 = 第二層、tier 3 = 第三層、tier 4 = 第四～六層（與多多納聖林）、
+ * tier 5 = 第七～九層、tier 6 = 第十～十二層。
  * 「穿透」集中在帽子與戒指：這是突破第二、三層防禦的關鍵。
  */
 
 export interface ItemBase {
   id: string;
   slot: EquipSlot;
-  tier: 1 | 2 | 3 | 4;
+  tier: Tier;
   name: string;
   icon: string;
   stats: Partial<Stats>;
@@ -31,7 +32,7 @@ export function applyClassGear(cls: HeroClass) {
   const g = CLASS_GEAR[cls];
   for (const slot of SLOT_ORDER) {
     SLOT_NAMES[slot] = g.slotNames[slot];
-    for (const tier of [1, 2, 3, 4] as const) {
+    for (const tier of TIERS) {
       const b = ITEM_BASES[`${slot}_t${tier}`];
       b.name = `${g.prefixes[tier - 1]}${g.slotNames[slot]}`;
       b.icon = g.icons[slot];
@@ -68,8 +69,8 @@ const T1: Record<EquipSlot, Partial<Stats>> = {
 };
 
 /** 平坦數值與百分比數值的 tier 成長不同，避免百分比爆掉 */
-const FLAT_SCALE = [1, 2.2, 3.6, 5.4];
-const PCT_SCALE = [1, 1.6, 2.2, 2.8];
+const FLAT_SCALE = [1, 2.2, 3.6, 5.4, 7.6, 10.2];
+const PCT_SCALE = [1, 1.6, 2.2, 2.8, 3.4, 4.0];
 const PCT_KEYS: (keyof Stats)[] = ['pen', 'critRate', 'critDmg', 'moveSpeed'];
 
 const ICONS: Record<EquipSlot, string> = { ...CLASS_GEAR.mage.icons };
@@ -99,7 +100,7 @@ function roundStat(k: keyof Stats, v: number): number {
   return PCT_KEYS.includes(k) ? Math.round(v * 1000) / 1000 : Math.max(1, Math.round(v));
 }
 
-function namedStats(slot: EquipSlot, tier: 1 | 2 | 3 | 4, profile: GearProfile): Partial<Stats> {
+function namedStats(slot: EquipSlot, tier: Tier, profile: GearProfile): Partial<Stats> {
   const std = scaled(slot, tier);
   const p = PROFILES[profile];
   const raw: Partial<Stats> = {};
@@ -114,7 +115,7 @@ function namedStats(slot: EquipSlot, tier: 1 | 2 | 3 | 4, profile: GearProfile):
   return out;
 }
 
-function scaled(slot: EquipSlot, tier: 1 | 2 | 3 | 4): Partial<Stats> {
+function scaled(slot: EquipSlot, tier: Tier): Partial<Stats> {
   const out: Partial<Stats> = {};
   for (const [k, v] of Object.entries(T1[slot]) as [keyof Stats, number][]) {
     const f = PCT_KEYS.includes(k) ? PCT_SCALE[tier - 1] : FLAT_SCALE[tier - 1];
@@ -126,12 +127,12 @@ function scaled(slot: EquipSlot, tier: 1 | 2 | 3 | 4): Partial<Stats> {
 export const ITEM_BASES: Record<string, ItemBase> = {};
 // 標準裝（所有職業共用 id，名稱由 applyClassGear 依職業改寫）
 for (const slot of SLOT_ORDER) {
-  for (const tier of [1, 2, 3, 4] as const) {
+  for (const tier of TIERS) {
     const id = `${slot}_t${tier}`;
     ITEM_BASES[id] = { id, slot, tier, name: `${CLASS_GEAR.mage.prefixes[tier - 1]}${CLASS_GEAR.mage.slotNames[slot]}`, icon: ICONS[slot], stats: scaled(slot, tier) };
   }
 }
-// 神話裝：每個職業 × 每個欄位 × 10 件
+// 神話裝：每個職業 × 每個欄位 × 15 件
 const NAMED_INDEX = new Map<string, string[]>();
 for (const [cls, g] of Object.entries(CLASS_GEAR) as [HeroClass, (typeof CLASS_GEAR)[HeroClass]][]) {
   for (const slot of SLOT_ORDER) {
@@ -144,6 +145,18 @@ for (const [cls, g] of Object.entries(CLASS_GEAR) as [HeroClass, (typeof CLASS_G
       NAMED_INDEX.set(key, [...(NAMED_INDEX.get(key) ?? []), id]);
     });
   }
+}
+
+export { MAX_TIER, TIERS, type Tier };
+
+/** 依玩家等級建議的裝備階級（每日任務額外獎勵等使用） */
+export function tierForLevel(level: number): Tier {
+  if (level <= 6) return 1;
+  if (level <= 12) return 2;
+  if (level <= 18) return 3;
+  if (level <= 30) return 4;
+  if (level <= 45) return 5;
+  return 6;
 }
 
 /** 強化：每 +1 全屬性 +8%；成功率與費用 */

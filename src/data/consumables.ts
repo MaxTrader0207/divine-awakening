@@ -1,7 +1,7 @@
 import type { HeroClass } from './classes';
 
 /**
- * 道具（消耗品）—— 古希臘神話主題：共用 10 種＋每個職業專屬 10 種
+ * 道具（消耗品）—— 古希臘神話主題：共用 15 種＋每個職業專屬 15 種（v1.33 起，後 5 種是後期的高階道具）
  * ------------------------------------------------------------
  * 紅藥水 / 藍藥水仍是快捷鍵 1、2 的基本藥水；這裡是背包裡的進階道具，
  * 在「選單 → 裝備」的「道具」區使用，商城有賣，怪物偶爾掉落（首領必掉 1 個）。
@@ -156,6 +156,58 @@ export const CONSUMABLES: ConsumableDef[] = [
     effect: { type: 'boost', stat: 'gold', value: 0.5, duration: 600 },
     dropWeight: 2,
   },
+  /* ---- v1.33 高階共用道具 ---- */
+  {
+    id: 'hebe_cup',
+    name: '赫柏青春之杯',
+    icon: '🏆',
+    desc: '立即回復 100% HP 與 100% MP（狂戰士：怒氣補滿）',
+    lore: '青春女神赫柏為眾神斟酒的金杯',
+    price: 320,
+    effect: { type: 'heal', hp: 1, mp: 1, rage: 100 },
+    dropWeight: 2,
+    sharesPotionCd: true,
+  },
+  {
+    id: 'nike_wreath',
+    name: '尼姬勝利花環',
+    icon: '🌸',
+    desc: '60 秒內攻擊力 +30%',
+    lore: '有翼的勝利女神為勝利者戴上的花環',
+    price: 220,
+    effect: { type: 'buff', stat: 'atk', value: 0.3, duration: 60 },
+    dropWeight: 3,
+  },
+  {
+    id: 'aegis_shard',
+    name: '埃癸斯神盾碎片',
+    icon: '🛡️',
+    desc: '獲得最大 HP 45% 的護盾（30 秒）',
+    lore: '宙斯與雅典娜的神盾，上面鑲著梅杜莎的頭',
+    price: 240,
+    effect: { type: 'shield', ratio: 0.45, duration: 30 },
+    dropWeight: 3,
+  },
+  {
+    id: 'kairos_sand',
+    name: '凱洛斯時機之沙',
+    icon: '⏳',
+    desc: '所有技能冷卻立即轉好',
+    lore: '「恰當時機」之神凱洛斯，只有前額有頭髮，錯過就抓不住',
+    price: 260,
+    effect: { type: 'cdReset' },
+    dropWeight: 2,
+  },
+  {
+    id: 'zeus_bolt',
+    name: '宙斯雷霆碎片',
+    icon: '⚡',
+    desc: '對周圍 8 公尺造成 4 倍攻擊力的雷擊傷害',
+    lore: '獨眼巨人為宙斯鍛造的雷霆掉下的一角',
+    price: 240,
+    effect: { type: 'nova', power: 4, radius: 8, color: 0xffe25a },
+    dropWeight: 3,
+  },
 ];
 
 /** 同一種道具最多疊幾個 */
@@ -166,7 +218,7 @@ function c(cls: HeroClass, id: string, name: string, icon: string, desc: string,
   return { id: `${cls}_${id}`, name, icon, desc, lore, price, effect, dropWeight, cls, sharesPotionCd: effect.type === 'heal' };
 }
 
-/** 職業專屬道具：每個職業 10 種，只有該職業看得到、買得到、掉得到 */
+/** 職業專屬道具：每個職業 15 種，只有該職業看得到、買得到、掉得到 */
 export const CLASS_CONSUMABLES: ConsumableDef[] = [
   // ---- 法師：魔力、冷卻、穿透 ----
   c('mage', 'nymph_spring', '寧芙泉水', '💧', '立即回復 50% MP', '山林寧芙守護的清泉', 40, { type: 'heal', mp: 0.5 }, 12),
@@ -179,6 +231,11 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('mage', 'muse_scroll', '謬思靈感卷軸', '📜', '所有技能冷卻立即轉好', '九位謬思同時降下的靈感', 200, { type: 'cdReset' }, 3),
   c('mage', 'hades_cap_shard', '隱形帽碎片', '🎩', '4 秒內無敵', '黑帝斯隱形帽上掉下的一角', 180, { type: 'invuln', duration: 4 }, 3),
   c('mage', 'medea_elixir', '美狄亞回春藥', '⚗️', '立即回復 100% HP 與 MP', '美狄亞讓老人返老還童的藥鍋', 250, { type: 'heal', hp: 1, mp: 1 }, 2),
+  c('mage', 'mnemosyne_spring', '謨涅摩緒涅記憶泉', '⛲', '25 秒內持續回復共 100% MP', '記憶女神之泉，喝了想起所有咒語', 150, { type: 'regen', total: 1, duration: 25, mp: true }, 6),
+  c('mage', 'metis_draught', '墨提斯智謀藥', '🧠', '60 秒內爆擊率 +15%', '智慧女神墨提斯，雅典娜的母親', 170, { type: 'buff', stat: 'crit', value: 0.15, duration: 60 }, 4),
+  c('mage', 'aegis_mantle', '雅典娜神盾披風', '🧥', '獲得最大 HP 45% 的護盾（30 秒）', '雅典娜借給佩爾修斯的光亮盾牌', 210, { type: 'shield', ratio: 0.45, duration: 30 }, 3),
+  c('mage', 'chronos_hourglass', '柯羅諾斯時之沙漏', '⌛', '30 秒內技能冷卻快 45%', '時間之神手中流動的沙', 240, { type: 'buff', stat: 'cdr', value: 0.45, duration: 30 }, 2),
+  c('mage', 'hyperion_flame', '許珀里翁烈陽', '🌞', '對周圍 7 公尺造成 4.5 倍攻擊力的烈焰傷害', '光明泰坦許珀里翁的太陽之火', 240, { type: 'nova', power: 4.5, radius: 7, color: 0xffb030 }, 3),
   // ---- 弓手：爆擊、移速、穿透 ----
   c('archer', 'nymph_dew', '林地寧芙露水', '💧', '立即回復 50% HP', '樹林裡寧芙收集的晨露', 40, { type: 'heal', hp: 0.5 }, 12),
   c('archer', 'chiron_herbs', '喀戎草藥包', '🌿', '20 秒內持續回復共 70% HP', '半人馬賢者喀戎教阿斯克勒庇俄斯的草藥', 80, { type: 'regen', total: 0.7, duration: 20 }, 9),
@@ -190,6 +247,11 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('archer', 'hydra_venom', '九頭蛇毒箭油', '🐍', '對周圍 7 公尺造成 2.5 倍傷害並緩速', '赫拉克勒斯把箭浸在九頭蛇血裡', 120, { type: 'nova', power: 2.5, radius: 7, color: 0x6fd36a, slow: 3 }, 5),
   c('archer', 'golden_apple', '阿塔蘭塔金蘋果', '🍎', '所有技能冷卻立即轉好', '讓飛毛腿阿塔蘭塔停下腳步的金蘋果', 200, { type: 'cdReset' }, 3),
   c('archer', 'stag_horn', '亞克提安鹿角粉', '🦌', '3 秒內無敵', '被變成鹿的獵人留下的角', 160, { type: 'invuln', duration: 3 }, 3),
+  c('archer', 'cerynitian_antler', '刻律涅牝鹿金角', '🦌', '40 秒內移動速度 +50%', '赫拉克勒斯追了一整年的金角銅蹄鹿', 150, { type: 'buff', stat: 'speed', value: 0.5, duration: 40 }, 5),
+  c('archer', 'stymphalian_quill', '斯廷法利斯銅羽', '🪶', '60 秒內爆擊傷害 +50%', '怪鳥射出的銅羽，比箭還鋒利', 180, { type: 'buff', stat: 'critDmg', value: 0.5, duration: 60 }, 4),
+  c('archer', 'nemean_pelt', '涅墨亞獅皮斗篷', '🦁', '獲得最大 HP 40% 的護盾（30 秒）', '刀槍不入的獅皮，赫拉克勒斯一直披在身上', 200, { type: 'shield', ratio: 0.4, duration: 30 }, 3),
+  c('archer', 'hesperides_apple', '赫斯珀里得斯金蘋果', '🍏', '立即回復 100% HP', '黃昏女神花園裡赫拉的金蘋果', 250, { type: 'heal', hp: 1 }, 2),
+  c('archer', 'helios_arrow', '赫利俄斯日焰箭', '☄️', '對周圍 8 公尺造成 4 倍攻擊力的火焰傷害', '太陽神的金車掉下的一道火光', 240, { type: 'nova', power: 4, radius: 8, color: 0xffa030 }, 3),
   // ---- 騎士：防禦、護盾、暈眩 ----
   c('knight', 'black_broth', '斯巴達黑湯', '🥣', '立即回復 60% HP', '斯巴達戰士每天喝的黑湯，難喝但有力', 50, { type: 'heal', hp: 0.6 }, 12),
   c('knight', 'hector_oath', '赫克托耳誓言', '🕯️', '20 秒內持續回復共 80% HP', '特洛伊守護者出城前的誓言', 120, { type: 'regen', total: 0.8, duration: 20 }, 8),
@@ -201,6 +263,11 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('knight', 'medusa_eye', '梅杜莎之眼', '👁️', '周圍 6 公尺的敵人石化 3 秒並受到 2 倍傷害（首領不會石化）', '佩爾修斯砍下的蛇髮女妖之眼', 160, { type: 'nova', power: 2, radius: 6, color: 0x9fd3a0, stun: 3 }, 4),
   c('knight', 'leonidas_song', '列奧尼達戰歌', '🎺', '所有技能冷卻立即轉好', '溫泉關三百勇士的戰歌', 200, { type: 'cdReset' }, 3),
   c('knight', 'styx_water', '忒提斯冥河水', '🌊', '5 秒內無敵', '阿基里斯的母親把他浸入冥河的水', 200, { type: 'invuln', duration: 5 }, 2),
+  c('knight', 'asclepius_salve', '阿斯克勒庇俄斯蛇杖膏', '⚕️', '立即回復 100% HP', '醫神蛇杖上的藥膏，能讓死人復活', 250, { type: 'heal', hp: 1 }, 2),
+  c('knight', 'myrmidon_banner', '密爾彌冬戰旗', '🚩', '60 秒內攻擊力 +30%', '阿基里斯麾下最勇猛的軍團戰旗', 190, { type: 'buff', stat: 'atk', value: 0.3, duration: 60 }, 4),
+  c('knight', 'hephaestus_rivet', '赫菲斯托斯神鍛鉚釘', '🔩', '45 秒內受到傷害 -45%', '火神為阿基里斯打造盾牌時留下的鉚釘', 210, { type: 'buff', stat: 'def', value: 0.45, duration: 45 }, 3),
+  c('knight', 'zeus_aegis', '宙斯埃癸斯', '🛡️', '獲得最大 HP 60% 的護盾（30 秒）', '眾神之王的山羊皮神盾，搖動就會雷電交加', 250, { type: 'shield', ratio: 0.6, duration: 30 }, 2),
+  c('knight', 'heracles_club', '赫拉克勒斯橄欖木棒', '🏏', '周圍 7 公尺的敵人受到 3.5 倍傷害並暈眩 2 秒（首領不會暈）', '大力士親手砍下的野橄欖樹幹', 220, { type: 'nova', power: 3.5, radius: 7, color: 0xd8a86a, stun: 2 }, 3),
   // ---- 狂戰士：怒氣、攻擊、吸血 ----
   c('berserker', 'thracian_spirit', '色雷斯烈酒', '🍶', '怒氣立即補滿', '北方蠻族喝了就上戰場的烈酒', 40, { type: 'heal', rage: 100 }, 12),
   c('berserker', 'bull_blood', '米諾陶洛斯牛血', '🐂', '立即回復 50% HP', '迷宮怪物的血，喝了渾身發熱', 45, { type: 'heal', hp: 0.5 }, 12),
@@ -212,6 +279,11 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('berserker', 'lion_heart', '尼米亞獅心', '🦁', '30 秒內受到傷害 -40%', '刀槍不入的尼米亞猛獅之心', 160, { type: 'buff', stat: 'def', value: 0.4, duration: 30 }, 4),
   c('berserker', 'titan_stone', '泰坦撼地石', '🌋', '對周圍 7 公尺造成 3.5 倍傷害', '泰坦之戰時被扔下奧林帕斯的巨石碎片', 140, { type: 'nova', power: 3.5, radius: 7, color: 0xff5a3c }, 5),
   c('berserker', 'enyo_horn', '恩尤戰禍號角', '📯', '所有技能冷卻立即轉好', '戰爭女神恩尤吹響的號角', 200, { type: 'cdReset' }, 3),
+  c('berserker', 'talos_ichor', '塔洛斯神血', '🩸', '立即回復 100% HP，怒氣補滿', '青銅巨人腳踝裡流動的神血', 250, { type: 'heal', hp: 1, rage: 100 }, 2),
+  c('berserker', 'heracles_wrath', '赫拉克勒斯之怒', '😤', '45 秒內攻擊力 +40%', '被赫拉逼瘋時的大力士之怒', 230, { type: 'buff', stat: 'atk', value: 0.4, duration: 45 }, 3),
+  c('berserker', 'lycaon_fang', '呂卡翁狼牙', '🐺', '45 秒內造成傷害的 15% 回血', '被宙斯變成狼的阿卡迪亞國王', 210, { type: 'buff', stat: 'leech', value: 0.15, duration: 45 }, 3),
+  c('berserker', 'ares_bronze', '阿瑞斯青銅盾', '🛡️', '獲得最大 HP 45% 的護盾（30 秒）', '戰神在特洛伊城下舉著的青銅盾', 200, { type: 'shield', ratio: 0.45, duration: 30 }, 3),
+  c('berserker', 'cyclops_hammer', '獨眼巨人鐵鎚', '🔨', '對周圍 7 公尺造成 4.5 倍傷害並暈眩 1.5 秒（首領不會暈）', '為宙斯鍛造雷霆的鐵鎚', 240, { type: 'nova', power: 4.5, radius: 7, color: 0xff8a3a, stun: 1.5 }, 3),
   // ---- 召喚師：召喚、魔力、生存 ----
   c('summoner', 'styx_water', '冥河之水', '💧', '立即回復 50% MP', '連眾神都要對著它發誓的冥河水', 40, { type: 'heal', mp: 0.5 }, 12),
   c('summoner', 'pomegranate', '普西芬妮石榴籽', '🫐', '立即回復 40% HP 與 40% MP', '吃了就得每年回冥界半年的石榴籽', 70, { type: 'heal', hp: 0.4, mp: 0.4 }, 10),
@@ -223,6 +295,11 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('summoner', 'thanatos_feather', '塔納托斯黑羽', '🖤', '45 秒內攻擊力 +25%（召喚物一起變強）', '死神翅膀上的黑色羽毛', 150, { type: 'buff', stat: 'atk', value: 0.25, duration: 45 }, 4),
   c('summoner', 'hecate_flame', '黑卡蒂冥火', '🕯️', '對周圍 6 公尺造成 2.5 倍傷害', '冥界女神火炬上的幽火', 120, { type: 'nova', power: 2.5, radius: 6, color: 0xb48cff }, 5),
   c('summoner', 'lethe_water', '勒特忘川水', '🌫️', '所有技能冷卻立即轉好', '喝了就會忘記一切的遺忘之河', 200, { type: 'cdReset' }, 3),
+  c('summoner', 'orpheus_lament', '奧菲斯輓歌', '🎶', '立即召喚 2 隻提瑞西阿斯亡靈', '讓冥府亡魂都落淚的歌', 200, { type: 'summon', minion: 'skeleton_mage', count: 2 }, 4),
+  c('summoner', 'hades_key', '冥府之鑰', '🗝️', '立即召喚 2 隻埃阿斯亡靈', '冥王黑帝斯掌管的冥府大門鑰匙', 250, { type: 'summon', minion: 'skeleton_warrior', count: 2 }, 3),
+  c('summoner', 'persephone_crown', '普西芬妮冥后冠', '👑', '獲得最大 HP 40% 的護盾（30 秒）', '冥后頭上的水仙花冠', 200, { type: 'shield', ratio: 0.4, duration: 30 }, 3),
+  c('summoner', 'nyx_veil', '尼克斯夜幕面紗', '🌑', '4 秒內無敵', '連宙斯都畏懼的黑夜女神', 190, { type: 'invuln', duration: 4 }, 3),
+  c('summoner', 'erebus_mist', '厄瑞玻斯冥霧', '🌫️', '對周圍 7 公尺造成 3 倍傷害並緩速', '冥府最深處的黑暗之霧', 170, { type: 'nova', power: 3, radius: 7, color: 0x7a5aaa, slow: 3 }, 4),
 ];
 
 /** 某職業看得到的所有道具（共用＋專屬） */

@@ -1,5 +1,5 @@
 import type { Rarity } from '@/data/types';
-import { RARITY, RARITY_ORDER, SLOT_ORDER, namedGearIds } from '@/data/items';
+import { MAX_TIER, RARITY, RARITY_ORDER, SLOT_ORDER, namedGearIds, type Tier } from '@/data/items';
 import type { HeroClass } from '@/data/classes';
 
 /** 小怪掉裝備機率 */
@@ -29,7 +29,7 @@ export function rollDrop(tier: number, boss: boolean, rng: () => number = Math.r
     }
   }
   const slot = SLOT_ORDER[Math.floor(rng() * SLOT_ORDER.length)];
-  const t = Math.max(1, Math.min(4, tier));
+  const t = Math.max(1, Math.min(MAX_TIER, tier)) as Tier;
   if (cls) {
     const named = namedGearIds(cls, slot, t);
     if (named.length && rng() < (boss ? NAMED_CHANCE.boss : NAMED_CHANCE.normal)) return { base: named[Math.floor(rng() * named.length)], rarity };
