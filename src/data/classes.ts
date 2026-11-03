@@ -151,7 +151,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'sword_rain', name: '萬劍歸宗', slot: 'E', mpCost: 32, cooldown: 11, power: 1.0, range: 9, shape: 'circle', radius: 3.6, waves: 4, icon: '⚔', color: 0x6ad8ff, auto: 'target-aoe', anim: '2H_Melee_Attack_Spinning' },
       { id: 'sword_intent', name: '人劍合一', slot: 'R', mpCost: 25, cooldown: 30, power: 0, range: 0, shape: 'circle', duration: 8, icon: '☯', color: 0xffe9a0, auto: 'burst', anim: 'Cheer' },
     ],
-    anims: { model: 'swordsman', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.6, hand: 'r', thin: 0.55, grip: 0.24 } },
+    anims: { model: 'swordsman', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.8, hand: 'r', thin: 0.45, grip: 0.22 } },
   },
 };
 
