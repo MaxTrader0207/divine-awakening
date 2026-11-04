@@ -15,6 +15,10 @@ export type EnemyState = 'alive' | 'dying' | 'dead';
 export type AiState = 'idle' | 'wander' | 'chase' | 'attack' | 'return' | 'boss';
 
 const DYING_TIME = 0.45;
+/** 出手動作長度（秒） */
+const STRIKE_TIME = 0.42;
+const easeOut = (x: number) => 1 - (1 - x) * (1 - x);
+const easeInOut = (x: number) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
 
 /**
  * 敵人實體：外觀、HP、受擊表現、死亡 / 重生。
@@ -57,7 +61,22 @@ export class Enemy {
   aggroMinion: import('./Minion').Minion | null = null;
   slowTimer = 0;
   slowMul = 1;
+  /** 出手動作剩餘秒數（前搖結束那一下：往前撲、身體前傾，之後收回） */
+  strikeT = 0;
+  /** 出手動作的強度（1 = 普攻；首領招式的重擊可以更大） */
+  strikePower = 1;
+  /** 跳躍高度（首領飛撲；BossController 設定） */
+  airY = 0;
+  /** 首領：上次出手後受到的傷害（被狂打時會提早反擊） */
+  hurtSince = 0;
+  /** 首領：反擊冷卻 */
+  counterCd = 0;
+  /** 首領：兩次攻擊之間繞著玩家走的方向（±1）與換方向倒數 */
+  strafeDir = 1;
+  strafeT = 0;
 
+  /** 出手 / 飛撲的整體姿勢（前傾、前撲）；body 是造型本身（造型動畫自己改 body） */
+  private pose = new THREE.Group();
   private body = new THREE.Group();
   private materials: LitMaterial[] = [];
   private flash = 0;
@@ -71,10 +90,11 @@ export class Enemy {
   /** 骨架動畫（骷髏） */
   rig: CharacterRig | null = null;
   private wasWinding = false;
+  private wasStriking = false;
   private anims: RigAnims = DEFAULT_RIG;
   /** 程式模型的動畫（enemyShapes 提供；沒有就用預設的走路晃動） */
   private shapeAnim: ((st: ShapeAnimState) => void) | null = null;
-  private animState: ShapeAnimState = { t: 0, dt: 0, moving: false, winding: false, lean: 0, scale: 1, body: this.body };
+  private animState: ShapeAnimState = { t: 0, dt: 0, moving: false, winding: false, lean: 0, scale: 1, strike: 0, body: this.body };
   /** 首領：動作平滑（程式模型）與轉身平滑 */
   private smoother: PoseSmoother | null = null;
   private yaw = 0;
@@ -101,7 +121,8 @@ export class Enemy {
     }
     this.yaw = this.facing;
     this.body.scale.setScalar(def.scale);
-    this.object.add(this.body);
+    this.pose.add(this.body);
+    this.object.add(this.pose);
 
     const label = makeLabelSprite(this.displayName, {
       fontSize: 40,
@@ -166,7 +187,9 @@ export class Enemy {
     }
     this.hp = Math.max(0, this.hp - amount);
     this.flash = 1;
-    this.shake = this.def.boss ? 0.4 : 1;
+    // 首領被打只輕晃（出手中不晃，才不會像被打到僵直）
+    this.shake = this.def.boss ? (this.windup > 0 || this.strikeT > 0 ? 0 : 0.25) : 1;
+    if (this.def.boss) this.hurtSince += amount;
     this.hpBarTimer = 5;
     if (this.def.aggro !== 'none') this.provoked = true;
     if (this.hp <= 0) {
@@ -272,7 +295,7 @@ export class Enemy {
     } else this.hpBar.visible = false;
 
     if (this.state === 'alive') this.animate(dt);
-    this.object.position.set(this.pos.x, this.groundY, this.pos.z);
+    this.object.position.set(this.pos.x, this.groundY + this.airY, this.pos.z);
     this.look?.update(this.groundY + this.body.position.y, this.height);
   }
 
@@ -287,6 +310,7 @@ export class Enemy {
       this.object.rotation.y = this.yaw;
     } else this.object.rotation.y = this.facing;
     const lean = this.windup > 0 ? -0.25 : 0;
+    this.strikePose(dt);
     if (this.rig) {
       // 骷髏：前搖開始時播攻擊（遠程播施法），其餘依移動切換走路 / 待機
       const a = this.anims;
@@ -305,6 +329,7 @@ export class Enemy {
       st.winding = this.windup > 0;
       st.lean = lean;
       st.scale = s;
+      st.strike = this.strikeT > 0 ? this.strikeT / STRIKE_TIME : 0;
       this.shapeAnim(st);
     } else {
       // 預設：走路時上下晃、前搖後仰
@@ -313,6 +338,42 @@ export class Enemy {
     }
     this.smoother?.apply(dt);
     this.moving = Math.max(0, this.moving - dt * 4);
+  }
+
+  /**
+   * 出手動作（所有程式模型與骨架敵人共用）：
+   * 前搖中身體往後收（蓄力），前搖一結束就往前撲＋前傾（0.08 秒衝出、之後緩緩收回），讓「打下去的那一下」看得到。
+   */
+  private strikePose(dt: number) {
+    const winding = this.windup > 0;
+    if (this.wasStriking && !winding && this.state === 'alive') this.strike(1);
+    this.wasStriking = winding;
+    const boss = this.def.boss;
+    const reach = (boss ? 0.55 : 0.3) * this.strikePower;
+    let z = 0;
+    let pitch = 0;
+    if (this.strikeT > 0) {
+      this.strikeT = Math.max(0, this.strikeT - dt);
+      const u = 1 - this.strikeT / STRIKE_TIME; // 0 → 1
+      const k = u < 0.22 ? easeOut(u / 0.22) : 1 - easeInOut((u - 0.22) / 0.78);
+      z = k * reach;
+      pitch = k * (boss ? 0.2 : 0.28) * Math.min(1.4, this.strikePower);
+    } else if (winding) {
+      // 蓄力：微微往後收
+      z = -reach * 0.25;
+      pitch = -0.06;
+    }
+    // 姿勢本身也平滑（蓄力 → 撲出 不會一格跳過去）
+    const a = 1 - Math.exp(-dt * (this.strikeT > 0 ? 40 : 14));
+    this.pose.position.z += (z - this.pose.position.z) * a;
+    this.pose.rotation.x += (pitch - this.pose.rotation.x) * a;
+  }
+
+  /** 播出手動作（首領招式結算時由 BossController 呼叫，power 越大撲得越猛） */
+  strike(power = 1) {
+    this.wasStriking = false;
+    this.strikeT = STRIKE_TIME;
+    this.strikePower = power;
   }
 
   private respawn() {
@@ -335,6 +396,11 @@ export class Enemy {
     this.aggroMinion = null;
     this.smoother?.reset();
     this.yaw = this.facing;
+    this.strikeT = 0;
+    this.airY = 0;
+    this.hurtSince = 0;
+    this.pose.position.set(0, 0, 0);
+    this.pose.rotation.set(0, 0, 0);
     this.ai = 'idle';
     this.provoked = false;
     this.windup = 0;
@@ -344,6 +410,8 @@ export class Enemy {
   /** 脫戰回到出生點：回滿血 */
   resetToHome() {
     this.aggroMinion = null;
+    this.airY = 0;
+    this.hurtSince = 0;
     this.hp = this.def.stats.maxHp;
     this.provoked = false;
     this.windup = 0;

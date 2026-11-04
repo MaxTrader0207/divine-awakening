@@ -16,12 +16,21 @@ import type { Minion } from '@/entities/Minion';
  *   return（快速回家、回滿血、這段期間不吃傷害）──▶ idle
  *
  * 首領平常和小怪一樣追擊與普攻；施放技能時 BossController 把 ai 設為 'boss'，這段期間這裡不動它。
+ * 首領額外的「活」：兩次普攻之間繞著玩家側移（不會呆站著挨打）、貼太近會退開、
+ * 短時間被打掉 COUNTER_HP 比例的血會提早反擊（每 COUNTER_CD 秒最多一次）。
  */
 export const AGGRO_RANGE = 6.5;
 export const LEASH = 16;
 /** 回家最多走幾秒，超過就直接回到原位（避免被地形卡住、血量凍結） */
 export const RETURN_TIMEOUT = 6;
 export const WANDER_RADIUS = 3;
+/** 首領反擊：上次出手後受到最大血量的這個比例就提早出手 */
+export const COUNTER_HP = 0.03;
+export const COUNTER_CD = 5;
+/** 首領反擊時普攻冷卻縮短到幾秒 */
+const COUNTER_DELAY = 0.3;
+/** 首領側移速度（相對移動速度） */
+const STRAFE_SPEED = 0.38;
 
 export interface AiContext {
   player: Player;
@@ -49,6 +58,7 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
   const atk = e.def.attack ?? { range: 1.2, windup: 0.5, cooldown: 1.5 };
   const reach = atk.range + tgt.radius + e.radius * 0.5;
   const speed = e.def.stats.moveSpeed * e.slowMul;
+  if (e.def.boss) e.counterCd = Math.max(0, e.counterCd - dt);
 
   // 共通：脫戰條件
   if (e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') {
@@ -94,9 +104,23 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
     case 'chase': {
       if (dist <= reach) {
         face(e, dx, dz, dt, 12);
+        if (e.def.boss) {
+          // 被狂打：提早反擊
+          if (e.attackCd > COUNTER_DELAY && e.counterCd <= 0 && e.hurtSince > e.def.stats.maxHp * COUNTER_HP) {
+            e.attackCd = COUNTER_DELAY;
+            e.counterCd = COUNTER_CD;
+          }
+          const close = e.radius * 0.8 + tgt.radius;
+          if (dist < close && dist > 1e-3) {
+            // 疊在玩家身上（飛撲落地、玩家鑽進來）：退開一點
+            step(e, -dx / dist, -dz / dist, speed * 0.8, dt, ctx.collision);
+            face(e, dx, dz, dt, 12);
+          } else if (e.attackCd > 0.45 && dist > 1e-3) strafe(e, dx / dist, dz / dist, speed * STRAFE_SPEED, dt, ctx.collision);
+        }
         if (e.attackCd <= 0) {
           e.ai = 'attack';
           e.windup = atk.windup;
+          e.hurtSince = 0;
           if (e.def.ranged) ctx.rangedAttack?.(e, atk.windup, tgt.pos.x, tgt.pos.z);
         }
       } else {
@@ -137,6 +161,28 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
       break;
     }
   }
+}
+
+/** 朝 (nx, nz) 單位向量走一步（不轉身） */
+function step(e: Enemy, nx: number, nz: number, speed: number, dt: number, col: CollisionWorld) {
+  e.pos.x += nx * speed * dt;
+  e.pos.z += nz * speed * dt;
+  col.resolve(e.pos, e.radius);
+  e.moving = 1;
+}
+
+/** 首領：面向目標、繞著目標側移；每 1.2~2.8 秒隨機換方向 */
+function strafe(e: Enemy, nx: number, nz: number, speed: number, dt: number, col: CollisionWorld) {
+  e.strafeT -= dt;
+  if (e.strafeT <= 0) {
+    e.strafeDir = Math.random() < 0.5 ? -1 : 1;
+    e.strafeT = 1.2 + Math.random() * 1.6;
+  }
+  const bx = e.pos.x;
+  const bz = e.pos.z;
+  step(e, -nz * e.strafeDir, nx * e.strafeDir, speed, dt, col);
+  // 撞牆走不動：換方向
+  if (Math.hypot(e.pos.x - bx, e.pos.z - bz) < speed * dt * 0.3) e.strafeT = 0;
 }
 
 /** 往目標移動，回傳是否抵達（stopAt：距離目標多近就停） */

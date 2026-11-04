@@ -363,6 +363,15 @@ export class Game {
     // ---- 震動回饋（手機；設定可關閉）----
     bus.on('player:hurt', ({ amount }) => amount >= this.player.stats.maxHp * 0.08 && this.haptic(25));
     bus.on('boss:cast', () => this.haptic([30, 50, 30]));
+    bus.on('boss:roar', () => {
+      this.audio.play('roar');
+      this.rig.shake(0.6);
+      this.haptic([60, 40, 60]);
+    });
+    bus.on('camera:shake', ({ power }) => {
+      this.rig.shake(power);
+      if (power >= 0.5) this.haptic(40);
+    });
     bus.on('player:levelup', () => this.haptic([40, 60, 40]));
     bus.on('player:died', () => this.haptic(150));
 

@@ -19,6 +19,9 @@ export class CameraRig {
   private cineTarget = 0;
   private cineAngle = 0;
   private tmp = new THREE.Vector3();
+  /** 鏡頭震動（首領重擊）：強度，每秒衰減 */
+  private shakeAmt = 0;
+  private shakeT = 0;
 
   constructor(aspect: number) {
     this.camera = new THREE.PerspectiveCamera(42, aspect, 0.5, 220);
@@ -40,7 +43,14 @@ export class CameraRig {
     this.cine += (this.cineTarget - this.cine) * (1 - Math.exp(-dt * 2.2));
     if (this.cineTarget === 0 && this.cine < 0.002) this.cine = 0;
     this.cineAngle += dt * 0.18; // 特寫時慢慢繞
+    this.shakeAmt = Math.max(0, this.shakeAmt - dt * 2.6);
+    this.shakeT += dt;
     this.apply();
+  }
+
+  /** 震一下（疊加取較大值，上限 1） */
+  shake(power: number) {
+    this.shakeAmt = Math.min(1, Math.max(this.shakeAmt, power));
   }
 
   /** 破關特寫：facing 是角色面向（弧度），鏡頭從角色正面偏一點的位置開始慢慢繞 */
@@ -72,5 +82,13 @@ export class CameraRig {
       return;
     }
     this.camera.lookAt(this.current.x, this.current.y + 0.8, this.current.z);
+    if (this.shakeAmt > 0) {
+      // 低頻抖動（兩個不同頻率的正弦），比隨機亂跳順眼
+      const a = this.shakeAmt * this.shakeAmt * 0.45;
+      const t = this.shakeT;
+      this.camera.position.x += Math.sin(t * 47) * a;
+      this.camera.position.y += Math.sin(t * 61 + 1.3) * a * 0.6;
+      this.camera.position.z += Math.sin(t * 53 + 2.1) * a * 0.5;
+    }
   }
 }

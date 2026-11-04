@@ -36,6 +36,8 @@ export interface ShapeAnimState {
   winding: boolean;
   /** 前搖後仰角度 */
   lean: number;
+  /** 出手動作進度：1 = 剛出手，往 0 收回；沒在出手是 0 */
+  strike: number;
   /** def.scale */
   scale: number;
   body: THREE.Group;

@@ -35,6 +35,10 @@ export interface GameEvents {
   'quests:changed': void;
   /** 首領開始施放技能（音效警告） */
   'boss:cast': { skill: string };
+  /** 首領開戰怒吼（音效、震動） */
+  'boss:roar': { name: string };
+  /** 鏡頭震動（首領重擊落地等）；power 約 0.2~1 */
+  'camera:shake': { power: number };
   'boss:defeated': { zoneId: ZoneId; first: boolean };
   /** 漂浮文字（+金幣、+經驗、升級） */
   'float:text': { x: number; y: number; z: number; text: string; kind: 'gold' | 'exp' | 'info' };

@@ -56,7 +56,7 @@ src/
 │  ├─ EnemyManager.ts         生怪（數量、散佈）、AI 更新、互相推擠、查詢
 │  ├─ EnemyAI.ts              小怪狀態機 idle / wander / chase / attack / return；被嘲諷時改打召喚物
 │  ├─ MinionManager.ts        召喚物 AI：跟隨、選目標、攻擊、嘲諷、冥府骨爆
-│  ├─ BossController.ts       首領招式輪替、二階段狂暴；依 bossSkills.ts 的 pattern 執行
+│  ├─ BossController.ts       首領開戰怒吼、招式輪替（被風箏時優先放追擊招）、二階段狂暴、衝撞 / 飛撲的移動；依 bossSkills.ts 的 pattern 執行
 │  ├─ Telegraphs.ts           紅色範圍預警（圓 / 扇形 / 長方形）與判定
 │  ├─ AutoBattle.ts           AUTO：喝藥、閃預警、撿東西、選目標、技能優先序、沿牆繞路
 │  ├─ Progression.ts          經驗（等級差修正）、升級、金幣（純函式）
@@ -146,6 +146,8 @@ tick(dt):
 | `tutorial:changed` | Game、Menu | Hud（指引卡片）、Menu（指引分頁重畫） |
 | `loot:picked` | LootSystem | Hud（撿寶訊息）、Audio |
 | `boss:cast` / `boss:defeated` | BossController / Game | Audio / — |
+| `boss:roar` | BossController（開戰怒吼） | Game（怒吼音效、鏡頭震動、手機震動） |
+| `camera:shake` | BossController（重擊、飛撲落地、衝撞結束） | Game → `CameraRig.shake()` |
 | `settings:changed` | Menu | Audio |
 | `save:request` / `save:written` | 任何系統 / Game | Game / — |
 
