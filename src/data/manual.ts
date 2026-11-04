@@ -47,6 +47,11 @@ export const SKILL_HELP: Record<string, string> = {
   swift_step: '往前（或搖桿方向）疾步穿過敵陣，沿路的敵人受傷並緩速，期間短暫無敵。',
   sword_rain: '目標附近連續落下四波飛劍，傷害範圍內所有敵人。',
   sword_intent: '8 秒內普攻變快、爆擊率 +20%、爆擊傷害 +20%，快劍每一下都會附帶一道小劍氣。',
+  beast_whip: '朝前方甩出長鞭，鞭梢可以打到稍遠的敵人，一次打中前方好幾隻。',
+  call_hounds: '吹哨喚來 2 隻斯巴達獵犬，跑得快、咬得兇，最多同時 3 隻、陪你 25 秒。',
+  call_eagle: '召來宙斯神鷹在空中盤旋，從遠處俯衝攻擊敵人，最多 2 隻。',
+  call_bear: '喚出卡呂冬巨熊：血厚皮硬，出場就把周圍的小怪全吸引過來替你擋刀。',
+  wild_roar: '一聲咆哮：附近所有野獸回復 40% 血量、多陪你 8 秒，8 秒內攻擊力與攻速提升 35%。',
 };
 
 const SLOT_KEYS: Record<string, string> = { basic: '普攻', Q: 'Q', W: 'W', E: 'E', R: 'R' };

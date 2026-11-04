@@ -1,10 +1,12 @@
+import type { BeastKind } from '@/entities/BeastModel';
+
 /**
- * 召喚物資料（召喚師）
+ * 召喚物資料（召喚師的亡靈、訓獸師的野獸）
  * ------------------------------------------------------------
  * 數值都是「召喚師目前屬性」的倍率，所以召喚物會跟著等級與裝備一起變強。
  * 新增召喚物：加一筆，在 data/classes.ts 的技能填 `summon: '<id>'`。
  */
-export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior';
+export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior' | 'hound' | 'eagle' | 'bear';
 
 export interface MinionDef {
   id: MinionId;
@@ -37,8 +39,12 @@ export interface MinionDef {
   taunt: 'always' | 'weak' | 'none';
   /** 召喚當下把周圍幾公尺的小怪拉過來（0 = 不拉） */
   tauntOnSummon?: number;
-  /** 身上的紫色靈光強度 */
+  /** 身上的靈光強度（亡靈紫光、野獸金光） */
   glow: number;
+  /** 野獸外觀（訓獸師；沒填 = 程式骷髏） */
+  beast?: BeastKind;
+  /** 召喚特效、法陣、投射物顏色 */
+  color: number;
 }
 
 export const MINIONS: Record<MinionId, MinionDef> = {
@@ -60,6 +66,7 @@ export const MINIONS: Record<MinionId, MinionDef> = {
     max: 4,
     taunt: 'weak',
     glow: 0.18,
+    color: 0xa58cff,
   },
   skeleton_mage: {
     id: 'skeleton_mage',
@@ -80,6 +87,7 @@ export const MINIONS: Record<MinionId, MinionDef> = {
     max: 2,
     taunt: 'none',
     glow: 0.22,
+    color: 0xb48cff,
   },
   skeleton_warrior: {
     id: 'skeleton_warrior',
@@ -100,5 +108,76 @@ export const MINIONS: Record<MinionId, MinionDef> = {
     taunt: 'always',
     tauntOnSummon: 7,
     glow: 0.15,
+    color: 0xa58cff,
+  },
+
+  /* ---- 訓獸師的野獸：存在時間比亡靈長，數量比較少 ---- */
+  hound: {
+    id: 'hound',
+    name: '斯巴達獵犬',
+    model: '',
+    beast: 'hound',
+    height: 1.15,
+    radius: 0.5,
+    hpMul: 0.4,
+    atkMul: 0.42,
+    defMul: 0.9,
+    power: 1,
+    range: 1.4,
+    cooldown: 0.95,
+    windup: 0.28,
+    moveSpeed: 7.6,
+    life: 25,
+    max: 3,
+    taunt: 'weak',
+    glow: 0.06,
+    color: 0xf0b860,
+  },
+  eagle: {
+    id: 'eagle',
+    name: '宙斯神鷹',
+    model: '',
+    beast: 'eagle',
+    height: 0.9,
+    radius: 0.45,
+    hpMul: 0.3,
+    atkMul: 0.5,
+    defMul: 0.6,
+    power: 1.15,
+    range: 7.5,
+    ranged: true,
+    cooldown: 1.4,
+    windup: 0.35,
+    moveSpeed: 8,
+    life: 25,
+    max: 2,
+    taunt: 'none',
+    glow: 0.1,
+    color: 0xffd36b,
+  },
+  bear: {
+    id: 'bear',
+    name: '卡呂冬巨熊',
+    model: '',
+    beast: 'bear',
+    height: 1.9,
+    radius: 0.85,
+    hpMul: 1.5,
+    atkMul: 0.5,
+    defMul: 1.7,
+    power: 1.35,
+    range: 1.7,
+    cooldown: 1.5,
+    windup: 0.45,
+    moveSpeed: 5.8,
+    life: 30,
+    max: 1,
+    taunt: 'always',
+    tauntOnSummon: 7,
+    glow: 0.05,
+    color: 0xd8a060,
   },
 };
+
+/** 野性咆哮（訓獸師 R）：野獸攻擊力、攻速、移速倍率與回血比例、延長存在時間 */
+export const WILD_ROAR = { atk: 1.35, attackSpeed: 1.35, speed: 1.25, heal: 0.4, extend: 8, radius: 14 };

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MINIONS, type MinionId } from '@/data/minions';
+import { MINIONS, WILD_ROAR, type MinionId } from '@/data/minions';
 import type { Enemy } from '@/entities/Enemy';
 import { Minion } from '@/entities/Minion';
 import type { Player } from '@/entities/Player';
@@ -11,7 +11,7 @@ import type { ProjectileSystem } from './ProjectileSystem';
 import type { TargetSelector } from './TargetSelector';
 
 /**
- * 召喚物管理（召喚師）
+ * 召喚物管理（召喚師的亡靈、訓獸師的野獸）
  * ------------------------------------------------------------
  * AI（每隻每幀）：
  *   1. 離主人太遠（> LEASH）→ 放棄目標跑回去；超過 TELEPORT 直接傳回主人身邊。
@@ -71,8 +71,8 @@ export class MinionManager {
       m.groundY = this.ctx.heightAt(m.pos.x, m.pos.z);
       this.list.push(m);
       this.scene.add(m.object);
-      fx.ring(m.pos.x, m.pos.z, 0.2, 1.4, 0xa58cff, 0.5);
-      fx.pillar(m.pos.x, m.pos.z, 0.45, 0x8a5aff, 0.5);
+      fx.ring(m.pos.x, m.pos.z, 0.2, 1.4, def.color, 0.5);
+      fx.pillar(m.pos.x, m.pos.z, 0.45, def.color, 0.5);
     }
     // 埃阿斯亡靈：出場時把周圍小怪拉過來
     if (def.tauntOnSummon) {
@@ -84,8 +84,28 @@ export class MinionManager {
         e.provoked = true;
         if (e.ai === 'idle' || e.ai === 'wander') e.ai = 'chase';
       }
-      fx.ring(guard.pos.x, guard.pos.z, 0.5, def.tauntOnSummon, 0xa58cff, 0.5);
+      fx.ring(guard.pos.x, guard.pos.z, 0.5, def.tauntOnSummon, def.color, 0.5);
     }
+  }
+
+  /**
+   * 野性咆哮（訓獸師）：主人周圍的野獸回血、延長存在時間，duration 秒內攻擊 / 攻速 / 移速提升。
+   * 回傳受到鼓舞的數量。
+   */
+  roarAll(duration: number): number {
+    const p = this.ctx.player;
+    const fx = this.ctx.effects;
+    let n = 0;
+    for (const m of this.list) {
+      if (!m.alive || !m.def.beast) continue;
+      if (Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z) > WILD_ROAR.radius) continue;
+      m.roarT = duration;
+      m.hp = Math.min(m.maxHp, m.hp + m.maxHp * WILD_ROAR.heal);
+      m.life = Math.min(m.def.life + WILD_ROAR.extend, m.life + WILD_ROAR.extend);
+      fx.ring(m.pos.x, m.pos.z, 0.3, 1.8, 0xff9a3c, 0.45);
+      n++;
+    }
+    return n;
   }
 
   /** 冥府骨爆：所有召喚物原地爆炸，回傳爆炸數量 */
@@ -145,7 +165,7 @@ export class MinionManager {
     if (toOwner > MINION_LEASH) {
       m.target = null;
       m.windup = 0;
-      this.moveTo(m, p.pos.x, p.pos.z, m.def.moveSpeed * 1.4, dt, 2);
+      this.moveTo(m, p.pos.x, p.pos.z, m.def.moveSpeed * m.speedMul * 1.4, dt, 2);
       return;
     }
 
@@ -159,7 +179,7 @@ export class MinionManager {
       if (t) this.face(m, t.pos.x - m.pos.x, t.pos.z - m.pos.z, dt, 10);
       if (m.windup <= 0) {
         m.windup = 0;
-        m.attackCd = m.def.cooldown;
+        m.attackCd = m.def.cooldown / m.attackSpeed;
         if (t && this.valid(t)) this.strike(m, t);
       }
       return;
@@ -172,38 +192,39 @@ export class MinionManager {
       const r = 2.2 + (m.slot % 2) * 0.9;
       const bx = p.pos.x + Math.sin(a) * r;
       const bz = p.pos.z + Math.cos(a) * r;
-      if (Math.hypot(bx - m.pos.x, bz - m.pos.z) > 1.2) this.moveTo(m, bx, bz, m.def.moveSpeed, dt, 0.6);
+      if (Math.hypot(bx - m.pos.x, bz - m.pos.z) > 1.2) this.moveTo(m, bx, bz, m.def.moveSpeed * m.speedMul, dt, 0.6);
       return;
     }
 
     const d = Math.hypot(t.pos.x - m.pos.x, t.pos.z - m.pos.z);
     const reach = m.def.range + t.radius + m.radius * 0.5;
     if (d > reach) {
-      this.moveTo(m, t.pos.x, t.pos.z, m.def.moveSpeed, dt, reach * 0.85);
+      this.moveTo(m, t.pos.x, t.pos.z, m.def.moveSpeed * m.speedMul, dt, reach * 0.85);
       return;
     }
     this.face(m, t.pos.x - m.pos.x, t.pos.z - m.pos.z, dt, 12);
     if (m.attackCd <= 0) {
-      m.windup = m.def.windup;
+      m.windup = m.def.windup / m.attackSpeed;
       m.swing();
     }
   }
 
   private strike(m: Minion, t: Enemy) {
     const def = m.def;
+    const stats = m.atkMul === 1 ? m.stats : { ...m.stats, atk: m.stats.atk * m.atkMul };
     if (def.ranged) {
       const dx = t.pos.x - m.pos.x;
       const dz = t.pos.z - m.pos.z;
       const l = Math.hypot(dx, dz) || 1;
       this.ctx.projectiles.fire({
-        from: this.tmp.set(m.pos.x + (dx / l) * 0.5, m.groundY + 1.4, m.pos.z + (dz / l) * 0.5),
+        from: this.tmp.set(m.pos.x + (dx / l) * 0.5, m.groundY + (def.beast === 'eagle' ? 1.2 : 1.4), m.pos.z + (dz / l) * 0.5),
         dirX: dx / l,
         dirZ: dz / l,
         target: t,
-        attacker: m.stats,
+        attacker: stats,
         power: def.power,
         range: def.range + 4,
-        color: 0xb48cff,
+        color: def.color,
         speed: 16,
         size: 0.9,
       });
@@ -211,8 +232,8 @@ export class MinionManager {
     }
     const dist = Math.hypot(t.pos.x - m.pos.x, t.pos.z - m.pos.z);
     if (dist > def.range + t.radius + m.radius + 0.6) return; // 目標跑掉了
-    damageEnemy(t, m.stats, def.power);
-    this.ctx.effects.ring(t.pos.x, t.pos.z, 0.2, 0.9, 0xb48cff, 0.25);
+    damageEnemy(t, stats, def.power);
+    this.ctx.effects.ring(t.pos.x, t.pos.z, 0.2, 0.9, def.color, 0.25);
     this.taunt(m, t);
   }
 

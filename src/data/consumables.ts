@@ -1,4 +1,5 @@
 import type { HeroClass } from './classes';
+import type { MinionId } from './minions';
 
 /**
  * 道具（消耗品）—— 古希臘神話主題：共用 20 種＋每個職業專屬 20 種（v1.33 起第 11~15 種是後期的高階道具；v1.39 起後 5 種是 Lv.61 以後的終盤道具）
@@ -30,8 +31,10 @@ export type ConsumableEffect =
   | { type: 'invuln'; duration: number }
   /** 以自己為中心的範圍傷害：攻擊力 × power，可附帶暈眩（首領免疫）/ 緩速 */
   | { type: 'nova'; power: number; radius: number; color: number; stun?: number; slow?: number }
-  /** 召喚師：立即召喚（不花 MP、不受冷卻） */
-  | { type: 'summon'; minion: 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior'; count: number }
+  /** 召喚師 / 訓獸師：立即召喚（不花 MP、不受冷卻） */
+  | { type: 'summon'; minion: MinionId; count: number }
+  /** 訓獸師：立即野性咆哮（鼓舞附近野獸 duration 秒） */
+  | { type: 'roar'; duration: number }
   /** 護盾：吸收最大 HP 的 ratio 比例傷害，duration 秒後消失 */
   | { type: 'shield'; ratio: number; duration: number };
 
@@ -397,6 +400,27 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('swordsman', 'pelion_ash', '佩利翁山梣木', '🌳', '60 秒內攻擊力 +35%', '喀戎在佩利翁山削下梣木，做成阿基里斯的長槍', 360, { type: 'buff', stat: 'atk', value: 0.35, duration: 60 }, 3),
   c('swordsman', 'nephele_cloud', '涅斐勒雲影', '☁️', '4 秒內無敵', '宙斯用雲捏出的赫拉替身，半人馬一族由她而生', 400, { type: 'invuln', duration: 4 }, 2),
   c('swordsman', 'aeolus_bag', '埃俄羅斯風之囊', '🌪️', '對周圍 9 公尺造成 5.5 倍傷害並緩速', '風神把所有逆風裝進牛皮囊，卻被奧德修斯的船員好奇打開', 440, { type: 'nova', power: 5.5, radius: 9, color: 0xc8f0ff, slow: 3 }, 2),
+  // ---- 訓獸師：野獸、生存、野性 ----
+  c('tamer', 'goat_milk', '阿瑪爾忒亞羊奶', '🥛', '立即回復 50% HP', '把嬰兒宙斯餵大的神羊阿瑪爾忒亞的奶', 45, { type: 'heal', hp: 0.5 }, 12),
+  c('tamer', 'spring_water', '阿瑞圖薩泉水', '💧', '立即回復 50% MP', '寧芙阿瑞圖薩為了躲避河神，化成了一道清泉', 40, { type: 'heal', mp: 0.5 }, 12),
+  c('tamer', 'chiron_herb', '喀戎藥草', '🌿', '20 秒內持續回復共 80% HP', '半人馬賢者喀戎，在佩利翁山上教英雄們辨認的草藥', 110, { type: 'regen', total: 0.8, duration: 20 }, 8),
+  c('tamer', 'hound_whistle', '斯巴達獵犬哨', '📯', '立即喚來 2 隻斯巴達獵犬（不花 MP）', '斯巴達人用來召集獵犬的青銅哨子', 90, { type: 'summon', minion: 'hound', count: 2 }, 8),
+  c('tamer', 'eagle_feather', '宙斯神鷹羽', '🪶', '立即召來 1 隻宙斯神鷹', '替宙斯銜來雷霆的神鷹，掉下的一根金羽', 120, { type: 'summon', minion: 'eagle', count: 1 }, 6),
+  c('tamer', 'bear_honey', '卡呂冬野蜂蜜', '🍯', '立即喚出 1 隻卡呂冬巨熊', '卡呂冬森林深處的野蜂蜜，巨熊聞到就會跑來', 150, { type: 'summon', minion: 'bear', count: 1 }, 5),
+  c('tamer', 'pan_pipes', '牧神潘之笛', '🎵', '立即野性咆哮：附近野獸 8 秒內攻擊與攻速大增、回血', '山野之神潘吹起蘆笛，林間的野獸都跟著躁動起來', 160, { type: 'roar', duration: 8 }, 4),
+  c('tamer', 'deer_hide', '刻律涅鹿皮', '🦌', '40 秒內移動速度 +40%', '金角聖鹿的皮，穿上就能跑得像牠一樣快', 100, { type: 'buff', stat: 'speed', value: 0.4, duration: 40 }, 6),
+  c('tamer', 'lion_mane', '涅墨亞獅鬃', '🦁', '60 秒內受到傷害 -30%', '刀槍不入的金獅鬃毛', 140, { type: 'buff', stat: 'def', value: 0.3, duration: 60 }, 4),
+  c('tamer', 'boar_tusk', '卡呂冬獠牙', '🐗', '45 秒內攻擊力 +25%（野獸一起變強）', '阿塔蘭塔射中的那頭巨大野豬的獠牙', 150, { type: 'buff', stat: 'atk', value: 0.25, duration: 45 }, 4),
+  c('tamer', 'artemis_arrow', '阿蒂蜜絲銀箭', '🏹', '對周圍 6 公尺造成 2.5 倍傷害', '狩獵女神從不落空的銀箭', 120, { type: 'nova', power: 2.5, radius: 6, color: 0xd8e8ff }, 5),
+  c('tamer', 'orpheus_song', '俄耳甫斯之歌', '🎶', '立即喚來 3 隻斯巴達獵犬', '連猛獸都會安靜下來聆聽的歌聲', 200, { type: 'summon', minion: 'hound', count: 3 }, 4),
+  c('tamer', 'atalanta_apple', '希波墨涅斯金蘋果', '🍎', '所有技能冷卻立即轉好', '希波墨涅斯丟下金蘋果，讓世上跑得最快的女獵人停下腳步', 200, { type: 'cdReset' }, 3),
+  c('tamer', 'actaeon_antler', '阿克泰翁鹿角', '🦴', '獲得最大 HP 40% 的護盾（30 秒）', '偷看女神沐浴而被變成鹿的獵人留下的角', 200, { type: 'shield', ratio: 0.4, duration: 30 }, 3),
+  c('tamer', 'cybele_roar', '庫柏勒獅吼', '🌋', '對周圍 7 公尺造成 3 倍傷害並暈眩 1.5 秒（首領不會暈）', '眾神之母乘坐獅車，獅子一吼山河震動', 180, { type: 'nova', power: 3, radius: 7, color: 0xffb060, stun: 1.5 }, 4),
+  c('tamer', 'pegasus_bridle', '珀伽索斯金轡頭', '✨', '立即召來 2 隻宙斯神鷹', '雅典娜送給柏勒洛豐、用來馴服飛馬的金轡頭', 340, { type: 'summon', minion: 'eagle', count: 2 }, 3),
+  c('tamer', 'callisto_star', '卡利斯托大熊星', '🌌', '立即喚出 2 隻卡呂冬巨熊', '被變成熊的寧芙卡利斯托，被宙斯升上夜空成了大熊座', 380, { type: 'summon', minion: 'bear', count: 2 }, 2),
+  c('tamer', 'potnia_crown', '萬獸女主之冠', '👑', '45 秒內造成傷害的 12% 回血', '古老的「萬獸女主」，野獸都向她低頭', 360, { type: 'buff', stat: 'leech', value: 0.12, duration: 45 }, 3),
+  c('tamer', 'helios_reins', '赫利俄斯日車韁繩', '☀️', '30 秒內技能冷卻快 50%', '駕著四匹火馬拉的日車橫越天空的韁繩', 400, { type: 'buff', stat: 'cdr', value: 0.5, duration: 30 }, 2),
+  c('tamer', 'beast_mother', '厄喀德那獸母之血', '🩸', '立即野性咆哮 15 秒：附近野獸回血、攻擊與攻速大增', '萬怪之母的血，讓所有野獸都把你當成了牠們的母親', 450, { type: 'roar', duration: 15 }, 2),
 ];
 
 /** 某職業看得到的所有道具（共用＋專屬） */

@@ -6,7 +6,7 @@ import type { SkillDef, Stats } from './types';
  * 新增職業：在 CLASSES 加一筆（屬性、技能、模型動畫、武器名稱），
  * 技能效果寫在 systems/SkillSystem.ts 的 cast()（依 skill.id 分派）。
  */
-export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker' | 'summoner' | 'swordsman';
+export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker' | 'summoner' | 'swordsman' | 'tamer';
 
 /** 模型動畫名稱對應（KayKit 動畫名） */
 export interface HeroAnimSet {
@@ -22,9 +22,9 @@ export interface HeroAnimSet {
   /** 模型自發光顏色（職業靈光） */
   tint?: number;
   /** 貼圖換色：色相落在 [from, to]（度）的像素轉成 hue 度（召喚師：綠色布料 → 深紫） */
-  recolor?: { from: number; to: number; hue: number; light?: number };
+  recolor?: { from: number; to: number; hue: number; light?: number; maxL?: number };
   /** 手上額外拿的道具（assets/models 的靜態模型 id、長度公尺、右手 r / 左手 l） */
-  /** 手上的道具：length 全長（公尺）、thin 橫向粗細倍率（預設 1）、grip 握點離底端的比例（預設 0.35） */
+  /** 手上的道具：length 全長（公尺）、thin 橫向粗細倍率（預設 1）、grip 握點離底端的比例（預設 0.35）；id 'whip' = 程式鞭子（訓獸師） */
   prop?: { id: string; length: number; hand: 'r' | 'l'; thin?: number; grip?: number };
 }
 
@@ -153,6 +153,22 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
     ],
     anims: { model: 'swordsman', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.8, hand: 'r', thin: 0.45, grip: 0.22 } },
   },
+  tamer: {
+    id: 'tamer',
+    name: '訓獸師',
+    desc: '阿蒂蜜絲的獵人：揮鞭指揮獵犬、神鷹與巨熊並肩作戰，野性咆哮讓獸群狂暴',
+    icon: '🐺',
+    base: { maxHp: 260, maxMp: 115, atk: 23, def: 8, pen: 0.02, moveSpeed: 6.7, critRate: 0.07, critDmg: 1.55 },
+    perLevel: { maxHp: 50, maxMp: 12, atk: 3.8, def: 1.8 },
+    skills: [
+      { id: 'beast_whip', name: '馴獸鞭', slot: 'basic', mpCost: 0, cooldown: 0.6, power: 1.0, range: 3.8, shape: 'cone', arc: 1.3, icon: '〰', color: 0xe8c27a, auto: 'single', anim: '1H_Melee_Attack_Slice_Diagonal' },
+      { id: 'call_hounds', name: '斯巴達獵犬', slot: 'Q', mpCost: 16, cooldown: 5, power: 0, range: 0, shape: 'circle', summon: 'hound', count: 2, icon: '🐕', color: 0xf0b860, auto: 'summon', anim: 'Spellcast_Raise' },
+      { id: 'call_eagle', name: '宙斯神鷹', slot: 'W', mpCost: 20, cooldown: 8, power: 0, range: 0, shape: 'circle', summon: 'eagle', count: 1, icon: '🦅', color: 0xffd36b, auto: 'summon', anim: 'Spellcast_Raise' },
+      { id: 'call_bear', name: '卡呂冬巨熊', slot: 'E', mpCost: 30, cooldown: 15, power: 0, range: 0, shape: 'circle', summon: 'bear', count: 1, icon: '🐻', color: 0xd8a060, auto: 'summon', anim: 'Spellcast_Long' },
+      { id: 'wild_roar', name: '野性咆哮', slot: 'R', mpCost: 25, cooldown: 24, power: 0, range: 0, shape: 'circle', radius: 14, duration: 8, icon: '🦁', color: 0xff9a3c, auto: 'burst', anim: 'Cheer' },
+    ],
+    anims: { model: 'tamer', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 5, to: 20.5, hue: 118, light: 0.85, maxL: 0.56 }, prop: { id: 'whip', length: 1.6, hand: 'r' } },
+  },
 };
 
-export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker', 'summoner', 'swordsman'];
+export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker', 'summoner', 'swordsman', 'tamer'];

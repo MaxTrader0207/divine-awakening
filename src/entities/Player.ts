@@ -109,8 +109,22 @@ export class Player {
     const prop = this.anims.prop;
     if (prop) {
       const bone = inst.root.getObjectByName(`handslot${prop.hand}`) ?? inst.root.getObjectByName(`hand${prop.hand}`);
-      const w = Assets.cloneStatic(prop.id);
-      if (bone && w) {
+      const w = prop.id === 'whip' ? buildWhip() : Assets.cloneStatic(prop.id);
+      if (bone && w && prop.id === 'whip') {
+        // 程式鞭子：握點就是原點，待機時在世界座標維持「握把朝上、鞭身垂下」
+        const poseRig = new CharacterRig(inst);
+        poseRig.setLoop(this.anims.idle, 0);
+        poseRig.update(0.5);
+        this.rig = poseRig;
+        inst.root.updateMatrixWorld(true);
+        const ws = new THREE.Vector3();
+        bone.getWorldScale(ws);
+        const bq = new THREE.Quaternion();
+        bone.getWorldQuaternion(bq);
+        w.quaternion.copy(bq.invert());
+        w.scale.setScalar(1 / ws.x);
+        bone.add(w);
+      } else if (bone && w) {
         inst.root.updateMatrixWorld(true);
         const size = Assets.size(prop.id);
         const ws = new THREE.Vector3();
@@ -161,6 +175,8 @@ export class Player {
   berserkT = 0;
   /** 劍俠「人劍合一」剩餘秒數 */
   swordIntentT = 0;
+  /** 訓獸師「野性咆哮」剩餘秒數（腳下橘色光圈、AUTO 判斷用；野獸本身的增益在 Minion.roarT） */
+  wildRoarT = 0;
 
   castBig() {
     this.rig?.playOnce(this.anims.castBig, { timeScale: 1.6 });
@@ -195,6 +211,7 @@ export class Player {
     this.bloodlustT = 0;
     this.berserkT = 0;
     this.swordIntentT = 0;
+    this.wildRoarT = 0;
     this.hp = this.stats.maxHp;
     this.mp = this.stats.maxMp;
     this.invulnerable = 2;
@@ -239,6 +256,7 @@ export class Player {
     if (this.bloodlustT > 0) this.bloodlustT = Math.max(0, this.bloodlustT - dt);
     if (this.berserkT > 0) this.berserkT = Math.max(0, this.berserkT - dt);
     if (this.swordIntentT > 0) this.swordIntentT = Math.max(0, this.swordIntentT - dt);
+    if (this.wildRoarT > 0) this.wildRoarT = Math.max(0, this.wildRoarT - dt);
     this.sinceHurt += dt;
     this.rig?.update(dt);
     if (!this.alive) {
@@ -307,8 +325,53 @@ function lerpAngle(a: number, b: number, t: number): number {
   return a + d * t;
 }
 
+/** 訓獸師的鞭子：皮革握把＋往前甩、再垂到腳邊捲起的長鞭（握點在原點、+y 朝上、+z 朝前） */
+function buildWhip(): THREE.Object3D {
+  const g = new THREE.Group();
+  const leather = new THREE.MeshLambertMaterial({ color: 0x5a3418, flatShading: true });
+  const lash = new THREE.MeshLambertMaterial({ color: 0x8a5a2a });
+  const gold = new THREE.MeshLambertMaterial({ color: 0xe0a83a, emissive: 0x3a2400 });
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.36, 7), leather);
+  handle.position.y = 0.1;
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.045, 7, 5), gold);
+  cap.position.y = -0.09;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.012, 5, 10), gold);
+  ring.position.y = 0.28;
+  ring.rotation.x = Math.PI / 2;
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.28, 0),
+    new THREE.Vector3(0.02, 0.36, 0.14),
+    new THREE.Vector3(0.06, 0.18, 0.34),
+    new THREE.Vector3(0.1, -0.25, 0.42),
+    new THREE.Vector3(0.12, -0.62, 0.3),
+    new THREE.Vector3(0.0, -0.74, 0.16),
+    new THREE.Vector3(-0.14, -0.72, 0.24),
+  ]);
+  // 鞭身越往末端越細（逐段縮放管子的半徑）
+  const tube = new THREE.TubeGeometry(curve, 40, 0.022, 5, false);
+  const pos = tube.getAttribute('position');
+  const segs = 41;
+  const ring5 = 6;
+  for (let i = 0; i < segs; i++) {
+    const center = curve.getPointAt(i / (segs - 1));
+    const k = 1 - (i / (segs - 1)) * 0.7;
+    for (let j = 0; j < ring5; j++) {
+      const idx = i * ring5 + j;
+      if (idx >= pos.count) break;
+      pos.setXYZ(idx, center.x + (pos.getX(idx) - center.x) * k, center.y + (pos.getY(idx) - center.y) * k, center.z + (pos.getZ(idx) - center.z) * k);
+    }
+  }
+  tube.computeVertexNormals();
+  const lashMesh = new THREE.Mesh(tube, lash);
+  for (const m of [handle, cap, ring, lashMesh]) {
+    m.castShadow = true;
+    g.add(m);
+  }
+  return g;
+}
+
 /** 貼圖換色：把指定色相範圍的像素轉成新色相（保留明暗與飽和度），回傳新的 CanvasTexture */
-function recolorTexture(src: THREE.Texture, rc: { from: number; to: number; hue: number; light?: number }): THREE.Texture {
+function recolorTexture(src: THREE.Texture, rc: { from: number; to: number; hue: number; light?: number; maxL?: number }): THREE.Texture {
   const img = src.image as CanvasImageSource & { width: number; height: number };
   if (!img || !img.width) return src;
   const cv = document.createElement('canvas');
@@ -325,7 +388,8 @@ function recolorTexture(src: THREE.Texture, rc: { from: number; to: number; hue:
     c.setRGB(d[i] / 255, d[i + 1] / 255, d[i + 2] / 255);
     c.getHSL(hsl);
     const deg = hsl.h * 360;
-    if (hsl.s < 0.18 || deg < rc.from || deg > rc.to) continue;
+    // maxL：太亮的不換（訓獸師：紅布換綠，但同色相、比較亮的皮膚不動）
+    if (hsl.s < 0.18 || deg < rc.from || deg > rc.to || hsl.l > (rc.maxL ?? 1)) continue;
     c.setHSL(rc.hue / 360, Math.min(1, hsl.s * 0.9), hsl.l * (rc.light ?? 1));
     d[i] = c.r * 255;
     d[i + 1] = c.g * 255;

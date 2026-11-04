@@ -13,16 +13,17 @@ import { h } from './dom';
 import { currentStep, progressText, targetFor } from '@/systems/Tutorial';
 import { TUTORIAL_STEPS } from '@/data/tutorial';
 import { SKILL_HELP } from '@/data/manual';
-import { CLASSES } from '@/data/classes';
+import { CLASSES, type HeroClass } from '@/data/classes';
 
 /** 職業頭像底色 */
-const CLASS_TINT: Record<string, [string, string]> = {
+const CLASS_TINT: Record<HeroClass, [string, string]> = {
   mage: ['#8f7aff', '#3a2a8a'],
   archer: ['#6fd36a', '#1f6a3a'],
   knight: ['#a9c4e8', '#3a5276'],
   berserker: ['#ff8a5a', '#8a2a1a'],
   summoner: ['#c38bff', '#4a1f6a'],
   swordsman: ['#7fe0ff', '#1f5a7a'],
+  tamer: ['#f0c070', '#6a4218'],
 };
 
 /**

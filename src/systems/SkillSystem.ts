@@ -132,11 +132,11 @@ export class SkillSystem {
     this.potionCd = Math.max(0, this.potionCd - dt);
     // 守護（藍）/ 嗜血（紅）/ 狂暴（橘）：腳下持續出現光圈
     const p = this.ctx.player;
-    if (p.guardT > 0 || p.bloodlustT > 0 || p.berserkT > 0 || p.swordIntentT > 0) {
+    if (p.guardT > 0 || p.bloodlustT > 0 || p.berserkT > 0 || p.swordIntentT > 0 || p.wildRoarT > 0) {
       this.guardFx -= dt;
       if (this.guardFx <= 0) {
         this.guardFx = 0.35;
-        const color = p.guardT > 0 ? 0x8fd4ff : p.berserkT > 0 ? 0xff6a2a : p.swordIntentT > 0 ? 0x8fe8ff : 0xff4a5a;
+        const color = p.guardT > 0 ? 0x8fd4ff : p.berserkT > 0 ? 0xff6a2a : p.swordIntentT > 0 ? 0x8fe8ff : p.wildRoarT > 0 ? 0xff9a3c : 0xff4a5a;
         this.ctx.effects.ring(p.pos.x, p.pos.z, 1.5, 1.1, color, 0.35);
       }
     }
@@ -250,6 +250,17 @@ export class SkillSystem {
         break;
       case 'sword_intent':
         ok = this.castSwordIntent(sk);
+        break;
+      case 'beast_whip':
+        ok = this.castBeastWhip(sk);
+        break;
+      case 'call_hounds':
+      case 'call_eagle':
+      case 'call_bear':
+        ok = this.castSummon(sk);
+        break;
+      case 'wild_roar':
+        ok = this.castWildRoar(sk);
         break;
     }
     if (!ok) return false;
@@ -867,5 +878,49 @@ export class SkillSystem {
     fx.ring(p.pos.x, p.pos.z, 0.5, 3.5, sk.color, 0.5);
     bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '人劍合一', kind: 'info' });
     return true;
+  }
+
+  /* ---------------- 訓獸師 ---------------- */
+
+  /** 馴獸鞭：細長的前方扇形（鞭梢打得比劍遠），附近的野獸會跟著攻擊同一個目標 */
+  private castBeastWhip(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { target, dx, dz } = this.meleeAim(sk.range);
+    p.cast(dx, dz);
+    p.act(sk.anim, p.wildRoarT > 0 ? 2.4 : 2);
+    const facing = Math.atan2(dx, dz);
+    const fx = this.ctx.effects;
+    fx.arc(p.pos.x, p.pos.z, facing, 0.55, sk.range, sk.color, 0.2, 1.0 + p.groundY);
+    // 鞭梢「啪」的一聲：在最遠處閃一下
+    fx.ring(p.pos.x + dx * sk.range * 0.85, p.pos.z + dz * sk.range * 0.85, 0.1, 0.7, 0xfff1c4, 0.18);
+    damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, sk.range, sk.arc ?? 1.3, p.stats, sk.power);
+    // 指揮：身邊沒事做的野獸改咬這個目標
+    if (target && this.ctx.minions) for (const m of this.ctx.minions.list) if (m.alive && m.def.beast && !m.target) m.target = target;
+    return true;
+  }
+
+  private castWildRoar(sk: SkillDef): boolean {
+    const mm = this.ctx.minions;
+    if (!mm || !mm.list.some((m) => m.alive && m.def.beast)) {
+      bus.emit('toast', { text: '身邊沒有野獸，先喚出獵犬、神鷹或巨熊' });
+      return false;
+    }
+    this.ctx.player.act(sk.anim, 1.8);
+    this.wildRoar(sk.duration ?? 8);
+    return true;
+  }
+
+  /** 野性咆哮（技能與道具「牧神潘之笛」共用）：回傳鼓舞到的野獸數 */
+  wildRoar(duration: number): number {
+    const p = this.ctx.player;
+    const fx = this.ctx.effects;
+    p.wildRoarT = Math.max(p.wildRoarT, duration);
+    fx.pillar(p.pos.x, p.pos.z, 0.9, 0xff9a3c, 0.6);
+    fx.ring(p.pos.x, p.pos.z, 0.5, 6, 0xff9a3c, 0.55);
+    fx.ring(p.pos.x, p.pos.z, 0.5, 3, 0xffd36b, 0.4);
+    const n = this.ctx.minions?.roarAll(duration) ?? 0;
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: n ? `野性咆哮 ×${n}` : '野性咆哮', kind: 'info' });
+    bus.emit('camera:shake', { power: 0.3 });
+    return n;
   }
 }

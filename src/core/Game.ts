@@ -802,6 +802,9 @@ export class Game {
       case 'summon':
         this.minions.summon(e.minion, e.count);
         break;
+      case 'roar':
+        this.skills.wildRoar(e.duration);
+        break;
       case 'shield':
         this.shield = { hp: Math.round(p.stats.maxHp * e.ratio), t: e.duration };
         this.effects.ring(p.pos.x, p.pos.z, 0.6, 1.6, 0x8fd4ff, 0.6);
@@ -840,6 +843,7 @@ export class Game {
     if (p.bloodlustT > 0) out.push({ icon: '🩸', label: '嗜血', t: p.bloodlustT });
     if (p.berserkT > 0) out.push({ icon: '🔥', label: '狂暴', t: p.berserkT });
     if (p.swordIntentT > 0) out.push({ icon: '☯', label: '人劍合一', t: p.swordIntentT });
+    if (p.wildRoarT > 0) out.push({ icon: '🦁', label: '野性咆哮', t: p.wildRoarT });
     if (p.invulnerable > 0.4) out.push({ icon: '✨', label: '無敵', t: p.invulnerable });
     const BUFF_ICON: Record<BuffStat, [string, string]> = {
       atk: ['⚔️', '攻擊'], def: ['🫒', '減傷'], speed: ['💨', '移速'], crit: ['🎯', '爆擊'],

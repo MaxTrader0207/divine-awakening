@@ -6,7 +6,7 @@ import type { ZoneId } from './types';
  * ------------------------------------------------------------
  * - STAGE_EPILOGUE：每個有首領的關卡一筆（結局標題、神話尾聲、徽記），破關畫面的背景色取自關卡的天空 / 地面色。
  * - CLASS_CLEAR：每個職業的稱號與主題色。
- * - CLEAR_QUOTES：職業 × 關卡，各自一句勝利台詞（6 職業 × 23 關 = 138 句）。
+ * - CLEAR_QUOTES：職業 × 關卡，各自一句勝利台詞（7 職業 × 23 關 = 161 句）。
  * 新增關卡時三個都要補；src/data/stageClear.test.ts 會檢查有沒有漏。
  */
 export interface StageEpilogue {
@@ -59,6 +59,7 @@ export const CLASS_CLEAR: Record<HeroClass, ClassClear> = {
   berserker: { title: '阿瑞斯的狂戰士', color: '#ff9a6a', glow: '#c83a1a' },
   summoner: { title: '冥府的召喚師', color: '#d09aff', glow: '#7a2ab8' },
   swordsman: { title: '浪跡赫拉斯的劍俠', color: '#7fe0ff', glow: '#2a8ab8' },
+  tamer: { title: '萬獸追隨的訓獸師', color: '#f0c070', glow: '#b8741a' },
 };
 
 type Quotes = Partial<Record<ZoneId, string>>;
@@ -213,5 +214,30 @@ export const CLEAR_QUOTES: Record<HeroClass, Quotes> = {
     dungeon_20: '江湖規矩：欺負弱女子的，一律斬。',
     dungeon_21: '斬了萬怪之母，世間從此少了一半的傳說。',
     dungeon_22: '泰坦之戰落幕，這把劍也該歸鞘了。',
+  },
+  tamer: {
+    dungeon_1: '獵犬們，那隻螃蟹橫著跑——從側面包抄！',
+    dungeon_2: '青銅巨人不會流汗，所以獵犬聞不到他——可惜，神鷹看得見。',
+    dungeon_3: '熔爐太燙了，大家的腳掌都還好嗎？回去給你們抹藥膏。',
+    mistwood: '龍牙兵沒有氣味，但巨熊的鼻子可不只聞得到氣味。',
+    dungeon_4: '九顆頭？我的獵犬一隻咬住一顆，還多出好幾張嘴呢。',
+    dungeon_5: '迷宮再複雜，獵犬也能循著氣味帶我走出來。',
+    dungeon_6: '三頭犬，你也是狗——以後跟著我的獵犬一起散步吧。',
+    dungeon_7: '刀槍不入的獅子，也擋不住整群野獸一起撲上去。',
+    dungeon_8: '神鷹從高處看著盾上的倒影，一次也沒看她的眼睛。',
+    dungeon_9: '巨人在數羊？我的獵犬比你更會趕羊。',
+    dungeon_10: '謎底是人——而人，是唯一能讓萬獸並肩作戰的生物。',
+    dungeon_11: '巨龍沉睡了，金蘋果就讓神鷹叼回去吧。',
+    dungeon_12: '獅頭、羊身、蛇尾——奇美拉，你一隻就湊齊了一整群。',
+    dungeon_13: '阿蒂蜜絲派來的野豬，就由阿蒂蜜絲的獵人來送牠回去。',
+    dungeon_14: '斯庫拉的狗頭再兇，也兇不過斯巴達獵犬。',
+    dungeon_15: '獅鷲，你一半是鷹、一半是獅——要不要乾脆跟我走？',
+    dungeon_16: '追了一整年的金角鹿，獵犬們終於停下腳步了——毫髮無傷。',
+    dungeon_17: '一百隻眼睛盯著我們？可惜野獸從不害怕被看。',
+    dungeon_18: '革律翁的紅牛群，從今天起由我來放牧。',
+    dungeon_19: '連海怪都上岸了——好吧，巨熊，今天你可以下水。',
+    dungeon_20: '半人馬一半是人、一半是馬，偏偏兩邊都不聽話。',
+    dungeon_21: '萬怪之母，你的孩子很兇，但我的孩子更忠心。',
+    dungeon_22: '泰坦之戰結束了——大家都辛苦了，今晚的肉管夠！',
   },
 };
