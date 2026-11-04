@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Assets } from '@/assets/Assets';
+import { BossLook } from './enemyShapes/bossLook';
+import { smoothByCrease } from './smoothShade';
 
 /**
  * 程式骷髏（召喚師的骷髏用）
@@ -34,7 +36,9 @@ export interface BoneRig {
   /** 法杖頂端（head 以外，掛在 weapon 內的區域座標） */
   staffTip: THREE.Vector3 | null;
   /** 會受擊閃白的材質 */
-  materials: THREE.MeshLambertMaterial[];
+  materials: THREE.MeshPhongMaterial[];
+  /** 高光、地面遮蔽、輪廓光（v1.51；每幀由 Minion 更新腳底高度） */
+  look: BossLook;
   /** 自己建立、要釋放的資源 */
   owned: { dispose(): void }[];
 }
@@ -53,9 +57,10 @@ function merged(parts: Part[], mat: THREE.Material, owned: { dispose(): void }[]
   const tmp = new THREE.Color();
   const geos = parts.map(([g, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1, color = C.bone]) => {
     const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
-    const gg = (g.index ? g.toNonIndexed() : g.clone()).applyMatrix4(m);
+    // v1.51：保留零件各自的平滑法線（不轉平面著色）
+    const gg = g.applyMatrix4(m);
     gg.deleteAttribute('uv');
-    g.dispose();
+    if (!gg.index) gg.setIndex([...Array(gg.getAttribute('position').count).keys()]);
     tmp.setHex(color).convertSRGBToLinear();
     const n = gg.getAttribute('position').count;
     const col = new Float32Array(n * 3);
@@ -65,19 +70,28 @@ function merged(parts: Part[], mat: THREE.Material, owned: { dispose(): void }[]
   });
   const geo = mergeGeometries(geos)!;
   geos.forEach((g) => g.dispose());
-  geo.computeVertexNormals();
   owned.push(geo);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.castShadow = shadow;
   return mesh;
 }
 
-const cyl = (r0: number, r1: number, len: number, seg = 6) => new THREE.CylinderGeometry(r0, r1, len, seg);
-const sph = (r: number, w = 8, h = 6) => new THREE.SphereGeometry(r, w, h);
+// v1.51：分段數加倍（至少 12 / 14×10），圓骨頭不再一格一格
+const cyl = (r0: number, r1: number, len: number, seg = 6) => new THREE.CylinderGeometry(r0, r1, len, Math.max(12, seg * 2));
+const sph = (r: number, w = 8, h = 6) => new THREE.SphereGeometry(r, Math.max(14, w * 2), Math.max(10, h * 2));
 const box = (x: number, y: number, z: number) => new THREE.BoxGeometry(x, y, z);
 
+/** 武器幾何依摺角平滑（同一把武器共用） */
+const WEAPON_SMOOTH = new Map<string, THREE.BufferGeometry>();
+function smoothWeapon(id: string, g: THREE.BufferGeometry): THREE.BufferGeometry {
+  const k = `${id}:${g.uuid}`;
+  let out = WEAPON_SMOOTH.get(k);
+  if (!out) WEAPON_SMOOTH.set(k, (out = smoothByCrease(g, 65)));
+  return out;
+}
+
 /** 掛一件 KayKit 武器，長邊縮放到 length 公尺；回傳包裝群組（握把在原點、沿 +y） */
-function weaponModel(id: string, length: number, owned: { dispose(): void }[], glow: number): THREE.Object3D | null {
+function weaponModel(id: string, length: number, owned: { dispose(): void }[], glow: number, look?: BossLook): THREE.Object3D | null {
   const w = Assets.cloneStatic(id);
   if (!w) return null;
   const size = Assets.size(id);
@@ -87,8 +101,10 @@ function weaponModel(id: string, length: number, owned: { dispose(): void }[], g
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
     m.castShadow = false; // 武器不投影子（省 draw call）
+    m.geometry = smoothWeapon(id, m.geometry);
     const mat = (m.material as THREE.MeshLambertMaterial).clone();
     mat.emissive = new THREE.Color(glow * 0.35, glow * 0.1, glow * 0.55);
+    look?.apply(mat);
     m.material = mat;
     owned.push(mat);
   });
@@ -101,7 +117,9 @@ export function buildBoneSkeleton(style: BoneStyle, height: number, glow: number
   const owned: { dispose(): void }[] = [];
   const u = height / 2.1; // 以 2.1m 的斯巴達亡靈為基準
   // 一副骷髏只用一個材質（頂點顏色）：受擊閃白只要改這個材質的 emissive
-  const bone = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: new THREE.Color(glow * 0.3, glow * 0.1, glow * 0.45), flatShading: true });
+  const look = new BossLook(0xe8e0ff);
+  const bone = new THREE.MeshPhongMaterial({ vertexColors: true, emissive: new THREE.Color(glow * 0.3, glow * 0.1, glow * 0.45), specular: 0x3a3630, shininess: 28 });
+  look.apply(bone);
   owned.push(bone);
   const materials = [bone];
   const root = new THREE.Group();
@@ -115,20 +133,20 @@ export function buildBoneSkeleton(style: BoneStyle, height: number, glow: number
   for (let i = 0; i < 5; i++) {
     const r = (0.215 - Math.abs(i - 1.2) * 0.018) * u;
     const y = (1.42 - i * 0.085) * u;
-    torsoParts.push([new THREE.TorusGeometry(r, 0.024 * u, 4, 14, Math.PI * 1.55), 0, y, 0.02 * u, Math.PI / 2, 0, -Math.PI / 2 - Math.PI * 0.775 + Math.PI, 1, 0.82, 1]);
+    torsoParts.push([new THREE.TorusGeometry(r, 0.024 * u, 8, 28, Math.PI * 1.55), 0, y, 0.02 * u, Math.PI / 2, 0, -Math.PI / 2 - Math.PI * 0.775 + Math.PI, 1, 0.82, 1]);
   }
   // 胸骨
   torsoParts.push([box(0.06 * u, 0.36 * u, 0.04 * u), 0, 1.27 * u, 0.22 * u]);
   // 鎖骨（肩膀）
   torsoParts.push([cyl(0.032 * u, 0.032 * u, 0.56 * u), 0, 1.5 * u, 0.02 * u, 0, 0, Math.PI / 2]);
   // 骨盆
-  torsoParts.push([new THREE.TorusGeometry(0.14 * u, 0.045 * u, 5, 10, Math.PI), 0, 0.8 * u, 0, Math.PI / 2, 0, Math.PI, 1, 0.7, 1]);
+  torsoParts.push([new THREE.TorusGeometry(0.14 * u, 0.045 * u, 10, 20, Math.PI), 0, 0.8 * u, 0, Math.PI / 2, 0, Math.PI, 1, 0.7, 1]);
   torsoParts.push([box(0.3 * u, 0.08 * u, 0.12 * u), 0, 0.79 * u, -0.05 * u]);
   const torsoExtra: Part[] = [];
   if (style === 'guard') {
     // 肩甲
-    torsoExtra.push([new THREE.SphereGeometry(0.14 * u, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), -0.3 * u, 1.48 * u, 0.02 * u, 0, 0, 0.35, 1, 1, 1, C.iron]);
-    torsoExtra.push([new THREE.SphereGeometry(0.14 * u, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), 0.3 * u, 1.48 * u, 0.02 * u, 0, 0, -0.35, 1, 1, 1, C.iron]);
+    torsoExtra.push([new THREE.SphereGeometry(0.14 * u, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), -0.3 * u, 1.48 * u, 0.02 * u, 0, 0, 0.35, 1, 1, 1, C.iron]);
+    torsoExtra.push([new THREE.SphereGeometry(0.14 * u, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0.3 * u, 1.48 * u, 0.02 * u, 0, 0, -0.35, 1, 1, 1, C.iron]);
   }
   const torso = merged([...torsoParts, ...torsoExtra], bone, owned, true);
   root.add(torso);
@@ -156,13 +174,13 @@ export function buildBoneSkeleton(style: BoneStyle, height: number, glow: number
   for (let i = 0; i < 6; i++) headParts.push([box(0.035 * u, 0.05 * u, 0.03 * u), (-0.11 + i * 0.044) * u, 0.075 * u, 0.2 * u]);
   // 帽子 / 頭盔
   if (style === 'mage') {
-    headParts.push([new THREE.CylinderGeometry(0.36 * u, 0.36 * u, 0.03 * u, 12), 0, 0.42 * u, -0.01 * u, 0, 0, 0, 1, 1, 1, C.hat]);
-    headParts.push([new THREE.ConeGeometry(0.22 * u, 0.55 * u, 10), 0, 0.68 * u, -0.06 * u, -0.25, 0, 0, 1, 1, 1, C.hat]);
+    headParts.push([new THREE.CylinderGeometry(0.36 * u, 0.36 * u, 0.03 * u, 28), 0, 0.42 * u, -0.01 * u, 0, 0, 0, 1, 1, 1, C.hat]);
+    headParts.push([new THREE.ConeGeometry(0.22 * u, 0.55 * u, 20), 0, 0.68 * u, -0.06 * u, -0.25, 0, 0, 1, 1, 1, C.hat]);
   } else if (style === 'guard') {
-    headParts.push([new THREE.SphereGeometry(skullR * 1.08, 12, 7, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.3 * u, -0.01 * u, 0, 0, 0, 1, 1, 1, C.iron]);
+    headParts.push([new THREE.SphereGeometry(skullR * 1.08, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.3 * u, -0.01 * u, 0, 0, 0, 1, 1, 1, C.iron]);
     headParts.push([box(0.06 * u, 0.24 * u, 0.06 * u), 0, 0.26 * u, 0.28 * u, 0, 0, 0, 1, 1, 1, C.iron]); // 護鼻
-    headParts.push([new THREE.ConeGeometry(0.06 * u, 0.32 * u, 6), -0.3 * u, 0.52 * u, 0, 0, 0, 0.9, 1, 1, 1, C.iron]); // 角
-    headParts.push([new THREE.ConeGeometry(0.06 * u, 0.32 * u, 6), 0.3 * u, 0.52 * u, 0, 0, 0, -0.9, 1, 1, 1, C.iron]);
+    headParts.push([new THREE.ConeGeometry(0.06 * u, 0.32 * u, 12), -0.3 * u, 0.52 * u, 0, 0, 0, 0.9, 1, 1, 1, C.iron]); // 角
+    headParts.push([new THREE.ConeGeometry(0.06 * u, 0.32 * u, 12), 0.3 * u, 0.52 * u, 0, 0, 0, -0.9, 1, 1, 1, C.iron]);
   }
   head.add(merged(headParts, bone, owned, true));
 
@@ -222,7 +240,7 @@ export function buildBoneSkeleton(style: BoneStyle, height: number, glow: number
   let staffTip: THREE.Vector3 | null = null;
   const W = { soldier: ['skel_blade', 0.95], mage: ['skel_staff', 1.75], guard: ['skel_axe', 1.15] } as const;
   const [wid, wlen] = W[style];
-  weapon = weaponModel(wid, wlen * u, owned, glow);
+  weapon = weaponModel(wid, wlen * u, owned, glow, look);
   if (weapon) {
     weapon.position.copy(handPos);
     // 握把在手上、刀身朝前上方（站姿）；揮砍時整隻手臂一起轉
@@ -241,7 +259,7 @@ export function buildBoneSkeleton(style: BoneStyle, height: number, glow: number
     if (style === 'mage') staffTip = new THREE.Vector3(0, wlen * u, 0);
   }
   if (style === 'guard') {
-    const shield = weaponModel('skel_shield_large', 0.85 * u, owned, glow);
+    const shield = weaponModel('skel_shield_large', 0.85 * u, owned, glow, look);
     if (shield) {
       // 大盾掛在左前臂外側
       shield.position.set(-0.08 * u, -0.45 * u, 0.12 * u);
@@ -250,7 +268,7 @@ export function buildBoneSkeleton(style: BoneStyle, height: number, glow: number
     }
   }
 
-  return { root, head, torso, armL, armR, legL, legR, eyePos, weapon, staffTip, materials, owned };
+  return { root, head, torso, armL, armR, legL, legR, eyePos, weapon, staffTip, materials, look, owned };
 }
 
 /** 骷髏動作狀態 */

@@ -112,15 +112,16 @@ export class Player {
         m.needsUpdate = true;
       }
     }
-    // 平滑著色（訓獸師）：依摺角重算法線，鬍子、熊頭帽不再一格一格
-    if (this.anims.smooth) {
+    // 平滑著色（v1.50 訓獸師、v1.51 全職業）：依摺角重算法線，圓弧處不再一格一格、稜角保持銳利
+    const crease = this.anims.smooth ?? 60;
+    if (crease > 0) {
       let i = 0;
       inst.root.traverse((o) => {
         const m = o as THREE.Mesh;
         if (!m.isMesh) return;
         const k = `${this.anims.model}:${i++}`;
         let g = SMOOTH_CACHE.get(k);
-        if (!g) SMOOTH_CACHE.set(k, (g = smoothByCrease(m.geometry, this.anims.smooth)));
+        if (!g) SMOOTH_CACHE.set(k, (g = smoothByCrease(m.geometry, crease)));
         m.geometry = g;
       });
       // 與野獸同一套質感：柔和高光、腳邊遮蔽、輪廓光
@@ -169,7 +170,23 @@ export class Player {
         // 握點：沿世界 y 往下移 grip（預設 35%）長度（換算到骨頭座標）
         const down = new THREE.Vector3(0, -prop.length * (prop.grip ?? 0.35), 0).applyQuaternion(w.quaternion).divideScalar(ws.x);
         w.position.copy(down);
-        w.traverse((o) => ((o as THREE.Mesh).isMesh ? ((o as THREE.Mesh).castShadow = true) : null));
+        w.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (!m.isMesh) return;
+          m.castShadow = true;
+          // 武器也平滑＋同一套質感（材質複製一份，不影響場景裡其他同模型的物件）
+          if (crease > 0) {
+            const k = `prop:${prop.id}:${m.geometry.uuid}`;
+            let g = SMOOTH_CACHE.get(k);
+            if (!g) SMOOTH_CACHE.set(k, (g = smoothByCrease(m.geometry, 50)));
+            m.geometry = g;
+            if (this.look) {
+              const mat = (m.material as THREE.Material).clone();
+              this.look.apply(mat);
+              m.material = mat;
+            }
+          }
+        });
         bone.add(w);
       }
     }

@@ -389,6 +389,8 @@ export class Minion {
     this.rune.rotation.z += dt * (this.spawnT > 0 ? 4 : 0.8);
     this.runeMat.opacity = runeOpacity;
 
+    // 骷髏的材質效果（高光、地面遮蔽、輪廓光）以腳底為基準
+    this.bones?.look.update(this.object.position.y, this.def.height);
     // 骨架動作（走路、攻擊、施法、受擊）；倒下時往後倒、頭掉下來滾開
     if (this.dying > 0 && this.beast) {
       // 野獸：側躺倒下、縮小淡去
