@@ -99,6 +99,7 @@ describe('存檔 v6 / v7', () => {
     const old = migrate({ version: 5, level: 2, settings: { zoom: 1.3, showFps: true, musicVolume: 0.2, sfxVolume: 0.4, quality: 'low' } } as never)!;
     expect(old.version).toBe(SAVE_VERSION);
     expect(old.settings.vibration).toBe(true);
+    expect(old.settings.autoPotionAt).toBe(0.7);
     expect(old.settings.leftHanded).toBe(false);
     expect(old.settings.uiScale).toBe(1);
     expect(old.settings.zoom).toBe(1.3);

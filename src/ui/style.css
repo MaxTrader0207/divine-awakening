@@ -297,17 +297,49 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 .shop-main b { font-size: 13px; }
 .shop-main small { font-size: 11px; color: var(--muted); }
 
-/* ---------------- 首領血條 ---------------- */
+/* ---------------- 首領血條（v1.49 重做） ---------------- */
 .boss-bar {
-  position: absolute; left: var(--gutter); right: var(--gutter); top: calc(max(10px, env(safe-area-inset-top)) + 226px);
-  display: grid; gap: 3px; opacity: 0; transform: translateY(-6px); transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+  position: absolute; left: 50%; width: min(calc(100% - var(--gutter) * 2 - 8px), 420px);
+  top: calc(max(10px, env(safe-area-inset-top)) + 226px);
+  display: grid; gap: 4px; padding: 6px 9px 8px; box-sizing: border-box;
+  border-radius: 12px; background: linear-gradient(180deg, rgba(20, 14, 30, 0.82), rgba(12, 10, 18, 0.7));
+  border: 1px solid rgba(255, 211, 107, 0.35); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  opacity: 0; transform: translate(-50%, -6px); transition: opacity 0.3s, transform 0.3s, border-color 0.3s; pointer-events: none;
 }
-.boss-bar.show { opacity: 1; transform: none; }
-.boss-bar b { font-size: 13px; color: #ffd36b; text-shadow: 0 1px 3px #000; }
-.boss-track { position: relative; height: 14px; border-radius: 7px; background: rgba(14, 19, 28, 0.85); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2); }
-.boss-track i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #6a5ae0, #8f7aff); transition: width 0.15s; }
-.boss-bar.enraged .boss-track i { background: linear-gradient(90deg, #c6331f, #ff6a3c); }
-.boss-track span { position: absolute; right: 8px; top: 0; font: 700 10px/14px var(--font); text-shadow: 0 1px 2px #000; }
+.boss-bar.show { opacity: 1; transform: translate(-50%, 0); }
+.boss-head { display: flex; align-items: baseline; gap: 6px; min-width: 0; line-height: 16px; }
+.boss-tag {
+  flex: none; font: 800 9.5px/14px var(--font); padding: 0 5px; border-radius: 4px; letter-spacing: 1px;
+  color: #2a1a00; background: linear-gradient(180deg, #ffe38a, #e7a92c); align-self: center;
+}
+.boss-head b { font-size: 14px; color: #ffd36b; text-shadow: 0 1px 3px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.boss-head small { flex: none; font-size: 11px; color: #d8cfe8; opacity: 0.85; }
+.boss-head strong { margin-left: auto; flex: none; font: 800 13px/16px var(--font); color: #fff; text-shadow: 0 1px 3px #000; font-variant-numeric: tabular-nums; }
+.boss-track {
+  position: relative; height: 16px; border-radius: 8px; overflow: hidden;
+  background: rgba(6, 8, 14, 0.9); border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+.boss-track u { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #f5d27a, #ffe6a8); opacity: 0.7; text-decoration: none; }
+.boss-track i {
+  position: absolute; inset: 0 auto 0 0; transition: width 0.12s;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 55%), linear-gradient(90deg, #5a46d6, #9a84ff);
+}
+.boss-bar.enraged { border-color: rgba(255, 106, 60, 0.6); }
+.boss-bar.enraged .boss-track i {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 55%), linear-gradient(90deg, #b8261a, #ff6a3c);
+  animation: boss-pulse 1.1s ease-in-out infinite;
+}
+@keyframes boss-pulse { 50% { filter: brightness(1.25); } }
+.boss-bar.hit .boss-track i { animation: boss-hit 0.18s ease-out; }
+.boss-bar.enraged.hit .boss-track i { animation: boss-hit 0.18s ease-out, boss-pulse 1.1s ease-in-out infinite 0.18s; }
+@keyframes boss-hit { from { filter: brightness(1.9); } }
+.boss-num {
+  position: absolute; inset: 0 8px 0 auto; text-align: right; font: 700 11px/16px var(--font); color: #fff;
+  text-shadow: 0 0 3px #000, 0 1px 2px #000; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* 50% 狂暴分界線 */
+.boss-mark { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: rgba(255, 220, 160, 0.85); box-shadow: 0 0 4px #000; }
+.boss-bar.enraged .boss-mark { display: none; }
 
 /* ---------------- 載入畫面 ---------------- */
 .loading { position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #2a3550, #0e131c 70%); transition: opacity 0.45s; }
@@ -543,9 +575,6 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 
 /* ---- 上方中央插槽：首領血條 / 提示（不會同時出現）；下方通知佇列 ---- */
 .boss-bar { top: calc(max(10px, env(safe-area-inset-top)) + 136px * var(--ui)); }
-.boss-mark { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, 0.75); box-shadow: 0 0 4px #000; }
-.boss-bar.enraged .boss-mark { display: none; }
-.boss-track span { font-size: 11px; }
 .tip { top: calc(max(10px, env(safe-area-inset-top)) + 172px * var(--ui)); font-size: 12.5px; }
 .notes {
   position: absolute; left: 50%; top: calc(max(10px, env(safe-area-inset-top)) + 210px * var(--ui)); transform: translateX(-50%);

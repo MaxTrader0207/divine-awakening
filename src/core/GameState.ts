@@ -12,7 +12,7 @@ import { DUNGEON_ORDER, ZONES } from '@/data/zones';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -27,6 +27,8 @@ export interface Settings {
   uiScale: number;
   /** v7：震動回饋（被重擊、首領放大招、升級、倒地） */
   vibration: boolean;
+  /** v10：HP 低於這個比例自動喝紅藥水（0＝關閉，預設 0.7） */
+  autoPotionAt: number;
 }
 
 export interface GameState {
@@ -94,7 +96,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     consumables: { hestia_bread: 2, hermes_feather: 1 },
     boosts: { exp: 0, gold: 0 },
     stats: { kills: 0, deaths: 0, playTime: 0 },
-    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true },
+    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7 },
   };
 }
 

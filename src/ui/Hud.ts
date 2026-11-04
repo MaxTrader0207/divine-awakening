@@ -126,8 +126,18 @@ export class Hud {
     // ---- 上方中央插槽：首領血條 / 提示；下面是通知佇列 ----
     this.root.appendChild(
       (this.els.boss = h('div', { class: 'boss-bar' }, [
-        (this.els.bossName = h('b')),
-        h('div', { class: 'boss-track' }, [(this.els.bossFill = h('i')), h('em', { class: 'boss-mark' }), (this.els.bossHp = h('span'))]),
+        h('div', { class: 'boss-head' }, [
+          h('span', { class: 'boss-tag' }, '首領'),
+          (this.els.bossName = h('b')),
+          (this.els.bossLv = h('small')),
+          (this.els.bossPct = h('strong')),
+        ]),
+        h('div', { class: 'boss-track' }, [
+          (this.els.bossTrail = h('u')),
+          (this.els.bossFill = h('i')),
+          h('em', { class: 'boss-mark' }),
+          (this.els.bossHp = h('span', { class: 'boss-num' })),
+        ]),
       ])),
     );
     this.root.appendChild((this.els.tip = h('div', { class: 'tip' })));
@@ -275,9 +285,16 @@ export class Hud {
   }
 
   private bossShown: unknown = null;
+  /** 受傷殘影：比實際血量慢一點縮短（被打中先停 0.35 秒再追上） */
+  private bossTrailR = 1;
+  private bossLastR = 1;
+  private bossHitAt = 0;
+  private bossFlashT = 0;
+  private bossLastTxt = '';
+  private bossLastCall = 0;
 
   /** 戰鬥中的首領血條（上方中央插槽；出現時收起提示與新手指引） */
-  setBoss(e: { def: { name: string; stats: { maxHp: number } }; hp: number } | null) {
+  setBoss(e: { def: { name: string; level?: number; stats: { maxHp: number } }; hp: number } | null) {
     if (!e) {
       if (this.bossShown) {
         this.els.boss.classList.remove('show');
@@ -289,18 +306,44 @@ export class Hud {
       }
       return;
     }
+    const max = e.def.stats.maxHp;
+    const r = Math.max(0, Math.min(1, e.hp / max));
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - this.bossLastCall) / 1000);
+    this.bossLastCall = now;
     if (this.bossShown !== e) {
       this.bossShown = e;
       this.bossOn = true;
+      this.bossTrailR = this.bossLastR = r;
       this.root.classList.add('boss-on');
       this.els.bossName.textContent = e.def.name;
+      this.els.bossLv.textContent = e.def.level ? `Lv.${e.def.level}` : '';
       this.els.boss.classList.add('show');
       this.els.tip.classList.remove('show');
       this.refreshGuide();
     }
-    const r = e.hp / e.def.stats.maxHp;
+    if (r < this.bossLastR - 1e-4) {
+      this.bossHitAt = now;
+      if (now - this.bossFlashT > 120) {
+        // 重新觸發受擊閃光動畫
+        this.els.boss.classList.remove('hit');
+        void this.els.boss.offsetWidth;
+        this.els.boss.classList.add('hit');
+        this.bossFlashT = now;
+      }
+    }
+    this.bossLastR = r;
+    // 殘影：回血時直接跟上；受傷後停一下再以每秒 35% 的速度追上
+    if (r >= this.bossTrailR) this.bossTrailR = r;
+    else if (now - this.bossHitAt > 350) this.bossTrailR = Math.max(r, this.bossTrailR - 0.35 * dt);
     this.els.bossFill.style.width = `${r * 100}%`;
-    this.els.bossHp.textContent = `${Math.ceil(e.hp)} / ${e.def.stats.maxHp}`;
+    this.els.bossTrail.style.width = `${this.bossTrailR * 100}%`;
+    const txt = `${fmtHp(Math.ceil(e.hp))} / ${fmtHp(max)}`;
+    if (txt !== this.bossLastTxt) {
+      this.bossLastTxt = txt;
+      this.els.bossHp.textContent = txt;
+      this.els.bossPct.textContent = `${r > 0 && r < 0.01 ? '<1' : Math.ceil(r * 100)}%`;
+    }
     this.els.boss.classList.toggle('enraged', r < 0.5);
   }
 
@@ -494,4 +537,9 @@ export class Hud {
       }
     }
   }
+}
+
+/** 血量數字加千分位（46000 → 46,000） */
+function fmtHp(v: number) {
+  return v.toLocaleString('en-US');
 }

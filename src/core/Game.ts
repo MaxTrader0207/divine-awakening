@@ -24,7 +24,7 @@ import { Effects } from '@/systems/Effects';
 import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
-import { AutoBattle } from '@/systems/AutoBattle';
+import { AutoBattle, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
 import { LootSystem } from '@/systems/LootSystem';
@@ -650,6 +650,25 @@ export class Game {
     }
     if (this.input.consume('potionHp')) this.skills.usePotion('hp');
     if (this.input.consume('potionMp')) this.skills.usePotion('mp');
+    this.autoPotion();
+  }
+
+  private potionOutWarned = false;
+  /** 自動補血：HP 低於設定比例（預設 70%）就喝紅藥水；主城不喝 */
+  private autoPotion() {
+    const p = this.player;
+    if (!p.alive || this.zones.current?.def.safe) return;
+    const at = this.state.settings.autoPotionAt || (this.auto.on ? AUTO_HP_POTION : 0);
+    if (at <= 0 || p.hp >= p.stats.maxHp * at) return;
+    if (this.state.potions.hp <= 0) {
+      if (!this.potionOutWarned) {
+        this.potionOutWarned = true;
+        bus.emit('toast', { text: '紅藥水用完了，無法自動補血（可到主城道具店購買）' });
+      }
+      return;
+    }
+    this.potionOutWarned = false;
+    this.skills.usePotion('hp', true);
   }
 
   /**

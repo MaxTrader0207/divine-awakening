@@ -257,6 +257,23 @@ export class Menu {
         }, `${Math.round(v * 100)}%`),
       ),
     );
+    // 自動補血：HP 低於多少自動喝紅藥水
+    const potionOpts: [number, string][] = [[0, '關閉'], [0.5, '50%'], [0.7, '70%'], [0.85, '85%']];
+    const potionAt = s.autoPotionAt ?? 0.7;
+    const potionRow = h(
+      'div',
+      { class: 'seg' },
+      potionOpts.map(([v, label]) =>
+        h('button', {
+          class: `seg-btn${Math.abs(potionAt - v) < 0.01 ? ' on' : ''}`,
+          onclick: () => {
+            s.autoPotionAt = v;
+            bus.emit('save:request');
+            this.show('settings');
+          },
+        }, label),
+      ),
+    );
     const fps = h('input', { type: 'checkbox' });
     fps.checked = s.showFps;
     fps.addEventListener('change', () => this.actions.onToggleFps(fps.checked));
@@ -274,6 +291,11 @@ export class Menu {
         scaleRow,
         h('label', { class: 'set-row' }, [h('span', {}, '震動回饋'), vib]),
         h('p', {}, '被重擊、首領放大招、升級時手機會輕震（iPhone 的瀏覽器不支援）。'),
+      ]),
+      h('div', { class: 'card' }, [
+        h('div', { class: 'set-row' }, [h('span', {}, '自動補血'), h('b', {}, potionAt > 0 ? `HP < ${Math.round(potionAt * 100)}%` : '關閉')]),
+        potionRow,
+        h('p', {}, 'HP 低於設定比例時自動喝紅藥水（冷卻 2 秒、在主城不會喝）。每喝一瓶破關評價扣 2 分。'),
       ]),
       renderCloudCard(this.cloudCtx()),
       this.renderQuality(),

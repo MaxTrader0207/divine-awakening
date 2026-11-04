@@ -67,8 +67,8 @@ export class AutoBattle {
     if (!p.alive) return;
 
     // 1. 喝藥
-    if (p.hp / p.stats.maxHp < AUTO_HP_POTION) skills.usePotion('hp', true);
-    else if (p.mp / p.stats.maxMp < AUTO_MP_POTION && !skills.usesRage) skills.usePotion('mp', true);
+    // 紅藥水由 Game.autoPotion() 依設定處理（AUTO 開著且設定關閉時，仍在 AUTO_HP_POTION 以下補血）
+    if (p.mp / p.stats.maxMp < AUTO_MP_POTION && !skills.usesRage) skills.usePotion('mp', true);
 
     // 2. 躲首領預警
     const escape = this.ctx.dangerEscape();

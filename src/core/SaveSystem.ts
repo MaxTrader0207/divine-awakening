@@ -217,6 +217,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.boosts = { exp: 0, gold: 0, ...(data.boosts ?? {}) };
   // v8 → v9：新增破關紀錄（舊存檔從零開始記錄，已擊敗的首領照樣保留）
   merged.clears = data.clears && typeof data.clears === 'object' ? { ...data.clears } : {};
-  // 未來版本：if ((data.version ?? 0) < 10) { ... }
+  // v9 → v10：設定新增 autoPotionAt（settings 合併時已補預設值 0.7）
+  if (typeof merged.settings.autoPotionAt !== 'number') merged.settings.autoPotionAt = base.settings.autoPotionAt;
+  // 未來版本：if ((data.version ?? 0) < 11) { ... }
   return merged;
 }
