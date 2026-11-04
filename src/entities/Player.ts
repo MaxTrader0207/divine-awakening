@@ -6,6 +6,11 @@ import { mat } from '@/world/Props';
 import { Assets } from '@/assets/Assets';
 import { CharacterRig } from './CharacterRig';
 import { CLASSES, type HeroAnimSet } from '@/data/classes';
+import { smoothByCrease } from './smoothShade';
+import { BossLook } from './enemyShapes/bossLook';
+
+/** 平滑後的模型幾何（同一職業模型共用，依 模型:網格序號）*/
+const SMOOTH_CACHE = new Map<string, THREE.BufferGeometry>();
 
 export type { HeroAnimSet } from '@/data/classes';
 /** 相容舊程式 */
@@ -49,6 +54,8 @@ export class Player {
   private lockTimer = 0;
   /** 骨架動畫（有模型時） */
   rig: CharacterRig | null = null;
+  /** 平滑著色職業的材質效果（高光、地面遮蔽、輪廓光） */
+  private look: BossLook | null = null;
   private anims: HeroAnimSet;
 
   constructor(anims: HeroAnimSet = MAGE_ANIMS) {
@@ -104,6 +111,21 @@ export class Player {
         m.map = t;
         m.needsUpdate = true;
       }
+    }
+    // 平滑著色（訓獸師）：依摺角重算法線，鬍子、熊頭帽不再一格一格
+    if (this.anims.smooth) {
+      let i = 0;
+      inst.root.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        const k = `${this.anims.model}:${i++}`;
+        let g = SMOOTH_CACHE.get(k);
+        if (!g) SMOOTH_CACHE.set(k, (g = smoothByCrease(m.geometry, this.anims.smooth)));
+        m.geometry = g;
+      });
+      // 與野獸同一套質感：柔和高光、腳邊遮蔽、輪廓光
+      this.look = new BossLook(0xf0d8a0);
+      for (const m of inst.materials) this.look.apply(m);
     }
     // 手上的道具（召喚師的骷髏法杖）
     const prop = this.anims.prop;
@@ -259,6 +281,7 @@ export class Player {
     if (this.wildRoarT > 0) this.wildRoarT = Math.max(0, this.wildRoarT - dt);
     this.sinceHurt += dt;
     this.rig?.update(dt);
+    this.look?.update(this.object.position.y, HERO_HEIGHT);
     if (!this.alive) {
       if (this.rig) return; // 模型播死亡動畫
       // 倒地動畫
@@ -328,14 +351,14 @@ function lerpAngle(a: number, b: number, t: number): number {
 /** 訓獸師的鞭子：皮革握把＋往前甩、再垂到腳邊捲起的長鞭（握點在原點、+y 朝上、+z 朝前） */
 function buildWhip(): THREE.Object3D {
   const g = new THREE.Group();
-  const leather = new THREE.MeshLambertMaterial({ color: 0x5a3418, flatShading: true });
-  const lash = new THREE.MeshLambertMaterial({ color: 0x8a5a2a });
-  const gold = new THREE.MeshLambertMaterial({ color: 0xe0a83a, emissive: 0x3a2400 });
-  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.36, 7), leather);
+  const leather = new THREE.MeshPhongMaterial({ color: 0x5a3418, specular: 0x2a1a0c, shininess: 20 });
+  const lash = new THREE.MeshPhongMaterial({ color: 0x8a5a2a, specular: 0x30200e, shininess: 24 });
+  const gold = new THREE.MeshPhongMaterial({ color: 0xe0a83a, emissive: 0x3a2400, specular: 0x806030, shininess: 60 });
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.36, 16), leather);
   handle.position.y = 0.1;
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.045, 7, 5), gold);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 10), gold);
   cap.position.y = -0.09;
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.012, 5, 10), gold);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.012, 8, 24), gold);
   ring.position.y = 0.28;
   ring.rotation.x = Math.PI / 2;
   const curve = new THREE.CatmullRomCurve3([
@@ -348,10 +371,10 @@ function buildWhip(): THREE.Object3D {
     new THREE.Vector3(-0.14, -0.72, 0.24),
   ]);
   // 鞭身越往末端越細（逐段縮放管子的半徑）
-  const tube = new THREE.TubeGeometry(curve, 40, 0.022, 5, false);
+  const tube = new THREE.TubeGeometry(curve, 72, 0.022, 8, false);
   const pos = tube.getAttribute('position');
-  const segs = 41;
-  const ring5 = 6;
+  const segs = 73;
+  const ring5 = 9;
   for (let i = 0; i < segs; i++) {
     const center = curve.getPointAt(i / (segs - 1));
     const k = 1 - (i / (segs - 1)) * 0.7;

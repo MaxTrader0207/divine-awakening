@@ -26,6 +26,8 @@ export interface HeroAnimSet {
   /** 手上額外拿的道具（assets/models 的靜態模型 id、長度公尺、右手 r / 左手 l） */
   /** 手上的道具：length 全長（公尺）、thin 橫向粗細倍率（預設 1）、grip 握點離底端的比例（預設 0.35）；id 'whip' = 程式鞭子（訓獸師） */
   prop?: { id: string; length: number; hand: 'r' | 'l'; thin?: number; grip?: number };
+  /** 平滑著色的摺角（度）：夾角小於此值的相鄰面法線平均（訓獸師 55） */
+  smooth?: number;
 }
 
 export interface ClassDef {
@@ -167,7 +169,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'call_bear', name: '卡呂冬巨熊', slot: 'E', mpCost: 30, cooldown: 15, power: 0, range: 0, shape: 'circle', summon: 'bear', count: 1, icon: '🐻', color: 0xd8a060, auto: 'summon', anim: 'Spellcast_Long' },
       { id: 'wild_roar', name: '野性咆哮', slot: 'R', mpCost: 25, cooldown: 24, power: 0, range: 0, shape: 'circle', radius: 14, duration: 8, icon: '🦁', color: 0xff9a3c, auto: 'burst', anim: 'Cheer' },
     ],
-    anims: { model: 'tamer', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 5, to: 20.5, hue: 118, light: 0.85, maxL: 0.56 }, prop: { id: 'whip', length: 1.6, hand: 'r' } },
+    anims: { model: 'tamer', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 5, to: 20.5, hue: 118, light: 0.85, maxL: 0.56 }, prop: { id: 'whip', length: 1.6, hand: 'r' }, smooth: 60 },
   },
 };
 

@@ -168,7 +168,7 @@ export class Minion {
   private pose: BonePose = { t: 0, walk: 0, moving: 0, swingT: 0, swingTotal: 1, windupFrac: 0.6, hitT: 0, cast: false };
   /** 會動的身體（骨架＋武器＋眼睛），出場時從地底升起 */
   private body = new THREE.Group();
-  private materials: THREE.MeshLambertMaterial[] = [];
+  private materials: Array<THREE.MeshLambertMaterial | THREE.MeshPhongMaterial> = [];
   private hpBar = new THREE.Group();
   private hpFill: THREE.Mesh;
   private flash = 0;
@@ -399,6 +399,8 @@ export class Minion {
       this.pose.t = this.t;
       this.pose.moving = this.moving;
       poseBeast(this.beast, this.pose, dt * (this.roarT > 0 ? 1.25 : 1));
+      // 地面遮蔽以腳底為基準（神鷹飛在空中，用牠自己的高度）
+      this.beast.look.update(this.object.position.y + (this.beast.kind === 'eagle' ? this.beast.root.position.y - 0.4 : 0), this.def.height);
     } else if (this.dying > 0 && this.bones) {
       const k = 1 - this.dying / DEATH_TIME;
       const b = this.bones;
