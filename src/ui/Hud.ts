@@ -3,7 +3,7 @@ import type { GameState } from '@/core/GameState';
 import type { ZoneDef } from '@/data/types';
 import { expToNext } from '@/data/player';
 import type { Player } from '@/entities/Player';
-import type { InputManager, ActionKey } from '@/input/InputManager';
+import { IS_DESKTOP, KEY_LABELS, type InputManager, type ActionKey } from '@/input/InputManager';
 import type { SkillSlot } from '@/data/types';
 import type { SkillSystem } from '@/systems/SkillSystem';
 import { Minimap } from './Minimap';
@@ -155,10 +155,13 @@ export class Hud {
       (this.els.auto = h('button', { class: 'auto-btn', onclick: () => this.input.trigger('auto') }, [h('i', { class: 'auto-ring' }), h('b', {}, 'AUTO'), h('small', {}, '自動戰鬥')])),
     );
     for (const sk of this.skills.list) {
-      const btn = this.actionButton(`skill slot-${sk.slot}`, sk.slot as ActionKey, sk.slot === 'basic' ? '' : sk.slot);
+      // 電腦顯示實際按鍵（W 技能用 F，普攻用空白）；手機顯示 Q/W/E/R
+      const label = IS_DESKTOP ? (KEY_LABELS[sk.slot as ActionKey] ?? '') : sk.slot === 'basic' ? '' : sk.slot;
+      const btn = this.actionButton(`skill slot-${sk.slot}`, sk.slot as ActionKey, label);
+      if (IS_DESKTOP) btn.title = `${sk.name}（${label}）`;
       btn.querySelector('.ico')!.textContent = sk.icon;
       if (sk.slot === 'basic') btn.appendChild(h('small', { class: 'basic-label' }, '普攻'));
-      btn.title = sk.name;
+      if (!IS_DESKTOP) btn.title = sk.name;
       btn.style.setProperty('--sc', `#${sk.color.toString(16).padStart(6, '0')}`); // 外框與底色帶一點技能顏色
       const cd = h('div', { class: 'cd' });
       const num = h('b', { class: 'cd-num' });

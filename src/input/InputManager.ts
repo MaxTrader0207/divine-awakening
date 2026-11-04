@@ -5,14 +5,25 @@ import { VirtualJoystick } from './VirtualJoystick';
  * InputManager：把「鍵盤 + 虛擬搖桿 + 技能按鈕」統一成遊戲用的輸入狀態。
  * 遊戲邏輯只讀 move / pressed，不直接碰 DOM 事件。
  *
- * 鍵位（電腦測試用）：WASD / 方向鍵 = 移動；J 或空白 = 普攻；
- * 技能 Q/W/E/R 因為 W 與移動衝突，鍵盤改用 U/I/O/P；1/2 = 藥水；T = AUTO；M = 選單；Esc = 暫停 / 繼續
+ * 鍵位（電腦）：WASD / 方向鍵 = 移動；空白或 J = 普攻；
+ * 技能 Q / F / E / R（畫面上的 W 技能因為 W 是移動，改用 F；U/I/O/P 也可以）；1/2 = 藥水；T = AUTO；M = 選單；Esc = 暫停 / 繼續
+ *
+ * 電腦鍵盤的可靠性（v1.47）：
+ * - 按鍵碼先看 e.code；注音等輸入法開著、或舊瀏覽器拿不到 code 時，改用 keyCode / key 換算（normalizeKey）。
+ * - 遊戲用到的鍵 preventDefault：方向鍵不會捲動頁面、空白鍵不會「按到」剛點過的按鈕。
+ * - 正在輸入文字（輸入框）時不攔截。
+ * - 點畫面任何地方都把鍵盤焦點拉回遊戲（嵌在 claude.ai 等網頁框架裡時特別重要）；
+ *   電腦上失去焦點時畫面上方顯示「點一下遊戲畫面就能用鍵盤」。
  */
 export type ActionKey = 'basic' | 'Q' | 'W' | 'E' | 'R' | 'potionHp' | 'potionMp' | 'auto' | 'menu' | 'pause';
 
 const KEY_BINDINGS: Record<string, ActionKey> = {
   KeyJ: 'basic',
   Space: 'basic',
+  KeyQ: 'Q',
+  KeyF: 'W',
+  KeyE: 'E',
+  KeyR: 'R',
   KeyU: 'Q',
   KeyI: 'W',
   KeyO: 'E',
@@ -23,6 +34,41 @@ const KEY_BINDINGS: Record<string, ActionKey> = {
   Escape: 'pause',
   KeyM: 'menu',
 };
+
+/** 電腦鍵盤上顯示在技能按鈕角落的鍵 */
+export const KEY_LABELS: Partial<Record<ActionKey, string>> = { basic: '空白', Q: 'Q', W: 'F', E: 'E', R: 'R', potionHp: '1', potionMp: '2' };
+
+const MOVE_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+
+/** keyCode → code（拿不到 e.code 時用；輸入法開著時 keyCode 可能是 229，那時只能靠 code） */
+const KEYCODE: Record<number, string> = {
+  87: 'KeyW', 65: 'KeyA', 83: 'KeyS', 68: 'KeyD', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown',
+  32: 'Space', 74: 'KeyJ', 81: 'KeyQ', 70: 'KeyF', 69: 'KeyE', 82: 'KeyR', 85: 'KeyU', 73: 'KeyI', 79: 'KeyO', 80: 'KeyP',
+  49: 'Digit1', 50: 'Digit2', 97: 'Digit1', 98: 'Digit2', 84: 'KeyT', 77: 'KeyM', 27: 'Escape',
+};
+
+/** 把鍵盤事件換成統一的 code（KeyW、ArrowUp…）；換不出來回傳空字串 */
+export function normalizeKey(e: { code?: string; key?: string; keyCode?: number }): string {
+  if (e.code && e.code !== 'Unidentified') return e.code;
+  if (e.keyCode && KEYCODE[e.keyCode]) return KEYCODE[e.keyCode];
+  const k = e.key ?? '';
+  if (/^[a-z]$/i.test(k)) return 'Key' + k.toUpperCase();
+  if (/^[0-9]$/.test(k)) return 'Digit' + k;
+  if (k === ' ' || k === 'Spacebar') return 'Space';
+  if (k === 'Esc') return 'Escape';
+  if (/^(Arrow)?(Up|Down|Left|Right)$/.test(k)) return 'Arrow' + k.replace('Arrow', '');
+  return '';
+}
+
+/** 正在打字（名字、轉移碼）：不攔截鍵盤 */
+function typing(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  if (!el || !el.tagName) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
+}
+
+/** 有實體滑鼠 / 觸控板的裝置（電腦） */
+export const IS_DESKTOP = typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 export class InputManager {
   readonly joystick: VirtualJoystick;
@@ -35,18 +81,62 @@ export class InputManager {
 
   constructor(uiRoot: HTMLElement) {
     this.joystick = new VirtualJoystick(uiRoot);
-    window.addEventListener('keydown', (e) => {
-      if (e.repeat) return;
-      this.keys.add(e.code);
-      const action = KEY_BINDINGS[e.code];
-      if (action) this.justPressed.add(action);
-    });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
+    window.addEventListener(
+      'keydown',
+      (e) => {
+        if (typing(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+        const code = normalizeKey(e);
+        if (!code) return;
+        const action = KEY_BINDINGS[code];
+        if (MOVE_KEYS.has(code) || action) e.preventDefault();
+        if (e.repeat && this.keys.has(code)) return;
+        this.keys.add(code);
+        if (action) this.justPressed.add(action);
+      },
+      true,
+    );
+    window.addEventListener(
+      'keyup',
+      (e) => {
+        const code = normalizeKey(e);
+        if (code) this.keys.delete(code);
+        // 輸入法有時候放開的鍵換不出 code：放開任何鍵都順便確認一次（沒有按著的話 keyup 之後就不會再有該鍵）
+        if (!code || e.keyCode === 229) this.keys.clear();
+      },
+      true,
+    );
     this.bindPinchZoom();
-    window.addEventListener('blur', () => {
+    const release = () => {
       this.keys.clear();
       this.uiHeld.clear();
-    });
+    };
+    window.addEventListener('blur', release);
+    document.addEventListener('visibilitychange', () => document.hidden && release());
+    // 點畫面就把鍵盤焦點拉回遊戲（嵌在網頁框架裡時，焦點可能還留在外面的聊天框）
+    window.addEventListener(
+      'pointerdown',
+      (e) => {
+        if (typing(e.target)) return;
+        const a = document.activeElement as HTMLElement | null;
+        if (typing(a)) a!.blur();
+        window.focus();
+      },
+      true,
+    );
+    if (IS_DESKTOP) this.focusHint(uiRoot);
+  }
+
+  /** 電腦：遊戲沒有鍵盤焦點時，在畫面上方提示「點一下」 */
+  private focusHint(uiRoot: HTMLElement) {
+    const el = document.createElement('div');
+    el.className = 'kbd-hint';
+    el.textContent = '⌨ 點一下遊戲畫面，就能用鍵盤 WASD 移動';
+    uiRoot.appendChild(el);
+    const check = () => el.classList.toggle('show', !document.hasFocus() && !document.hidden);
+    window.addEventListener('focus', check);
+    window.addEventListener('blur', check);
+    setInterval(check, 800);
+    check();
   }
 
   /**

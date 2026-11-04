@@ -46,7 +46,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'move',
     title: '走走看',
     text: '用搖桿走動一下',
-    hint: '拖曳畫面左下角的搖桿，角色會朝那個方向走，放開就停下。電腦可以用 WASD 或方向鍵。',
+    hint: '拖曳畫面左下角的搖桿，角色會朝那個方向走，放開就停下。電腦可以用 WASD 或方向鍵（如果按了沒反應，先用滑鼠點一下遊戲畫面）。',
     goal: { type: 'move', meters: 10 },
     reward: { gold: 20 },
   },
