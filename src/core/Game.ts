@@ -941,6 +941,7 @@ export class Game {
     }
     if (e.type !== 'heal') this.audio.play('potion'); // 回復類已由 skill:cast 播過
     bus.emit('toast', { text: `${def.icon} 使用 ${def.name}：${def.desc}`, duration: 2.4 });
+    this.tutorial({ type: 'item' });
     bus.emit('player:changed');
     this.menu.refreshIfOpen();
     this.persist();

@@ -31,7 +31,7 @@ describe('新手指引', () => {
     const t = { ...newTutorial(), step: TUTORIAL_STEPS.findIndex((s) => s.id === 'auto') };
     const done = tutorialEvent(t, { type: 'auto', on: true }, { zoneId: 'grassland', level: 5, bossesDefeated: [] });
     expect(done.map((d) => d.step.id)).toEqual(['auto', 'level']);
-    expect(currentStep(t)?.id).toBe('equip');
+    expect(currentStep(t)?.id).toBe('item');
   });
 
   it('全部完成後 done，重新開始不會重複發獎勵', () => {
@@ -66,5 +66,25 @@ describe('新手指引', () => {
     const fresh = migrate({ version: 4, level: 1, bossesDefeated: [] } as never)!;
     expect(fresh.tutorial.step).toBe(0);
     expect(fresh.tutorial.done).toBe(false);
+  });
+
+  it('快捷道具步驟：用一次道具就完成；v11 存檔的步驟往後挪一格', () => {
+    const idx = TUTORIAL_STEPS.findIndex((s) => s.id === 'item');
+    expect(idx).toBe(6);
+    expect(TUTORIAL_STEPS[idx - 1].id).toBe('level');
+    const t = { ...newTutorial(), step: idx };
+    expect(tutorialEvent(t, { type: 'kill' }, town)).toEqual([]);
+    expect(tutorialEvent(t, { type: 'item' }, town).map((d) => d.step.id)).toEqual(['item']);
+    // v11 存在「換上新裝備」（舊索引 6）→ v12 變成索引 7，仍是同一步
+    const old = migrate({ version: 11, level: 4, bossesDefeated: [], tutorial: { step: 6, progress: 0, skills: [], done: false, hidden: false, rewarded: 6 } } as never)!;
+    expect(TUTORIAL_STEPS[old.tutorial.step].id).toBe('equip');
+    expect(old.tutorial.rewarded).toBe(6);
+    // 還在前面步驟的不動
+    const early = migrate({ version: 11, level: 1, bossesDefeated: [], tutorial: { step: 3, progress: 0, skills: [], done: false, hidden: false, rewarded: 3 } } as never)!;
+    expect(TUTORIAL_STEPS[early.tutorial.step].id).toBe('skills');
+    // 已完成的維持完成
+    const fin = migrate({ version: 11, level: 9, bossesDefeated: ['dungeon_1'], tutorial: { step: 11, progress: 0, skills: [], done: true, hidden: false, rewarded: 11 } } as never)!;
+    expect(fin.tutorial.done).toBe(true);
+    expect(fin.tutorial.step).toBe(TUTORIAL_STEPS.length);
   });
 });

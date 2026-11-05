@@ -1,5 +1,9 @@
 import { newGameState, SAVE_VERSION, type GameState } from './GameState';
 import { autoQuickSlots } from '@/systems/Consumables';
+import { TUTORIAL_STEPS } from '@/data/tutorial';
+
+/** v12 插入的「快捷道具」步驟索引 */
+const TUTORIAL_ITEM_STEP = 6;
 import { ZONES } from '@/data/zones';
 import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
@@ -222,6 +226,13 @@ export function migrate(data: Partial<GameState>): GameState | null {
   if (typeof merged.settings.autoPotionAt !== 'number') merged.settings.autoPotionAt = base.settings.autoPotionAt;
   // v10 → v11：新增快捷道具欄；舊存檔自動放上持有最多的兩種道具
   merged.quickSlots = Array.isArray(data.quickSlots) ? [data.quickSlots[0] ?? null, data.quickSlots[1] ?? null] : autoQuickSlots(merged.consumables);
-  // 未來版本：if ((data.version ?? 0) < 12) { ... }
+  // v11 → v12：新手指引在「升到 Lv.3」後面插入「快捷道具」（第 7 步，索引 6），之後的步驟往後挪一格
+  if ((data.version ?? 1) < 12 && data.tutorial && typeof data.tutorial === 'object') {
+    const t = merged.tutorial;
+    if (t.step >= TUTORIAL_ITEM_STEP) t.step++;
+    if (t.rewarded > TUTORIAL_ITEM_STEP) t.rewarded++;
+    if (t.done) t.step = TUTORIAL_STEPS.length;
+  }
+  // 未來版本：if ((data.version ?? 0) < 13) { ... }
   return merged;
 }

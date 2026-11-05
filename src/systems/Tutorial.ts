@@ -28,6 +28,7 @@ export type TutorialEvent =
   | { type: 'kill' }
   | { type: 'skill'; slot: string }
   | { type: 'auto'; on: boolean }
+  | { type: 'item' }
   | { type: 'level'; level: number }
   | { type: 'equip' }
   | { type: 'buy' }
@@ -113,6 +114,7 @@ function matches(s: TutorialStep, t: TutorialState, ev: TutorialEvent): boolean 
     case 'equip':
     case 'buy':
     case 'enhance':
+    case 'item':
       return ev.type === g.type;
   }
 }

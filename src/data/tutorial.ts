@@ -11,6 +11,8 @@ export type TutorialGoal =
   /** 施放 Q/W/E/R 中幾種不同的技能 */
   | { type: 'skills'; count: number }
   | { type: 'auto' }
+  /** 使用一次道具（快捷欄 ③④ 或「裝備 → 道具」） */
+  | { type: 'item' }
   | { type: 'level'; level: number }
   | { type: 'equip' }
   | { type: 'buy' }
@@ -63,7 +65,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'kill',
     title: '第一場戰鬥',
     text: '按「普攻」打倒 3 隻怪物',
-    hint: '右下角最大的按鈕是普攻，會自動瞄準附近的怪物（電腦：空白鍵或 J）。左上角是你的血量（紅）和 MP（藍），血量歸零會回到雅典城並損失 10% 金幣。',
+    hint: '右下角最大的按鈕是普攻，會自動瞄準附近的怪物（電腦：空白鍵或 J）。左上角是你的血量（紅）和 MP（藍）；血量低於 70% 會自動喝紅藥水（可在「設定 → 自動補血」調整），血量歸零會回到雅典城並損失 10% 金幣。',
     goal: { type: 'kill', count: 3 },
     reward: { gold: 30, hp: 2 },
   },
@@ -71,7 +73,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'skills',
     title: '使用技能',
     text: '施放 Q、W、E、R 中任 2 種技能',
-    hint: '普攻旁邊的 4 顆按鈕是技能，用過要等冷卻（按鈕上會倒數）。技能會花 MP（狂戰士花的是怒氣，打人和被打都會累積）。電腦：U、I、O、P。',
+    hint: '普攻旁邊的 4 顆按鈕是技能，用過要等冷卻（按鈕上會倒數），長按可以看技能說明。技能會花 MP（狂戰士花的是怒氣，打人和被打都會累積）。電腦：Q、F、E、R（W 是往上走，所以 W 技能改按 F）。',
     goal: { type: 'skills', count: 2 },
     reward: { gems: 2 },
   },
@@ -79,7 +81,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'auto',
     title: '自動戰鬥',
     text: '打開右下角的 AUTO 自動戰鬥',
-    hint: 'AUTO 會自動找怪、放技能，血量低時自動喝藥水。想自己操作時推搖桿就會暫時接手，放開後 AUTO 繼續。再按一次 AUTO 關閉（電腦：T）。回到城裡會自動關閉。',
+    hint: 'AUTO 會自動找怪、走過去、依序放技能，MP 不夠時自動喝藍藥水（紅藥水本來就會在 HP 低於 70% 自動喝）。想自己操作時推搖桿就會暫時接手，放開後 AUTO 繼續。再按一次 AUTO 關閉（電腦：T）。回到城裡會自動關閉。',
     goal: { type: 'auto' },
     reward: { gold: 30 },
   },
@@ -92,10 +94,18 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     reward: { gold: 50 },
   },
   {
+    id: 'item',
+    title: '快捷道具',
+    text: '點左下快捷欄 ③，用一次道具',
+    hint: '紅、藍藥水右邊的 ③④ 是快捷道具欄，一開始放了「赫斯提亞爐火麵包」（慢慢回血）和「赫密士之羽」（立刻回城）。點一下就會使用（電腦：3、4）。想換別的道具：到「裝備 → 道具」按道具旁的 ③④。空的格子點一下也會帶你過去。',
+    goal: { type: 'item' },
+    reward: { gold: 40, hp: 2 },
+  },
+  {
     id: 'equip',
     title: '換上新裝備',
     text: '在「裝備」換上一件新裝備',
-    hint: '怪物會掉落裝備，走過去就會撿起來（也可以在商城購買）。點右上角的「裝備」，在背包點想穿的裝備，再按「裝備」。名字顏色越亮越稀有：白 → 綠 → 藍 → 紫。',
+    hint: '怪物會掉落裝備，走過去就會撿起來（也可以在商城購買）。點左上角的角色卡（或「選單 → 裝備」），在背包點想穿的裝備，再按「裝備」；背包裡比身上好的會標 ▲。開著選單時遊戲會停住，戰鬥中換裝也不會被打。名字顏色越亮越稀有：白 → 綠 → 藍 → 紫。',
     goal: { type: 'equip' },
     reward: { gold: 40 },
   },
@@ -130,7 +140,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'boss',
     title: '擊敗首領',
     text: '打倒首領「巨蟹卡基諾斯」',
-    hint: '首領放大招前，地上會先出現紅色範圍，看到就快走開！打不贏就回城強化裝備、升級後再來。首領一定掉落精良以上的裝備，打倒後會開放下一層副本。',
+    hint: '首領放大招前，地上會先出現紅色範圍，看到就快走開！首領會依你的等級與裝備調整強度，每一場大約要打 3 分鐘，血少時可以按「暫停」在暫停畫面喝藥。打不贏就回城強化裝備、升級後再來。首領一定掉落精良以上的裝備，打倒後會開放下一層副本。',
     goal: { type: 'boss', zone: 'dungeon_1' },
     reward: { gold: 150, gems: 5 },
     targets: { dungeon_1: { x: -2, z: -21 } },
