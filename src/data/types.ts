@@ -1,3 +1,4 @@
+import type { Element } from './elements';
 /**
  * 資料定義（Data Definitions）
  * ------------------------------------------------------------
@@ -32,7 +33,8 @@ export type ZoneId =
   | 'dungeon_19'
   | 'dungeon_20'
   | 'dungeon_21'
-  | 'dungeon_22';
+  | 'dungeon_22'
+  | 'side_1';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
 
@@ -203,6 +205,16 @@ export interface ZoneDef {
   mist?: boolean;
   /** 隨機走動的小動物 */
   critters?: CritterDef[];
+  /**
+   * 支線地圖專用（v1.58）：守護者的家。打倒守護者有機會收服成夥伴（data/companions.ts）。
+   * 支線地圖的 kind 是 'field'，但不列在野外清單，地圖頁另外一區「支線・守護者」。
+   */
+  side?: {
+    /** 守護者的敵人 id */
+    guardian: string;
+    /** 擊敗哪一層首領後開放 */
+    unlockAfter: ZoneId;
+  };
   /** 副本專用 */
   dungeon?: {
     floor: number;
@@ -276,7 +288,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe' | 'pegasus';
 
 /** 首領招式 id（招式資料在 data/bossSkills.ts） */
 export type { BossSkillId } from './bossSkills';
@@ -308,6 +320,8 @@ export interface EnemyDef {
   /** 擊殺給的鑽石（首領） */
   gems?: number;
   boss?: boolean;
+  /** 屬性（v1.58：守護者夥伴的相剋，見 data/elements.ts） */
+  element?: Element;
   bossSkills?: BossSkillId[];
   /** KayKit 骨架模型 id（shape = 'skeleton' 時使用） */
   model?: string;

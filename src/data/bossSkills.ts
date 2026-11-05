@@ -303,6 +303,24 @@ export const BOSS_SKILLS = {
     windup: 1.2, power: 2.0, color: 0x6ad87a, discColor: 0x3a8a4a, radius: 7, radiusEnraged: 9,
   },
   /* ---- 第二十二層 塔爾塔洛斯獄龍坎佩 ---- */
+  /* ---- 守護者・天馬珀伽索斯（支線：赫利孔山靈泉，雷） ---- */
+  pegasus_thunder: {
+    pattern: 'rain', name: '天雷蹄音', desc: '踏蹄召雷，玩家附近連續落雷（狂暴時更多）',
+    windup: 1.3, power: 1.3, color: 0xffd84a, pillarColor: 0xfff4b0, count: 4, countEnraged: 6, radius: 2.1, spread: 5, stagger: 0.14,
+  },
+  pegasus_dive: {
+    pattern: 'leap', name: '天馬俯衝', desc: '振翅飛起後俯衝到玩家位置',
+    windup: 1.5, power: 1.6, color: 0xfff0a0, discColor: 0xffd84a, radius: 3.6,
+  },
+  pegasus_storm: {
+    pattern: 'spokes', name: '雷翼風暴', desc: '張開雙翼往四周放出雷光，光束之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.3, color: 0xffe27a, count: 4, countEnraged: 6, range: 8, angle: 26,
+  },
+  pegasus_gallop: {
+    pattern: 'dash', name: '閃電奔馳', desc: '化成一道閃電朝玩家直線奔馳',
+    windup: 1.15, power: 1.6, color: 0xfff4b0, length: 13, width: 2.6,
+  },
+
   kampe_heads: {
     pattern: 'spokes', name: '五十獸首', desc: '腰間的獸首往四周撲咬，獸首之間是安全區（狂暴時更多）',
     windup: 1.2, power: 1.8, color: 0xff6a3a, count: 9, countEnraged: 12, range: 10, angle: 15,

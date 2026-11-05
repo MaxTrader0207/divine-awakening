@@ -37,6 +37,12 @@ export class Enemy {
   scaler: BossScaler | null = null;
   /** 最近一次實際扣掉的血（被首領神力擋下時比原傷害少） */
   lastDealt = 0;
+  /**
+   * 仇恨（v1.58，首領用）：最近受到的傷害，依來源累計、隨時間衰減（BossController 每幀衰減）。
+   * key = 召喚物 / 夥伴物件；玩家本人記在 threatPlayer。
+   */
+  threat = new Map<object, number>();
+  threatPlayer = 0;
   readonly spawn: SpawnDef;
   readonly pos: { x: number; z: number };
   /** 出生點（AI 巡邏與脫戰回歸的中心） */
@@ -188,7 +194,7 @@ export class Enemy {
   }
 
   /** 回傳是否因此死亡 */
-  takeDamage(amount: number): boolean {
+  takeDamage(amount: number, source?: object): boolean {
     if (!this.alive) return false;
     // 脫戰回歸中：只閃白不扣血（防止拉怪後偷打）
     if (this.ai === 'return') {
@@ -197,6 +203,10 @@ export class Enemy {
     }
     if (this.scaler) amount = this.scaler.clamp(this, amount);
     this.lastDealt = amount;
+    if (this.def.boss) {
+      if (source) this.threat.set(source, (this.threat.get(source) ?? 0) + amount);
+      else this.threatPlayer += amount;
+    }
     this.hp = Math.max(0, this.hp - amount);
     this.flash = 1;
     // 首領被打只輕晃（出手中不晃，才不會像被打到僵直）
@@ -393,6 +403,8 @@ export class Enemy {
     this.maxHp = this.def.stats.maxHp;
     this.atkMul = 1;
     this.scaler = null;
+    this.threat.clear();
+    this.threatPlayer = 0;
   }
 
   private respawn() {

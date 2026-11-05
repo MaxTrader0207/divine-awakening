@@ -15,6 +15,10 @@ import { setQuickSlot } from '@/systems/Consumables';
 import { CLASSES } from '@/data/classes';
 import { addConsumable } from '@/systems/Consumables';
 import { bus } from '@/core/EventBus';
+import { isZoneUnlocked } from '@/core/GameState';
+import { CAPTURE, COMPANION_LIST, pityLeft } from '@/data/companions';
+import { ELEMENTS, ELEMENT_STRONG_MUL, ELEMENT_WEAK_MUL, STRONG, counterOf, type Element } from '@/data/elements';
+import { ZONES, zoneLabel } from '@/data/zones';
 
 /**
  * 選單的「裝備 / 強化 / 商城」三個分頁。
@@ -66,10 +70,61 @@ export function openItemsView() {
   invView = 'items';
 }
 
+/** 從夥伴按鈕跳過來時直接顯示「夥伴」 */
+export function openCompanionView() {
+  invView = 'companions';
+}
+
+/* ======================= 守護者夥伴（v1.58） ======================= */
+
+const elName = (k: Element) => `${ELEMENTS[k].icon}${ELEMENTS[k].name}`;
+
+function companionCards(ctx: InvContext): HTMLElement[] {
+  const s = ctx.state;
+  const c = s.companions;
+  const out: HTMLElement[] = [];
+  for (const def of COMPANION_LIST) {
+    const owned = c.owned.includes(def.id);
+    const el = ELEMENTS[def.element];
+    const zone = ZONES[def.zone];
+    const open = isZoneUnlocked(s, def.zone);
+    const active = c.active === def.id;
+    let action: HTMLElement;
+    if (owned)
+      action = active
+        ? h('button', { class: 'go ghost small', onclick: () => { c.active = null; ctx.changed(); ctx.rerender(); } }, '收回（不帶）')
+        : h('button', { class: 'go small', onclick: () => { c.active = def.id; ctx.toast(`${def.icon} 帶上 ${def.name}`); ctx.changed(); ctx.rerender(); } }, '帶上牠');
+    else action = h('span', { class: 'pill locked' }, open ? `再打倒 ${pityLeft(c, def.id)} 次內必定收服` : `🔒 擊敗${zoneLabel(zone.side!.unlockAfter)}後開放`);
+    const weakTo = ELEMENTS[counterOf(def.element)];
+    const strongTo = ELEMENTS[STRONG[def.element]];
+    out.push(
+      h('div', { class: `card comp-card${owned ? '' : ' locked'}`, style: `--el:${el.color}` }, [
+        h('div', { class: 'comp-ico' }, owned ? def.icon : '？'),
+        h('h4', {}, [owned || open ? def.name : '？？？', h('small', {}, `${el.icon}${el.name}屬性${active ? '・帶著' : ''}`)]),
+        h('p', {}, owned ? `${def.title}。${def.role}` : `住在支線「${zone.name}」。打倒守護者有 ${Math.round(CAPTURE.chance * 100)}% 機率收服，第 ${CAPTURE.pity} 次一定成功。`),
+        h('p', {}, owned ? def.lore : `剋 ${strongTo.icon}${strongTo.name}、被 ${weakTo.icon}${weakTo.name} 剋`),
+        h('div', { class: 'card-row' }, [action]),
+      ]),
+    );
+  }
+  out.push(
+    h('div', { class: 'card' }, [
+      h('h4', {}, '屬性相剋'),
+      h('p', {}, `夥伴打首領、首領打夥伴都算：剋制 ×${ELEMENT_STRONG_MUL}、被剋 ×${ELEMENT_WEAK_MUL}。首領的屬性顯示在血條等級旁。`),
+      h('div', { class: 'el-chart' }, [
+        h('span', {}, [(['fire', 'ice', 'wind', 'earth', 'thunder', 'water', 'fire'] as Element[]).map(elName).join(' → '), '（箭頭方向＝剋）']),
+        h('span', {}, `${elName('light')} ⇄ ${elName('dark')}、${elName('metal')} ⇄ ${elName('poison')}（互剋）`),
+      ]),
+    ]),
+    h('p', { class: 'empty-note' }, `戰鬥中按「夥伴」（電腦 G）召喚帶著的夥伴：存在 ${CAPTURE.duration} 秒、冷卻 ${CAPTURE.cooldown} 秒；AUTO 會在首領戰自動召喚。數值跟著你的等級與裝備成長。`),
+  );
+  return out;
+}
+
 /** 跨分頁記住選取的物品 */
 let selectedUid: number | null = null;
 /** 裝備頁下半部：裝備背包 / 道具 */
-let invView: 'gear' | 'items' = 'gear';
+let invView: 'gear' | 'items' | 'companions' = 'gear';
 /** 背包篩選 */
 let invFilter: 'all' | 'named' | EquipSlot = 'all';
 
@@ -123,13 +178,18 @@ export function renderEquip(ctx: InvContext): HTMLElement[] {
   // 下半部：裝備背包 / 道具 切換
   const nItems = Object.values(s.consumables).reduce((a, n) => a + n, 0);
   out.push(
-    h('div', { class: 'seg seg2 inv-switch' }, [
+    h('div', { class: 'seg seg3 inv-switch' }, [
       h('button', { class: `seg-btn${invView === 'gear' ? ' on' : ''}`, onclick: () => { invView = 'gear'; ctx.rerender(); } }, `🎒 裝備 ${s.inventory.length}/${INVENTORY_SIZE}`),
       h('button', { class: `seg-btn${invView === 'items' ? ' on' : ''}`, onclick: () => { invView = 'items'; ctx.rerender(); } }, `🧪 道具 ${nItems}`),
+      h('button', { class: `seg-btn${invView === 'companions' ? ' on' : ''}`, onclick: () => { invView = 'companions'; ctx.rerender(); } }, `🪽 夥伴 ${s.companions.owned.length}`),
     ]),
   );
   if (invView === 'items') {
     out.push(...consumableCards(ctx));
+    return out;
+  }
+  if (invView === 'companions') {
+    out.push(...companionCards(ctx));
     return out;
   }
   const chips: [typeof invFilter, string][] = [['all', '全部'], ['named', '★神話'], ...SLOT_ORDER.map((sl) => [sl, SLOT_NAMES[sl]] as [typeof invFilter, string])];

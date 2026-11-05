@@ -92,7 +92,7 @@ export const hyperboreanSnowfield: StageDef = {
       exp: 3260, gold: [244, 342],
     },
     griffin: {
-      id: 'griffin', name: '獅鷲', level: 75, aggro: 'aggressive', shape: 'griffin', boss: true,
+      id: 'griffin', name: '獅鷲', level: 75, aggro: 'aggressive', shape: 'griffin', boss: true, element: 'ice',
       radius: 0.85, respawn: 90, scale: 2.2, color: 0xd8a84a,
       stats: { maxHp: 311000, atk: 685, def: 275, moveSpeed: 3.6 },
       attack: melee(2.7, 0.55, 1.6),

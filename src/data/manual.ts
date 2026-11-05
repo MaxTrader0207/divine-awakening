@@ -1,8 +1,11 @@
 import type { HeroClass } from './classes';
 import { CLASSES } from './classes';
-import { ZONES, DUNGEON_ORDER, FIELD_ORDER, bossOf, zoneLabel } from './zones';
+import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, bossOf, zoneLabel } from './zones';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, ENHANCE_GEM_COST, ENHANCE_MAX, POTION_PRICE, RARITY, RARITY_ORDER } from './items';
 import { BOSS_PACE } from '@/systems/BossScaling';
+import { TACTICS } from '@/systems/BossTactics';
+import { CAPTURE, COMPANION_LIST } from './companions';
+import { ELEMENTS, ELEMENT_STRONG_MUL, ELEMENT_WEAK_MUL } from './elements';
 import { PAR_SECS } from '@/systems/StageClear';
 import type { ZoneId } from './types';
 
@@ -109,7 +112,9 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
       lines: [
         `首領會依你的等級與裝備自動調整強度：你越強，首領越硬、打得越痛；等級或裝備不夠時則會變弱一些。每場大約 ${Math.round(BOSS_PACE.target / 60)} 分鐘（${BOSS_PACE.target} 秒左右）。`,
         `再強的裝備也不可能在 ${BOSS_PACE.min} 秒內打倒首領，太猛的傷害會被首領的神力擋下。血條旁出現「⚖ 依實力調整」代表這隻首領已經依你的實力調整過。`,
-        '首領血量低於一半會狂暴，攻擊更快；放大招前地上會先出現紅色範圍。',
+        '首領的血量越低越兇：70% 時「認真起來」、50% 以下狂暴（招式範圍更大、出招更快）、35% 時「使出全力」（冷卻更短），每次都會怒吼一聲、馬上出招。放大招前地上會先出現紅色範圍。',
+        `首領會學習：你連續躲過牠的招式，牠的預警會越來越短（最多快 ${Math.round(TACTICS.dodgeMax * 100)}%），連躲 ${TACTICS.chainAt} 次以上還會接連續技；被打中後才慢慢恢復。`,
+        `首領也會看場面：召喚物或夥伴打得比你痛，牠會轉頭追打牠們 ${TACTICS.threatTime} 秒；被召喚物圍住就放範圍招；你血少時會挑最重的一招。`,
         `破關評價 S / A / B / C：滿分 100，被首領的招式打中每次 −4、用藥每個 −1.5、超過 ${PAR_SECS} 秒每 4 秒 −1。想拿 S 就要躲開紅色預警、少喝藥。`,
         '血少時可以按「暫停」在暫停畫面喝藥；打不贏就回城強化裝備、升級後再來。',
       ],
@@ -167,6 +172,19 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         ...FIELD_ORDER.filter((id) => id !== 'town').map((id) => zoneLine(id)),
         ...DUNGEON_ORDER.map((id) => zoneLine(id)),
         '副本要依序解鎖：擊敗上一層的首領才能進下一層。',
+        ...SIDE_ORDER.map((id) => `**支線・${ZONES[id].name}**：擊敗${zoneLabel(ZONES[id].side!.unlockAfter)}後開放，守護者是${bossOf(id)?.name ?? '？'}。`),
+      ],
+    },
+    {
+      icon: '🪽',
+      title: '守護者夥伴與屬性',
+      lines: [
+        `主線推進後會開放「支線」地圖（地圖頁的金框卡片），每張住著一隻守護者——古希臘的魔獸或戰神，一共 10 隻（目前開放 ${COMPANION_LIST.length} 隻）。`,
+        `打倒守護者有 ${Math.round(CAPTURE.chance * 100)}% 機率收服成夥伴；運氣不好也沒關係，第 ${CAPTURE.pity} 次一定成功。`,
+        `在「選單 → 裝備」下方切到「夥伴」帶上一隻；戰鬥中按右下的「夥伴」按鈕（電腦 G）召喚：存在 ${CAPTURE.duration} 秒、冷卻 ${CAPTURE.cooldown} 秒，AUTO 會在首領戰自動召喚。夥伴的數值跟著你的等級與裝備成長。`,
+        `**屬性**：每隻守護者和每個首領都有屬性（首領血條上顯示）。夥伴打首領、首領打夥伴都算相剋：剋制 ×${ELEMENT_STRONG_MUL}、被剋 ×${ELEMENT_WEAK_MUL}。`,
+        '火 → 冰 → 風 → 土 → 雷 → 水 → 火（箭頭方向＝剋）；光 ⇄ 暗、金 ⇄ 毒 互剋。挑剋制首領的夥伴，牠會更有用、也更耐打。',
+        ...COMPANION_LIST.map((c) => `${c.icon} **${c.name}**（${ELEMENTS[c.element].icon}${ELEMENTS[c.element].name}）：${c.role}`),
       ],
     },
     {

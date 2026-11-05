@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Enemy } from '@/entities/Enemy';
 import type { EnemyManager } from './EnemyManager';
 import type { AttackerStats } from './Combat';
-import { damageArea, damageEnemy } from './Damage';
+import { damageArea, damageEnemy, type DamageSource } from './Damage';
 
 /**
  * 投射物系統（物件池，不在戰鬥中 new / dispose，避免手機 GC 卡頓）
@@ -29,6 +29,8 @@ export interface FireOptions {
   arrow?: boolean;
   /** 穿透：命中後不消失，每個敵人只打一次 */
   pierce?: boolean;
+  /** 傷害來源（召喚物、夥伴；沒填＝玩家） */
+  source?: DamageSource;
 }
 
 interface Projectile {
@@ -45,6 +47,7 @@ interface Projectile {
   onImpact?: (x: number, z: number) => void;
   arrow: boolean;
   pierce: boolean;
+  source?: DamageSource;
   hit: Set<Enemy>;
 }
 
@@ -93,6 +96,7 @@ export class ProjectileSystem {
     p.target = o.target;
     p.attacker = { ...o.attacker };
     p.power = o.power;
+    p.source = o.source;
     p.speed = speed;
     p.aoe = o.aoe ?? 0;
     p.onImpact = o.onImpact;
@@ -173,8 +177,8 @@ export class ProjectileSystem {
 
   private resolveHit(p: Projectile, e: Enemy) {
     let crit = false;
-    if (p.aoe > 0) damageArea(this.enemies.enemies, e.pos.x, e.pos.z, p.aoe, p.attacker, p.power);
-    else crit = !!damageEnemy(e, p.attacker, p.power)?.crit;
+    if (p.aoe > 0) damageArea(this.enemies.enemies, e.pos.x, e.pos.z, p.aoe, p.attacker, p.power, undefined, p.source);
+    else crit = !!damageEnemy(e, p.attacker, p.power, p.source)?.crit;
     p.onImpact?.(e.pos.x, e.pos.z);
     this.spawnSpark(p.mesh.position, (p.mesh.material as THREE.MeshBasicMaterial).color.getHex(), crit || p.aoe > 0);
     if (p.pierce) {

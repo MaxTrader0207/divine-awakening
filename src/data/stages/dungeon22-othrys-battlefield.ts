@@ -94,7 +94,7 @@ export const othrysBattlefield: StageDef = {
       exp: 6600, gold: [476, 666],
     },
     kampe: {
-      id: 'kampe', name: '塔爾塔洛斯獄龍坎佩', level: 110, aggro: 'aggressive', shape: 'kampe', boss: true,
+      id: 'kampe', name: '塔爾塔洛斯獄龍坎佩', level: 110, aggro: 'aggressive', shape: 'kampe', boss: true, element: 'dark',
       radius: 1.0, respawn: 90, scale: 2.0, color: 0x3a1a1a,
       stats: { maxHp: 562000, atk: 1000, def: 415, moveSpeed: 3.2 },
       attack: melee(3.2, 0.6, 1.7),

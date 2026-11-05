@@ -95,7 +95,7 @@ export const messinaStrait: StageDef = {
       exp: 2870, gold: [222, 311],
     },
     scylla: {
-      id: 'scylla', name: '斯庫拉', level: 70, aggro: 'aggressive', shape: 'scylla', boss: true,
+      id: 'scylla', name: '斯庫拉', level: 70, aggro: 'aggressive', shape: 'scylla', boss: true, element: 'water',
       radius: 0.9, respawn: 90, scale: 2.1, color: 0x2a6a8a,
       stats: { maxHp: 293000, atk: 640, def: 255, moveSpeed: 3.0 },
       attack: melee(2.8, 0.55, 1.6),

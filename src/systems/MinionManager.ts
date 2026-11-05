@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MINIONS, WILD_ROAR, type MinionId } from '@/data/minions';
-import type { Enemy } from '@/entities/Enemy';
+import { Enemy } from '@/entities/Enemy';
+import { ENEMIES } from '@/data/stages';
 import { Minion } from '@/entities/Minion';
 import type { Player } from '@/entities/Player';
 import type { CollisionWorld } from '@/world/Collision';
@@ -20,6 +21,7 @@ import type { TargetSelector } from './TargetSelector';
  *   4. 沒有目標：在主人身後排隊跟隨。
  * 嘲諷：骷髏打到小怪時，小怪會改打骷髏（Enemy.aggroMinion，見 EnemyAI）；首領不受嘲諷。
  * 敵人與首領技能打骷髏：Game.hitMinion() / hitMinionsInside()。
+ * 守護者夥伴（v1.58，def.guardian）：外觀用守護者的敵人造型（縮小），出手是以目標為中心的範圍雷擊（def.splash），帶屬性。
  */
 export const MINION_LEASH = 14;
 export const MINION_TELEPORT = 26;
@@ -44,9 +46,9 @@ export class MinionManager {
 
   constructor(private scene: THREE.Scene, private ctx: MinionContext) {}
 
-  /** 活著的召喚物數量（可指定種類） */
+  /** 活著的召喚物數量（可指定種類；不指定時不算守護者夥伴） */
   count(id?: MinionId): number {
-    return this.list.filter((m) => m.alive && (!id || m.def.id === id)).length;
+    return this.list.filter((m) => m.alive && (id ? m.def.id === id : !m.def.guardian)).length;
   }
 
   /** 召喚 n 隻；超過上限時最舊的先消失 */
@@ -61,7 +63,7 @@ export class MinionManager {
       const a = p.facing + (n > 1 ? (i - (n - 1) / 2) * 0.9 : 0);
       const x = p.pos.x + Math.sin(a) * 1.8;
       const z = p.pos.z + Math.cos(a) * 1.8;
-      const m = new Minion(def, p.stats, x, z);
+      const m = new Minion(def, p.stats, x, z, def.guardian ? this.avatarOf(def.guardian, def.avatarScale ?? 0.6) : undefined);
       m.facing = p.facing;
       m.slot = this.seq++;
       const pos = { x, z };
@@ -86,6 +88,15 @@ export class MinionManager {
       }
       fx.ring(guard.pos.x, guard.pos.z, 0.5, def.tauntOnSummon, def.color, 0.5);
     }
+  }
+
+  /** 守護者夥伴的外觀：用守護者的敵人資料建一個縮小的 Enemy（隱藏名牌與血條） */
+  private avatarOf(enemyId: string, scale: number): Enemy | undefined {
+    const ed = ENEMIES[enemyId];
+    if (!ed) return undefined;
+    const av = new Enemy({ ...ed, scale: ed.scale * scale }, { enemy: ed.id, x: 0, z: 0 });
+    for (const c of av.object.children) if ((c as THREE.Sprite).isSprite) c.visible = false;
+    return av;
   }
 
   /**
@@ -114,7 +125,7 @@ export class MinionManager {
     const fx = this.ctx.effects;
     let n = 0;
     for (const m of this.list) {
-      if (!m.alive) continue;
+      if (!m.alive || m.def.guardian) continue; // 守護者夥伴不會被引爆
       fx.disc(m.pos.x, m.pos.z, DETONATE.radius, 0x8a5aff, 0.45, 0.6);
       fx.ring(m.pos.x, m.pos.z, 0.4, DETONATE.radius * 1.2, 0xd8c8ff, 0.4);
       damageArea(this.ctx.enemies.enemies, m.pos.x, m.pos.z, DETONATE.radius, p.stats, DETONATE.power);
@@ -227,12 +238,21 @@ export class MinionManager {
         color: def.color,
         speed: 16,
         size: 0.9,
+        source: m,
       });
       return;
     }
     const dist = Math.hypot(t.pos.x - m.pos.x, t.pos.z - m.pos.z);
     if (dist > def.range + t.radius + m.radius + 0.6) return; // 目標跑掉了
-    damageEnemy(t, stats, def.power);
+    if (def.splash) {
+      // 守護者：以目標為中心的範圍雷擊
+      damageArea(this.ctx.enemies.enemies, t.pos.x, t.pos.z, def.splash, stats, def.power, undefined, m);
+      this.ctx.effects.pillar(t.pos.x, t.pos.z, 0.7, def.color, 0.35);
+      this.ctx.effects.ring(t.pos.x, t.pos.z, 0.3, def.splash, def.color, 0.3);
+      this.taunt(m, t);
+      return;
+    }
+    damageEnemy(t, stats, def.power, m);
     this.ctx.effects.ring(t.pos.x, t.pos.z, 0.2, 0.9, def.color, 0.25);
     this.taunt(m, t);
   }

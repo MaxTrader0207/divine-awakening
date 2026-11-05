@@ -90,7 +90,7 @@ export const aethiopianCoast: StageDef = {
       exp: 5040, gold: [358, 501],
     },
     cetus: {
-      id: 'cetus', name: '海怪刻托斯', level: 95, aggro: 'aggressive', shape: 'cetus', boss: true,
+      id: 'cetus', name: '海怪刻托斯', level: 95, aggro: 'aggressive', shape: 'cetus', boss: true, element: 'ice',
       radius: 1.0, respawn: 90, scale: 2.6, color: 0x2a4a7a,
       stats: { maxHp: 422000, atk: 865, def: 355, moveSpeed: 2.8 },
       attack: melee(3.0, 0.6, 1.7),

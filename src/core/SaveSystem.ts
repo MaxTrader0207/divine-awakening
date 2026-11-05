@@ -1,4 +1,5 @@
 import { newGameState, SAVE_VERSION, type GameState } from './GameState';
+import { COMPANIONS, newCompanionState } from '@/data/companions';
 import { autoQuickSlots } from '@/systems/Consumables';
 import { TUTORIAL_STEPS } from '@/data/tutorial';
 
@@ -233,6 +234,12 @@ export function migrate(data: Partial<GameState>): GameState | null {
     if (t.rewarded > TUTORIAL_ITEM_STEP) t.rewarded++;
     if (t.done) t.step = TUTORIAL_STEPS.length;
   }
-  // 未來版本：if ((data.version ?? 0) < 13) { ... }
+  // v12 → v13：新增守護者夥伴（舊存檔從零開始）
+  const c = data.companions;
+  merged.companions = c && typeof c === 'object'
+    ? { owned: Array.isArray(c.owned) ? c.owned.filter((id) => COMPANIONS[id]) : [], active: c.active && COMPANIONS[c.active] ? c.active : null, attempts: { ...(c.attempts ?? {}) } }
+    : newCompanionState();
+  if (merged.companions.active && !merged.companions.owned.includes(merged.companions.active)) merged.companions.active = null;
+  // 未來版本：if ((data.version ?? 0) < 14) { ... }
   return merged;
 }

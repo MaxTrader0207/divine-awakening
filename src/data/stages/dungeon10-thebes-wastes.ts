@@ -97,7 +97,7 @@ export const thebesWastes: StageDef = {
       exp: 1560, gold: [130, 188],
     },
     sphinx: {
-      id: 'sphinx', name: '斯芬克斯', level: 50, aggro: 'aggressive', shape: 'sphinx', boss: true,
+      id: 'sphinx', name: '斯芬克斯', level: 50, aggro: 'aggressive', shape: 'sphinx', boss: true, element: 'wind',
       radius: 0.7, respawn: 90, scale: 2.1, color: 0xd8a85a,
       stats: { maxHp: 190000, atk: 465, def: 175, moveSpeed: 3.4 },
       attack: melee(2.8, 0.55, 1.6),

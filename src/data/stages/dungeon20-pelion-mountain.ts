@@ -93,7 +93,7 @@ export const pelionMountain: StageDef = {
       exp: 5540, gold: [394, 552],
     },
     nessus: {
-      id: 'nessus', name: '半人馬涅索斯', level: 100, aggro: 'aggressive', shape: 'centaur', boss: true,
+      id: 'nessus', name: '半人馬涅索斯', level: 100, aggro: 'aggressive', shape: 'centaur', boss: true, element: 'poison',
       radius: 0.9, respawn: 90, scale: 1.75, color: 0x5a3a2a,
       stats: { maxHp: 464000, atk: 910, def: 375, moveSpeed: 4.0 },
       attack: melee(2.8, 0.55, 1.6),

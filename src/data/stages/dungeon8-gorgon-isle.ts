@@ -103,7 +103,7 @@ export const gorgonIsle: StageDef = {
       exp: 990, gold: [94, 138],
     },
     medusa: {
-      id: 'medusa', name: '梅杜莎', level: 40, aggro: 'aggressive', shape: 'gorgon', boss: true,
+      id: 'medusa', name: '梅杜莎', level: 40, aggro: 'aggressive', shape: 'gorgon', boss: true, element: 'earth',
       radius: 0.7, respawn: 90, scale: 2, color: 0x4a7a4a,
       stats: { maxHp: 140000, atk: 380, def: 135, moveSpeed: 3 },
       attack: melee(2.6, 0.55, 1.6),

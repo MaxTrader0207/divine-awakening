@@ -96,7 +96,7 @@ export const knossosLabyrinth: StageDef = {
       exp: 470, gold: [56, 84],
     },
     minotaur: {
-      id: 'minotaur', name: '米諾陶洛斯', level: 25, aggro: 'aggressive', shape: 'minotaur', boss: true,
+      id: 'minotaur', name: '米諾陶洛斯', level: 25, aggro: 'aggressive', shape: 'minotaur', boss: true, element: 'earth',
       radius: 0.6, respawn: 90, scale: 1.9, color: 0x5a3a2a,
       stats: { maxHp: 84000, atk: 270, def: 75, moveSpeed: 3 },
       attack: melee(2.8, 0.6, 1.7),

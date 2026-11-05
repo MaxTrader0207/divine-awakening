@@ -44,7 +44,7 @@ describe('DailyQuests', () => {
 
   it('區域依等級與進度', () => {
     expect(zonesForLevel(3, [])).toEqual(['grassland', 'dungeon_1']);
-    expect(zonesForLevel(15, ['dungeon_1', 'dungeon_2'])).toEqual(['dungeon_3', 'mistwood']);
+    expect(zonesForLevel(15, ['dungeon_1', 'dungeon_2'])).toEqual(['dungeon_3', 'mistwood', 'side_1']);
     expect(zonesForLevel(22, ['dungeon_1', 'dungeon_2'])).toEqual(['mistwood']);
   });
 });

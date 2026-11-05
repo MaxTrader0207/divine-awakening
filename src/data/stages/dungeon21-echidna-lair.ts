@@ -94,7 +94,7 @@ export const echidnaLair: StageDef = {
       exp: 6060, gold: [433, 606],
     },
     echidna: {
-      id: 'echidna', name: '萬怪之母厄喀德那', level: 105, aggro: 'aggressive', shape: 'echidna', boss: true,
+      id: 'echidna', name: '萬怪之母厄喀德那', level: 105, aggro: 'aggressive', shape: 'echidna', boss: true, element: 'dark',
       radius: 0.95, respawn: 90, scale: 2.0, color: 0x4a6a3a,
       stats: { maxHp: 511000, atk: 955, def: 395, moveSpeed: 3.0 },
       attack: melee(3.0, 0.55, 1.6),

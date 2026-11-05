@@ -107,7 +107,7 @@ export const realmOfHades: StageDef = {
       exp: 2300, gold: [180, 256],
     },
     chimera: {
-      id: 'chimera', name: '奇美拉', level: 60, aggro: 'aggressive', shape: 'chimera', boss: true,
+      id: 'chimera', name: '奇美拉', level: 60, aggro: 'aggressive', shape: 'chimera', boss: true, element: 'fire',
       radius: 0.75, respawn: 90, scale: 2.2, color: 0xb87a3a,
       stats: { maxHp: 245000, atk: 550, def: 215, moveSpeed: 3.4 },
       attack: melee(2.9, 0.55, 1.6),

@@ -98,7 +98,7 @@ export const lernaSwamp: StageDef = {
       exp: 340, gold: [44, 68],
     },
     hydra: {
-      id: 'hydra', name: '九頭蛇許德拉', level: 20, aggro: 'aggressive', shape: 'hydra', boss: true,
+      id: 'hydra', name: '九頭蛇許德拉', level: 20, aggro: 'aggressive', shape: 'hydra', boss: true, element: 'poison',
       radius: 0.9, respawn: 90, scale: 2, color: 0x3f7a4a,
       stats: { maxHp: 72000, atk: 245, def: 55, moveSpeed: 2.4 },
       attack: melee(3, 0.6, 1.8),

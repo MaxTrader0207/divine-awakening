@@ -93,7 +93,7 @@ export const erytheiaIsle: StageDef = {
       exp: 4560, gold: [325, 455],
     },
     geryon: {
-      id: 'geryon', name: '三身巨人革律翁', level: 90, aggro: 'aggressive', shape: 'geryon', boss: true,
+      id: 'geryon', name: '三身巨人革律翁', level: 90, aggro: 'aggressive', shape: 'geryon', boss: true, element: 'metal',
       radius: 0.95, respawn: 90, scale: 1.7, color: 0xd8a080,
       stats: { maxHp: 384000, atk: 820, def: 335, moveSpeed: 3.0 },
       attack: melee(3.0, 0.6, 1.7),

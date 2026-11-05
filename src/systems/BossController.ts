@@ -6,6 +6,8 @@ import type { CollisionWorld } from '@/world/Collision';
 import type { Effects } from './Effects';
 import type { Telegraphs } from './Telegraphs';
 import { LEASH } from './EnemyAI';
+import type { Minion } from '@/entities/Minion';
+import { TACTICS, dodgeWindupMul, nextDodgeStreak, phaseOf, pickOffset, threatTarget } from './BossTactics';
 
 /**
  * 首領技能控制（招式資料在 data/bossSkills.ts）
@@ -15,6 +17,7 @@ import { LEASH } from './EnemyAI';
  * - 血量低於 50% 進入第二階段：冷卻縮短、招式用 *Enraged 參數加強，並顯示「狂暴」。
  * - 所有傷害都經過紅色預警（Telegraphs），結算時玩家在範圍內才受傷；結算那一下首領會撲出去（Enemy.strike），重擊會震動鏡頭。
  * - 衝撞、飛撲是幾幀內真的移動過去（飛撲有拋物線），不是瞬間移動。
+ * - 應變（v1.58，邏輯在 BossTactics.ts）：仇恨轉移、看場面挑招、70% / 35% 階段、學習閃躲（預警縮短＋連續技）。
  */
 export const SKILL_CD = 5.5;
 export const PHASE2_CD_MUL = 0.65;
@@ -55,6 +58,18 @@ interface BossState {
   farT: number;
   /** 衝撞 / 飛撲的移動 */
   motion: Motion | null;
+  /** 已進入的階段（1~3） */
+  phase: number;
+  /** 追打召喚物的剩餘秒數、之後不再被拉走的冷卻 */
+  threatT: number;
+  threatCd: number;
+  /** 連續躲過幾招 */
+  dodge: number;
+  /** 上一招瞄準玩家？打中玩家了？ */
+  lastAimPlayer: boolean;
+  lastHit: boolean;
+  /** 上一招是連續技（不連續接兩次） */
+  chained: boolean;
 }
 
 export interface BossContext {
@@ -65,12 +80,19 @@ export interface BossContext {
   hitPlayer: (e: Enemy, power: number) => void;
   /** 預警範圍內的召喚物也會受傷 */
   hitMinionsInside?: (e: Enemy, power: number, inside: (x: number, z: number, pad?: number) => boolean) => void;
+  /** 場上的召喚物 / 夥伴（仇恨、被圍判斷） */
+  minions?: () => Minion[];
 }
 
-const fresh = (): BossState => ({ cd: 3, next: 0, enraged: false, castT: 0, roared: false, farT: 0, motion: null });
+const fresh = (): BossState => ({
+  cd: 3, next: 0, enraged: false, castT: 0, roared: false, farT: 0, motion: null,
+  phase: 1, threatT: 0, threatCd: 0, dodge: 0, lastAimPlayer: false, lastHit: false, chained: false,
+});
 
 export class BossController {
   private states = new WeakMap<Enemy, BossState>();
+  /** 「首領看穿閃躲」提示只顯示一次 */
+  private dodgeTipShown = false;
 
   constructor(private ctx: BossContext) {}
 
@@ -88,6 +110,7 @@ export class BossController {
       if (e.ai === 'idle' || e.ai === 'wander' || e.ai === 'return') {
         Object.assign(st, fresh(), { next: st.next });
         e.airY = 0;
+        e.aggroMinion = null;
         continue;
       }
       this.move(e, st, dt);
@@ -108,6 +131,16 @@ export class BossController {
         bus.emit('banner', { text: `${e.def.name} 狂暴了！` });
         this.ctx.effects.ring(e.pos.x, e.pos.z, 1, 6, 0xff3a2a, 0.8);
       }
+      this.updateThreat(e, st, dt);
+      // 階段：70% / 35% 各怒吼一次，馬上出招
+      const ph = phaseOf(e.hp / e.maxHp);
+      if (ph > st.phase) {
+        st.phase = ph;
+        bus.emit('banner', { text: ph === 3 ? `${e.def.name} 使出全力！` : `${e.def.name} 認真起來了！` });
+        bus.emit('camera:shake', { power: 0.3 });
+        this.ctx.effects.ring(e.pos.x, e.pos.z, 1, 7, ph === 3 ? 0xff5a3a : 0xffb347, 0.7);
+        if (e.ai !== 'boss') st.cd = Math.min(st.cd, 0.3);
+      }
       if (e.ai === 'boss') {
         st.castT -= dt;
         if (st.castT <= 0 && !st.motion) {
@@ -123,14 +156,26 @@ export class BossController {
       if (st.farT > FAR_TIME && st.cd > 0.5) st.cd = 0.5;
       st.cd -= dt;
       if (st.cd > 0 || e.ai === 'attack' || !p.alive) continue;
+      // 學習閃躲：上一招沒打中玩家 → 連躲 +1；打中 → 扣回
+      st.dodge = nextDodgeStreak(st.dodge, st.lastAimPlayer, st.lastHit);
       const id = this.pick(e, st, far);
-      const castTime = this.cast(e, st, id, st.enraged);
+      const wm = dodgeWindupMul(st.dodge) * (st.phase >= 3 ? TACTICS.phase3Windup : 1);
+      const castTime = this.cast(e, st, id, st.enraged, wm);
       bus.emit('boss:cast', { skill: id });
       e.ai = 'boss';
-      e.windup = BOSS_SKILLS[id].windup; // 施法中身體泛紅、蓄力；預警結算時放開（Enemy.strike）
+      e.windup = BOSS_SKILLS[id].windup * wm; // 施法中身體泛紅、蓄力；預警結算時放開（Enemy.strike）
       st.castT = castTime + 0.35;
       st.farT = 0;
-      st.cd = SKILL_CD * (st.enraged ? PHASE2_CD_MUL : 1) + castTime;
+      st.cd = SKILL_CD * (st.enraged ? PHASE2_CD_MUL : 1) * (st.phase >= 3 ? TACTICS.phase3Cd : 1) + castTime;
+      // 連躲太多次：接一個連續技（下一招很快就來）
+      if (st.lastAimPlayer && st.dodge >= TACTICS.chainAt && !st.chained) {
+        st.chained = true;
+        st.cd = castTime + 0.9;
+        if (!this.dodgeTipShown) {
+          this.dodgeTipShown = true;
+          bus.emit('toast', { text: `${e.def.name} 看穿了你的閃躲，出招變快了！` });
+        }
+      } else st.chained = false;
     }
   }
 
@@ -141,22 +186,49 @@ export class BossController {
     return Math.hypot(p.pos.x - e.pos.x, p.pos.z - e.pos.z) > reach + 2.5;
   }
 
-  /** 挑招式：平常依序輪流；玩家在遠處時往後找第一個「打得到遠處」的招式 */
+  /** 挑招式：平常依序輪流；看場面（風箏、被召喚物圍住、玩家血少）往後找合適的招式，見 BossTactics.pickOffset */
   private pick(e: Enemy, st: BossState, far: boolean): BossSkillId {
     const skills = e.def.bossSkills!;
-    let k = 0;
-    if (far) {
-      for (let i = 0; i < skills.length; i++) {
-        if (REACHING.has(BOSS_SKILLS[skills[(st.next + i) % skills.length]].pattern)) {
-          k = i;
-          break;
-        }
-      }
+    const p = this.ctx.player;
+    const r2 = TACTICS.crowdRange * TACTICS.crowdRange;
+    let crowd = 0;
+    for (const m of this.ctx.minions?.() ?? []) {
+      if (m.alive && (m.pos.x - e.pos.x) ** 2 + (m.pos.z - e.pos.z) ** 2 < r2) crowd++;
     }
+    const k = pickOffset(skills.map((id) => BOSS_SKILLS[id]), st.next, { far, crowd, playerHp: p.hp / Math.max(1, p.stats.maxHp) }, REACHING);
     const id = skills[(st.next + k) % skills.length];
     // 被跳過的招式留到下一輪（輪替順序不亂）
     if (k === 0) st.next++;
     return id;
+  }
+
+  /**
+   * 仇恨：最近 5 秒的傷害逐漸淡忘；召喚物打得比玩家痛很多 → 轉頭追打牠 threatTime 秒，
+   * 之後 threatCooldown 秒內不會再被拉走（EnemyAI 依 e.aggroMinion 選目標，招式也瞄準牠）。
+   */
+  private updateThreat(e: Enemy, st: BossState, dt: number) {
+    const k = Math.exp(-dt / TACTICS.threatDecay);
+    e.threatPlayer *= k;
+    for (const [m, v] of e.threat) {
+      const alive = (m as Minion).alive;
+      if (!alive || v * k < 0.5) e.threat.delete(m);
+      else e.threat.set(m, v * k);
+    }
+    st.threatCd = Math.max(0, st.threatCd - dt);
+    if (e.aggroMinion) {
+      st.threatT -= dt;
+      if (st.threatT <= 0 || !e.aggroMinion.alive) {
+        e.aggroMinion = null;
+        st.threatCd = TACTICS.threatCooldown;
+      }
+      return;
+    }
+    if (st.threatCd > 0 || e.ai === 'boss') return;
+    const m = threatTarget(e.threatPlayer, [...e.threat] as [Minion, number][], e.maxHp * 0.002);
+    if (m) {
+      e.aggroMinion = m;
+      st.threatT = TACTICS.threatTime;
+    }
   }
 
   /** 衝撞、飛撲的實際移動（每幀） */
@@ -215,9 +287,14 @@ export class BossController {
    * 施放招式，回傳施法（預警）時間。招式參數在 data/bossSkills.ts，這裡只依 pattern 執行。
    * 新的 pattern：在這個 switch 加一個 case（並在 BossSkillDef 加對應型別）。
    */
-  private cast(e: Enemy, st: BossState, id: BossSkillId, enraged: boolean): number {
-    const { player: p, telegraphs: tg, effects: fx } = this.ctx;
+  private cast(e: Enemy, st: BossState, id: BossSkillId, enraged: boolean, windupMul = 1): number {
+    const { player, telegraphs: tg, effects: fx } = this.ctx;
     const sk: BossSkillDef = BOSS_SKILLS[id];
+    // 瞄準目前目標（仇恨轉到召喚物時瞄準牠），傷害照樣判定玩家與召喚物
+    const tgt = e.aggroMinion?.alive ? e.aggroMinion : player;
+    const p = { pos: tgt.pos, radius: tgt.radius };
+    st.lastAimPlayer = tgt === player;
+    st.lastHit = false;
     const dir = Math.atan2(p.pos.x - e.pos.x, p.pos.z - e.pos.z);
     e.facing = dir;
     // 結算的第一下：首領撲出去（多段招式只撲一次）；重擊震動鏡頭
@@ -236,10 +313,13 @@ export class BossController {
     };
     const hit = (inside: (x: number, z: number, pad?: number) => boolean) => {
       release();
-      if (inside(p.pos.x, p.pos.z, p.radius)) this.ctx.hitPlayer(e, sk.power);
+      if (inside(player.pos.x, player.pos.z, player.radius)) {
+        st.lastHit = true;
+        this.ctx.hitPlayer(e, sk.power);
+      }
       this.ctx.hitMinionsInside?.(e, sk.power, inside);
     };
-    const t = sk.windup;
+    const t = sk.windup * windupMul;
     switch (sk.pattern) {
       case 'cone': {
         const angle = (enraged ? (sk.angleEnraged ?? sk.angle) : sk.angle) * (Math.PI / 180);

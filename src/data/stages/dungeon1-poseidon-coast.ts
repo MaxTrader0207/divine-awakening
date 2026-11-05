@@ -79,7 +79,7 @@ export const poseidonCoast: StageDef = {
       exp: 26, gold: [5, 10],
     },
     crab_king: {
-      id: 'crab_king', name: '巨蟹卡基諾斯', level: 6, aggro: 'aggressive', shape: 'crab', boss: true,
+      id: 'crab_king', name: '巨蟹卡基諾斯', level: 6, aggro: 'aggressive', shape: 'crab', boss: true, element: 'water',
       radius: 0.62, respawn: 90, scale: 2.6, color: 0xd9452a,
       stats: { maxHp: 8800, atk: 72, def: 0, moveSpeed: 2.6 },
       attack: melee(2.4, 0.6, 1.8),

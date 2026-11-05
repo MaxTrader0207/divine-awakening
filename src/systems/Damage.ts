@@ -1,15 +1,25 @@
 import { bus } from '@/core/EventBus';
 import type { Enemy } from '@/entities/Enemy';
 import { calcDamage, type AttackerStats, type DamageResult } from './Combat';
+import { elementMul, type Element } from '@/data/elements';
 
 /**
  * 傷害結算的唯一入口（有副作用：發事件）。
  * 普攻、技能、首領技能都經過這裡，確保傷害數字、擊殺獎勵、音效一致。
  */
-export function damageEnemy(e: Enemy, attacker: AttackerStats, power: number): DamageResult | null {
+/**
+ * 傷害來源（v1.58）：召喚物 / 守護者夥伴。沒填＝玩家本人。
+ * 首領用它記仇恨（誰打得最痛就轉頭打誰）；有屬性時套用相剋倍率（data/elements.ts）。
+ */
+export interface DamageSource {
+  element?: Element;
+}
+
+export function damageEnemy(e: Enemy, attacker: AttackerStats, power: number, source?: DamageSource): DamageResult | null {
   if (!e.alive) return null;
   const res = calcDamage(attacker, power, e.defense);
-  const killed = e.takeDamage(res.amount);
+  if (source?.element) res.amount = Math.max(1, Math.round(res.amount * elementMul(source.element, e.def.element)));
+  const killed = e.takeDamage(res.amount, source);
   // 首領的神力擋下超量傷害時，顯示實際扣掉的量
   res.amount = e.lastDealt;
   bus.emit('combat:hit', { x: e.pos.x, y: e.height + 0.2, z: e.pos.z, amount: res.amount, crit: res.crit, targetIsPlayer: false });
@@ -30,12 +40,12 @@ export function damageEnemy(e: Enemy, attacker: AttackerStats, power: number): D
 }
 
 /** 對圓形範圍內所有敵人造成傷害，回傳命中數 */
-export function damageArea(enemies: Enemy[], x: number, z: number, radius: number, attacker: AttackerStats, power: number, onHit?: (e: Enemy) => void): number {
+export function damageArea(enemies: Enemy[], x: number, z: number, radius: number, attacker: AttackerStats, power: number, onHit?: (e: Enemy) => void, source?: DamageSource): number {
   let n = 0;
   for (const e of enemies) {
     if (!e.alive) continue;
     if (Math.hypot(e.pos.x - x, e.pos.z - z) <= radius + e.radius) {
-      damageEnemy(e, attacker, power);
+      damageEnemy(e, attacker, power, source);
       onHit?.(e);
       n++;
     }

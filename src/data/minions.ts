@@ -1,3 +1,4 @@
+import type { Element } from './elements';
 import type { BeastKind } from '@/entities/BeastModel';
 
 /**
@@ -6,7 +7,7 @@ import type { BeastKind } from '@/entities/BeastModel';
  * 數值都是「召喚師目前屬性」的倍率，所以召喚物會跟著等級與裝備一起變強。
  * 新增召喚物：加一筆，在 data/classes.ts 的技能填 `summon: '<id>'`。
  */
-export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior' | 'hound' | 'eagle' | 'bear';
+export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior' | 'hound' | 'eagle' | 'bear' | 'pegasus';
 
 export interface MinionDef {
   id: MinionId;
@@ -45,6 +46,13 @@ export interface MinionDef {
   beast?: BeastKind;
   /** 召喚特效、法陣、投射物顏色 */
   color: number;
+  /** 屬性（守護者夥伴；打首領時套用相剋，data/elements.ts） */
+  element?: Element;
+  /** 守護者夥伴（v1.58）：外觀直接用守護者的敵人造型（EnemyDef id），縮小成 avatarScale 倍 */
+  guardian?: string;
+  avatarScale?: number;
+  /** 出手時以目標為中心的範圍傷害半徑（0 / 沒填 = 單體） */
+  splash?: number;
 }
 
 export const MINIONS: Record<MinionId, MinionDef> = {
@@ -176,6 +184,32 @@ export const MINIONS: Record<MinionId, MinionDef> = {
     tauntOnSummon: 7,
     glow: 0.05,
     color: 0xd8a060,
+  },
+  /* ---- 守護者夥伴（v1.58，data/companions.ts；不屬於任何職業技能，夥伴按鈕召喚） ---- */
+  pegasus: {
+    id: 'pegasus',
+    name: '天馬珀伽索斯',
+    model: '',
+    guardian: 'guardian_pegasus',
+    avatarScale: 0.62,
+    height: 2.4,
+    radius: 0.7,
+    hpMul: 0.9,
+    atkMul: 0.75,
+    defMul: 1.1,
+    power: 1.3,
+    range: 1.8,
+    splash: 2.2,
+    cooldown: 1.2,
+    windup: 0.4,
+    moveSpeed: 7.2,
+    life: 30,
+    max: 1,
+    taunt: 'always',
+    tauntOnSummon: 6,
+    glow: 0.1,
+    color: 0xffd84a,
+    element: 'thunder',
   },
 };
 

@@ -96,7 +96,7 @@ export const hesperidesGarden: StageDef = {
       exp: 1900, gold: [156, 222],
     },
     ladon: {
-      id: 'ladon', name: '巨龍拉冬', level: 55, aggro: 'aggressive', shape: 'dragon', boss: true,
+      id: 'ladon', name: '巨龍拉冬', level: 55, aggro: 'aggressive', shape: 'dragon', boss: true, element: 'light',
       radius: 0.8, respawn: 90, scale: 2, color: 0x3a8a5a,
       stats: { maxHp: 215000, atk: 505, def: 195, moveSpeed: 3 },
       attack: melee(3, 0.6, 1.7),

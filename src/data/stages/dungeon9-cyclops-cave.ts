@@ -94,7 +94,7 @@ export const cyclopsCave: StageDef = {
       exp: 1300, gold: [112, 164],
     },
     polyphemus: {
-      id: 'polyphemus', name: '獨眼巨人波呂斐摩斯', level: 45, aggro: 'aggressive', shape: 'cyclops', boss: true,
+      id: 'polyphemus', name: '獨眼巨人波呂斐摩斯', level: 45, aggro: 'aggressive', shape: 'cyclops', boss: true, element: 'thunder',
       radius: 0.7, respawn: 90, scale: 1.9, color: 0xb08a6a,
       stats: { maxHp: 165000, atk: 425, def: 155, moveSpeed: 2.8 },
       attack: melee(3, 0.6, 1.8),

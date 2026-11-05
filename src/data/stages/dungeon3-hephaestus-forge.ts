@@ -71,7 +71,7 @@ export const hephaestusForge: StageDef = {
       exp: 105, gold: [24, 38],
     },
     magma_frog: {
-      id: 'magma_frog', name: '堤豐巨蛙', level: 15, aggro: 'aggressive', shape: 'frog', model: 'frog', boss: true,
+      id: 'magma_frog', name: '堤豐巨蛙', level: 15, aggro: 'aggressive', shape: 'frog', model: 'frog', boss: true, element: 'fire',
       radius: 0.7, respawn: 90, scale: 2.8, color: 0xb8321e,
       stats: { maxHp: 46000, atk: 185, def: 40, moveSpeed: 3 },
       attack: melee(2.6, 0.6, 1.8),

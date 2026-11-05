@@ -25,6 +25,7 @@ import { aethiopianCoast } from './dungeon19-aethiopian-coast';
 import { pelionMountain } from './dungeon20-pelion-mountain';
 import { echidnaLair } from './dungeon21-echidna-lair';
 import { othrysBattlefield } from './dungeon22-othrys-battlefield';
+import { heliconSpring } from './side1-helicon-spring';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -34,7 +35,8 @@ import { othrysBattlefield } from './dungeon22-othrys-battlefield';
  * 新增關卡：見 docs/CONTENT.md「新增關卡」。
  */
 export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
-  calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield];
+  calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
+  heliconSpring];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 
@@ -52,7 +54,10 @@ export const DUNGEON_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.dungeon)
   .map((s) => s.zone.id);
 
 /** 城鎮與野外（世界地圖上可以直接前往的地方），依登記順序 */
-export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon').map((s) => s.zone.id);
+export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon' && !s.zone.side).map((s) => s.zone.id);
+
+/** 支線地圖（守護者的家，v1.58），依登記順序 */
+export const SIDE_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.side).map((s) => s.zone.id);
 
 /** 還沒做的地區（只在地圖頁列出名稱） */
 export const UPCOMING_FIELDS: { name: string; range: string }[] = [
@@ -118,7 +123,7 @@ export function zonesForLevel(level: number, bossesDefeated: ZoneId[]): ZoneId[]
     const z = st.zone;
     if (z.safe || !z.levelRange) continue;
     if (z.minLevel && level < z.minLevel) continue;
-    const after = z.dungeon?.unlockAfter;
+    const after = z.dungeon?.unlockAfter ?? z.side?.unlockAfter;
     if (after && !bossesDefeated.includes(after)) continue;
     const [lo, hi] = z.levelRange;
     if (level >= lo && level <= hi + 3) out.push(z.id);

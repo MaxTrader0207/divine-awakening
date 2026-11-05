@@ -55,8 +55,9 @@ src/
 │  ├─ TargetSelector.ts       鎖定目標、腳下紅圈
 │  ├─ EnemyManager.ts         生怪（數量、散佈）、AI 更新、互相推擠、查詢
 │  ├─ EnemyAI.ts              小怪狀態機 idle / wander / chase / attack / return；被嘲諷時改打召喚物
-│  ├─ MinionManager.ts        召喚物 AI：跟隨、選目標、攻擊、嘲諷、冥府骨爆
+│  ├─ MinionManager.ts        召喚物 AI：跟隨、選目標、攻擊、嘲諷、冥府骨爆；守護者夥伴（外觀用守護者的敵人造型）
 │  ├─ BossController.ts       首領開戰怒吼、招式輪替（被風箏時優先放追擊招）、二階段狂暴、衝撞 / 飛撲的移動；依 bossSkills.ts 的 pattern 執行
+│  ├─ BossTactics.ts          首領應變（純邏輯）：仇恨轉移、看場面挑招、70% / 35% 階段、學習閃躲
 │  ├─ Telegraphs.ts           紅色範圍預警（圓 / 扇形 / 長方形）與判定
 │  ├─ AutoBattle.ts           AUTO：喝藥、閃預警、撿東西、選目標、技能優先序、沿牆繞路
 │  ├─ Progression.ts          經驗（等級差修正）、升級、金幣（純函式）

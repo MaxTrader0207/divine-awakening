@@ -3,6 +3,8 @@ import { CRIT_DMG_MAX, CRIT_RATE_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
 import { bus } from './EventBus';
 import { isZoneUnlocked, newGameState, type GameState } from './GameState';
+import { elementMul } from '@/data/elements';
+import { CAPTURE, COMPANIONS, companionOfGuardian, pityLeft, tryCapture } from '@/data/companions';
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
 import { PauseScreen, type PauseStatus } from '@/ui/PauseScreen';
@@ -11,7 +13,7 @@ import { MinionManager } from '@/systems/MinionManager';
 import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
-import { ZONES, DUNGEON_ORDER, lootTierOf, floorLabel } from '@/data/zones';
+import { ZONES, DUNGEON_ORDER, SIDE_ORDER, lootTierOf, floorLabel } from '@/data/zones';
 import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
 import { InputManager } from '@/input/InputManager';
@@ -27,7 +29,7 @@ import { Effects } from '@/systems/Effects';
 import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
-import { openItemsView } from '@/ui/InventoryTabs';
+import { openCompanionView, openItemsView } from '@/ui/InventoryTabs';
 import { AutoBattle, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
@@ -182,6 +184,7 @@ export class Game {
       hitMinionsInside: (e, power, inside) => {
         for (const m of this.minions.list) if (m.alive && inside(m.pos.x, m.pos.z, m.radius)) this.hitMinion(e, m, power);
       },
+      minions: () => this.minions?.list ?? [],
     });
     this.minions = new MinionManager(this.scene, {
       player: this.player,
@@ -518,6 +521,8 @@ export class Game {
   }
 
   private absorbNoted = false;
+  /** 夥伴召喚冷卻（秒，不存檔） */
+  private companionCd = 0;
   /**
    * 首領開戰：依玩家實力調整（v1.55，`systems/BossScaling.ts`）
    * - 攻擊力：和「該層標準配備（掉落階級精良 +2、首領等級）」比，玩家血多防高就提高，最多 ×3
@@ -677,6 +682,7 @@ export class Game {
       }
     }
     this.minions.update(dt, this.rig.camera);
+    this.companionCd = Math.max(0, this.companionCd - dt);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
@@ -698,6 +704,7 @@ export class Game {
     } else this.audio.setMusic(zoneNow.def.music ?? ({ town: 'town', field: 'grassland', dungeon: 'dungeon' } as const)[zoneNow.def.kind]);
     if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・畫質${this.quality.label}`;
     this.hud.setBuffs(this.buffList());
+    this.refreshCompanionHud();
     this.hud.update(dt);
     this.input.endFrame();
 
@@ -741,7 +748,46 @@ export class Game {
     if (this.input.consume('potionMp')) this.skills.usePotion('mp');
     if (this.input.consume('item1')) this.useQuickSlot(0);
     if (this.input.consume('item2')) this.useQuickSlot(1);
+    if (this.input.consume('companion')) this.summonCompanion();
+    // AUTO：首領戰中夥伴冷卻好就自動召喚
+    else if (this.auto.on && this.companionCd <= 0 && this.state.companions.active && this.enemies.engagedBoss()) this.summonCompanion(true);
     this.autoPotion();
+  }
+
+  /** 夥伴是否在場上 */
+  private companionLive(): boolean {
+    const def = COMPANIONS[this.state.companions.active ?? ''];
+    return !!def && this.minions.count(def.minion) > 0;
+  }
+
+  private refreshCompanionHud() {
+    const def = COMPANIONS[this.state.companions.active ?? ''];
+    this.hud.setCompanion(def?.icon ?? null, def?.name ?? '', this.companionCd, CAPTURE.cooldown, this.companionLive());
+  }
+
+  /** 召喚夥伴（夥伴按鈕 / G 鍵 / AUTO 首領戰）：存在 CAPTURE.duration 秒、冷卻 CAPTURE.cooldown 秒 */
+  private summonCompanion(quiet = false) {
+    const c = this.state.companions;
+    const def = c.active ? COMPANIONS[c.active] : undefined;
+    if (!def) {
+      if (quiet) return;
+      openCompanionView();
+      bus.emit('menu:open', { tab: 'equip' });
+      bus.emit('toast', { text: c.owned.length ? '先在「裝備 → 夥伴」選一隻夥伴帶著' : '還沒有夥伴：到支線地圖打倒守護者就有機會收服' });
+      return;
+    }
+    if (this.zones.current?.def.safe) {
+      if (!quiet) bus.emit('toast', { text: '主城裡很安全，不需要召喚夥伴' });
+      return;
+    }
+    if (this.companionCd > 0) {
+      if (!quiet) bus.emit('toast', { text: this.companionLive() ? `${def.name} 正在戰鬥` : `${def.name} 休息中（${Math.ceil(this.companionCd)} 秒）` });
+      return;
+    }
+    this.minions.summon(def.minion, 1);
+    this.companionCd = CAPTURE.cooldown;
+    bus.emit('toast', { text: `${def.icon} ${def.name} 前來助陣！`, duration: 2 });
+    bus.emit('camera:shake', { power: 0.15 });
   }
 
   /** 快捷道具欄（左下第 3、4 格；電腦 3、4）：空格或用完 → 打開「裝備 → 道具」去設定 / 購買 */
@@ -1083,6 +1129,16 @@ export class Game {
     const idx = DUNGEON_ORDER.indexOf(zoneId);
     const next = idx >= 0 ? DUNGEON_ORDER[idx + 1] : undefined;
     const allDone = first && idx === DUNGEON_ORDER.length - 1;
+    // 支線：打倒守護者擲收服（v1.58）；主線：第一次擊敗時開放對應的支線地圖
+    const guardian = ZONES[zoneId]?.side?.guardian;
+    const comp = guardian ? companionOfGuardian(guardian) : undefined;
+    let capture: ClearInfo['capture'];
+    if (comp) {
+      const result = tryCapture(s.companions, comp.id);
+      capture = { result, name: comp.name, icon: comp.icon, left: pityLeft(s.companions, comp.id) };
+      if (result === 'captured') bus.emit('toast', { text: `${comp.icon} 收服了 ${comp.name}！`, kind: 'reward' });
+    }
+    const sideUnlocked = first ? SIDE_ORDER.filter((id) => ZONES[id].side!.unlockAfter === zoneId) : [];
     bus.emit('banner', { text: `擊敗${name}！` });
     bus.emit('boss:defeated', { zoneId, first });
     // 結算（沒有開戰紀錄時——例如一擊必殺——當作 1 秒）
@@ -1103,6 +1159,8 @@ export class Game {
         unlocked: first ? next : undefined,
         allDone,
         next: next && isZoneUnlocked(s, next) ? next : undefined,
+        sideUnlocked,
+        capture,
         auto: this.auto.on,
       },
     };
@@ -1123,7 +1181,8 @@ export class Game {
   /** 敵人打召喚物（不顯示傷害數字，只閃白） */
   private hitMinion(e: Enemy, m: Minion, power: number) {
     const res = calcDamage({ atk: e.def.stats.atk * e.atkMul, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, m.stats.def);
-    m.takeDamage(res.amount);
+    // 守護者夥伴：首領打牠也算屬性相剋
+    m.takeDamage(Math.max(1, Math.round(res.amount * elementMul(e.def.element, m.element))));
   }
 
   private hitPlayer(e: Enemy, power: number) {

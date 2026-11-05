@@ -92,7 +92,7 @@ export const ceryneianMountain: StageDef = {
       exp: 3670, gold: [269, 377],
     },
     golden_hind: {
-      id: 'golden_hind', name: '刻律涅金角鹿', level: 80, aggro: 'aggressive', shape: 'hind', boss: true,
+      id: 'golden_hind', name: '刻律涅金角鹿', level: 80, aggro: 'aggressive', shape: 'hind', boss: true, element: 'light',
       radius: 0.85, respawn: 90, scale: 2.0, color: 0xd8a040,
       stats: { maxHp: 329000, atk: 730, def: 295, moveSpeed: 4.2 },
       attack: melee(2.6, 0.5, 1.5),

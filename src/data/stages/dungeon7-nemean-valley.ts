@@ -100,7 +100,7 @@ export const nemeanValley: StageDef = {
       exp: 790, gold: [80, 118],
     },
     nemean_lion: {
-      id: 'nemean_lion', name: '涅墨亞獅', level: 35, aggro: 'aggressive', shape: 'lion', boss: true,
+      id: 'nemean_lion', name: '涅墨亞獅', level: 35, aggro: 'aggressive', shape: 'lion', boss: true, element: 'metal',
       radius: 0.7, respawn: 90, scale: 2.2, color: 0xd8a848,
       stats: { maxHp: 122000, atk: 345, def: 115, moveSpeed: 3.6 },
       attack: melee(2.8, 0.55, 1.6),

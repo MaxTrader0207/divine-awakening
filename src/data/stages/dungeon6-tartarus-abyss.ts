@@ -101,7 +101,7 @@ export const tartarusAbyss: StageDef = {
       exp: 650, gold: [70, 104],
     },
     cerberus: {
-      id: 'cerberus', name: '刻耳柏洛斯', level: 30, aggro: 'aggressive', shape: 'hound', boss: true,
+      id: 'cerberus', name: '刻耳柏洛斯', level: 30, aggro: 'aggressive', shape: 'hound', boss: true, element: 'dark',
       radius: 0.55, respawn: 90, scale: 2.6, color: 0x2a2226,
       stats: { maxHp: 105000, atk: 310, def: 95, moveSpeed: 3.4 },
       attack: melee(2.6, 0.5, 1.6),

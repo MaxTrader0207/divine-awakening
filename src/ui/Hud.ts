@@ -1,3 +1,4 @@
+import { ELEMENTS, type Element as Elem } from '@/data/elements';
 import { CONSUMABLE_MAP } from '@/data/consumables';
 import { bus } from '@/core/EventBus';
 import type { GameState } from '@/core/GameState';
@@ -68,6 +69,8 @@ export class Hud {
   private potionCds: HTMLElement[] = [];
   /** 快捷道具欄（key：上次畫的內容，沒變就不動 DOM） */
   private quick: { btn: HTMLElement; ico: Element; count: HTMLElement; cd: HTMLElement; key: string }[] = [];
+  /** 夥伴按鈕（v1.58；沒有夥伴時隱藏） */
+  private comp!: { btn: HTMLElement; ico: Element; cd: HTMLElement; num: HTMLElement; key: string; wasCd: boolean };
   private hudTimer = 0;
   private notes: Note[] = [];
   private noteQueue: { text: string; duration: number }[] = [];
@@ -192,6 +195,15 @@ export class Hud {
       this.skillBtns.set(sk.slot, { btn, cd, num, wasCd: false });
       skillArea.appendChild(btn);
       this.bindLongPress(btn, sk.slot);
+    }
+    // 夥伴（v1.58）：技能扇形外側；電腦 G
+    {
+      const btn = this.actionButton('skill companion hide', 'companion', IS_DESKTOP ? 'G' : '');
+      const cd = h('div', { class: 'cd' });
+      const num = h('b', { class: 'cd-num' });
+      btn.append(cd, num, h('small', { class: 'comp-label' }, '夥伴'));
+      this.comp = { btn, ico: btn.querySelector('.ico')!, cd, num, key: '', wasCd: false };
+      skillArea.appendChild(btn);
     }
     skillArea.appendChild((this.els.skillTip = h('div', { class: 'skill-tip' })));
     this.root.appendChild(skillArea);
@@ -332,7 +344,7 @@ export class Hud {
   private bossLastCall = 0;
 
   /** 戰鬥中的首領血條（上方中央插槽；出現時收起提示與新手指引） */
-  setBoss(e: { def: { name: string; level?: number; stats: { maxHp: number } }; hp: number; maxHp: number; atkMul?: number } | null) {
+  setBoss(e: { def: { name: string; level?: number; element?: Elem; stats: { maxHp: number } }; hp: number; maxHp: number; atkMul?: number } | null) {
     if (!e) {
       if (this.bossShown) {
         this.els.boss.classList.remove('show');
@@ -355,7 +367,8 @@ export class Hud {
       this.bossTrailR = this.bossLastR = r;
       this.root.classList.add('boss-on');
       this.els.bossName.textContent = e.def.name;
-      this.els.bossLv.textContent = e.def.level ? `Lv.${e.def.level}` : '';
+      const el = e.def.element ? ELEMENTS[e.def.element] : null;
+      this.els.bossLv.textContent = (e.def.level ? `Lv.${e.def.level}` : '') + (el ? `・${el.icon}${el.name}` : '');
       this.els.boss.classList.add('show');
       this.els.tip.classList.remove('show');
       this.refreshGuide();
@@ -384,6 +397,32 @@ export class Hud {
     }
     this.els.boss.classList.toggle('enraged', r < 0.5);
     this.els.boss.classList.toggle('adjusted', e.maxHp > e.def.stats.maxHp * 1.05 || (e.atkMul ?? 1) > 1.05);
+  }
+
+  /** 夥伴按鈕：icon = 目前帶的夥伴（null = 沒有夥伴，按鈕隱藏）、cd = 剩餘冷卻秒數、live = 夥伴在場上 */
+  setCompanion(icon: string | null, name: string, cd: number, cdMax: number, live: boolean) {
+    const c = this.comp;
+    const key = `${icon}|${name}`;
+    if (key !== c.key) {
+      c.key = key;
+      c.btn.classList.toggle('hide', !icon);
+      c.ico.textContent = icon ?? '';
+      c.btn.title = `召喚夥伴：${name}${IS_DESKTOP ? '（G）' : ''}`;
+      requestAnimationFrame(() => this.fitQuick());
+    }
+    if (!icon) return;
+    const r = cdMax > 0 ? Math.min(1, cd / cdMax) : 0;
+    c.cd.style.setProperty('--p', String(r));
+    c.cd.style.opacity = r > 0 ? '1' : '0';
+    c.num.textContent = cd > 0.05 && !live ? String(Math.ceil(cd)) : '';
+    c.btn.classList.toggle('live', live);
+    const onCd = cd > 0.05;
+    if (c.wasCd && !onCd) {
+      c.btn.classList.remove('ready');
+      void c.btn.offsetWidth;
+      c.btn.classList.add('ready');
+    }
+    c.wasCd = onCd;
   }
 
   setAuto(on: boolean) {

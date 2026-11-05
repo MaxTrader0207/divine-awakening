@@ -72,7 +72,7 @@ export const sirenGrotto: StageDef = {
       exp: 46, gold: [10, 18],
     },
     tide_golem: {
-      id: 'tide_golem', name: '青銅巨人塔洛斯', level: 10, aggro: 'aggressive', shape: 'golem', boss: true,
+      id: 'tide_golem', name: '青銅巨人塔洛斯', level: 10, aggro: 'aggressive', shape: 'golem', boss: true, element: 'metal',
       radius: 0.7, respawn: 90, scale: 2.4, color: 0x6a9ab0,
       stats: { maxHp: 24000, atk: 130, def: 18, moveSpeed: 2.2 },
       attack: melee(2.6, 0.7, 2),

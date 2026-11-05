@@ -37,6 +37,18 @@ v1.29 起，遊戲內容依「關卡」組織：**一個關卡一個檔案**，�
 
 不需要改：地圖頁、每日任務、說明頁、小地圖、掉落、解鎖流程（全部讀資料）。
 
+## 新增支線地圖與守護者（v1.58）
+
+10 隻守護者（古希臘魔獸 / 戰神）各住一張支線地圖，隨主線進度開放；打倒有機會收服成夥伴。目前 1 隻（天馬珀伽索斯）。
+
+1. **id**：`ZoneId` 加 `'side_N'`。
+2. **地圖**：複製 `stages/side1-helicon-spring.ts`。`kind: 'field'`、`side: { guardian: '<守護者敵人 id>', unlockAfter: '<主線副本 id>' }`、`lootTier`、`levelRange`（守護者等級可高 3 級）。登記到 `STAGES`（地圖頁會自動排在 unlockAfter 那層後面）。
+3. **守護者**：`boss: true`、`element`（10 種屬性選一種，盡量 10 隻都不同）、`bossSkills`（3～4 招）。造型加在 `enemyShapes/guardians.ts`（夥伴也用同一個造型縮小）。
+4. **夥伴**：`data/minions.ts` 加一筆（`guardian`、`avatarScale`、`element`、`life` = `CAPTURE.duration`、`max: 1`；近戰範圍用 `splash`，遠程用 `ranged`）；`MinionId` 與 `Minion.ts` 的 `GEAR` 補上。
+5. **登記**：`data/companions.ts` 的 `COMPANIONS` 加一筆（名稱、稱號、圖示、屬性、地圖、神話、戰鬥特色）。
+6. **破關文字**：`data/stageClear.ts` 補結局與 7 職業台詞（`stageClear.test.ts` 的關卡數 +1）。
+7. `npm test`：`companions.test.ts` 會檢查守護者 / 地圖 / 夥伴 / 屬性是否對得上。
+
 ## 新增小怪
 
 在關卡檔的 `enemies` 加一筆 `EnemyDef`：
@@ -138,6 +150,7 @@ export const serpent: ShapeBuild = (b) => {
 | 第二層・賽蓮海蝕洞 | `dungeon2-siren-grotto.ts` | 5-10，防禦 18 | 特里同珊瑚泥、斯廷法利斯蝠鳥 | 青銅巨人塔洛斯 | 震地、潮水落下 |
 | 第三層・赫菲斯托斯熔爐 | `dungeon3-hephaestus-forge.ts` | 10-15，防禦 40 | 火神熔泥、奇美拉火蛙 | 堤豐巨蛙 | 飛撲砸地、熔岩噴吐 |
 | 多多納聖林 | `dodona-grove.ts` | 11-25（需 Lv.11） | 龍牙兵、冥河盜骸、龍牙重裝兵、黑卡蒂亡巫 | 龍牙將軍（菁英） | 衝撞、震地 |
+| 支線・赫利孔山靈泉 | `side1-helicon-spring.ts` | 10-13（擊敗第二層後開放） | 赫利孔風妖、聖山野羚 | 守護者・天馬珀伽索斯（⚡雷，可收服） | 天雷蹄音、閃電奔馳、雷翼風暴、天馬俯衝 |
 | 第四層・勒拿沼澤 | `dungeon4-lerna-swamp.ts` | 16-20，防禦 55 | 勒拿水蛇、勒拿毒蟾、艾洛鷹身女妖 | 九頭蛇許德拉 | 毒液噴吐、九頭齊咬、毒霧落下 |
 | 第五層・克諾索斯迷宮 | `dungeon5-knossos-labyrinth.ts` | 21-25，防禦 75 | 代達洛斯機關兵、克里特狂牛、雅典祭品亡魂 | 米諾陶洛斯 | 雙刃斧橫掃、狂牛衝撞、迷宮落石 |
 | 第六層・塔爾塔洛斯深淵 | `dungeon6-tartarus-abyss.ts` | 26-30，防禦 95 | 冥界獵犬、刻爾死靈、百臂巨人獄卒 | 刻耳柏洛斯 | 三頭冥火、冥犬撲擊、冥火落雨 |

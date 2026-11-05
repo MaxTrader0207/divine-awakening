@@ -1,7 +1,7 @@
 import { h } from './dom';
 import { CLASSES, type HeroClass } from '@/data/classes';
 import { CLASS_CLEAR, CLEAR_QUOTES, STAGE_EPILOGUE } from '@/data/stageClear';
-import { ZONES, floorLabel } from '@/data/zones';
+import { ZONES, bossOf, floorLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
 import { fmtSecs, type ClearResult } from '@/systems/StageClear';
 
@@ -29,6 +29,10 @@ export interface ClearInfo {
   allDone: boolean;
   /** 可以前往的下一層（已解鎖） */
   next?: ZoneId;
+  /** 首次擊敗這層後開放的支線地圖（v1.58） */
+  sideUnlocked?: ZoneId[];
+  /** 守護者收服結果（支線地圖，v1.58） */
+  capture?: { result: 'captured' | 'failed' | 'owned'; name: string; icon: string; left: number };
   auto: boolean;
 }
 
@@ -109,6 +113,8 @@ export class StageClearScreen {
         h('p', { class: 'cs-loot' }, '首領的寶物掉在地上，記得撿起來'),
         info.unlocked ? h('div', { class: 'cs-unlock' }, `🔓 解鎖 ${floorLabel(ZONES[info.unlocked].dungeon!.floor)}・${ZONES[info.unlocked].name}`) : null,
         info.allDone ? h('div', { class: 'cs-unlock' }, '🏆 你完成了赫拉斯大陸的全部副本') : null,
+        ...(info.sideUnlocked ?? []).map((id) => h('div', { class: 'cs-unlock side' }, `🗺 開放支線・${ZONES[id].name}（守護者：${bossOf(id)?.name ?? '？'}）`)),
+        info.capture ? captureLine(info.capture) : null,
         ...btns,
         autoEl,
       ]),
@@ -135,4 +141,11 @@ export class StageClearScreen {
     this.root.classList.remove('show');
     this.root.setAttribute('aria-hidden', 'true');
   }
+}
+
+/** 守護者收服結果 */
+function captureLine(c: NonNullable<ClearInfo['capture']>): HTMLElement {
+  if (c.result === 'captured') return h('div', { class: 'cs-capture ok' }, [h('span', {}, c.icon), h('b', {}, `收服了 ${c.name}！`), h('small', {}, '在「裝備 → 夥伴」帶上牠，戰鬥中按「夥伴」召喚')]);
+  if (c.result === 'owned') return h('div', { class: 'cs-capture' }, [h('span', {}, c.icon), h('b', {}, `${c.name} 已經是你的夥伴`)]);
+  return h('div', { class: 'cs-capture' }, [h('span', {}, c.icon), h('b', {}, `${c.name} 還不願意跟隨你`), h('small', {}, c.left <= 1 ? '下次打倒牠一定收服' : `再打倒牠 ${c.left} 次內一定收服`)]);
 }

@@ -94,7 +94,7 @@ export const calydonForest: StageDef = {
       exp: 2500, gold: [202, 283],
     },
     calydonian_boar: {
-      id: 'calydonian_boar', name: '卡呂冬野豬', level: 65, aggro: 'aggressive', shape: 'boar', boss: true,
+      id: 'calydonian_boar', name: '卡呂冬野豬', level: 65, aggro: 'aggressive', shape: 'boar', boss: true, element: 'earth',
       radius: 0.95, respawn: 90, scale: 2.7, color: 0x4a3020,
       stats: { maxHp: 277000, atk: 595, def: 235, moveSpeed: 3.8 },
       attack: melee(2.6, 0.55, 1.6),

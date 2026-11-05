@@ -95,7 +95,7 @@ export const argosPasture: StageDef = {
       exp: 4110, gold: [296, 414],
     },
     argus: {
-      id: 'argus', name: '百眼巨人阿爾戈斯', level: 85, aggro: 'aggressive', shape: 'argus', boss: true,
+      id: 'argus', name: '百眼巨人阿爾戈斯', level: 85, aggro: 'aggressive', shape: 'argus', boss: true, element: 'thunder',
       radius: 0.95, respawn: 90, scale: 1.6, color: 0xc8a080,
       stats: { maxHp: 349000, atk: 775, def: 315, moveSpeed: 3.0 },
       attack: melee(3.2, 0.6, 1.7),

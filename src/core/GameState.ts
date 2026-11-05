@@ -5,6 +5,7 @@ import { newTutorial, type TutorialState } from '@/systems/Tutorial';
 import { CLASSES, type HeroClass } from '@/data/classes';
 import type { ClearRecord } from '@/systems/StageClear';
 import { DUNGEON_ORDER, ZONES } from '@/data/zones';
+import { newCompanionState, type CompanionState } from '@/data/companions';
 
 /**
  * GameState：唯一需要存檔的「玩家進度」資料。
@@ -12,7 +13,7 @@ import { DUNGEON_ORDER, ZONES } from '@/data/zones';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -65,6 +66,8 @@ export interface GameState {
   tutorial: TutorialState;
   /** v9：每個關卡的破關紀錄（次數、最快時間、最佳評價） */
   clears: Partial<Record<ZoneId, ClearRecord>>;
+  /** v13：守護者夥伴（已收服、目前帶著的、收服保底次數） */
+  companions: CompanionState;
   /** 統計（結算畫面、平衡用） */
   stats: { kills: number; deaths: number; playTime: number };
   settings: Settings;
@@ -93,6 +96,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     equipment: { weapon: { uid: 1, base: 'weapon_t1', rarity: 'common', plus: 0 } },
     nextUid: 2,
     clears: {},
+    companions: newCompanionState(),
     tutorial: newTutorial(),
     // 新手先送幾個道具，讓玩家知道有這個東西
     consumables: { hestia_bread: 2, hermes_feather: 1 },
@@ -103,10 +107,10 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
   };
 }
 
-/** 副本是否已解鎖 */
+/** 副本 / 支線地圖是否已解鎖 */
 export function isZoneUnlocked(state: GameState, id: ZoneId): boolean {
   const z = ZONES[id];
-  const after = z.dungeon?.unlockAfter;
+  const after = z.dungeon?.unlockAfter ?? z.side?.unlockAfter;
   if (!after) return true;
   return state.bossesDefeated.includes(after);
 }

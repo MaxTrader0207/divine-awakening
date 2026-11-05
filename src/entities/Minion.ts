@@ -29,7 +29,25 @@ const GEAR: Record<MinionId, { style: BoneStyle; eye: number; wisps: number; run
   hound: { style: 'soldier', eye: 0xf0b860, wisps: 0, rune: 1 },
   eagle: { style: 'soldier', eye: 0xffd36b, wisps: 0, rune: 1.1 },
   bear: { style: 'soldier', eye: 0xd8a060, wisps: 0, rune: 1.15 },
+  // 守護者夥伴：外觀用守護者的敵人造型（MinionAvatar），eye = 法陣顏色
+  pegasus: { style: 'soldier', eye: 0xffd84a, wisps: 0, rune: 1.5 },
 };
+
+/**
+ * 守護者夥伴的外觀（v1.58）：MinionManager 用守護者的 EnemyDef 建一個 Enemy 當外觀，
+ * 掛在 Minion 的 body 底下（位置歸零），Minion 每幀把移動、前搖、出手同步過去再呼叫它的 update()。
+ */
+export interface MinionAvatar {
+  readonly object: THREE.Object3D;
+  readonly pos: { x: number; z: number };
+  groundY: number;
+  facing: number;
+  moving: number;
+  windup: number;
+  strike(power?: number): void;
+  update(dt: number, camera: THREE.Camera): void;
+  dispose(): void;
+}
 
 const SPAWN_TIME = 0.7;
 const DEATH_TIME = 1.2;
@@ -163,6 +181,8 @@ export class Minion {
   /** 程式骷髏（召喚師）或程式野獸（訓獸師），兩者擇一 */
   private bones: BoneRig | null = null;
   private beast: BeastRig | null = null;
+  /** 守護者夥伴的外觀（敵人造型） */
+  private avatar: MinionAvatar | null = null;
   /** 野性咆哮剩餘秒數（攻擊、攻速、移速提升，身體泛橘光） */
   roarT = 0;
   private pose: BonePose = { t: 0, walk: 0, moving: 0, swingT: 0, swingTotal: 1, windupFrac: 0.6, hitT: 0, cast: false };
@@ -184,7 +204,7 @@ export class Minion {
   private t = Math.random() * 10;
   private tintOn = false;
 
-  constructor(readonly def: MinionDef, owner: Stats, x: number, z: number) {
+  constructor(readonly def: MinionDef, owner: Stats, x: number, z: number, avatar?: MinionAvatar) {
     this.pos.x = x;
     this.pos.z = z;
     this.maxHp = Math.round(owner.maxHp * def.hpMul);
@@ -194,7 +214,15 @@ export class Minion {
     const gear = GEAR[def.id];
     this.object.add(this.body);
 
-    if (def.beast) {
+    if (avatar) {
+      // 守護者夥伴：敵人造型（位置、朝向由 Minion 管）
+      this.avatar = avatar;
+      avatar.pos.x = 0;
+      avatar.pos.z = 0;
+      avatar.groundY = 0;
+      avatar.facing = 0;
+      this.body.add(avatar.object);
+    } else if (def.beast) {
       // 程式野獸
       this.beast = buildBeast(def.beast, def.height, def.glow);
       this.body.add(this.beast.root);
@@ -265,8 +293,13 @@ export class Minion {
     this.object.add(this.hpBar);
 
     this.object.position.set(x, 0, z);
-    if (this.beast) this.body.scale.setScalar(0.01); // 從法陣裡躍出
+    if (this.creature) this.body.scale.setScalar(0.01); // 從法陣裡躍出
     else this.body.position.y = -def.height; // 從地底開始
+  }
+
+  /** 野獸或守護者（出場躍出、倒下化成光塵） */
+  private get creature() {
+    return !!(this.beast || this.avatar);
   }
 
   /** 攻擊力倍率（野性咆哮） */
@@ -284,6 +317,11 @@ export class Minion {
 
   get alive() {
     return this.hp > 0 && this.life > 0 && this.dying <= 0;
+  }
+
+  /** 屬性（守護者夥伴才有；傷害來源用） */
+  get element() {
+    return this.def.element;
   }
 
   get radius() {
@@ -312,7 +350,7 @@ export class Minion {
     const color = GEAR[this.def.id].eye;
     const h = this.def.height + (this.beast?.fly ?? 0) * 0.5;
     for (let i = 0; i < 7; i++) {
-      const mat = new THREE.SpriteMaterial({ map: getSmoke(), color: i % 2 ? color : this.beast ? 0xfff0c0 : 0x6a5a8a, transparent: true, opacity: 0.6, depthWrite: false });
+      const mat = new THREE.SpriteMaterial({ map: getSmoke(), color: i % 2 ? color : this.creature ? 0xfff0c0 : 0x6a5a8a, transparent: true, opacity: 0.6, depthWrite: false });
       this.owned.push(mat);
       const sp = new THREE.Sprite(mat);
       const a = (i / 7) * Math.PI * 2;
@@ -321,8 +359,8 @@ export class Minion {
       this.object.add(sp);
       this.bits.push({ obj: sp, vx: Math.cos(a) * 0.6, vy: 0.8 + Math.random() * 0.6, vz: Math.sin(a) * 0.6, spin: 0, smoke: true });
     }
-    // 野獸化成光塵，沒有碎骨
-    if (this.beast) return;
+    // 野獸、守護者化成光塵，沒有碎骨
+    if (this.creature) return;
     // 碎骨
     const geo = new THREE.BoxGeometry(0.07, 0.07, 0.28);
     const mat = new THREE.MeshLambertMaterial({ color: 0xe8e0ff, emissive: new THREE.Color(color).multiplyScalar(0.25) });
@@ -346,6 +384,7 @@ export class Minion {
     this.pose.swingT = this.pose.swingTotal;
     this.pose.windupFrac = this.def.windup / k / this.pose.swingTotal;
     if (this.orb) this.orb.scale.multiplyScalar(1.6);
+    if (this.avatar) this.avatar.windup = this.def.windup / k;
   }
 
   /** 每幀：動畫、外觀（AI 由 MinionManager 處理） */
@@ -363,7 +402,7 @@ export class Minion {
       this.spawnT = Math.max(0, this.spawnT - dt);
       const k = 1 - this.spawnT / SPAWN_TIME; // 0 → 1
       const rise = Math.min(1, Math.max(0, (k - 0.25) / 0.75));
-      if (this.beast) {
+      if (this.creature) {
         // 從法陣裡躍出：由小變大＋小跳一下
         this.body.scale.setScalar(Math.max(0.01, 1 - (1 - rise) ** 3));
         this.body.position.y = Math.sin(rise * Math.PI) * h * 0.35;
@@ -379,7 +418,7 @@ export class Minion {
       runeScale *= 1 + k * 0.4;
     } else {
       this.body.position.y = 0;
-      if (this.beast) this.body.scale.setScalar(1);
+      if (this.creature) this.body.scale.setScalar(1);
       // 存在時間越少，法陣越小越淡
       const lifeK = Math.min(1, this.life / this.def.life);
       runeScale *= 0.55 + 0.45 * lifeK;
@@ -392,7 +431,21 @@ export class Minion {
     // 骷髏的材質效果（高光、地面遮蔽、輪廓光）以腳底為基準
     this.bones?.look.update(this.object.position.y, this.def.height);
     // 骨架動作（走路、攻擊、施法、受擊）；倒下時往後倒、頭掉下來滾開
-    if (this.dying > 0 && this.beast) {
+    if (this.avatar) {
+      // 守護者：同步移動 / 前搖給敵人造型，讓它自己播動畫；倒下時側躺、縮小淡去
+      const av = this.avatar;
+      av.moving = Math.max(av.moving, this.moving);
+      if (this.windup <= 0 && av.windup > 0) {
+        av.windup = 0;
+        av.strike(1.2);
+      } else if (av.windup > 0) av.windup = Math.max(0.01, av.windup - dt);
+      av.update(this.dying > 0 ? dt * 0.5 : dt, camera);
+      if (this.dying > 0) {
+        const k = 1 - this.dying / DEATH_TIME;
+        av.object.rotation.z = Math.min(1, k * 3) * 1.3;
+        this.body.scale.setScalar(Math.max(0.01, 1 - Math.max(0, k - 0.45) * 1.8));
+      }
+    } else if (this.dying > 0 && this.beast) {
       // 野獸：側躺倒下、縮小淡去
       const k = 1 - this.dying / DEATH_TIME;
       this.beast.root.rotation.z = Math.min(1, k * 3) * 1.4;
@@ -476,7 +529,9 @@ export class Minion {
       const blink = this.life < 3 && this.alive ? (Math.sin(this.life * 14) > 0 ? 0.25 : 0) : 0;
       const g = this.def.glow;
       const f = this.flash + blink;
-      if (this.beast) {
+      if (this.avatar) {
+        // 守護者：外觀自己處理受擊閃白；快消失時閃爍由法陣表現
+      } else if (this.beast) {
         // 野獸：金光；野性咆哮中泛橘紅、微微脈動
         const roar = this.roarT > 0 ? 0.28 + Math.sin(this.t * 10) * 0.08 : 0;
         for (const m of this.materials) m.emissive.setRGB(g * 0.5 + f + roar, g * 0.38 + f + roar * 0.35, g * 0.12 + f);
@@ -490,6 +545,8 @@ export class Minion {
   }
 
   dispose() {
+    this.avatar?.dispose();
+    this.avatar = null;
     this.object.removeFromParent();
     for (const o of this.owned) o.dispose();
     this.owned = [];
