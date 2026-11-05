@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CLASS_GEAR } from './gear';
-import { ITEM_BASES, NAMED_BUDGET, SLOT_ORDER, applyClassGear, namedGearIds, statScore } from './items';
+import { ITEM_BASES, MP_TO_HP, NAMED_BUDGET, SLOT_ORDER, applyClassGear, namedGearIds, statScore } from './items';
 import { CLASS_LIST } from './classes';
 import { rollDrop } from '@/systems/LootTable';
 
@@ -29,6 +29,16 @@ describe('職業裝備', () => {
       expect(s).toBeLessThan(std * NAMED_BUDGET * 1.15);
       if (b.tier < 8) expect(s).toBeLessThan(statScore(ITEM_BASES[`${b.slot}_t${b.tier + 1}`].stats));
     }
+  });
+
+  it('怒氣職業（狂戰士）的裝備不帶 MP，換成等值的 HP；換回其他職業會還原', () => {
+    applyClassGear('berserker');
+    expect(ITEM_BASES.hat_t1.stats.maxMp).toBeUndefined();
+    expect(ITEM_BASES.hat_t1.stats.maxHp).toBe(Math.round(20 * MP_TO_HP));
+    for (const b of Object.values(ITEM_BASES)) if (b.cls === 'berserker') expect(b.stats.maxMp).toBeUndefined();
+    applyClassGear('mage');
+    expect(ITEM_BASES.hat_t1.stats.maxMp).toBe(20);
+    expect(ITEM_BASES.hat_t1.stats.maxHp).toBeUndefined();
   });
 
   it('標準裝依職業改名（騎士的帽子是頭盔）', () => {

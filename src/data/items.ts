@@ -1,5 +1,5 @@
 import type { EquipSlot, Rarity, Stats } from './types';
-import type { HeroClass } from './classes';
+import { CLASSES, type HeroClass } from './classes';
 import { CLASS_GEAR, MAX_TIER, NAMED_TIERS, TIERS, type GearProfile, type Tier } from './gear';
 
 /**
@@ -30,15 +30,29 @@ export interface ItemBase {
  */
 export function applyClassGear(cls: HeroClass) {
   const g = CLASS_GEAR[cls];
+  const rage = CLASSES[cls]?.resource === 'rage';
   for (const slot of SLOT_ORDER) {
     SLOT_NAMES[slot] = g.slotNames[slot];
     for (const tier of TIERS) {
       const b = ITEM_BASES[`${slot}_t${tier}`];
       b.name = `${g.prefixes[tier - 1]}${g.slotNames[slot]}`;
       b.icon = g.icons[slot];
+      // 怒氣職業（狂戰士）：帽子上的 MP 對怒氣無效，換成等值的 HP（v1.57）
+      const std = STD_STATS[b.id];
+      b.stats = rage ? mpToHp(std) : { ...std };
     }
   }
 }
+
+/** MP 換成等值的 HP（戰力評分 MP 0.2 / HP 0.25 → ×0.8）；怒氣職業用 */
+export const MP_TO_HP = 0.8;
+export function mpToHp(s: Partial<Stats>): Partial<Stats> {
+  if (!s.maxMp) return { ...s };
+  const { maxMp, ...rest } = s;
+  return { ...rest, maxHp: (rest.maxHp ?? 0) + Math.round(maxMp * MP_TO_HP) };
+}
+/** 標準裝原始屬性（applyClassGear 依職業從這裡重算） */
+const STD_STATS: Record<string, Partial<Stats>> = {};
 
 /** 某職業、某欄位、某階可以掉落的神話裝 id */
 export function namedGearIds(cls: HeroClass, slot: EquipSlot, tier: number): string[] {
@@ -157,6 +171,7 @@ for (const slot of SLOT_ORDER) {
   for (const tier of TIERS) {
     const id = `${slot}_t${tier}`;
     ITEM_BASES[id] = { id, slot, tier, name: `${CLASS_GEAR.mage.prefixes[tier - 1]}${CLASS_GEAR.mage.slotNames[slot]}`, icon: ICONS[slot], stats: scaled(slot, tier) };
+    STD_STATS[id] = { ...ITEM_BASES[id].stats };
   }
 }
 // 神話裝：每個職業 × 每個欄位 × 20 件
@@ -167,7 +182,8 @@ for (const [cls, g] of Object.entries(CLASS_GEAR) as [HeroClass, (typeof CLASS_G
       const tier = NAMED_TIERS[i];
       const profile = g.profiles[i];
       const id = `${cls}_${slot}_${String(i + 1).padStart(2, '0')}`;
-      ITEM_BASES[id] = { id, slot, tier, name, icon: g.icons[slot], stats: namedStats(slot, tier, profile), cls, named: true, profile };
+      const stats = namedStats(slot, tier, profile);
+      ITEM_BASES[id] = { id, slot, tier, name, icon: g.icons[slot], stats: CLASSES[cls].resource === 'rage' ? mpToHp(stats) : stats, cls, named: true, profile };
       const key = `${cls}|${slot}|${tier}`;
       NAMED_INDEX.set(key, [...(NAMED_INDEX.get(key) ?? []), id]);
     });
