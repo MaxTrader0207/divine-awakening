@@ -168,23 +168,26 @@ export class Menu {
     const s = this.state;
     const here = s.zoneId;
     const fieldList = WORLD_FIELDS.map((f) => `${f.name}${f.range ? ' ' + f.range : ''}`).join('、');
+    // 上方「雅典與野外」＋「副本」標題固定在頂端（v1.52），只有下面的副本清單捲動
     const out: HTMLElement[] = [
-      h('div', { class: 'card' }, [
-        h('h3', {}, '赫拉斯大陸・雅典與野外'),
-        h('p', {}, fieldList),
-        // 城鎮與野外：由關卡登記表產生；有進入等級的未達到時鎖住
-        h(
-          'div',
-          { class: 'card-row' },
-          FIELD_ORDER.map((id) => {
-            const z = ZONES[id];
-            if (here === id) return h('span', { class: 'pill' }, '目前位置');
-            if (z.minLevel && s.level < z.minLevel) return h('span', { class: 'pill locked' }, `🔒 ${zoneName(id)} Lv.${z.minLevel}`);
-            return h('button', { class: id === 'town' ? 'go' : 'go ghost', onclick: () => this.travel(id) }, id === 'town' ? '回到主城' : zoneName(id));
-          }),
-        ),
+      h('div', { class: 'map-head' }, [
+        h('div', { class: 'card' }, [
+          h('h3', {}, '赫拉斯大陸・雅典與野外'),
+          h('p', {}, fieldList),
+          // 城鎮與野外：由關卡登記表產生；有進入等級的未達到時鎖住
+          h(
+            'div',
+            { class: 'card-row' },
+            FIELD_ORDER.map((id) => {
+              const z = ZONES[id];
+              if (here === id) return h('span', { class: 'pill' }, '目前位置');
+              if (z.minLevel && s.level < z.minLevel) return h('span', { class: 'pill locked' }, `🔒 ${zoneName(id)} Lv.${z.minLevel}`);
+              return h('button', { class: id === 'town' ? 'go' : 'go ghost', onclick: () => this.travel(id) }, id === 'town' ? '回到主城' : zoneName(id));
+            }),
+          ),
+        ]),
+        h('div', { class: 'section-title' }, '副本（原本的地區）'),
       ]),
-      h('div', { class: 'section-title' }, '副本（原本的地區）'),
     ];
     for (const id of DUNGEON_ORDER) {
       const z = ZONES[id];

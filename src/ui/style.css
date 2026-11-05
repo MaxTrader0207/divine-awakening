@@ -210,6 +210,13 @@ button { font-family: inherit; color: inherit; border: 0; background: none; padd
 .card-main { display: grid; gap: 3px; }
 .card.locked { opacity: 0.6; }
 .section-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 4px; }
+/* 地圖頁：上方「雅典與野外」卡片＋副本標題固定在頂端，下面清單自己捲動（v1.52） */
+.map-head {
+  position: sticky; top: -12px; z-index: 2; display: grid; gap: 10px;
+  margin: -12px -12px 0; padding: 12px 12px 8px;
+  background: #161c2a; border-bottom: 1px solid var(--line); box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.6);
+}
+.map-head .section-title { margin-top: 0; }
 .go { padding: 8px 14px; border-radius: 9px; font-weight: 800; font-size: 13px; background: linear-gradient(#ffe07a, var(--gold)); color: #4a3308; }
 .go.ghost { background: rgba(255, 255, 255, 0.1); color: var(--text); }
 .go.danger { background: #b8402f; color: #fff; }
