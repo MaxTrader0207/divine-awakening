@@ -47,6 +47,9 @@ const PROBE = 1.4;
 /** 開始繞路後維持同一側的秒數（避免在障礙物前左右抖動） */
 const DETOUR_COMMIT = 3;
 
+/** AUTO 主動挑戰還沒開打的首領：首領等級 ≤ 玩家等級 + 這個值（v1.61，原本是 0，Lv14 站在 Lv15 首領旁邊會發呆） */
+export const AUTO_BOSS_LEVEL_GAP = 2;
+
 export class AutoBattle {
   on = false;
   /** 本幀建議的移動向量 */
@@ -177,7 +180,7 @@ export class AutoBattle {
     return false;
   }
 
-  /** 最近的敵人；還沒開打、而且等級比玩家高的首領會略過（避免 AUTO 把低等玩家帶去送死） */
+  /** 最近的敵人；還沒開打、而且等級比玩家高 AUTO_BOSS_LEVEL_GAP 級以上的首領會略過（避免 AUTO 把低等玩家帶去送死；只差 1～2 級仍在該層建議等級內，照打） */
   private pickTarget(): Enemy | null {
     const p = this.ctx.player;
     const lv = this.ctx.level();
@@ -185,7 +188,7 @@ export class AutoBattle {
     let bd = AUTO_SEARCH_RANGE;
     for (const e of this.ctx.enemies.enemies) {
       if (!e.alive || e.ai === 'return' || e.def.aggro === 'none') continue;
-      if (e.def.boss && !e.engaged && lv < e.def.level) continue;
+      if (e.def.boss && !e.engaged && lv + AUTO_BOSS_LEVEL_GAP < e.def.level) continue;
       const d = dist(e, p) - e.radius;
       if (d < bd) {
         bd = d;

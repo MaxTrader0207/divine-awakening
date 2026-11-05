@@ -99,30 +99,11 @@ export class Telegraphs {
   }
 
   /** 玩家在任何預警範圍內時，回傳逃離方向（AUTO 用） */
-  escape(x: number, z: number, pad = 0.6): { x: number; z: number } | null {
+  escape(x: number, z: number, pad = 0.6, prefer?: { x: number; z: number }): { x: number; z: number } | null {
     for (const te of this.list) {
       const s = te.shape;
       if (!te.autoNoticed || !contains(s, x, z, pad)) continue;
-      if (s.kind === 'circle' || s.kind === 'cone') {
-        let dx = x - s.x;
-        let dz = z - s.z;
-        const l = Math.hypot(dx, dz);
-        if (l < 0.01) {
-          dx = 1;
-          dz = 0;
-        }
-        if (s.kind === 'cone') {
-          // 扇形：往側邊閃最快（垂直於朝向，選玩家所在那一側）
-          const side = Math.sign(dx * Math.cos(s.dir) - dz * Math.sin(s.dir)) || 1;
-          return { x: Math.cos(s.dir) * side, z: -Math.sin(s.dir) * side };
-        }
-        return { x: dx / (l || 1), z: dz / (l || 1) };
-      }
-      // 長方形：往垂直方向
-      const nx = Math.cos(s.dir);
-      const nz = -Math.sin(s.dir);
-      const side = Math.sign((x - s.x) * nx + (z - s.z) * nz) || 1;
-      return { x: nx * side, z: nz * side };
+      return escapeDir(s, x, z, prefer);
     }
     return null;
   }
@@ -141,6 +122,42 @@ export class Telegraphs {
     });
     te.group.removeFromParent();
   }
+}
+
+/**
+ * 從預警範圍裡逃出去的方向（單位向量）。
+ * prefer（v1.61，首領戰時 = 首領出生點）：AUTO 閃招時盡量往場地中央閃，不會越閃越遠、把首領拖出場地。
+ *  - 圓形：從圓心往外，最多往 prefer 偏 45°（仍然往外，一樣逃得出去）
+ *  - 扇形 / 長方形：往側邊；玩家離中線不到 1.2 公尺時，選 prefer 那一側
+ */
+export function escapeDir(s: TeleShape, x: number, z: number, prefer?: { x: number; z: number }): { x: number; z: number } {
+  const toPrefer = prefer ? { x: prefer.x - x, z: prefer.z - z } : null;
+  if (s.kind === 'circle') {
+    let dx = x - s.x;
+    let dz = z - s.z;
+    let l = Math.hypot(dx, dz);
+    if (l < 0.01) {
+      dx = 1;
+      dz = 0;
+      l = 1;
+    }
+    let a = Math.atan2(dz, dx);
+    if (toPrefer && Math.hypot(toPrefer.x, toPrefer.z) > 1) {
+      const pa = Math.atan2(toPrefer.z, toPrefer.x);
+      let diff = pa - a;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      a += Math.max(-Math.PI / 4, Math.min(Math.PI / 4, diff));
+    }
+    return { x: Math.cos(a), z: Math.sin(a) };
+  }
+  // 扇形、長方形：垂直於朝向往側邊
+  const nx = Math.cos(s.dir);
+  const nz = -Math.sin(s.dir);
+  const lateral = s.kind === 'cone' ? (x - s.x) * Math.cos(s.dir) - (z - s.z) * Math.sin(s.dir) : (x - s.x) * nx + (z - s.z) * nz;
+  let side = Math.sign(lateral) || 1;
+  if (toPrefer && Math.abs(lateral) < 1.2) side = Math.sign(toPrefer.x * nx + toPrefer.z * nz) || side;
+  return { x: nx * side, z: nz * side };
 }
 
 /** 點是否在形狀內（pad = 角色半徑） */

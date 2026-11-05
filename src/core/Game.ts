@@ -228,7 +228,11 @@ export class Game {
       targets: this.targets,
       skills: this.skills,
       nearestLoot: () => this.loot.nearest(),
-      dangerEscape: () => this.telegraphs.escape(this.player.pos.x, this.player.pos.z, this.player.radius + 0.4),
+      dangerEscape: () => {
+        // 首領戰：閃招時盡量往首領出生點（場地中央）閃，不會把戰鬥拖出場地（v1.61）
+        const b = this.enemies.engagedBoss();
+        return this.telegraphs.escape(this.player.pos.x, this.player.pos.z, this.player.radius + 0.4, b ? b.home : undefined);
+      },
       collision: () => this.zones.current!.collision,
       level: () => this.state.level,
     });

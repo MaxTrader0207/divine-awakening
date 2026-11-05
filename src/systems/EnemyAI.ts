@@ -11,7 +11,7 @@ import type { Minion } from '@/entities/Minion';
  *     │  任何怪：被打（provoked）
  *     ▼
  *   chase ──(進入攻擊距離)──▶ attack（前搖 windup → 出手）──▶ chase
- *     │  離出生點超過 LEASH，或玩家死亡
+ *     │  離出生點超過 LEASH（首領：玩家離開場地，見 shouldLeash），或玩家死亡
  *     ▼
  *   return（快速回家、回滿血、這段期間不吃傷害）──▶ idle
  *
@@ -31,6 +31,24 @@ export const COUNTER_CD = 5;
 const COUNTER_DELAY = 0.3;
 /** 首領側移速度（相對移動速度） */
 const STRAFE_SPEED = 0.38;
+
+/**
+ * 首領脫戰（v1.61）：以前只看「首領離出生點多遠」，AUTO 一邊閃招一邊打，會把首領一路拖離出生點，
+ * 超過 LEASH×2 就整隻回家回滿血——首領戰等於重打，偶爾拖到 300 秒以上。現在改成：
+ *  - 玩家離開場地（離首領出生點 > BOSS_LEASH，40 公尺）或死亡才脫戰；AUTO 閃招時也會往出生點方向閃（Telegraphs.escapeDir）；
+ *  - 首領自己被拉得太遠（> BOSS_LEASH_HARD，例如被卡在地形外）才強制回家；
+ *  - 離出生點超過 BOSS_DRIFT 時，側移改成往出生點方向走，戰鬥慢慢回到場地中央。
+ */
+export const BOSS_LEASH = LEASH * 2.5;
+export const BOSS_LEASH_HARD = LEASH * 3;
+export const BOSS_DRIFT = 18;
+
+/** 是否脫戰回家：首領看玩家離場地多遠，小怪看自己離家多遠 */
+export function shouldLeash(boss: boolean, selfHome: number, playerHome: number, playerAlive: boolean): boolean {
+  if (!playerAlive) return true;
+  if (!boss) return selfHome > LEASH;
+  return playerHome > BOSS_LEASH || selfHome > BOSS_LEASH_HARD;
+}
 
 export interface AiContext {
   player: Player;
@@ -62,8 +80,8 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
 
   // 共通：脫戰條件
   if (e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') {
-    const leash = e.def.boss ? LEASH * 2 : LEASH; // 首領有衝撞、飛撲，活動範圍大一點
-    if (!p.alive || homeDist > leash) {
+    const playerHome = Math.hypot(p.pos.x - e.home.x, p.pos.z - e.home.z);
+    if (shouldLeash(!!e.def.boss, homeDist, playerHome, p.alive)) {
       e.ai = 'return';
       e.windup = 0;
       e.aiTimer = RETURN_TIMEOUT;
@@ -114,6 +132,10 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
           if (dist < close && dist > 1e-3) {
             // 疊在玩家身上（飛撲落地、玩家鑽進來）：退開一點
             step(e, -dx / dist, -dz / dist, speed * 0.8, dt, ctx.collision);
+            face(e, dx, dz, dt, 12);
+          } else if (homeDist > BOSS_DRIFT && e.attackCd > 0.45) {
+            // 被拖離出生點：一邊盯著目標，一邊往場地中央退
+            step(e, (e.home.x - e.pos.x) / homeDist, (e.home.z - e.pos.z) / homeDist, speed * STRAFE_SPEED, dt, ctx.collision);
             face(e, dx, dz, dt, 12);
           } else if (e.attackCd > 0.45 && dist > 1e-3) strafe(e, dx / dist, dz / dist, speed * STRAFE_SPEED, dt, ctx.collision);
         }
