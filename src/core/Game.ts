@@ -3,7 +3,8 @@ import { bus } from './EventBus';
 import { isZoneUnlocked, newGameState, type GameState } from './GameState';
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
-import { PauseScreen } from '@/ui/PauseScreen';
+import { PauseScreen, type PauseStatus } from '@/ui/PauseScreen';
+import { CONSUMABLE_MAP } from '@/data/consumables';
 import { MinionManager } from '@/systems/MinionManager';
 import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
@@ -54,6 +55,8 @@ const COUNTER_TIME = 3;
 /** 死亡後損失的金幣比例 */
 const DEATH_GOLD_PENALTY = 0.1;
 
+/** 繼續遊戲後的無敵時間（秒）：登入的「準備出發」/ 一般暫停 */
+const RESUME_GRACE = { ready: 3, pause: 1 };
 const AUTOSAVE_INTERVAL = 10; // 秒
 const CLOUD_INTERVAL = 300; // 自動上傳雲端（秒）
 
@@ -320,13 +323,9 @@ export class Game {
         this.resetting = true;
         location.reload();
       },
-      info: () => ({
-        place: zoneLabel(this.state.zoneId),
-        level: this.state.level,
-        className: CLASSES[this.state.heroClass]?.name ?? '法師',
-        playTime: this.state.stats.playTime,
-        kills: this.state.stats.kills,
-      }),
+      status: () => this.pauseStatus(),
+      usePotion: (kind) => this.skills.usePotion(kind),
+      useQuick: (i) => this.useQuickSlot(i),
     });
     bus.on('pause:toggle', () => this.setPaused(!this.paused));
 
@@ -436,6 +435,12 @@ export class Game {
     const firstTime = this.state.stats.playTime < 1;
     this.enterZone(this.state.zoneId, this.state.pos);
     this.resize();
+    // 讀檔進到野外 / 副本：先暫停在「準備出發」畫面，讓玩家補血、換裝、看清楚周圍再開始
+    // （不會一進遊戲還沒動作就被旁邊的怪打倒）；主城是安全區，直接開始
+    if (!firstTime && !this.zones.current?.def.safe) {
+      this.pauseScreen.setMode('ready');
+      this.setPaused(true);
+    }
     if (firstTime) {
       setTimeout(() => bus.emit('banner', { text: '歡迎來到赫拉斯大陸' }), 600);
       setTimeout(() => bus.emit('toast', { text: '左上角的「新手指引」會一步步帶你玩，點它可以看詳細說明', duration: 4.5 }), 3000);
@@ -497,8 +502,51 @@ export class Game {
     this.input.clearPressed();
     this.audio.setPaused(v);
     if (v) this.persist();
-    else this.menu.close();
+    else {
+      this.menu.close();
+      // 繼續時給一點反應時間：登入的「準備出發」3 秒、一般暫停 1 秒無敵
+      const ready = this.pauseScreen.mode === 'ready';
+      if (!this.zones.current?.def.safe) {
+        this.player.invulnerable = Math.max(this.player.invulnerable, ready ? RESUME_GRACE.ready : RESUME_GRACE.pause);
+        if (ready) bus.emit('toast', { text: '出發！3 秒內無敵' });
+      }
+      if (ready) this.pauseScreen.setMode('pause');
+    }
     this.pauseScreen.setVisible(v && !this.menu.isOpen);
+  }
+
+  /** 暫停 / 準備出發畫面上的狀態 */
+  private pauseStatus(): PauseStatus {
+    const p = this.player;
+    const s = this.state;
+    let nearby = 0;
+    let bossNear = false;
+    for (const e of this.enemies.enemies) {
+      if (!e.alive || Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z) > 14) continue;
+      nearby++;
+      if (e.def.boss) bossNear = true;
+    }
+    return {
+      place: zoneLabel(s.zoneId),
+      level: s.level,
+      className: CLASSES[s.heroClass]?.name ?? '法師',
+      playTime: s.stats.playTime,
+      kills: s.stats.kills,
+      hp: p.hp,
+      maxHp: p.stats.maxHp,
+      mp: p.mp,
+      maxMp: p.stats.maxMp,
+      mpLabel: this.usesRage ? '怒氣' : 'MP',
+      nearby,
+      bossNear,
+      safe: !!this.zones.current?.def.safe,
+      potions: { ...s.potions },
+      quick: s.quickSlots.map((id) => {
+        const d = id ? CONSUMABLE_MAP[id] : undefined;
+        return d ? { icon: d.icon, name: d.name, count: s.consumables[id!] ?? 0 } : null;
+      }),
+      potionCd: this.skills.potionCd > 0,
+    };
   }
 
   /** 破關畫面開著：世界暫停，只讓角色動畫、特效、鏡頭繼續（角色擺勝利姿勢、鏡頭慢慢繞） */
@@ -555,7 +603,13 @@ export class Game {
       else this.setPaused(true);
       if (this.paused) return;
     }
-    const canAct = !this.menu.isOpen && !this.transitioning && this.player.alive;
+    // v1.54：選單開著（換裝、用道具、看地圖）時世界停住，敵人不會趁機攻擊
+    if (this.menu.isOpen) {
+      this.input.clearPressed();
+      this.input.endFrame();
+      return;
+    }
+    const canAct = !this.transitioning && this.player.alive;
 
     const collision = this.zones.current!.collision;
     const pushOut = (pos: { x: number; z: number }, r: number) => this.enemies.pushOut(pos, r);
