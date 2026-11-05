@@ -31,6 +31,9 @@ const GEAR: Record<MinionId, { style: BoneStyle; eye: number; wisps: number; run
   bear: { style: 'soldier', eye: 0xd8a060, wisps: 0, rune: 1.15 },
   // 守護者夥伴：外觀用守護者的敵人造型（MinionAvatar），eye = 法陣顏色
   pegasus: { style: 'soldier', eye: 0xffd84a, wisps: 0, rune: 1.5 },
+  aetos: { style: 'soldier', eye: 0x9ff0c8, wisps: 0, rune: 1.5 },
+  chrysomallos: { style: 'soldier', eye: 0xffe27a, wisps: 0, rune: 1.5 },
+  hippocampus: { style: 'soldier', eye: 0x4fb8ff, wisps: 0, rune: 1.5 },
 };
 
 /**

@@ -102,7 +102,7 @@ function companionCards(ctx: InvContext): HTMLElement[] {
         h('div', { class: 'comp-ico' }, owned ? def.icon : '？'),
         h('h4', {}, [owned || open ? def.name : '？？？', h('small', {}, `${el.icon}${el.name}屬性${active ? '・帶著' : ''}`)]),
         h('p', {}, owned ? `${def.title}。${def.role}` : `住在支線「${zone.name}」。打倒守護者有 ${Math.round(CAPTURE.chance * 100)}% 機率收服，第 ${CAPTURE.pity} 次一定成功。`),
-        h('p', {}, owned ? def.lore : `剋 ${strongTo.icon}${strongTo.name}、被 ${weakTo.icon}${weakTo.name} 剋`),
+        h('p', {}, owned ? def.lore : STRONG[STRONG[def.element]] === def.element ? `與 ${strongTo.icon}${strongTo.name} 互剋（打牠 ×${ELEMENT_STRONG_MUL}、被牠打也 ×${ELEMENT_STRONG_MUL}）` : `剋 ${strongTo.icon}${strongTo.name}、被 ${weakTo.icon}${weakTo.name} 剋`),
         h('div', { class: 'card-row' }, [action]),
       ]),
     );

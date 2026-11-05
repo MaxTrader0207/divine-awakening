@@ -7,7 +7,7 @@ import { boar, cyclops, gorgon, lion } from './legends';
 import { chimera, dragon, sphinx } from './monsters';
 import { centaur, cetus, griffin, hind, scylla } from './wilds';
 import { argus, echidna, geryon, kampe } from './primordials';
-import { pegasus } from './guardians';
+import { aetos, chrysomallos, hippocampus, pegasus } from './guardians';
 
 /**
  * 敵人程式模型登記表：EnemyDef.shape → 建造函式。
@@ -45,6 +45,9 @@ export const ENEMY_SHAPES: Record<EnemyShape, ShapeBuild> = {
   echidna,
   kampe,
   pegasus,
+  aetos,
+  chrysomallos,
+  hippocampus,
 };
 
 export type { ShapeBuild, ShapeBuilder, ShapeAnimState, ShapeResult } from './types';

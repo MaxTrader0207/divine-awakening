@@ -229,12 +229,12 @@ export class Menu {
     if (s.zoneId === id) action = h('span', { class: 'pill' }, '目前位置');
     else if (!unlocked) action = h('span', { class: 'pill locked' }, '🔒 未開放');
     else action = h('button', { class: 'go', onclick: () => this.travel(id) }, '前往');
-    const status = !comp ? '' : owned ? '　✅ 已收服' : unlocked ? `　收服保底：再 ${pityLeft(s.companions, comp.id)} 次` : '';
+    const status = !comp ? '' : owned ? '　✅ 已收服' : unlocked ? `　保底：再 ${pityLeft(s.companions, comp.id)} 次` : '';
     return h('div', { class: `card dungeon side${unlocked ? '' : ' locked'}` }, [
       h('div', { class: 'card-main' }, [
         h('h4', {}, `支線・${z.name}`),
         h('p', {}, unlocked ? [`建議等級 Lv.${z.levelRange?.[0] ?? 1}　守護者：`, h('span', { class: 'nowrap' }, `${guard?.name ?? '—'}${el ? ` ${el.icon}${el.name}` : ''}`)] : `擊敗${zoneLabel(z.side!.unlockAfter)}後開放`),
-        h('p', {}, [comp ? `${comp.icon} 打倒守護者有機會收服成夥伴` : '', status ? h('span', { class: 'nowrap' }, status) : null]),
+        h('p', {}, [comp ? h('span', { class: 'nowrap' }, `${comp.icon} 有機會收服成夥伴`) : '', status ? h('span', { class: 'nowrap' }, status) : null]),
       ]),
       action,
     ]);

@@ -34,7 +34,10 @@ export type ZoneId =
   | 'dungeon_20'
   | 'dungeon_21'
   | 'dungeon_22'
-  | 'side_1';
+  | 'side_1'
+  | 'side_2'
+  | 'side_3'
+  | 'side_4';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
 
@@ -288,7 +291,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe' | 'pegasus';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus';
 
 /** 首領招式 id（招式資料在 data/bossSkills.ts） */
 export type { BossSkillId } from './bossSkills';

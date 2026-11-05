@@ -26,6 +26,9 @@ import { pelionMountain } from './dungeon20-pelion-mountain';
 import { echidnaLair } from './dungeon21-echidna-lair';
 import { othrysBattlefield } from './dungeon22-othrys-battlefield';
 import { heliconSpring } from './side1-helicon-spring';
+import { idaSummit } from './side2-ida-summit';
+import { colchisGrove } from './side3-colchis-grove';
+import { aegaePalace } from './side4-aegae-palace';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -36,7 +39,7 @@ import { heliconSpring } from './side1-helicon-spring';
  */
 export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
   calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
-  heliconSpring];
+  heliconSpring, idaSummit, colchisGrove, aegaePalace];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 

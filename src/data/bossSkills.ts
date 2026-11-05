@@ -321,6 +321,60 @@ export const BOSS_SKILLS = {
     windup: 1.15, power: 1.6, color: 0xfff4b0, length: 13, width: 2.6,
   },
 
+  /* ---- 守護者・宙斯神鷹埃托斯（支線：伊達山之巔，風） ---- */
+  aetos_gale: {
+    pattern: 'cone', name: '神鷹狂風', desc: '振翅往前方颳出狂風（狂暴時更寬）',
+    windup: 1.1, power: 1.5, color: 0x9ff0c8, range: 7.5, angle: 65, angleEnraged: 90,
+  },
+  aetos_dive: {
+    pattern: 'leap', name: '神鷹撲擊', desc: '飛上高空後俯衝抓向玩家',
+    windup: 1.4, power: 1.7, color: 0xd8f8e8, discColor: 0x9ff0c8, radius: 3.4,
+  },
+  aetos_feathers: {
+    pattern: 'multiLine', name: '羽刃齊射', desc: '同時往三個方向射出羽刃（狂暴時四道）',
+    windup: 1.1, power: 1.3, color: 0xe8ffe8, angles: [-30, 0, 30], anglesEnraged: [-45, -15, 15, 45], count: 4, start: 2, spacing: 2, radius: 1.4, stagger: 0.1,
+  },
+  aetos_cyclone: {
+    pattern: 'nova', name: '天穹旋風', desc: '在身邊捲起旋風（狂暴時範圍更大）',
+    windup: 1.3, power: 1.5, color: 0x9ff0c8, discColor: 0x5fd8a0, radius: 5.5, radiusEnraged: 7,
+  },
+
+  /* ---- 守護者・金羊克律索瑪羅斯（支線：科爾基斯聖林，光） ---- */
+  ram_charge: {
+    pattern: 'dash', name: '金角衝撞', desc: '低頭朝玩家直線衝撞',
+    windup: 1.25, power: 1.7, color: 0xffe9a0, length: 13, width: 2.8,
+  },
+  ram_radiance: {
+    pattern: 'spokes', name: '金羊毛光輝', desc: '羊毛放出一圈光束，光束之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.4, color: 0xfff0a8, count: 5, countEnraged: 7, range: 9, angle: 20,
+  },
+  ram_sunfall: {
+    pattern: 'rain', name: '日輪墜落', desc: '玩家附近落下多道金光（狂暴時更多）',
+    windup: 1.3, power: 1.4, color: 0xffd86a, pillarColor: 0xfff4c0, count: 5, countEnraged: 7, radius: 2.0, spread: 5.5, stagger: 0.15,
+  },
+  ram_quake: {
+    pattern: 'nova', name: '聖蹄震地', desc: '前蹄重踏，身邊震地（狂暴時範圍更大）',
+    windup: 1.2, power: 1.6, color: 0xffe9a0, discColor: 0xd8b04a, radius: 4.5, radiusEnraged: 6,
+  },
+
+  /* ---- 守護者・海馬希波坎普斯（支線：埃蓋海底宮殿，水） ---- */
+  hippo_wave: {
+    pattern: 'line', name: '怒濤直擊', desc: '朝玩家方向捲起一排浪頭（狂暴時更長）',
+    windup: 1.0, power: 1.4, color: 0x4fb8ff, count: 6, countEnraged: 8, start: 2.5, spacing: 2.2, radius: 1.8, stagger: 0.12,
+  },
+  hippo_surge: {
+    pattern: 'dash', name: '海潮奔騰', desc: '乘著浪潮朝玩家直線衝刺',
+    windup: 1.15, power: 1.7, color: 0x8fe3ff, length: 14, width: 3,
+  },
+  hippo_whirl: {
+    pattern: 'nova', name: '漩渦', desc: '魚尾一甩，身邊捲起漩渦（狂暴時範圍更大）',
+    windup: 1.3, power: 1.5, color: 0x4fb8ff, discColor: 0x2a7ad8, radius: 6, radiusEnraged: 7.5,
+  },
+  hippo_rain: {
+    pattern: 'rain', name: '海神驟雨', desc: '玩家附近落下多道水柱（狂暴時更多）',
+    windup: 1.4, power: 1.4, color: 0x4fb8ff, pillarColor: 0x9fe8ff, count: 5, countEnraged: 7, radius: 2.2, spread: 6, stagger: 0.12,
+  },
+
   kampe_heads: {
     pattern: 'spokes', name: '五十獸首', desc: '腰間的獸首往四周撲咬，獸首之間是安全區（狂暴時更多）',
     windup: 1.2, power: 1.8, color: 0xff6a3a, count: 9, countEnraged: 12, range: 10, angle: 15,

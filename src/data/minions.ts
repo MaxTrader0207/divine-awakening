@@ -7,7 +7,7 @@ import type { BeastKind } from '@/entities/BeastModel';
  * 數值都是「召喚師目前屬性」的倍率，所以召喚物會跟著等級與裝備一起變強。
  * 新增召喚物：加一筆，在 data/classes.ts 的技能填 `summon: '<id>'`。
  */
-export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior' | 'hound' | 'eagle' | 'bear' | 'pegasus';
+export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior' | 'hound' | 'eagle' | 'bear' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus';
 
 export interface MinionDef {
   id: MinionId;
@@ -210,6 +210,24 @@ export const MINIONS: Record<MinionId, MinionDef> = {
     glow: 0.1,
     color: 0xffd84a,
     element: 'thunder',
+  },
+  aetos: {
+    id: 'aetos', name: '宙斯神鷹埃托斯', model: '', guardian: 'guardian_aetos', avatarScale: 0.6,
+    height: 2.4, radius: 0.7, hpMul: 0.75, atkMul: 0.85, defMul: 0.9, power: 1.25, range: 2.0, splash: 2.6,
+    cooldown: 1.0, windup: 0.35, moveSpeed: 8, life: 30, max: 1, taunt: 'always', tauntOnSummon: 6, glow: 0.1,
+    color: 0x9ff0c8, element: 'wind',
+  },
+  chrysomallos: {
+    id: 'chrysomallos', name: '金羊克律索瑪羅斯', model: '', guardian: 'guardian_chrysomallos', avatarScale: 0.62,
+    height: 2.0, radius: 0.7, hpMul: 1.2, atkMul: 0.65, defMul: 1.4, power: 1.3, range: 1.8, splash: 2.4,
+    cooldown: 1.3, windup: 0.45, moveSpeed: 7, life: 30, max: 1, taunt: 'always', tauntOnSummon: 8, glow: 0.12,
+    color: 0xffe27a, element: 'light',
+  },
+  hippocampus: {
+    id: 'hippocampus', name: '海馬希波坎普斯', model: '', guardian: 'guardian_hippocampus', avatarScale: 0.6,
+    height: 2.2, radius: 0.7, hpMul: 0.95, atkMul: 0.75, defMul: 1.1, power: 1.25, range: 2.0, splash: 3.0,
+    cooldown: 1.2, windup: 0.4, moveSpeed: 7.2, life: 30, max: 1, taunt: 'always', tauntOnSummon: 6, glow: 0.1,
+    color: 0x4fb8ff, element: 'water',
   },
 };
 
