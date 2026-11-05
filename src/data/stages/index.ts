@@ -29,6 +29,12 @@ import { heliconSpring } from './side1-helicon-spring';
 import { idaSummit } from './side2-ida-summit';
 import { colchisGrove } from './side3-colchis-grove';
 import { aegaePalace } from './side4-aegae-palace';
+import { rhodesSunTemple } from './side5-rhodes-sun-temple';
+import { thracianPeak } from './side6-thracian-peak';
+import { etnaFoothills } from './side7-etna-foothills';
+import { chiosHuntingGround } from './side8-chios-hunting-ground';
+import { spartaPhobosShrine } from './side9-sparta-phobos-shrine';
+import { areopagus } from './side10-areopagus';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -39,7 +45,8 @@ import { aegaePalace } from './side4-aegae-palace';
  */
 export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
   calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
-  heliconSpring, idaSummit, colchisGrove, aegaePalace];
+  heliconSpring, idaSummit, colchisGrove, aegaePalace,
+  rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 

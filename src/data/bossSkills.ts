@@ -375,6 +375,114 @@ export const BOSS_SKILLS = {
     windup: 1.4, power: 1.4, color: 0x4fb8ff, pillarColor: 0x9fe8ff, count: 5, countEnraged: 7, radius: 2.2, spread: 6, stagger: 0.12,
   },
 
+  /* ---- 守護者・不死鳥菲尼克斯（支線：羅德島日神殿，火） ---- */
+  phoenix_flame: {
+    pattern: 'cone', name: '烈焰吐息', desc: '往前方噴出烈焰（狂暴時更寬）',
+    windup: 1.1, power: 1.5, color: 0xff7a2a, range: 8, angle: 70, angleEnraged: 100,
+  },
+  phoenix_rain: {
+    pattern: 'rain', name: '焚天火羽', desc: '玩家附近落下燃燒的羽毛（狂暴時更多）',
+    windup: 1.3, power: 1.4, color: 0xff7a2a, pillarColor: 0xffd86a, count: 5, countEnraged: 7, radius: 2.0, spread: 5.5, stagger: 0.13,
+  },
+  phoenix_dive: {
+    pattern: 'leap', name: '炎鳥俯衝', desc: '化成火球俯衝到玩家位置',
+    windup: 1.4, power: 1.7, color: 0xffb35a, discColor: 0xff5a1a, radius: 3.5,
+  },
+  phoenix_rebirth: {
+    pattern: 'nova', name: '浴火重生', desc: '全身爆出烈焰（狂暴時範圍更大）',
+    windup: 1.4, power: 1.6, color: 0xff7a2a, discColor: 0xff3a1a, radius: 5.5, radiusEnraged: 7,
+  },
+
+  /* ---- 守護者・北風神波瑞阿斯（支線：色雷斯冰峰，冰） ---- */
+  boreas_blizzard: {
+    pattern: 'rain', name: '北風暴雪', desc: '玩家附近落下冰柱（狂暴時更多）',
+    windup: 1.3, power: 1.4, color: 0x9fe6ff, pillarColor: 0xeaffff, count: 4, countEnraged: 6, radius: 2.0, spread: 5.5, stagger: 0.12,
+  },
+  boreas_gust: {
+    pattern: 'dash', name: '寒風突襲', desc: '乘著北風朝玩家直線飛衝',
+    windup: 1.3, power: 1.7, color: 0xcff4ff, length: 14, width: 2.8,
+  },
+  boreas_frost: {
+    pattern: 'spokes', name: '霜之放射', desc: '往四周放出冰霜光束，光束之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.4, color: 0x9fe6ff, count: 5, countEnraged: 7, range: 9, angle: 20,
+  },
+  boreas_breath: {
+    pattern: 'cone', name: '凜冬之息', desc: '往前方吹出寒氣（狂暴時更寬）',
+    windup: 1.1, power: 1.5, color: 0xbff0ff, range: 6.5, angle: 65, angleEnraged: 90,
+  },
+
+  /* ---- 守護者・百臂巨人布里阿瑞俄斯（支線：埃特納山麓，土） ---- */
+  bri_fists: {
+    pattern: 'multiLine', name: '百臂連拳', desc: '好幾隻手同時往前砸（狂暴時更多道）',
+    windup: 1.2, power: 1.3, color: 0xd8a860, angles: [-35, 0, 35], anglesEnraged: [-50, -20, 20, 50], count: 4, start: 2, spacing: 2.1, radius: 1.5, stagger: 0.11,
+  },
+  bri_quake: {
+    pattern: 'nova', name: '大地震裂', desc: '六隻手一起捶地（狂暴時範圍更大）',
+    windup: 1.3, power: 1.6, color: 0xd8a860, discColor: 0x8a6a3a, radius: 5.5, radiusEnraged: 7,
+  },
+  bri_boulders: {
+    pattern: 'rain', name: '投石如雨', desc: '朝玩家附近丟出巨石（狂暴時更多）',
+    windup: 1.4, power: 1.4, color: 0xb8865a, pillarColor: 0xd8b888, count: 5, countEnraged: 7, radius: 2.1, spread: 6, stagger: 0.14,
+  },
+  bri_slam: {
+    pattern: 'leap', name: '巨人踏擊', desc: '跳到玩家位置重踏',
+    windup: 1.5, power: 1.7, color: 0xd8a860, discColor: 0x8a6a3a, radius: 3.6,
+  },
+
+  /* ---- 守護者・天蠍斯科爾皮俄斯（支線：希俄斯島獵場，毒） ---- */
+  scorp_sting: {
+    pattern: 'line', name: '毒尾突刺', desc: '尾刺往玩家方向連續突刺（狂暴時更長）',
+    windup: 1.15, power: 1.4, color: 0xb6ff4a, count: 5, countEnraged: 6, start: 2.2, spacing: 2.1, radius: 1.6, stagger: 0.1,
+  },
+  scorp_spray: {
+    pattern: 'cone', name: '毒霧噴灑', desc: '往前方噴出毒霧（狂暴時更寬）',
+    windup: 1.1, power: 1.5, color: 0x8fd84a, range: 6.5, angle: 70, angleEnraged: 95,
+  },
+  scorp_burrow: {
+    pattern: 'leap', name: '鑽地突襲', desc: '鑽進土裡，從玩家腳下鑽出',
+    windup: 1.5, power: 1.7, color: 0xb6ff4a, discColor: 0x6a8a2a, radius: 3.4,
+  },
+  scorp_cloud: {
+    pattern: 'nova', name: '劇毒瘴氣', desc: '身邊散出毒瘴（狂暴時範圍更大）',
+    windup: 1.3, power: 1.5, color: 0x8fd84a, discColor: 0x4a8a2a, radius: 5.5, radiusEnraged: 7,
+  },
+
+  /* ---- 守護者・恐懼之神福波斯（支線：斯巴達恐懼神殿，暗） ---- */
+  phobos_reap: {
+    pattern: 'cone', name: '恐懼收割', desc: '巨鐮往前方大範圍橫掃（狂暴時幾乎半圈）',
+    windup: 1.15, power: 1.6, color: 0xb48cff, range: 7, angle: 120, angleEnraged: 170,
+  },
+  phobos_terror: {
+    pattern: 'spokes', name: '戰慄放射', desc: '往四周放出恐懼之影，影子之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.4, color: 0x8a4aff, count: 4, countEnraged: 6, range: 9, angle: 20,
+  },
+  phobos_shadow: {
+    pattern: 'dash', name: '暗影突進', desc: '化成黑影朝玩家直線突進',
+    windup: 1.25, power: 1.7, color: 0xb48cff, length: 14, width: 2.6,
+  },
+  phobos_nightfall: {
+    pattern: 'rain', name: '夜幕降臨', desc: '玩家附近落下暗影（狂暴時更多）',
+    windup: 1.3, power: 1.4, color: 0x8a4aff, pillarColor: 0xd8c0ff, count: 5, countEnraged: 7, radius: 2.0, spread: 5.5, stagger: 0.13,
+  },
+
+  /* ---- 守護者・戰神阿瑞斯（支線：阿瑞斯之丘，金） ---- */
+  ares_spear: {
+    pattern: 'line', name: '戰神之槍', desc: '長槍往玩家方向貫穿（狂暴時更長）',
+    windup: 1.15, power: 1.4, color: 0xffd86a, count: 5, countEnraged: 6, start: 2.4, spacing: 2.2, radius: 1.6, stagger: 0.09,
+  },
+  ares_charge: {
+    pattern: 'dash', name: '戰車衝鋒', desc: '舉盾朝玩家直線衝鋒',
+    windup: 1.3, power: 1.6, color: 0xffb35a, length: 14, width: 3,
+  },
+  ares_volley: {
+    pattern: 'multiLine', name: '萬槍齊發', desc: '同時往好幾個方向擲出長槍（狂暴時更多道）',
+    windup: 1.35, power: 1.3, color: 0xffd86a, angles: [-30, 0, 30], anglesEnraged: [-45, -15, 15, 45], count: 4, start: 2, spacing: 2.1, radius: 1.4, stagger: 0.1,
+  },
+  ares_warcry: {
+    pattern: 'nova', name: '戰神怒吼', desc: '舉盾怒吼，身邊震盪（狂暴時範圍更大）',
+    windup: 1.3, power: 1.6, color: 0xffb35a, discColor: 0xd83a2a, radius: 5, radiusEnraged: 6.3,
+  },
+
   kampe_heads: {
     pattern: 'spokes', name: '五十獸首', desc: '腰間的獸首往四周撲咬，獸首之間是安全區（狂暴時更多）',
     windup: 1.2, power: 1.8, color: 0xff6a3a, count: 9, countEnraged: 12, range: 10, angle: 15,

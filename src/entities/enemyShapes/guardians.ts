@@ -303,3 +303,301 @@ export const hippocampus: ShapeBuild = (b) => {
     },
   };
 };
+
+/* ======================= 人形守護者（戰神、巨人）共用 ======================= */
+
+interface WarriorOpts {
+  skin: number;
+  armor: number;
+  cloth: number;
+  /** 身高倍率（1 = 約 2.1） */
+  size?: number;
+  /** 手臂對數（百臂巨人 3 對） */
+  armPairs?: number;
+  beard?: number;
+  /** 頭盔（含冠羽顏色） */
+  helm?: { color: number; crest: number };
+  cape?: number;
+  wings?: { color: number; tip: number; size: number };
+  weapon?: 'spear' | 'scythe' | 'none';
+  weaponColor?: number;
+  shield?: number;
+  /** 發光（眼睛、武器刃、光環） */
+  glow: number;
+  /** 懸浮（風神） */
+  float?: boolean;
+}
+
+/** 人形：骨盆 pivot＋兩腿、軀幹、頭、手臂（右手第一隻拿武器、左手第一隻拿盾），回傳動畫 */
+function warrior(b: ShapeBuilder, o: WarriorOpts) {
+  const k = o.size ?? 1;
+  const root = b.group(0, 0, 0);
+  const hips = b.group(0, 0.95 * k, 0, root);
+  // 腿
+  const legs: THREE.Group[] = [];
+  for (const sx of [-1, 1]) {
+    const leg = b.group(sx * 0.15 * k, 0, 0, hips);
+    b.add(new THREE.CylinderGeometry(0.14 * k, 0.11 * k, 0.5 * k, 8), o.cloth, 0, -0.25 * k, 0, leg);
+    b.add(new THREE.CylinderGeometry(0.12 * k, 0.095 * k, 0.45 * k, 8), o.armor, 0, -0.68 * k, 0, leg); // 脛甲
+    b.add(new THREE.BoxGeometry(0.16 * k, 0.08 * k, 0.26 * k), o.armor, 0, -0.92 * k, 0.05 * k, leg);
+    legs.push(leg);
+  }
+  // 軀幹（胸甲＋裙甲）
+  const chest = b.group(0, 0.1 * k, 0, hips);
+  b.add(new THREE.CylinderGeometry(0.3 * k, 0.24 * k, 0.32 * k, 10), o.cloth, 0, 0.02 * k, 0, hips); // 裙
+  const torso = b.add(new THREE.CylinderGeometry(0.38 * k, 0.29 * k, 0.62 * k, 10), o.armor, 0, 0.38 * k, 0, chest);
+  torso.scale.z = 0.75;
+  b.add(new THREE.SphereGeometry(0.18 * k, 8, 6), o.armor, 0, 0.5 * k, 0.12 * k, chest).scale.set(1.6, 0.8, 0.5); // 胸肌板
+  // 頭
+  const head = b.group(0, 0.82 * k, 0, chest);
+  b.add(new THREE.SphereGeometry(0.19 * k, 10, 8), o.skin, 0, 0.08 * k, 0, head);
+  if (o.beard !== undefined) b.add(new THREE.ConeGeometry(0.13 * k, 0.24 * k, 7), o.beard, 0, -0.06 * k, 0.08 * k, head).rotation.x = Math.PI;
+  for (const sx of [-1, 1]) b.glow(new THREE.SphereGeometry(0.025 * k, 5, 4), o.glow, sx * 0.065 * k, 0.1 * k, 0.15 * k, head);
+  if (o.helm) {
+    b.add(new THREE.SphereGeometry(0.21 * k, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.55), o.helm.color, 0, 0.1 * k, 0, head);
+    for (const sx of [-1, 1]) b.add(new THREE.BoxGeometry(0.05 * k, 0.16 * k, 0.12 * k), o.helm.color, sx * 0.15 * k, 0.02 * k, 0.06 * k, head); // 頰甲
+    const crest = b.add(new THREE.BoxGeometry(0.06 * k, 0.16 * k, 0.42 * k), o.helm.crest, 0, 0.3 * k, -0.04 * k, head);
+    crest.scale.y = 1.2;
+  }
+  // 手臂
+  const arms: THREE.Group[] = [];
+  const pairs = o.armPairs ?? 1;
+  for (let p = 0; p < pairs; p++) {
+    for (const sx of [1, -1]) {
+      const arm = b.group(sx * 0.47 * k, (0.62 - p * 0.17) * k, -p * 0.05 * k, chest);
+      b.add(new THREE.SphereGeometry(0.15 * k, 8, 6), o.armor, 0, 0, 0, arm); // 肩甲
+      b.add(new THREE.CylinderGeometry(0.105 * k, 0.09 * k, 0.4 * k, 7), o.skin, 0, -0.24 * k, 0, arm);
+      b.add(new THREE.CylinderGeometry(0.1 * k, 0.085 * k, 0.32 * k, 7), o.armor, 0, -0.56 * k, 0, arm); // 護臂
+      b.add(new THREE.SphereGeometry(0.09 * k, 6, 5), o.skin, 0, -0.75 * k, 0, arm);
+      arm.rotation.z = sx * (0.18 + p * 0.35);
+      arms.push(arm);
+    }
+  }
+  // 武器（右手）
+  const hand = b.group(0, -0.75 * k, 0, arms[0]);
+  if (o.weapon === 'spear') {
+    b.add(new THREE.CylinderGeometry(0.025 * k, 0.025 * k, 2.2 * k, 6), o.weaponColor ?? 0x7a5a3a, 0, 0, 0.1 * k, hand).rotation.x = Math.PI / 2;
+    const tip = b.glow(new THREE.ConeGeometry(0.07 * k, 0.32 * k, 4), o.glow, 0, 0, 1.3 * k, hand);
+    tip.rotation.x = Math.PI / 2;
+  } else if (o.weapon === 'scythe') {
+    b.add(new THREE.CylinderGeometry(0.025 * k, 0.025 * k, 1.9 * k, 6), o.weaponColor ?? 0x2a2030, 0, 0.5 * k, 0, hand);
+    const blade = b.glow(new THREE.TorusGeometry(0.42 * k, 0.04 * k, 4, 14, Math.PI * 0.75), o.glow, 0.05 * k, 1.35 * k, 0.32 * k, hand);
+    blade.rotation.y = Math.PI / 2;
+    blade.rotation.z = 0.2;
+  }
+  // 盾（左手）
+  if (o.shield !== undefined && arms[1]) {
+    const sh = b.add(new THREE.CylinderGeometry(0.36 * k, 0.36 * k, 0.06 * k, 14), o.shield, -0.08 * k, -0.5 * k, 0.12 * k, arms[1]);
+    sh.rotation.z = Math.PI / 2;
+    sh.rotation.y = 0.2;
+    b.glow(new THREE.SphereGeometry(0.07 * k, 6, 5), o.glow, -0.13 * k, -0.5 * k, 0.12 * k, arms[1]);
+  }
+  // 披風
+  let cape: THREE.Mesh | null = null;
+  if (o.cape !== undefined) {
+    cape = b.add(new THREE.BoxGeometry(0.62 * k, 0.95 * k, 0.04 * k), o.cape, 0, 0.2 * k, -0.24 * k, chest);
+    cape.geometry.translate(0, -0.3 * k, 0);
+  }
+  // 翅膀
+  const wings = o.wings ? [featherWing(b, -1, -0.18 * k, 0.6 * k, -0.2 * k, o.wings.color, o.wings.tip, o.wings.size), featherWing(b, 1, 0.18 * k, 0.6 * k, -0.2 * k, o.wings.color, o.wings.tip, o.wings.size)] : [];
+  for (const w of wings) chest.add(w);
+
+  const animate = ({ t, moving, winding, strike }: { t: number; moving: boolean; winding: boolean; strike: number }) => {
+    const sw = moving ? Math.sin(t * 8) * 0.6 : 0;
+    legs[0].rotation.x = sw;
+    legs[1].rotation.x = -sw;
+    hips.position.y = 0.95 * k + (moving ? Math.abs(Math.cos(t * 8)) * 0.05 : Math.sin(t * 1.6) * 0.015) + (o.float ? 0.25 + Math.sin(t * 2) * 0.1 : 0);
+    if (o.float) {
+      legs[0].rotation.x = 0.3 + sw * 0.3;
+      legs[1].rotation.x = 0.15 - sw * 0.3;
+    }
+    chest.rotation.y = winding ? -0.45 : strike * 0.5;
+    chest.rotation.x = winding ? -0.12 : strike * 0.18;
+    // 武器手：前搖高舉、出手揮下
+    arms[0].rotation.x = winding ? -2.4 : strike > 0 ? -2.4 + 3.2 * (1 - strike) : -sw * 0.6 - 0.15;
+    if (arms[1]) arms[1].rotation.x = o.shield !== undefined ? -0.7 : sw * 0.6 - 0.15;
+    for (let i = 2; i < arms.length; i++) arms[i].rotation.x = winding ? -1.6 - Math.sin(t * 12 + i) * 0.4 : strike > 0 ? -1.4 * strike : Math.sin(t * 3 + i * 1.3) * 0.35;
+    head.rotation.y = winding ? 0.3 : Math.sin(t * 0.7) * 0.15;
+    if (cape) cape.rotation.x = 0.15 + (moving ? 0.35 : 0) + Math.sin(t * 3) * 0.05;
+    const flap = winding ? 0.9 : moving ? 0.4 + Math.sin(t * 6) * 0.35 : 0.25 + Math.sin(t * 2) * 0.12;
+    if (wings.length) {
+      wings[0].rotation.z = -flap;
+      wings[1].rotation.z = flap;
+    }
+  };
+  return { root, chest, head, arms, animate, height: 2.15 * k };
+}
+
+/** boreas 北風神波瑞阿斯（冰）：白鬍子、冰藍羽翼、懸浮，冰霜長矛 */
+export const boreas: ShapeBuild = (b) => {
+  const w = warrior(b, {
+    skin: 0xe8d8cc, armor: 0x9fc8e8, cloth: 0x4a7ab8, beard: 0xf4f8ff, cape: 0xd8ecff,
+    wings: { color: 0xeaf6ff, tip: 0x8fd8ff, size: 1.3 }, weapon: 'spear', weaponColor: 0xcfe8f8, glow: 0x9fe6ff, float: true,
+  });
+  const frost = b.glow(new THREE.TorusGeometry(0.7, 0.03, 4, 22), 0xbff0ff, 0, 0.12, 0);
+  frost.rotation.x = Math.PI / 2;
+  return { height: w.height + 0.3, animate: (s) => { w.animate(s); frost.rotation.z = s.t * 2; frost.scale.setScalar(1 + Math.sin(s.t * 3) * 0.1); } };
+};
+
+/** briareos 百臂巨人布里阿瑞俄斯（土）：岩石皮膚、六條手臂、沒有武器，用拳頭砸 */
+export const briareos: ShapeBuild = (b) => {
+  const w = warrior(b, { skin: 0x9a8268, armor: 0x6a5a48, cloth: 0x4a3a2a, size: 1.15, armPairs: 3, beard: 0x3a2a1a, weapon: 'none', glow: 0xffb35a });
+  // 背上的岩塊
+  for (const [x, y, z, r] of [[0.2, 1.75, -0.25, 0.16], [-0.18, 1.62, -0.28, 0.13], [0, 1.95, -0.2, 0.12]] as const) {
+    const rock = b.add(new THREE.DodecahedronGeometry(r), 0x7a6a58, x, y, z);
+    rock.rotation.set(x * 3, y, z);
+  }
+  return { height: w.height, animate: w.animate };
+};
+
+/** phobos 恐懼之神福波斯（暗）：戰神之子，黑甲、紫焰眼、巨鐮、破披風 */
+export const phobos: ShapeBuild = (b) => {
+  const w = warrior(b, {
+    skin: 0x6a5a7a, armor: 0x2a2236, cloth: 0x3a2a4a, helm: { color: 0x1e1828, crest: 0x8a4aff }, cape: 0x2a1a3a,
+    weapon: 'scythe', weaponColor: 0x1a1420, glow: 0xb48cff,
+  });
+  const aura: THREE.Mesh[] = [];
+  for (let i = 0; i < 4; i++) aura.push(b.glow(new THREE.ConeGeometry(0.08, 0.4, 4), 0x8a4aff, Math.cos(i * 1.57) * 0.55, 0.3, Math.sin(i * 1.57) * 0.55));
+  return {
+    height: w.height,
+    animate: (s) => {
+      w.animate(s);
+      aura.forEach((a, i) => {
+        a.position.y = 0.3 + ((s.t * 0.6 + i * 0.25) % 1) * 1.6;
+        a.scale.setScalar(1 - ((s.t * 0.6 + i * 0.25) % 1) * 0.7);
+      });
+    },
+  };
+};
+
+/** ares 戰神阿瑞斯（金）：青銅全甲、紅冠羽頭盔、圓盾、長槍、紅披風 */
+export const ares: ShapeBuild = (b) => {
+  const w = warrior(b, {
+    skin: 0xd8a888, armor: 0xc8963a, cloth: 0x8a2a20, helm: { color: 0xc8963a, crest: 0xd83a2a }, cape: 0xb02a20,
+    weapon: 'spear', weaponColor: 0x5a3a20, shield: 0xb88a30, glow: 0xffd86a, size: 1.05,
+  });
+  return { height: w.height, animate: w.animate };
+};
+
+/** phoenix 不死鳥菲尼克斯（火）：火紅大鳥，金色冠羽、燃燒的長尾羽，懸停；出手前全身火焰變大 */
+export const phoenix: ShapeBuild = (b) => {
+  const c = b.color;
+  const gold = 0xffc23a;
+  const flame = 0xff7a2a;
+  const hover = b.group(0, 0, 0);
+  const torso = b.add(new THREE.SphereGeometry(0.36, 11, 9), c, 0, 1.6, 0, hover);
+  torso.scale.set(0.85, 0.95, 1.3);
+  b.add(new THREE.SphereGeometry(0.26, 9, 7), gold, 0, 1.62, 0.26, hover).scale.set(0.9, 1, 0.75);
+  const head = b.group(0, 2.02, 0.32, hover);
+  b.add(new THREE.SphereGeometry(0.19, 9, 7), c, 0, 0, 0, head);
+  const bk = b.add(new THREE.ConeGeometry(0.07, 0.24, 6), gold, 0, -0.02, 0.24, head);
+  bk.rotation.x = Math.PI / 2 + 0.3;
+  for (const sx of [-1, 1]) b.glow(new THREE.SphereGeometry(0.03, 5, 4), 0xfff4a0, sx * 0.1, 0.05, 0.12, head);
+  // 冠羽
+  for (let i = 0; i < 4; i++) {
+    const f = b.glow(new THREE.ConeGeometry(0.035, 0.3 - i * 0.04, 4), i % 2 ? gold : flame, 0, 0.18, -0.04 - i * 0.06, head);
+    f.rotation.x = -0.5 - i * 0.18;
+  }
+  const wings = [featherWing(b, -1, -0.22, 1.74, 0.05, c, gold, 1.55), featherWing(b, 1, 0.22, 1.74, 0.05, c, gold, 1.55)];
+  for (const w of wings) hover.add(w);
+  // 長尾羽（發光火焰）
+  const tail = b.group(0, 1.48, -0.42, hover);
+  const plumes: THREE.Mesh[] = [];
+  for (let i = 0; i < 5; i++) {
+    const p = b.glow(new THREE.ConeGeometry(0.07, 1.0 + (i % 2) * 0.35, 5), i % 2 ? gold : flame, (i - 2) * 0.1, -0.1, -0.5, tail);
+    p.rotation.x = -Math.PI / 2 - 0.35;
+    p.rotation.z = (i - 2) * 0.12;
+    plumes.push(p);
+  }
+  const ember = b.glow(new THREE.SphereGeometry(0.5, 10, 8), 0xff9a3a, 0, 1.6, 0, hover);
+  (ember.material as THREE.MeshBasicMaterial).transparent = true;
+  (ember.material as THREE.MeshBasicMaterial).opacity = 0.18;
+  const legs: THREE.Group[] = [];
+  for (const sx of [-1, 1]) {
+    const l = b.group(sx * 0.12, 1.3, 0.02, hover);
+    b.add(new THREE.CylinderGeometry(0.04, 0.035, 0.36, 5), gold, 0, -0.18, 0, l);
+    legs.push(l);
+  }
+  return {
+    height: 2.4,
+    animate: ({ t, moving, winding, strike }) => {
+      const flap = winding ? 1.1 : moving ? Math.sin(t * 7) * 0.65 + 0.2 : Math.sin(t * 3) * 0.5 + 0.2;
+      wings[0].rotation.z = -flap;
+      wings[1].rotation.z = flap;
+      hover.position.y = Math.sin(t * 3 + 0.5) * 0.12 + (winding ? 0.2 : 0);
+      hover.rotation.x = (moving ? 0.2 : 0.04) - strike * 0.4;
+      tail.rotation.x = Math.sin(t * 2.5) * 0.15;
+      plumes.forEach((p, i) => p.scale.setScalar(1 + Math.sin(t * 9 + i * 1.7) * 0.12 + (winding ? 0.3 : 0)));
+      ember.scale.setScalar(1 + Math.sin(t * 6) * 0.08 + (winding ? 0.6 : 0));
+      for (const l of legs) l.rotation.x = winding ? -0.7 : 0.4;
+      head.rotation.y = winding ? 0 : Math.sin(t * 0.9) * 0.3;
+    },
+  };
+};
+
+/** scorpius 天蠍斯科爾皮俄斯（毒）：蓋亞派去刺殺獵戶俄里翁的巨蠍；八腳、雙鉗、分節的毒尾高舉，出手前尾刺發光往前刺 */
+export const scorpius: ShapeBuild = (b) => {
+  const c = b.color; // 暗紫黑甲殼
+  const sting = 0xb6ff4a;
+  const body = b.group(0, 0.55, 0);
+  for (let i = 0; i < 4; i++) {
+    const seg = b.add(new THREE.SphereGeometry(0.42 - i * 0.04, 10, 7), i % 2 ? c : b.dark, 0, 0, 0.35 - i * 0.32, body);
+    seg.scale.set(1.15, 0.5, 0.75);
+  }
+  b.add(new THREE.SphereGeometry(0.3, 9, 7), c, 0, 0.05, 0.65, body).scale.set(1.1, 0.55, 0.8); // 頭胸
+  for (let i = 0; i < 4; i++) for (const sx of [-1, 1]) b.glow(new THREE.SphereGeometry(0.035, 5, 4), sting, sx * (0.06 + i * 0.05), 0.2, 0.82 - i * 0.02, body);
+  // 八隻腳
+  const legs: THREE.Group[] = [];
+  for (let i = 0; i < 4; i++) {
+    for (const sx of [-1, 1]) {
+      const l = b.group(sx * 0.4, 0, 0.35 - i * 0.28, body);
+      const up = b.add(new THREE.CylinderGeometry(0.05, 0.045, 0.5, 5), c, sx * 0.22, 0.12, 0, l);
+      up.rotation.z = sx * -1.1;
+      const lo = b.add(new THREE.CylinderGeometry(0.045, 0.02, 0.6, 5), b.dark, sx * 0.48, -0.15, 0, l);
+      lo.rotation.z = sx * 0.4;
+      l.rotation.y = sx * (i - 1.5) * -0.25;
+      legs.push(l);
+    }
+  }
+  // 雙鉗
+  const claws: THREE.Group[] = [];
+  for (const sx of [-1, 1]) {
+    const arm = b.group(sx * 0.28, 0.05, 0.85, body);
+    const a1 = b.add(new THREE.CylinderGeometry(0.07, 0.06, 0.5, 6), c, sx * 0.1, 0, 0.22, arm);
+    a1.rotation.x = Math.PI / 2;
+    a1.rotation.z = sx * 0.4;
+    b.add(new THREE.SphereGeometry(0.17, 8, 6), c, sx * 0.2, 0, 0.55, arm).scale.set(0.9, 0.6, 1.3);
+    for (const up of [1, -1]) {
+      const pin = b.add(new THREE.ConeGeometry(0.06, 0.32, 5), b.dark, sx * 0.2 + up * 0.04, up * 0.05, 0.8, arm);
+      pin.rotation.x = Math.PI / 2;
+    }
+    claws.push(arm);
+  }
+  // 毒尾：6 節往上往前捲
+  const tailSegs: THREE.Group[] = [];
+  let parent: THREE.Object3D = b.group(0, 0.05, -0.75, body);
+  tailSegs.push(parent as THREE.Group);
+  for (let i = 0; i < 6; i++) {
+    b.add(new THREE.SphereGeometry(0.17 - i * 0.012, 8, 6), i % 2 ? c : b.dark, 0, 0.14, 0, parent).scale.set(1, 1.4, 1);
+    const g = b.group(0, 0.27, 0, parent);
+    tailSegs.push(g);
+    parent = g;
+  }
+  b.add(new THREE.SphereGeometry(0.15, 8, 6), 0x5a3a6a, 0, 0.08, 0.05, parent).scale.set(0.9, 1.1, 1.3);
+  const stinger = b.glow(new THREE.ConeGeometry(0.06, 0.32, 5), sting, 0, 0.1, 0.27, parent);
+  stinger.rotation.x = Math.PI / 2 + 0.4;
+  return {
+    height: 1.9,
+    animate: ({ t, moving, winding, strike }) => {
+      legs.forEach((l, i) => (l.rotation.x = moving ? Math.sin(t * 14 + i * 1.3) * 0.35 : Math.sin(t * 2 + i) * 0.04));
+      const curl = winding ? 0.55 : strike > 0 ? 0.3 - strike * 0.5 : 0.36 + Math.sin(t * 1.8) * 0.05;
+      tailSegs.forEach((s, i) => (s.rotation.x = i === 0 ? -0.5 : curl));
+      claws.forEach((cl, i) => {
+        cl.rotation.y = (i ? 1 : -1) * (winding ? 0.5 : 0.15 + Math.sin(t * 2 + i) * 0.1);
+        cl.rotation.x = strike * -0.3;
+      });
+      stinger.scale.setScalar(winding ? 1.5 + Math.sin(t * 20) * 0.2 : 1);
+      body.position.y = 0.55 + (moving ? Math.sin(t * 14) * 0.02 : 0);
+    },
+  };
+};

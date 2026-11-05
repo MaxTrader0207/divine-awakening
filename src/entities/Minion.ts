@@ -34,6 +34,12 @@ const GEAR: Record<MinionId, { style: BoneStyle; eye: number; wisps: number; run
   aetos: { style: 'soldier', eye: 0x9ff0c8, wisps: 0, rune: 1.5 },
   chrysomallos: { style: 'soldier', eye: 0xffe27a, wisps: 0, rune: 1.5 },
   hippocampus: { style: 'soldier', eye: 0x4fb8ff, wisps: 0, rune: 1.5 },
+  phoenix: { style: 'soldier', eye: 0xff7a2a, wisps: 0, rune: 1.5 },
+  boreas: { style: 'soldier', eye: 0x9fe6ff, wisps: 0, rune: 1.5 },
+  briareos: { style: 'soldier', eye: 0xd8a860, wisps: 0, rune: 1.6 },
+  scorpius: { style: 'soldier', eye: 0xb6ff4a, wisps: 0, rune: 1.5 },
+  phobos: { style: 'soldier', eye: 0xb48cff, wisps: 0, rune: 1.5 },
+  ares: { style: 'soldier', eye: 0xffd86a, wisps: 0, rune: 1.6 },
 };
 
 /**

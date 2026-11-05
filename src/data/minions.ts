@@ -7,7 +7,7 @@ import type { BeastKind } from '@/entities/BeastModel';
  * 數值都是「召喚師目前屬性」的倍率，所以召喚物會跟著等級與裝備一起變強。
  * 新增召喚物：加一筆，在 data/classes.ts 的技能填 `summon: '<id>'`。
  */
-export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior' | 'hound' | 'eagle' | 'bear' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus';
+export type MinionId = 'skeleton_minion' | 'skeleton_mage' | 'skeleton_warrior' | 'hound' | 'eagle' | 'bear' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus' | 'phoenix' | 'boreas' | 'briareos' | 'scorpius' | 'phobos' | 'ares';
 
 export interface MinionDef {
   id: MinionId;
@@ -228,6 +228,42 @@ export const MINIONS: Record<MinionId, MinionDef> = {
     height: 2.2, radius: 0.7, hpMul: 0.95, atkMul: 0.75, defMul: 1.1, power: 1.25, range: 2.0, splash: 3.0,
     cooldown: 1.2, windup: 0.4, moveSpeed: 7.2, life: 30, max: 1, taunt: 'always', tauntOnSummon: 6, glow: 0.1,
     color: 0x4fb8ff, element: 'water',
+  },
+  phoenix: {
+    id: 'phoenix', name: '不死鳥菲尼克斯', model: '', guardian: 'guardian_phoenix', avatarScale: 0.58,
+    height: 2.4, radius: 0.7, hpMul: 0.8, atkMul: 0.8, defMul: 0.9, power: 1.2, range: 8, ranged: true,
+    cooldown: 1.0, windup: 0.35, moveSpeed: 7.5, life: 30, max: 1, taunt: 'always', tauntOnSummon: 5, glow: 0.12,
+    color: 0xff7a2a, element: 'fire',
+  },
+  boreas: {
+    id: 'boreas', name: '北風神波瑞阿斯', model: '', guardian: 'guardian_boreas', avatarScale: 0.62,
+    height: 2.5, radius: 0.6, hpMul: 0.85, atkMul: 0.75, defMul: 1.0, power: 1.3, range: 7, ranged: true,
+    cooldown: 1.2, windup: 0.4, moveSpeed: 7, life: 30, max: 1, taunt: 'always', tauntOnSummon: 6, glow: 0.12,
+    color: 0x9fe6ff, element: 'ice',
+  },
+  briareos: {
+    id: 'briareos', name: '百臂巨人布里阿瑞俄斯', model: '', guardian: 'guardian_briareos', avatarScale: 0.6,
+    height: 2.6, radius: 0.8, hpMul: 1.3, atkMul: 0.7, defMul: 1.3, power: 1.2, range: 2.0, splash: 2.6,
+    cooldown: 0.9, windup: 0.35, moveSpeed: 6.2, life: 30, max: 1, taunt: 'always', tauntOnSummon: 8, glow: 0.1,
+    color: 0xd8a860, element: 'earth',
+  },
+  scorpius: {
+    id: 'scorpius', name: '天蠍斯科爾皮俄斯', model: '', guardian: 'guardian_scorpius', avatarScale: 0.6,
+    height: 1.6, radius: 0.8, hpMul: 1.0, atkMul: 0.85, defMul: 1.15, power: 1.35, range: 2.2, splash: 2.2,
+    cooldown: 1.1, windup: 0.4, moveSpeed: 7, life: 30, max: 1, taunt: 'always', tauntOnSummon: 6, glow: 0.1,
+    color: 0xb6ff4a, element: 'poison',
+  },
+  phobos: {
+    id: 'phobos', name: '恐懼之神福波斯', model: '', guardian: 'guardian_phobos', avatarScale: 0.62,
+    height: 2.2, radius: 0.6, hpMul: 0.9, atkMul: 0.95, defMul: 1.0, power: 1.4, range: 2.4, splash: 3.0,
+    cooldown: 1.2, windup: 0.45, moveSpeed: 7.2, life: 30, max: 1, taunt: 'always', tauntOnSummon: 7, glow: 0.12,
+    color: 0xb48cff, element: 'dark',
+  },
+  ares: {
+    id: 'ares', name: '戰神阿瑞斯', model: '', guardian: 'guardian_ares', avatarScale: 0.62,
+    height: 2.3, radius: 0.6, hpMul: 1.15, atkMul: 0.95, defMul: 1.25, power: 1.4, range: 2.4, splash: 2.6,
+    cooldown: 1.0, windup: 0.4, moveSpeed: 7.2, life: 30, max: 1, taunt: 'always', tauntOnSummon: 8, glow: 0.12,
+    color: 0xffd86a, element: 'metal',
   },
 };
 
