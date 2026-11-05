@@ -73,6 +73,17 @@ const FLAT_SCALE = [1, 2.2, 3.6, 5.4, 7.6, 10.2, 13.2, 16.6];
 const PCT_SCALE = [1, 1.6, 2.2, 2.8, 3.4, 4.0, 4.6, 5.2];
 const PCT_KEYS: (keyof Stats)[] = ['pen', 'critRate', 'critDmg', 'moveSpeed'];
 
+/**
+ * 爆擊平衡（v1.55）
+ * - 爆擊率、爆擊傷害不再完整吃「稀有度 × 強化」倍率：只吃超過 1 的部分的 CRIT_RARITY_DAMP（40%）。
+ *   例：史詩 +10 的倍率 3.96 → 爆擊屬性只 ×2.18（原本 ×3.96，後期一身爆擊裝期望傷害可到 ×10）。
+ * - 上限：爆擊率 60%、爆擊傷害 ×3.0（含道具增益）。
+ */
+export const CRIT_KEYS: (keyof Stats)[] = ['critRate', 'critDmg'];
+export const CRIT_RARITY_DAMP = 0.4;
+export const CRIT_RATE_MAX = 0.6;
+export const CRIT_DMG_MAX = 3.0;
+
 const ICONS: Record<EquipSlot, string> = { ...CLASS_GEAR.mage.icons };
 
 /** 粗略戰力（裝備比較、神話裝屬性預算用）；Inventory.itemScore 也用這個 */
@@ -103,15 +114,31 @@ function roundStat(k: keyof Stats, v: number): number {
 function namedStats(slot: EquipSlot, tier: Tier, profile: GearProfile): Partial<Stats> {
   const std = scaled(slot, tier);
   const p = PROFILES[profile];
-  const raw: Partial<Stats> = {};
-  for (const [k, v] of Object.entries(std) as [keyof Stats, number][]) raw[k] = v * p.k;
+  // 主屬性（標準裝的屬性 × k）與額外屬性（依階級成長）分開算
+  const main: Partial<Stats> = {};
+  for (const [k, v] of Object.entries(std) as [keyof Stats, number][]) main[k] = v * p.k;
+  const extra: Partial<Stats> = {};
   for (const [k, v] of Object.entries(p.extra) as [keyof Stats, number][]) {
     const f = PCT_KEYS.includes(k) ? PCT_SCALE[tier - 1] : FLAT_SCALE[tier - 1];
-    raw[k] = (raw[k] ?? 0) + v * f;
+    extra[k] = v * f;
   }
-  const mul = (statScore(std) * NAMED_BUDGET) / statScore(raw);
+  // v1.55：百分比的額外屬性（爆擊、爆傷、穿透、移速）照原值給，不參與「補到預算」的放大
+  // （以前爆傷在評分裡很便宜，後期會被放大好幾倍）；剩下的預算放大主屬性與平坦的額外屬性
+  const total = statScore(std) * NAMED_BUDGET;
+  const pctExtra: Partial<Stats> = {};
+  const scalable: Partial<Stats> = { ...main };
+  for (const [k, v] of Object.entries(extra) as [keyof Stats, number][]) {
+    if (PCT_KEYS.includes(k)) pctExtra[k] = v;
+    else scalable[k] = (scalable[k] ?? 0) + v;
+  }
+  // 百分比額外屬性最多佔預算一半
+  const pctK = Math.min(1, (total * 0.5) / Math.max(1e-6, statScore(pctExtra)));
+  for (const k of Object.keys(pctExtra) as (keyof Stats)[]) pctExtra[k] = pctExtra[k]! * pctK;
+  const mul = Math.max(0, total - statScore(pctExtra)) / Math.max(1e-6, statScore(scalable));
   const out: Partial<Stats> = {};
-  for (const [k, v] of Object.entries(raw) as [keyof Stats, number][]) out[k] = roundStat(k, v * mul);
+  for (const [k, v] of Object.entries(scalable) as [keyof Stats, number][]) out[k] = v * mul;
+  for (const [k, v] of Object.entries(pctExtra) as [keyof Stats, number][]) out[k] = (out[k] ?? 0) + v;
+  for (const k of Object.keys(out) as (keyof Stats)[]) out[k] = roundStat(k, out[k]!);
   return out;
 }
 

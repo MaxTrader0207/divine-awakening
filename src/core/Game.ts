@@ -1,3 +1,5 @@
+import { BossScaler, bossAtkMul, bossInitialHpMul } from '@/systems/BossScaling';
+import { CRIT_DMG_MAX, CRIT_RATE_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
 import { bus } from './EventBus';
 import { isZoneUnlocked, newGameState, type GameState } from './GameState';
@@ -515,6 +517,28 @@ export class Game {
     this.pauseScreen.setVisible(v && !this.menu.isOpen);
   }
 
+  private absorbNoted = false;
+  /**
+   * 首領開戰：依玩家實力調整（v1.55，`systems/BossScaling.ts`）
+   * - 攻擊力：和「該層標準配備（掉落階級精良 +2、首領等級）」比，玩家血多防高就提高，最多 ×3
+   * - 生命：建立 BossScaler，戰鬥中依實際輸出調整到約 180 秒
+   */
+  private scaleBoss(e: Enemy) {
+    const s = this.state;
+    const tier = lootTierOf(s.zoneId);
+    const equipment: GameState['equipment'] = {};
+    for (const slot of SLOT_ORDER) equipment[slot] = { uid: -1, base: `${slot}_t${tier}`, rarity: 'fine', plus: 2 };
+    const ref = computeStats({ level: Math.max(1, e.def.level), heroClass: s.heroClass, equipment, inventory: [], nextUid: 0 } as never);
+    e.atkMul = bossAtkMul(e.def.stats.atk, this.player.stats, ref);
+    e.scaler = new BossScaler(e.def.stats.maxHp);
+    // 開戰先依「每下期望傷害」預估生命（血條百分比不變），之後每秒依實際輸出微調
+    const mul = bossInitialHpMul(this.player.stats, ref, e.defense);
+    const frac = e.hp / e.maxHp;
+    e.maxHp = e.def.stats.maxHp * mul;
+    e.hp = e.maxHp * frac;
+    this.absorbNoted = false;
+  }
+
   /** 暫停 / 準備出發畫面上的狀態 */
   private pauseStatus(): PauseStatus {
     const p = this.player;
@@ -640,8 +664,18 @@ export class Game {
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
     // 首領戰紀錄：開戰時開始計時；首領脫戰回家就作廢（擊敗時在 onBossDefeated 結算）
     const eb = this.enemies.engagedBoss();
-    if (eb && !this.bossFight) this.bossFight = { zoneId: this.state.zoneId, start: this.state.stats.playTime, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
-    else if (!eb && this.bossFight && !this.clearSeq) this.bossFight = null;
+    if (eb && !this.bossFight) {
+      this.bossFight = { zoneId: this.state.zoneId, start: this.state.stats.playTime, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
+      this.scaleBoss(eb);
+    } else if (!eb && this.bossFight && !this.clearSeq) this.bossFight = null;
+    // 首領強度自動調整：每秒依實際輸出調整生命（目標 180 秒、最快 150 秒）
+    if (eb?.scaler) {
+      eb.scaler.update(dt, eb);
+      if (eb.scaler.absorbed > 0 && !this.absorbNoted) {
+        this.absorbNoted = true;
+        bus.emit('toast', { text: '首領的神力擋下了過強的攻擊（首領戰最快約 150 秒）', duration: 3 });
+      }
+    }
     this.minions.update(dt, this.rig.camera);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
@@ -660,7 +694,7 @@ export class Game {
     this.hud.setBoss(boss);
     if (boss) {
       this.audio.setMusic(zoneNow.def.bossMusic ?? 'boss');
-      this.audio.setBossIntensity(boss.hp < boss.def.stats.maxHp * 0.5 ? 1 : 0);
+      this.audio.setBossIntensity(boss.hp < boss.maxHp * 0.5 ? 1 : 0);
     } else this.audio.setMusic(zoneNow.def.music ?? ({ town: 'town', field: 'grassland', dungeon: 'dungeon' } as const)[zoneNow.def.kind]);
     if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・畫質${this.quality.label}`;
     this.hud.setBuffs(this.buffList());
@@ -806,9 +840,9 @@ export class Game {
     const cb = this.cbuff;
     if (cb.atk) p.stats.atk = Math.round(p.stats.atk * (1 + cb.atk.v));
     if (cb.speed) p.stats.moveSpeed *= 1 + cb.speed.v;
-    if (cb.crit) p.stats.critRate = Math.min(0.75, p.stats.critRate + cb.crit.v);
+    if (cb.crit) p.stats.critRate = Math.min(CRIT_RATE_MAX, p.stats.critRate + cb.crit.v);
     if (cb.pen) p.stats.pen = Math.min(0.9, p.stats.pen + cb.pen.v);
-    if (cb.critDmg) p.stats.critDmg += cb.critDmg.v;
+    if (cb.critDmg) p.stats.critDmg = Math.min(CRIT_DMG_MAX, p.stats.critDmg + cb.critDmg.v);
     p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
     p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));
     bus.emit('player:changed');
@@ -1087,7 +1121,7 @@ export class Game {
   /** 敵人攻擊命中玩家 */
   /** 敵人打召喚物（不顯示傷害數字，只閃白） */
   private hitMinion(e: Enemy, m: Minion, power: number) {
-    const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, m.stats.def);
+    const res = calcDamage({ atk: e.def.stats.atk * e.atkMul, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, m.stats.def);
     m.takeDamage(res.amount);
   }
 
@@ -1098,7 +1132,7 @@ export class Game {
       this.bossFight.hits++;
       if (power !== 1) this.bossFight.skillHits++;
     }
-    const res = calcDamage({ atk: e.def.stats.atk, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
+    const res = calcDamage({ atk: e.def.stats.atk * e.atkMul, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
     // 道具「雅典娜橄欖油」：減傷 25%
     if (this.cbuff.def) res.amount = Math.max(1, Math.round(res.amount * (1 - this.cbuff.def.v)));
     // 道具護盾先吸收

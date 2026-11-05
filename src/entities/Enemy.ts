@@ -1,3 +1,4 @@
+import type { BossScaler } from '@/systems/BossScaling';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { EnemyDef, SpawnDef } from '@/data/types';
@@ -28,6 +29,14 @@ const easeInOut = (x: number) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 
 export class Enemy {
   readonly object = new THREE.Group();
   readonly def: EnemyDef;
+  /** 目前的最大生命（首領會依玩家實力自動調整，v1.55；其他敵人 = def.stats.maxHp） */
+  maxHp: number;
+  /** 首領攻擊力倍率（開戰時依玩家實力決定，v1.55） */
+  atkMul = 1;
+  /** 首領強度調整（開戰時由 Game 建立，脫戰清掉） */
+  scaler: BossScaler | null = null;
+  /** 最近一次實際扣掉的血（被首領神力擋下時比原傷害少） */
+  lastDealt = 0;
   readonly spawn: SpawnDef;
   readonly pos: { x: number; z: number };
   /** 出生點（AI 巡邏與脫戰回歸的中心） */
@@ -109,7 +118,8 @@ export class Enemy {
     this.defense = spawn.def ?? def.stats.def;
     this.displayName = spawn.tag ? `${def.name}・${spawn.tag}` : def.boss ? `首領・${def.name}` : `Lv.${def.level} ${def.name}`;
     this.radius = def.radius * def.scale;
-    this.hp = def.stats.maxHp;
+    this.maxHp = def.stats.maxHp;
+    this.hp = this.maxHp;
     this.facing = Math.random() * Math.PI * 2;
 
     if (def.boss) this.look = new BossLook(new THREE.Color(def.color).lerp(new THREE.Color(0xffe8d0), 0.45).getHex());
@@ -185,6 +195,8 @@ export class Enemy {
       this.flash = 0.5;
       return false;
     }
+    if (this.scaler) amount = this.scaler.clamp(this, amount);
+    this.lastDealt = amount;
     this.hp = Math.max(0, this.hp - amount);
     this.flash = 1;
     // 首領被打只輕晃（出手中不晃，才不會像被打到僵直）
@@ -290,7 +302,7 @@ export class Enemy {
     if (this.hpBarTimer > 0 || (this.def.boss && this.engaged)) {
       this.hpBarTimer -= dt;
       this.hpBar.visible = this.state === 'alive';
-      this.hpFill.scale.x = Math.max(0.001, this.hp / this.def.stats.maxHp);
+      this.hpFill.scale.x = Math.max(0.001, this.hp / this.maxHp);
       this.hpBar.quaternion.copy(camera.quaternion);
     } else this.hpBar.visible = false;
 
@@ -376,9 +388,17 @@ export class Enemy {
     this.strikePower = power;
   }
 
+  /** 首領強度回到原本（脫戰、重生） */
+  resetScaling() {
+    this.maxHp = this.def.stats.maxHp;
+    this.atkMul = 1;
+    this.scaler = null;
+  }
+
   private respawn() {
     this.state = 'alive';
-    this.hp = this.def.stats.maxHp;
+    this.resetScaling();
+    this.hp = this.maxHp;
     const r = (this.spawn.spread ?? 0) * Math.sqrt(Math.random());
     const a = Math.random() * Math.PI * 2;
     this.pos.x = this.spawn.x + Math.cos(a) * r;
@@ -412,7 +432,8 @@ export class Enemy {
     this.aggroMinion = null;
     this.airY = 0;
     this.hurtSince = 0;
-    this.hp = this.def.stats.maxHp;
+    this.resetScaling();
+    this.hp = this.maxHp;
     this.provoked = false;
     this.windup = 0;
   }

@@ -691,7 +691,7 @@ export class SkillSystem {
     let n = 0;
     for (const e of this.ctx.enemies.enemies) {
       if (!e.alive || !inCone(e, p.pos.x, p.pos.z, dx, dz, sk.range, sk.arc ?? 1.4)) continue;
-      const low = e.hp / e.def.stats.maxHp < EXECUTE.threshold;
+      const low = e.hp / e.maxHp < EXECUTE.threshold;
       damageEnemy(e, stats, sk.power * (low ? EXECUTE.mul : 1));
       fx.pillar(e.pos.x, e.pos.z, low ? 0.7 : 0.4, low ? 0xff2a1a : sk.color, 0.35);
       n++;

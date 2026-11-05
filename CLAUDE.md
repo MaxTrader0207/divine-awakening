@@ -29,10 +29,11 @@ npm test             # 單元測試
 `?debug` 開啟 `window.__game`（可呼叫 `__game.player.teleport(x, z)`、`__game.state`）。
 
 ## 目前狀態
-- 版本 v1.54.0。10 週 MVP 完成，加上 v1.1~v1.54（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
-- 測試：`npm test`（Vitest 91 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
+- 版本 v1.55.0。10 週 MVP 完成，加上 v1.1~v1.55（見 CHANGELOG）。待辦見 ROADMAP「需要你來做的」與「之後可以做」。
+- 測試：`npm test`（Vitest 97 個純邏輯案例）；`cd server && npm run db:local && npm run dev` 後 `npm test`（API 整合測試）。
 - 瀏覽器測試：網址 `?debug&quality=high&class=mage`，帶 `?class=` 會略過開頭畫面與選職業；用 `__game.debugAdvance(秒, 步長)` 快轉，**不要用 setTimeout 等待**（無 GPU 環境只有 3~4 FPS）。`__inv` 是背包函式。暫停中（`__game.paused`）`frame()` 不呼叫 `tick()`，但 `debugAdvance()` 仍會推進。
 - 改數值後重跑 `docs/BALANCE.md` 的模擬並更新表格。
+- 首領強度自動調整（v1.55）：`systems/BossScaling.ts`（`BOSS_PACE`：目標 180 秒、硬下限 150 秒）。`Enemy.maxHp` / `atkMul` / `scaler` 是實例欄位——**不要再用 `e.def.stats.maxHp` 當目前最大生命**；`Game.scaleBoss()` 在首領開戰時依「該層標準配備（首領等級、掉落階級精良 +2）」算攻擊倍率與開戰生命倍率，`tick()` 每幀 `scaler.update()`；`Enemy.takeDamage()` 經 `scaler.clamp()`（超量傷害被擋下，`lastDealt` 是實際扣的量）；脫戰 / 重生 `resetScaling()`。爆擊：屬性只吃稀有度 × 強化超出部分的 `CRIT_RARITY_DAMP`（40%），上限 `CRIT_RATE_MAX` 60%、`CRIT_DMG_MAX` ×3.0。
 - 美術：KayKit CC0（`src/assets/models/` meshopt 版給一般建置、`src/assets/models-plain/` 免 WebAssembly 版給單一 HTML——claude.ai Artifact 禁止 WebAssembly，meshopt 模型會全部載入失敗；Artifact 也禁止 fetch data: / blob: 網址，所以單一 HTML 版由 `Assets.ts` 自己解碼 base64 再 `parseAsync`，貼圖用 `inMemoryTextures` 外掛；驗證 Artifact 版要用 artifact-emulator 技能看主控台有沒有 `[Assets]` 警告，file:// 測不出來；兩者都由 `scripts/build-assets.mjs` 產生，`@models` 別名在 vite.config.ts 依模式切換）；青蛙用 Quaternius CC0 模型；史萊姆、寄居蟹（會動的程式模型）、魔像、蝙蝠、蘑菇仍是程式模型。
 - 訓獸師（v1.48）：模型 `tamer`＝蠻族模型去掉斧盾（`node scripts/build-assets.mjs /home/claude/assets-src tamer`），`recolor` 加 `maxL` 只換暗的紅布不換皮膚；手上 `prop.id: 'whip'` 是 `Player.ts` 的 `buildWhip()` 程式鞭子。野獸沿用召喚物系統：`data/minions.ts` 的 `hound` / `eagle` / `bear`（`beast` 欄位 → `entities/BeastModel.ts` 的 `buildBeast()` / `poseBeast()`，沒填就是程式骷髏），`MinionDef.color` 決定法陣與投射物顏色。野性咆哮 `SkillSystem.wildRoar()` → `MinionManager.roarAll()` 設 `Minion.roarT`（`atkMul` / `attackSpeed` / `speedMul`，倍率在 `WILD_ROAR`），道具效果 `type: 'roar'`。v1.50 平滑化：野獸零件保留各自平滑法線（`merged()` 不轉非索引、不重算法線）、腿是 `LatheGeometry`、材質是 Phong＋`BossLook`（`rig.look` 由 Minion 每幀 `update()`）、`poseBeast()` 的關節用 `ease()` 緩動；職業 `anims.smooth`（摺角度數，v1.51 起全職業預設 60、0＝關閉；手上道具 50°）→ `Player.useModel()` 用 `smoothByCrease()` 重算法線（`SMOOTH_CACHE` 依 模型:網格序號 共用）並套 `BossLook`。
 - 電腦鍵盤（v1.47）：`input/InputManager.ts` 用 `normalizeKey()`（code → keyCode → key，應付注音輸入法）、capture 階段監聽並 preventDefault 遊戲鍵、輸入框打字不攔截、點畫面 `window.focus()` 拉回焦點、失焦時顯示 `.kbd-hint`。技能鍵 Q/F/E/R（W 技能用 F）＋舊的 U/I/O/P；`KEY_LABELS` 在電腦（`IS_DESKTOP`）上顯示在按鈕角落。

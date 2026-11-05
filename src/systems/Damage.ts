@@ -10,6 +10,8 @@ export function damageEnemy(e: Enemy, attacker: AttackerStats, power: number): D
   if (!e.alive) return null;
   const res = calcDamage(attacker, power, e.defense);
   const killed = e.takeDamage(res.amount);
+  // 首領的神力擋下超量傷害時，顯示實際扣掉的量
+  res.amount = e.lastDealt;
   bus.emit('combat:hit', { x: e.pos.x, y: e.height + 0.2, z: e.pos.z, amount: res.amount, crit: res.crit, targetIsPlayer: false });
   if (killed) {
     bus.emit('enemy:killed', {

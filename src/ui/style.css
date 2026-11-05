@@ -342,6 +342,8 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--gold); }
 }
 .boss-head b { font-size: 14px; color: #ffd36b; text-shadow: 0 1px 3px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .boss-head small { flex: none; font-size: 11px; color: #d8cfe8; opacity: 0.85; }
+.boss-adj { display: none; flex: none; font: 700 9.5px/14px var(--font); font-style: normal; padding: 0 5px; border-radius: 4px; color: #cfe3ff; background: rgba(92, 140, 255, 0.22); border: 1px solid rgba(140, 180, 255, 0.4); align-self: center; }
+.boss-bar.adjusted .boss-adj { display: inline-block; }
 .boss-head strong { margin-left: auto; flex: none; font: 800 13px/16px var(--font); color: #fff; text-shadow: 0 1px 3px #000; font-variant-numeric: tabular-nums; }
 .boss-track {
   position: relative; height: 16px; border-radius: 8px; overflow: hidden;

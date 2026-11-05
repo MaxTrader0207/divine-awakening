@@ -1,5 +1,5 @@
 import type { EquipSlot, Rarity, Stats } from '@/data/types';
-import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore } from '@/data/items';
+import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore , CRIT_KEYS, CRIT_RARITY_DAMP, CRIT_RATE_MAX, CRIT_DMG_MAX } from '@/data/items';
 import { statsForLevel } from '@/data/player';
 import { CLASSES, RAGE } from '@/data/classes';
 
@@ -37,8 +37,10 @@ export function itemStats(it: ItemInstance): Partial<Stats> {
   const b = ITEM_BASES[it.base];
   if (!b) return {};
   const mul = RARITY[it.rarity].mul * (1 + it.plus * ENHANCE_BONUS_PER_LEVEL);
+  // 爆擊率 / 爆傷只吃倍率超過 1 的部分的 40%（v1.55）
+  const critMul = 1 + (mul - 1) * CRIT_RARITY_DAMP;
   const out: Partial<Stats> = {};
-  for (const [k, v] of Object.entries(b.stats) as [keyof Stats, number][]) out[k] = v * mul;
+  for (const [k, v] of Object.entries(b.stats) as [keyof Stats, number][]) out[k] = v * (CRIT_KEYS.includes(k) ? critMul : mul);
   return out;
 }
 
@@ -57,7 +59,8 @@ export function computeStats(s: InventoryState): Stats {
   st.atk = Math.round(st.atk);
   st.def = Math.round(st.def * 10) / 10;
   st.pen = Math.min(0.9, st.pen);
-  st.critRate = Math.min(0.75, st.critRate);
+  st.critRate = Math.min(CRIT_RATE_MAX, st.critRate);
+  st.critDmg = Math.min(CRIT_DMG_MAX, st.critDmg);
   return st;
 }
 

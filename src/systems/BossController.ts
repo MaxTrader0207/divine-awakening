@@ -103,7 +103,7 @@ export class BossController {
         this.ctx.effects.ring(e.pos.x, e.pos.z, 1, 7, 0xffd36b, 0.7);
         continue;
       }
-      if (!st.enraged && e.hp < e.def.stats.maxHp * 0.5) {
+      if (!st.enraged && e.hp < e.maxHp * 0.5) {
         st.enraged = true;
         bus.emit('banner', { text: `${e.def.name} 狂暴了！` });
         this.ctx.effects.ring(e.pos.x, e.pos.z, 1, 6, 0xff3a2a, 0.8);

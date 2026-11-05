@@ -43,14 +43,14 @@ export interface ClearResult {
   first: boolean;
 }
 
-/** 標準時間（秒）：在這之內打完不扣分 */
-export const PAR_SECS = 80;
+/** 標準時間（秒）：在這之內打完不扣分（v1.55：首領戰統一約 180 秒，評價改看打法，時間只罰拖太久） */
+export const PAR_SECS = 210;
 
 const RANK_ORDER: ClearRank[] = ['S', 'A', 'B', 'C'];
 
-/** 評價：滿分 100，被首領招式打中每次 -6、用藥每個 -2、超過標準時間每 4 秒 -1 */
+/** 評價：滿分 100，被首領招式打中每次 -4、用藥每個 -1.5、超過標準時間每 4 秒 -1 */
 export function rankClear(secs: number, skillHits: number, itemsUsed: number): ClearRank {
-  const score = 100 - skillHits * 6 - itemsUsed * 2 - Math.max(0, secs - PAR_SECS) / 4;
+  const score = 100 - skillHits * 4 - itemsUsed * 1.5 - Math.max(0, secs - PAR_SECS) / 4;
   if (score >= 85) return 'S';
   if (score >= 68) return 'A';
   if (score >= 48) return 'B';

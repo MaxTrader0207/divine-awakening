@@ -133,6 +133,7 @@ export class Hud {
           h('span', { class: 'boss-tag' }, '首領'),
           (this.els.bossName = h('b')),
           (this.els.bossLv = h('small')),
+          (this.els.bossAdj = h('i', { class: 'boss-adj', title: '首領會依你的等級與裝備調整生命與攻擊力，首領戰約 3 分鐘' }, '⚖ 依實力調整')),
           (this.els.bossPct = h('strong')),
         ]),
         h('div', { class: 'boss-track' }, [
@@ -331,7 +332,7 @@ export class Hud {
   private bossLastCall = 0;
 
   /** 戰鬥中的首領血條（上方中央插槽；出現時收起提示與新手指引） */
-  setBoss(e: { def: { name: string; level?: number; stats: { maxHp: number } }; hp: number } | null) {
+  setBoss(e: { def: { name: string; level?: number; stats: { maxHp: number } }; hp: number; maxHp: number; atkMul?: number } | null) {
     if (!e) {
       if (this.bossShown) {
         this.els.boss.classList.remove('show');
@@ -343,7 +344,7 @@ export class Hud {
       }
       return;
     }
-    const max = e.def.stats.maxHp;
+    const max = Math.round(e.maxHp);
     const r = Math.max(0, Math.min(1, e.hp / max));
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.bossLastCall) / 1000);
@@ -382,6 +383,7 @@ export class Hud {
       this.els.bossPct.textContent = `${r > 0 && r < 0.01 ? '<1' : Math.ceil(r * 100)}%`;
     }
     this.els.boss.classList.toggle('enraged', r < 0.5);
+    this.els.boss.classList.toggle('adjusted', e.maxHp > e.def.stats.maxHp * 1.05 || (e.atkMul ?? 1) > 1.05);
   }
 
   setAuto(on: boolean) {

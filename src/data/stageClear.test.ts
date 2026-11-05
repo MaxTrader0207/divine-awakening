@@ -25,10 +25,11 @@ describe('破關畫面', () => {
   });
 
   it('評價：無傷速殺 S，挨打多、用藥多、拖太久往下掉', () => {
-    expect(rankClear(60, 0, 0)).toBe('S');
-    expect(rankClear(100, 2, 1)).toBe('A');
-    expect(rankClear(120, 5, 6)).toBe('B');
-    expect(rankClear(240, 10, 15)).toBe('C');
+    expect(rankClear(180, 0, 0)).toBe('S');
+    expect(rankClear(180, 3, 2)).toBe('S');
+    expect(rankClear(185, 5, 6)).toBe('A');
+    expect(rankClear(190, 9, 10)).toBe('B');
+    expect(rankClear(300, 12, 20)).toBe('C');
   });
 
   it('紀錄：次數累加、最快時間、新紀錄、最佳評價', () => {

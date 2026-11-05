@@ -106,7 +106,7 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
         face(e, dx, dz, dt, 12);
         if (e.def.boss) {
           // 被狂打：提早反擊
-          if (e.attackCd > COUNTER_DELAY && e.counterCd <= 0 && e.hurtSince > e.def.stats.maxHp * COUNTER_HP) {
+          if (e.attackCd > COUNTER_DELAY && e.counterCd <= 0 && e.hurtSince > e.maxHp * COUNTER_HP) {
             e.attackCd = COUNTER_DELAY;
             e.counterCd = COUNTER_CD;
           }
