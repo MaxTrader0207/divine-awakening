@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CLASS_CONSUMABLES, CONSUMABLES, MAX_STACK, consumablesFor, rollConsumable } from '@/data/consumables';
 import { CLASS_LIST } from '@/data/classes';
-import { addConsumable, cannotUse, consume, type UseContext } from './Consumables';
+import { addConsumable, autoQuickSlots, cannotUse, consume, setQuickSlot, type UseContext } from './Consumables';
 import { migrate } from '@/core/SaveSystem';
 import { newGameState, SAVE_VERSION } from '@/core/GameState';
 
@@ -80,5 +80,23 @@ describe('道具', () => {
     expect(bag.consumables.mage_promethean_fire).toBe(99);
     expect(cannotUse(bag, 'mage_promethean_fire', { ...field, safe: true })).toBe('城裡沒有敵人');
     expect(cannotUse({ consumables: { berserker_thracian_spirit: 1 } }, 'berserker_thracian_spirit', { ...field, hpFull: true, mpFull: true })).toBe('怒氣已滿');
+  });
+});
+
+describe('快捷道具欄', () => {
+  it('自動挑數量最多的兩種，回城羽毛排最後', () => {
+    expect(autoQuickSlots({ hermes_feather: 9, hestia_bread: 2, ambrosia: 5 })).toEqual(['ambrosia', 'hestia_bread']);
+    expect(autoQuickSlots({ hermes_feather: 1 })).toEqual(['hermes_feather', null]);
+    expect(autoQuickSlots({})).toEqual([null, null]);
+  });
+  it('放入、交換、再按一次取下', () => {
+    let q = setQuickSlot([null, null], 0, 'ambrosia');
+    expect(q).toEqual(['ambrosia', null]);
+    q = setQuickSlot(q, 1, 'hestia_bread');
+    expect(q).toEqual(['ambrosia', 'hestia_bread']);
+    q = setQuickSlot(q, 1, 'ambrosia'); // 已在第 1 格 → 兩格交換
+    expect(q).toEqual(['hestia_bread', 'ambrosia']);
+    q = setQuickSlot(q, 1, 'ambrosia'); // 同一格再按 → 取下
+    expect(q).toEqual(['hestia_bread', null]);
   });
 });

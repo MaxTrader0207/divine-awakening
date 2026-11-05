@@ -1,3 +1,4 @@
+import { CONSUMABLE_MAP } from '@/data/consumables';
 import { bus } from '@/core/EventBus';
 import type { GameState } from '@/core/GameState';
 import type { ZoneDef } from '@/data/types';
@@ -65,6 +66,8 @@ export class Hud {
   private fpsAcc = { frames: 0, time: 0 };
   private skillBtns = new Map<SkillSlot, { btn: HTMLElement; cd: HTMLElement; num: HTMLElement; wasCd: boolean }>();
   private potionCds: HTMLElement[] = [];
+  /** 快捷道具欄（key：上次畫的內容，沒變就不動 DOM） */
+  private quick: { btn: HTMLElement; ico: Element; count: HTMLElement; cd: HTMLElement; key: string }[] = [];
   private hudTimer = 0;
   private notes: Note[] = [];
   private noteQueue: { text: string; duration: number }[] = [];
@@ -148,7 +151,7 @@ export class Hud {
     this.root.appendChild(h('div', { class: 'lowhp-vignette' }));
     this.root.appendChild((this.els.feed = h('div', { class: 'loot-feed' })));
 
-    // ---- 左下藥水 ----
+    // ---- 左下藥水＋快捷道具欄（v1.53：紅、藍藥水右邊 2 格自訂道具，電腦 3、4） ----
     const potions = h('div', { class: 'potions' }, [
       this.actionButton('potion red', 'potionHp', '1', (this.els.potHp = h('em'))),
       this.actionButton('potion blue', 'potionMp', '2', (this.els.potMp = h('em'))),
@@ -157,6 +160,14 @@ export class Hud {
       const cd = h('div', { class: 'cd' });
       b.appendChild(cd);
       this.potionCds.push(cd);
+    });
+    (['item1', 'item2'] as const).forEach((action, i) => {
+      const count = h('em');
+      const btn = this.actionButton(`potion quick q${i + 1}`, action, String(i + 3), count);
+      const cd = h('div', { class: 'cd' });
+      btn.appendChild(cd);
+      potions.appendChild(btn);
+      this.quick.push({ btn, ico: btn.querySelector('.ico')!, count, cd, key: '' });
     });
     this.root.appendChild(potions);
 
@@ -200,6 +211,7 @@ export class Hud {
     bus.on('skill:cast', () => (this.combatT = 0));
     bus.on('wallet:changed', () => this.refresh());
     bus.on('tutorial:changed', () => this.refreshGuide());
+    window.addEventListener('resize', () => requestAnimationFrame(() => this.fitQuick()));
     bus.on('settings:changed', () => this.applyLayout());
     bus.on('player:levelup', () => {
       const a = this.els.avatar;
@@ -217,7 +229,32 @@ export class Hud {
     this.root.classList.toggle('lefty', !!s.leftHanded);
     document.documentElement.classList.toggle('lefty', !!s.leftHanded);
     document.documentElement.style.setProperty('--ui', String(s.uiScale || 1));
+    requestAnimationFrame(() => this.fitQuick());
   }
+
+  /**
+   * 快捷道具欄排版：預設跟藥水排成一列；螢幕窄、介面放大或左手模式時
+   * 若會壓到技能 / AUTO 按鈕，就改成 2×2（③④ 疊在藥水上面）。
+   */
+  private fitQuick() {
+    const box = this.quick[0]?.btn.parentElement;
+    if (!box) return;
+    const others = [...this.root.querySelectorAll('.skills .act, .skills .auto-btn, .top-left > *, .top-right > *')]
+      .filter((e) => !(e as HTMLElement).classList.contains('hide'))
+      .map((e) => e.getBoundingClientRect())
+      .filter((r) => r.width > 0);
+    const hits = () =>
+      this.quick.reduce((n, { btn }) => {
+        const r = btn.getBoundingClientRect();
+        return n + others.filter((o) => r.left < o.right + 4 && r.right > o.left - 4 && r.top < o.bottom + 4 && r.bottom > o.top - 4).length;
+      }, 0);
+    box.classList.remove('stack');
+    const row = hits();
+    if (row === 0) return;
+    box.classList.add('stack');
+    if (hits() >= row) box.classList.remove('stack'); // 疊起來也沒比較好（很矮的視窗）→ 維持一列
+  }
+
 
   private guideStep = -1;
   /** 新手指引：一行（步驟編號＋目標＋進度）；完成、隱藏或首領戰時不顯示；換步驟時閃一下 */
@@ -456,6 +493,31 @@ export class Hud {
     for (const cd of this.potionCds) {
       cd.style.setProperty('--p', String(pr));
       cd.style.opacity = pr > 0 ? '1' : '0';
+    }
+    this.refreshQuick(pr);
+  }
+
+  /** 快捷道具欄：圖示、數量、空格 / 用完的樣子；回復類道具跟藥水共用冷卻 */
+  private refreshQuick(potionCd: number) {
+    const s = this.state;
+    for (let i = 0; i < this.quick.length; i++) {
+      const q = this.quick[i];
+      const id = s.quickSlots[i] ?? null;
+      const def = id ? CONSUMABLE_MAP[id] : undefined;
+      const n = id ? (s.consumables[id] ?? 0) : 0;
+      const key = `${id}|${n}`;
+      if (key !== q.key) {
+        q.key = key;
+        q.ico.textContent = def ? def.icon : '＋';
+        q.count.textContent = def ? String(n) : '';
+        q.count.style.display = def ? '' : 'none';
+        q.btn.classList.toggle('empty', !def);
+        q.btn.classList.toggle('out', !!def && n <= 0);
+        q.btn.title = def ? `${def.name}：${def.desc}` : '空的快捷欄：點一下到「裝備 → 道具」設定';
+      }
+      const showCd = !!def?.sharesPotionCd && potionCd > 0;
+      q.cd.style.setProperty('--p', String(showCd ? potionCd : 0));
+      q.cd.style.opacity = showCd ? '1' : '0';
     }
   }
 

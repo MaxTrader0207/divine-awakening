@@ -1,4 +1,5 @@
 import { newGameState, SAVE_VERSION, type GameState } from './GameState';
+import { autoQuickSlots } from '@/systems/Consumables';
 import { ZONES } from '@/data/zones';
 import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
@@ -219,6 +220,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.clears = data.clears && typeof data.clears === 'object' ? { ...data.clears } : {};
   // v9 → v10：設定新增 autoPotionAt（settings 合併時已補預設值 0.7）
   if (typeof merged.settings.autoPotionAt !== 'number') merged.settings.autoPotionAt = base.settings.autoPotionAt;
-  // 未來版本：if ((data.version ?? 0) < 11) { ... }
+  // v10 → v11：新增快捷道具欄；舊存檔自動放上持有最多的兩種道具
+  merged.quickSlots = Array.isArray(data.quickSlots) ? [data.quickSlots[0] ?? null, data.quickSlots[1] ?? null] : autoQuickSlots(merged.consumables);
+  // 未來版本：if ((data.version ?? 0) < 12) { ... }
   return merged;
 }

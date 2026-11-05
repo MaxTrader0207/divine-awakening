@@ -24,6 +24,7 @@ import { Effects } from '@/systems/Effects';
 import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
+import { openItemsView } from '@/ui/InventoryTabs';
 import { AutoBattle, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
@@ -650,7 +651,21 @@ export class Game {
     }
     if (this.input.consume('potionHp')) this.skills.usePotion('hp');
     if (this.input.consume('potionMp')) this.skills.usePotion('mp');
+    if (this.input.consume('item1')) this.useQuickSlot(0);
+    if (this.input.consume('item2')) this.useQuickSlot(1);
     this.autoPotion();
+  }
+
+  /** 快捷道具欄（左下第 3、4 格；電腦 3、4）：空格或用完 → 打開「裝備 → 道具」去設定 / 購買 */
+  private useQuickSlot(i: number) {
+    const id = this.state.quickSlots[i];
+    if (!id) {
+      openItemsView();
+      bus.emit('menu:open', { tab: 'equip' });
+      bus.emit('toast', { text: '在道具清單按「③」「④」把道具放進快捷欄' });
+      return;
+    }
+    if (this.useConsumable(id)) bus.emit('player:changed');
   }
 
   private potionOutWarned = false;

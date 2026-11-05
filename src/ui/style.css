@@ -155,6 +155,27 @@ button { font-family: inherit; color: inherit; border: 0; background: none; padd
 .potion.red .ico::before { content: '🧪'; filter: hue-rotate(140deg) saturate(2); }
 .potion.blue .ico::before { content: '🧪'; filter: hue-rotate(0deg) saturate(1.6); }
 .potion .key { left: -5px; right: auto; }
+/* 快捷道具欄（v1.53）：藥水右邊 2 格，中間多留一點空隙分開「藥水」和「道具」 */
+.potions { width: 222px; }
+.potion.q1 { left: 120px; top: 0; }
+.potion.q2 { left: 176px; top: 0; }
+.potion.quick .ico { font-size: 21px; }
+/* 放不下一列時：③④ 疊在紅藍藥水上面（2×2） */
+.potions.stack { width: 100px; }
+.potions.stack .potion.q1 { left: 0; top: -58px; }
+.potions.stack .potion.q2 { left: 56px; top: -58px; }
+.hud .act.potion.quick { --sc: #f2c14e; }
+.hud .act.potion.quick.empty { --sc: #8a93a8; border-style: dashed; background: rgba(22, 27, 39, 0.55); }
+.potion.quick.empty .ico { font-size: 18px; color: rgba(255, 255, 255, 0.55); }
+.potion.quick.out .ico { filter: grayscale(1); opacity: 0.45; }
+.potion.quick.out em { color: #ff8a7a; }
+/* 道具清單裡的 ③④ 指派鈕 */
+.quick-pick { display: flex; gap: 4px; flex: none; }
+.quick-pick .qp {
+  width: 30px; height: 30px; border-radius: 8px; font: 700 15px/1 var(--font); color: var(--muted);
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+}
+.quick-pick .qp.on { color: #2a1a00; background: linear-gradient(180deg, #ffe38a, #e7a92c); border-color: #e7a92c; }
 
 /* 技能：右下扇形排列 */
 .skills { position: absolute; right: var(--gutter); bottom: max(22px, env(safe-area-inset-bottom)); width: 190px; height: 220px; }

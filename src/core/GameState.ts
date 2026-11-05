@@ -12,7 +12,7 @@ import { DUNGEON_ORDER, ZONES } from '@/data/zones';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -57,6 +57,8 @@ export interface GameState {
   daily?: DailyState;
   /** v8：道具（消耗品）數量，id → 個數 */
   consumables: Record<string, number>;
+  /** v11：左下快捷道具欄（2 格，道具 id；null = 空） */
+  quickSlots: (string | null)[];
   /** v8：長時間加成的剩餘秒數（遊戲時間；謬思蜂蜜、堤喀金幣） */
   boosts: { exp: number; gold: number };
   /** v5：新手指引進度 */
@@ -94,6 +96,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     tutorial: newTutorial(),
     // 新手先送幾個道具，讓玩家知道有這個東西
     consumables: { hestia_bread: 2, hermes_feather: 1 },
+    quickSlots: ['hestia_bread', 'hermes_feather'],
     boosts: { exp: 0, gold: 0 },
     stats: { kills: 0, deaths: 0, playTime: 0 },
     settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7 },

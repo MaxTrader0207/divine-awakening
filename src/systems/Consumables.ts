@@ -55,3 +55,32 @@ export function addConsumable(bag: ConsumableBag, id: string, n = 1): boolean {
   bag.consumables[id] = cur + n;
   return true;
 }
+
+/* ---------------- 快捷道具欄（v1.53：左下紅藍藥水旁的 2 格） ---------------- */
+
+/** 快捷欄格數 */
+export const QUICK_SLOTS = 2;
+
+/** 沒設定過時自動挑：持有數量最多的道具（回城羽毛排最後），不足補 null */
+export function autoQuickSlots(consumables: Record<string, number>): (string | null)[] {
+  const ids = Object.keys(consumables)
+    .filter((id) => CONSUMABLE_MAP[id] && consumables[id] > 0)
+    .sort((a, b) => Number(CONSUMABLE_MAP[a].effect.type === 'town') - Number(CONSUMABLE_MAP[b].effect.type === 'town') || consumables[b] - consumables[a]);
+  return Array.from({ length: QUICK_SLOTS }, (_, i) => ids[i] ?? null);
+}
+
+/**
+ * 把道具放進第 slot 格（0 起算）。已在另一格的話兩格交換；
+ * 放進已經是同一個道具的格子 = 取下（清空）。回傳新的陣列。
+ */
+export function setQuickSlot(slots: (string | null)[], slot: number, id: string): (string | null)[] {
+  const out = Array.from({ length: QUICK_SLOTS }, (_, i) => slots[i] ?? null);
+  if (out[slot] === id) {
+    out[slot] = null;
+    return out;
+  }
+  const other = out.indexOf(id);
+  if (other >= 0) out[other] = out[slot];
+  out[slot] = id;
+  return out;
+}

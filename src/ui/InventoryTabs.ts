@@ -11,6 +11,7 @@ import {
 import { h } from './dom';
 import { PROFILE_LABEL } from '@/data/gear';
 import { CONSUMABLES, MAX_STACK, consumablesFor, type ConsumableDef } from '@/data/consumables';
+import { setQuickSlot } from '@/systems/Consumables';
 import { CLASSES } from '@/data/classes';
 import { addConsumable } from '@/systems/Consumables';
 import { bus } from '@/core/EventBus';
@@ -40,6 +41,14 @@ function consumableCards(ctx: InvContext): HTMLElement[] {
     h('div', { class: 'shop-row' }, [
       h('span', { class: 'shop-ico' }, c.icon),
       h('div', { class: 'shop-main' }, [h('b', {}, `${c.name} ×${s.consumables[c.id]}`), h('small', {}, c.desc)]),
+      // 快捷欄③④：按了放進去（已在另一格就交換、同一格再按就取下）
+      h('div', { class: 'quick-pick' }, [0, 1].map((i) =>
+        h('button', {
+          class: `qp${s.quickSlots[i] === c.id ? ' on' : ''}`,
+          title: s.quickSlots[i] === c.id ? `從快捷欄 ${i + 3} 取下` : `放到快捷欄 ${i + 3}`,
+          onclick: () => { s.quickSlots = setQuickSlot(s.quickSlots, i, c.id); bus.emit('player:changed'); bus.emit('save:request'); ctx.rerender(); },
+        }, ['③', '④'][i]),
+      )),
       h('button', { class: 'go small', onclick: () => ctx.useConsumable(c.id) }, '使用'),
     ]);
   const mine = all.filter((c) => c.cls && (s.consumables[c.id] ?? 0) > 0);
@@ -48,8 +57,13 @@ function consumableCards(ctx: InvContext): HTMLElement[] {
   if (!mine.length && !shared.length) out.push(h('div', { class: 'card' }, [h('p', {}, '還沒有道具。可以在商城購買，打倒怪物也有機會掉落（首領必掉）。每種最多 99 個。')]));
   if (mine.length) out.push(h('div', { class: 'card' }, [h('h4', {}, `${CLASSES[s.heroClass].icon} ${CLASSES[s.heroClass].name}專屬`), ...mine.map(row)]));
   if (shared.length) out.push(h('div', { class: 'card' }, [h('h4', {}, '通用道具'), ...shared.map(row)]));
-  out.push(h('p', { class: 'empty-note' }, `每種道具最多 ${MAX_STACK} 個，不佔裝備背包的格子。`));
+  out.push(h('p', { class: 'empty-note' }, `按「③」「④」把道具放進左下快捷欄（電腦按 3、4 使用）。每種道具最多 ${MAX_STACK} 個，不佔裝備背包的格子。`));
   return out;
+}
+
+/** 從快捷欄跳過來時直接顯示「道具」 */
+export function openItemsView() {
+  invView = 'items';
 }
 
 /** 跨分頁記住選取的物品 */

@@ -15,7 +15,7 @@ import { VirtualJoystick } from './VirtualJoystick';
  * - 點畫面任何地方都把鍵盤焦點拉回遊戲（嵌在 claude.ai 等網頁框架裡時特別重要）；
  *   電腦上失去焦點時畫面上方顯示「點一下遊戲畫面就能用鍵盤」。
  */
-export type ActionKey = 'basic' | 'Q' | 'W' | 'E' | 'R' | 'potionHp' | 'potionMp' | 'auto' | 'menu' | 'pause';
+export type ActionKey = 'basic' | 'Q' | 'W' | 'E' | 'R' | 'potionHp' | 'potionMp' | 'item1' | 'item2' | 'auto' | 'menu' | 'pause';
 
 const KEY_BINDINGS: Record<string, ActionKey> = {
   KeyJ: 'basic',
@@ -30,13 +30,15 @@ const KEY_BINDINGS: Record<string, ActionKey> = {
   KeyP: 'R',
   Digit1: 'potionHp',
   Digit2: 'potionMp',
+  Digit3: 'item1',
+  Digit4: 'item2',
   KeyT: 'auto',
   Escape: 'pause',
   KeyM: 'menu',
 };
 
 /** 電腦鍵盤上顯示在技能按鈕角落的鍵 */
-export const KEY_LABELS: Partial<Record<ActionKey, string>> = { basic: '空白', Q: 'Q', W: 'F', E: 'E', R: 'R', potionHp: '1', potionMp: '2' };
+export const KEY_LABELS: Partial<Record<ActionKey, string>> = { basic: '空白', Q: 'Q', W: 'F', E: 'E', R: 'R', potionHp: '1', potionMp: '2', item1: '3', item2: '4' };
 
 const MOVE_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
@@ -44,7 +46,7 @@ const MOVE_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown
 const KEYCODE: Record<number, string> = {
   87: 'KeyW', 65: 'KeyA', 83: 'KeyS', 68: 'KeyD', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown',
   32: 'Space', 74: 'KeyJ', 81: 'KeyQ', 70: 'KeyF', 69: 'KeyE', 82: 'KeyR', 85: 'KeyU', 73: 'KeyI', 79: 'KeyO', 80: 'KeyP',
-  49: 'Digit1', 50: 'Digit2', 97: 'Digit1', 98: 'Digit2', 84: 'KeyT', 77: 'KeyM', 27: 'Escape',
+  49: 'Digit1', 50: 'Digit2', 51: 'Digit3', 52: 'Digit4', 97: 'Digit1', 98: 'Digit2', 99: 'Digit3', 100: 'Digit4', 84: 'KeyT', 77: 'KeyM', 27: 'Escape',
 };
 
 /** 把鍵盤事件換成統一的 code（KeyW、ArrowUp…）；換不出來回傳空字串 */
