@@ -38,6 +38,9 @@ import { newlyDone } from '@/systems/Achievements';
 import { COMPANION_SKILLS, DUO, GROWTH, addBond, addCompExp, bondLevel, compCooldown, compDuration, compStatMul, growthOf, skillInterval, skillUnlocked, teamOf } from '@/data/companionGrowth';
 import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineReward } from '@/systems/Welcome';
 import { WelcomeScreen } from '@/ui/WelcomeScreen';
+import { TowerScreen } from '@/ui/TowerScreen';
+import { TOWER, ensureWeek, floorPlan, recordFloor, startFloors } from '@/systems/TrialTower';
+import { tierForLevel } from '@/data/items';
 import { localDate } from '@/systems/DailyQuests';
 import { ITEM_BASES } from '@/data/items';
 import { LootSystem } from '@/systems/LootSystem';
@@ -128,6 +131,10 @@ export class Game {
   private fadeEl: HTMLElement;
   private pauseScreen!: PauseScreen;
   private welcome!: WelcomeScreen;
+  private towerScreen!: TowerScreen;
+  /** 進行中的試煉塔（null = 沒在挑戰） */
+  private towerRun: { floor: number; start: number; level: number; boss: boolean; timer: number; between: number; best: number; gems: number; kills: number; prevBest: number } | null = null;
+  private towerResultPending: import('@/ui/TowerScreen').TowerResult | null = null;
   private offlinePending: OfflineReward | null = null;
   private lastDay = localDate();
   /** 破關畫面（v1.34）：首領戰紀錄 → 慢動作特寫 → 結算畫面 */
@@ -229,7 +236,7 @@ export class Game {
       this.state,
       this.player,
       this.effects,
-      () => (this.zones.current ? rollZoneTier(this.zones.current.def.id) : 1),
+      () => (this.towerRun ? tierForLevel(this.towerRun.level) : this.zones.current ? rollZoneTier(this.zones.current.def.id) : 1),
       () => this.onInventoryChanged(),
       (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
     );
@@ -351,6 +358,11 @@ export class Game {
     });
     bus.on('pause:toggle', () => this.setPaused(!this.paused));
 
+    this.towerScreen = new TowerScreen(uiRoot, {
+      retry: (f) => void this.startTower(f),
+      toTown: () => void this.changeZone('town'),
+    });
+    bus.on('tower:start', ({ floor }) => void this.startTower(floor));
     this.welcome = new WelcomeScreen(uiRoot, {
       claimOffline: (double) => this.claimOffline(double),
       claimLogin: () => this.doLogin(),
@@ -734,7 +746,7 @@ export class Game {
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
     // 首領戰紀錄：開戰時開始計時；首領脫戰回家就作廢（擊敗時在 onBossDefeated 結算）
     const eb = this.enemies.engagedBoss();
-    if (eb && !this.bossFight) {
+    if (eb && !this.bossFight && !this.towerRun) {
       this.bossFight = { zoneId: this.state.zoneId, start: this.state.stats.playTime, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
       this.scaleBoss(eb);
     } else if (!eb && this.bossFight && !this.clearSeq) this.bossFight = null;
@@ -749,6 +761,7 @@ export class Game {
     this.minions.update(dt, this.rig.camera);
     this.companionCd = Math.max(0, this.companionCd - dt);
     this.updateCompanionSkills(dt);
+    this.updateTower(dt);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
@@ -971,6 +984,117 @@ export class Game {
         this.effects.pillar(p.pos.x, p.pos.z, 0.8, color, 0.6);
         break;
     }
+  }
+
+  /* ======================= 無盡試煉塔（v1.70） ======================= */
+
+  /** 開始挑戰（地圖頁、結算畫面）：進塔、從第 floor 層開始 */
+  async startTower(floor: number) {
+    const s = this.state;
+    if (!s.bossesDefeated.includes(TOWER.unlockAfter)) {
+      bus.emit('toast', { text: '擊敗第三層首領後開放無盡試煉塔' });
+      return;
+    }
+    ensureWeek(s.tower);
+    if (!startFloors(s.tower.best).includes(floor)) floor = 1;
+    this.towerScreen.hide();
+    this.menu.close();
+    this.towerRun = null;
+    await this.changeZone('trial_tower', ZONES.trial_tower.spawn, true);
+    if (this.state.zoneId !== 'trial_tower') return;
+    s.tower.runs++;
+    this.towerRun = { floor, start: floor, level: 0, boss: false, timer: 0, between: 0, best: floor - 1, gems: 0, kills: 0, prevBest: s.tower.best };
+    this.player.hp = this.player.stats.maxHp;
+    if (!this.usesRage) this.player.mp = this.player.stats.maxMp;
+    this.spawnTowerFloor();
+  }
+
+  private spawnTowerFloor() {
+    const run = this.towerRun!;
+    const plan = floorPlan(run.floor);
+    run.level = plan.level;
+    run.boss = plan.boss;
+    run.timer = plan.timeLimit;
+    run.between = 0;
+    this.enemies.clear();
+    let i = 0;
+    const total = plan.groups.reduce((n, g) => n + g.count, 0);
+    for (const g of plan.groups) {
+      for (let k = 0; k < g.count; k++, i++) {
+        // 首領在場地北邊中央；小怪排成半圓圍過來
+        const a = Math.PI + (total > 1 ? (i / (total - 1) - 0.5) * 2.4 : 0);
+        const r = plan.boss ? 6 : 8 + (i % 2) * 2;
+        const x = plan.boss ? 0 : Math.sin(a) * r;
+        const z = plan.boss ? -6 : Math.cos(a) * r;
+        const e = this.enemies.spawnOne(g.id, x, z, { hpMul: plan.hpMul, atkMul: plan.atkMul, def: plan.defense, tag: plan.boss ? `第 ${run.floor} 層首領` : `Lv.${plan.level}` });
+        if (e) e.provoked = true; // 一出場就衝過來
+      }
+    }
+    bus.emit('banner', { text: plan.boss ? `🗼 第 ${run.floor} 層・首領戰` : `🗼 第 ${run.floor} 層` });
+    if (plan.boss) bus.emit('camera:shake', { power: 0.2 });
+  }
+
+  private updateTower(dt: number) {
+    const run = this.towerRun;
+    if (!run) {
+      this.hud.setTower(null);
+      return;
+    }
+    const alive = this.enemies.enemies.filter((e) => e.alive).length;
+    if (run.between > 0) {
+      run.between -= dt;
+      this.hud.setTower(`🗼 第 ${run.floor} 層・準備中…`);
+      if (run.between <= 0) {
+        run.floor++;
+        this.spawnTowerFloor();
+      }
+      return;
+    }
+    if (!this.player.alive) return;
+    run.timer -= dt;
+    this.hud.setTower(`🗼 第 ${run.floor} 層${run.boss ? '・首領' : ''}　⏱ ${Math.max(0, Math.ceil(run.timer))} 秒　剩 ${alive} 隻`, run.timer < 10);
+    if (alive === 0) {
+      // 過關：記錄、回一點血，準備上樓
+      const s = this.state;
+      const gems = recordFloor(s.tower, run.floor);
+      run.best = run.floor;
+      if (gems) {
+        s.gems += gems;
+        run.gems += gems;
+        bus.emit('toast', { text: `💎 本週首次打過第 ${run.floor} 層：+${gems} 鑽石`, kind: 'reward' });
+      }
+      const p = this.player;
+      p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * TOWER.healOnClear);
+      run.between = TOWER.between;
+      bus.emit('player:changed');
+      bus.emit('toast', { text: `第 ${run.floor} 層通過！`, duration: 1.6 });
+      return;
+    }
+    if (run.timer <= 0) this.towerScreen.show(this.endTower('timeout'));
+  }
+
+  /** 結束挑戰：寫紀錄、清場，回傳結算資料 */
+  private endTower(reason: 'dead' | 'timeout' | 'leave'): import('@/ui/TowerScreen').TowerResult {
+    const run = this.towerRun!;
+    const t = this.state.tower;
+    this.towerRun = null;
+    this.hud.setTower(null);
+    if (reason !== 'leave') {
+      for (const e of this.enemies.enemies) e.dispose();
+      this.enemies.enemies = [];
+    }
+    this.persist();
+    return {
+      cleared: run.best >= run.start ? run.best : 0,
+      startFloor: run.start,
+      reason,
+      best: t.best,
+      weekBest: t.weekBest,
+      newBest: t.best > run.prevBest,
+      gems: run.gems,
+      kills: run.kills,
+      starts: startFloors(t.best),
+    };
   }
 
   /** 快捷道具欄（左下第 3、4 格；電腦 3、4）：空格或用完 → 打開「裝備 → 道具」去設定 / 購買 */
@@ -1309,15 +1433,19 @@ export class Game {
     // 道具加成：謬思蜂蜜（經驗）、堤喀幸運金幣（金幣）
     const exp = Math.round(expForKill(k.exp, s.level, k.level) * (s.boosts.exp > 0 ? 1.3 : 1));
     const gold = Math.round(rollGold(k.gold) * (s.boosts.gold > 0 ? 1.5 : 1));
-    if (k.boss) this.onBossDefeated(k.name, exp, gold, k.gems);
+    const tower = !!this.towerRun;
+    // 試煉塔的首領：不跳破關畫面、不給首領鑽石（塔有自己的每週鑽石）
+    const gems = tower ? 0 : k.gems;
+    if (tower) this.towerRun!.kills++;
+    if (k.boss && !tower) this.onBossDefeated(k.name, exp, gold, k.gems);
     if (exp <= 0 && gold <= 0) return;
     s.gold += gold;
     s.stats.goldEarned += gold;
-    s.gems += k.gems;
+    s.gems += gems;
     if (gold > 0) this.quest({ type: 'gold', amount: gold });
     if (gold > 0) bus.emit('float:text', { x: k.x, y: 1.4, z: k.z, text: `+${gold} 金幣`, kind: 'gold' });
     if (exp > 0) bus.emit('float:text', { x: this.player.pos.x, y: 2.6, z: this.player.pos.z, text: `+${exp} EXP`, kind: 'exp' });
-    if (k.gems > 0) bus.emit('toast', { text: `💎 獲得 ${k.gems} 鑽石`, kind: 'reward' });
+    if (gems > 0) bus.emit('toast', { text: `💎 獲得 ${gems} 鑽石`, kind: 'reward' });
     this.gainExp(exp);
   }
 
@@ -1453,7 +1581,8 @@ export class Game {
     this.counterTimer = 0;
     this.targets.clear();
     this.deathTimer = 1.6;
-    this.deathGoldLost = Math.floor(this.state.gold * DEATH_GOLD_PENALTY);
+    this.deathGoldLost = this.towerRun ? 0 : Math.floor(this.state.gold * DEATH_GOLD_PENALTY);
+    if (this.towerRun) this.towerResultPending = this.endTower('dead');
     this.state.gold -= this.deathGoldLost;
     bus.emit('banner', { text: '你被擊敗了…' });
   }
@@ -1465,6 +1594,10 @@ export class Game {
     this.skills.reset();
     this.persist();
     bus.emit('toast', { text: lost > 0 ? `在主城復活，損失 ${lost} 金幣` : '在主城復活', duration: 2.6 });
+    if (this.towerResultPending) {
+      this.towerScreen.show(this.towerResultPending);
+      this.towerResultPending = null;
+    }
     bus.emit('player:changed');
   }
 
@@ -1509,6 +1642,10 @@ export class Game {
 
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
     this.bossFight = null;
+    if (this.towerRun && id !== 'trial_tower') {
+      const r = this.endTower('leave');
+      if (r.cleared) bus.emit('toast', { text: `🗼 試煉塔結算：打到第 ${r.cleared} 層${r.gems ? `，獲得 ${r.gems} 鑽石` : ''}`, duration: 3, kind: 'reward' });
+    }
     this.projectiles.clear();
     this.effects.clear();
     this.telegraphs?.clear();
@@ -1535,7 +1672,7 @@ export class Game {
     this.hud.setZone(zone.def);
     const def = zone.def;
     const range = def.levelRange ? `（Lv.${def.levelRange[0]}-${def.levelRange[1]}）` : '';
-    const name = def.kind === 'dungeon' ? `${floorLabel(def.dungeon!.floor)}・${def.name}` : def.subtitle.split('・')[0];
+    const name = def.dungeon ? `${floorLabel(def.dungeon!.floor)}・${def.name}` : def.subtitle.split('・')[0];
     bus.emit('banner', { text: def.kind === 'town' ? `回到${name}` : `進入 ${name}${range}` });
     bus.emit('zone:enter', { zoneId: id });
   }

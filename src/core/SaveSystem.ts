@@ -9,6 +9,7 @@ import { ZONES, bossOf } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
 import { newAchievementState } from '@/systems/Achievements';
 import { newLoginState } from '@/systems/Welcome';
+import { newTowerState } from '@/systems/TrialTower';
 import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
 
@@ -278,6 +279,13 @@ export function migrate(data: Partial<GameState>): GameState | null {
   // v16 → v17：支援夥伴（第二隻）；舊存檔沒有
   const sup = c && typeof c === 'object' ? (c as { support?: unknown }).support : null;
   merged.companions.support = typeof sup === 'string' && merged.companions.owned.includes(sup) && sup !== merged.companions.active ? sup : null;
-  // 未來版本：if ((data.version ?? 0) < 18) { ... }
+  // v17 → v18：無盡試煉塔紀錄；在塔裡存檔的話讀檔回主城（塔的進度不存）
+  const tw = data.tower;
+  merged.tower = tw && typeof tw === 'object' ? { ...newTowerState(), ...tw } : newTowerState();
+  if (merged.zoneId === 'trial_tower') {
+    merged.zoneId = 'town';
+    merged.pos = { ...ZONES.town.spawn };
+  }
+  // 未來版本：if ((data.version ?? 0) < 19) { ... }
   return merged;
 }

@@ -36,6 +36,22 @@ export class EnemyManager {
     }
   }
 
+  /**
+   * 生成一隻不會重生的敵人（無盡試煉塔，v1.70）：生命、攻擊倍率與防禦另外指定。
+   */
+  spawnOne(id: string, x: number, z: number, opts: { hpMul?: number; atkMul?: number; def?: number; tag?: string } = {}): Enemy | null {
+    const ed = ENEMIES[id];
+    if (!ed) return null;
+    const e = new Enemy(ed, { enemy: id, x, z, count: 1, spread: 0, respawn: 1e9, def: opts.def, tag: opts.tag });
+    e.maxHp = ed.stats.maxHp * (opts.hpMul ?? 1);
+    e.hp = e.maxHp;
+    e.atkMul = opts.atkMul ?? 1;
+    e.groundY = this.heightAt(e.pos.x, e.pos.z);
+    this.enemies.push(e);
+    this.scene.add(e.object);
+    return e;
+  }
+
   clear() {
     for (const e of this.enemies) e.dispose();
     this.enemies = [];

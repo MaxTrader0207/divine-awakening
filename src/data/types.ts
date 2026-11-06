@@ -46,7 +46,8 @@ export type ZoneId =
   | 'side_7'
   | 'side_8'
   | 'side_9'
-  | 'side_10';
+  | 'side_10'
+  | 'trial_tower';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
 
@@ -232,6 +233,8 @@ export interface ZoneDef {
     /** 擊敗哪一層首領後開放 */
     unlockAfter: ZoneId;
   };
+  /** 無盡試煉塔（v1.70）：沒有固定的怪，不列在野外 / 副本清單 */
+  tower?: boolean;
   /** 副本專用 */
   dungeon?: {
     floor: number;

@@ -131,6 +131,8 @@ export class Hud {
     ]);
     this.root.appendChild(topRight);
 
+    // ---- 無盡試煉塔：層數、倒數、剩餘敵人（v1.70，首領血條上方） ----
+    this.root.appendChild((this.els.tower = h('div', { class: 'tower-bar' })));
     // ---- 上方中央插槽：首領血條 / 提示；下面是通知佇列 ----
     this.root.appendChild(
       (this.els.boss = h('div', { class: 'boss-bar' }, [
@@ -403,6 +405,18 @@ export class Hud {
   }
 
   /** 夥伴按鈕：icon = 目前帶的夥伴（null = 沒有夥伴，按鈕隱藏）、cd = 剩餘冷卻秒數、live = 夥伴在場上 */
+  /** 試煉塔資訊列（null = 隱藏）；urgent = 剩不到 10 秒變紅 */
+  setTower(text: string | null, urgent = false) {
+    const el = this.els.tower;
+    if (text === null) {
+      if (el.classList.contains('show')) el.classList.remove('show', 'urgent');
+      return;
+    }
+    if (el.textContent !== text) el.textContent = text;
+    el.classList.add('show');
+    el.classList.toggle('urgent', urgent);
+  }
+
   setCompanion(icon: string | null, name: string, cd: number, cdMax: number, live: boolean, subIcon: string | null = null) {
     const c = this.comp;
     const key = `${icon}|${name}|${subIcon}`;

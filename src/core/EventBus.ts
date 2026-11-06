@@ -14,6 +14,8 @@ export interface GameEvents {
   /** kind: 'reward' 走左側獎勵清單；其他排隊顯示在上方中央 */
   toast: { text: string; duration?: number; kind?: 'info' | 'reward' };
   banner: { text: string };
+  /** 無盡試煉塔：從第 floor 層開始（地圖頁） */
+  'tower:start': { floor: number };
   'menu:open': { tab?: MenuTab };
   /** HUD 暫停鈕 */
   'pause:toggle': void;

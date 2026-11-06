@@ -80,6 +80,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: `floor${n}`, cat: 'story', icon: '🏛', name: `${ZONES[DUNGEON_ORDER[n - 1]].name}的勝利者`, desc: `擊敗第 ${n} 層首領`, gems: [5, 10, 15, 20, 25, 30][i], progress: floor(n),
   })),
   { id: 'floor22', cat: 'story', icon: '🏆', name: '奧林帕斯的守護者', desc: `擊敗最終層首領（第 ${DUNGEON_ORDER.length} 層）`, gems: 60, progress: floor(DUNGEON_ORDER.length) },
+  { id: 'tower10', cat: 'story', icon: '🗼', name: '試煉者', desc: '無盡試煉塔打到第 10 層', gems: 10, progress: (s) => [Math.min(s.tower.best, 10), 10] },
+  { id: 'tower30', cat: 'story', icon: '🏯', name: '登塔者', desc: '無盡試煉塔打到第 30 層', gems: 20, progress: (s) => [Math.min(s.tower.best, 30), 30] },
+  { id: 'tower60', cat: 'story', icon: '⛰', name: '奧林帕斯之巔', desc: '無盡試煉塔打到第 60 層', gems: 40, progress: (s) => [Math.min(s.tower.best, 60), 60] },
   { id: 'elites', cat: 'story', icon: '🗺', name: '野外霸主', desc: `打倒全部 ${ELITE_FIELDS.length} 張野外的菁英首領`, gems: 15, progress: (s) => [ELITE_FIELDS.filter((z) => (s.clears[z]?.count ?? 0) > 0).length, ELITE_FIELDS.length] },
 
   // ---- 收集 ----

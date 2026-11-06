@@ -38,6 +38,7 @@ import { etnaFoothills } from './side7-etna-foothills';
 import { chiosHuntingGround } from './side8-chios-hunting-ground';
 import { spartaPhobosShrine } from './side9-sparta-phobos-shrine';
 import { areopagus } from './side10-areopagus';
+import { trialTower } from './trial-tower';
 
 /**
  * 關卡登記表（唯一需要手動排序的地方）
@@ -49,7 +50,7 @@ import { areopagus } from './side10-areopagus';
 export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, delphiPath, marathonField, troyBeach, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
   calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
   heliconSpring, idaSummit, colchisGrove, aegaePalace,
-  rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus];
+  rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus, trialTower];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 
@@ -67,7 +68,7 @@ export const DUNGEON_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.dungeon)
   .map((s) => s.zone.id);
 
 /** 城鎮與野外（世界地圖上可以直接前往的地方），依登記順序 */
-export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon' && !s.zone.side).map((s) => s.zone.id);
+export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon' && !s.zone.side && !s.zone.tower).map((s) => s.zone.id);
 
 /** 支線地圖（守護者的家，v1.58），依登記順序 */
 export const SIDE_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.side).map((s) => s.zone.id);
