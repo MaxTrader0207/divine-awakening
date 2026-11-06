@@ -22,6 +22,8 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   margin: 0; height: 100%; overflow: hidden;
+  /* 手機瀏覽器 / App 內嵌網頁的「自動放大文字」會把 HUD 的字撐爆、互相蓋住（v1.72） */
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   background: #0e131c; color: var(--text); font-family: var(--font);
   user-select: none; -webkit-user-select: none; touch-action: none; overscroll-behavior: none;
 }
@@ -982,3 +984,32 @@ html.clear-open .hud { opacity: 0; pointer-events: none; transition: opacity 0.3
 .tw-floor small { font-size: 11px; color: var(--muted); }
 .card.tower-card { border-color: rgba(180, 140, 255, 0.55); background: linear-gradient(135deg, rgba(90, 60, 150, 0.22), var(--panel-2)); }
 .go.alt-tower { background: linear-gradient(#d9c4ff, #9a6cff); color: #1e1038; }
+
+/* ---- 左上狀態框 v1.72：手機上看得清楚、字放大也不會重疊 ---- */
+.top-left { width: min(244px, calc((100% - var(--gutter) * 2) / var(--ui) - 150px)); }
+.top-left .status-card { gap: 8px; padding: 7px 10px 7px 7px; background: rgba(12, 16, 26, 0.86); }
+.status-body { gap: 3px; }
+.status-head .status-title { font-size: 15px; line-height: 18px; letter-spacing: 0.02em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.bar-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 4px; }
+.bar-row .bar-tag { position: static; display: block; font: 800 10px/1 var(--font); letter-spacing: 0.02em; color: #c9d3e6; text-shadow: none; text-align: left; }
+.bar-row.hp .bar-tag { color: #ffb3a3; }
+.status-card .bar { height: 18px; border-radius: 9px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5); }
+.status-card .bar.mp { height: 15px; }
+.status-card .bar span {
+  display: flex; align-items: center; justify-content: center; padding: 0 4px; overflow: hidden; white-space: nowrap;
+  font-size: 12.5px; line-height: 1; font-weight: 800; text-shadow: 0 1px 2px #000, 0 0 3px rgba(0, 0, 0, 0.8);
+}
+.status-card .bar.mp span { font-size: 11px; line-height: 1; }
+.bar-row.exp { grid-template-columns: 24px minmax(0, 1fr) auto; margin-top: 1px; }
+.bar-row.exp .bar-tag { font-size: 9px; color: #b9f08a; }
+.status-card .bar.exp { height: 5px; border-radius: 3px; }
+.status-card .bar.exp i { background: linear-gradient(90deg, #8fd65a, #d4ff9e); }
+.bar-row.exp .exp-pct { min-width: 0; font: 800 10.5px/1 var(--font); color: #b9f08a; font-variant-numeric: tabular-nums; }
+.avatar { width: 50px; height: 50px; }
+.avatar-face { font-size: 23px; }
+/* 新手指引卡：字放大一點、最多兩行 */
+.top-left .guide-card { padding: 6px 10px 6px 8px; }
+.guide-card .guide-text { font-size: 12.5px; line-height: 1.3; }
+/* 獎勵訊息：改成從快捷欄上方往上堆，不再蓋到道具 / 藥水按鈕；一則一行 */
+.loot-feed { top: auto; bottom: calc(max(22px, env(safe-area-inset-bottom)) + 296px * var(--ui)); max-width: min(62%, 300px); }
+.feed-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }

@@ -94,13 +94,12 @@ export class Hud {
         h('div', { class: 'avatar-face' }, cls.icon),
         (this.els.lv = h('div', { class: 'avatar-lv' })),
       ])),
+      // v1.72 重新排版：名字獨占一行；HP / MP 標籤移到條外（字放大時不會互相蓋住）；經驗值改成最下面一條細線＋百分比
       h('div', { class: 'status-body' }, [
-        h('div', { class: 'status-head' }, [
-          (this.els.title = h('b', { class: 'status-title' })),
-          (this.els.expText = h('span', { class: 'exp-pct' })),
-        ]),
-        h('div', { class: 'bar hp' }, [h('em', { class: 'bar-tag' }, 'HP'), (this.els.hpTrail = h('u')), (this.els.hpFill = h('i')), (this.els.hpText = h('span'))]),
-        h('div', { class: 'bar mp' }, [h('em', { class: 'bar-tag' }, skills.usesRage ? '怒' : 'MP'), (this.els.mpFill = h('i')), (this.els.mpText = h('span'))]),
+        h('div', { class: 'status-head' }, [(this.els.title = h('b', { class: 'status-title' }))]),
+        h('div', { class: 'bar-row hp' }, [h('em', { class: 'bar-tag' }, 'HP'), h('div', { class: 'bar hp' }, [(this.els.hpTrail = h('u')), (this.els.hpFill = h('i')), (this.els.hpText = h('span'))])]),
+        h('div', { class: 'bar-row' }, [h('em', { class: 'bar-tag' }, skills.usesRage ? '怒' : 'MP'), h('div', { class: 'bar mp' }, [(this.els.mpFill = h('i')), (this.els.mpText = h('span'))])]),
+        h('div', { class: 'bar-row exp' }, [h('em', { class: 'bar-tag' }, 'EXP'), h('div', { class: 'bar exp' }, [(this.els.expFill = h('i'))]), (this.els.expText = h('span', { class: 'exp-pct' }))]),
       ]),
     ]);
     this.els.buffs = h('div', { class: 'buffs' });
@@ -520,8 +519,9 @@ export class Hud {
   /** 獎勵訊息：左側清單（最多 4 行，3.2 秒後淡出） */
   private feed(text: string, color: string, prefix = '') {
     const line = h('div', { class: 'feed-line', style: `--rc:${color}` }, prefix ? [h('span', {}, prefix), h('b', {}, text)] : [h('b', {}, text)]);
-    this.els.feed.prepend(line);
-    while (this.els.feed.children.length > 4) this.els.feed.lastElementChild!.remove();
+    // v1.72：清單貼在快捷欄上方往上堆，最新的一則在最下面（最靠近手指的位置）
+    this.els.feed.append(line);
+    while (this.els.feed.children.length > 4) this.els.feed.firstElementChild!.remove();
     setTimeout(() => line.classList.add('out'), 3200);
     setTimeout(() => line.remove(), 3700);
   }
@@ -609,7 +609,8 @@ export class Hud {
     this.refreshBars();
     const expR = Math.min(1, s.exp / expToNext(s.level));
     this.els.avatar.style.setProperty('--exp', String(expR));
-    this.els.expText.textContent = `EXP ${Math.floor(expR * 100)}%`;
+    this.els.expText.textContent = `${Math.floor(expR * 100)}%`;
+    this.els.expFill.style.width = `${expR * 100}%`;
     this.root.classList.toggle('near-level', expR >= 0.9);
     this.els.gold.textContent = String(s.gold);
     this.els.gems.textContent = String(s.gems);
