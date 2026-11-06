@@ -4,6 +4,7 @@ import { DUNGEON_ORDER, FIELD_ORDER, ZONES, bossOf } from './stages';
 import { CODEX_ENTRIES, CODEX_MAX_POINTS, codexFound, codexPoints } from './codex';
 import { COMPANION_LIST } from './companions';
 import { GROWTH, bondLevel, teamOf } from './companionGrowth';
+import { equippedSets } from './gearSets';
 import { ENHANCE_MAX, RARITY_ORDER } from './items';
 
 /**
@@ -46,6 +47,7 @@ const ELITE_FIELDS = FIELD_ORDER.filter((z) => bossOf(z));
 const growthList = (s: GameState) => Object.values(s.companions.growth ?? {});
 const maxPetLv = (s: GameState) => Math.max(0, ...growthList(s).map((g) => g.lv));
 const maxBond = (s: GameState) => Math.max(0, ...growthList(s).map((g) => bondLevel(g.bond)));
+const maxSet = (s: GameState) => equippedSets(s.equipment)[0]?.count ?? 0;
 const allGear = (s: GameState) => [...Object.values(s.equipment), ...s.inventory].filter(Boolean);
 
 export const ACHIEVEMENTS: AchievementDef[] = [
@@ -89,6 +91,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'petLvMax', cat: 'collect', icon: '🏅', name: '神獸導師', desc: `任一隻夥伴升到 Lv.${GROWTH.maxLv}`, gems: 30, progress: (s) => [Math.min(maxPetLv(s), GROWTH.maxLv), GROWTH.maxLv] },
   { id: 'petBond3', cat: 'collect', icon: '💞', name: '心意相通', desc: '任一隻夥伴好感度 ♥♥♥（學會專屬技能）', gems: 10, progress: (s) => [Math.min(maxBond(s), 3), 3] },
   { id: 'petBond5', cat: 'collect', icon: '💖', name: '永恆的羈絆', desc: '任一隻夥伴好感度 ♥♥♥♥♥', gems: 25, progress: (s) => [Math.min(maxBond(s), 5), 5] },
+  { id: 'set2', cat: 'collect', icon: '🧩', name: '初窺套裝', desc: '同一套★神話裝穿上 2 件', gems: 5, progress: (s) => [Math.min(maxSet(s), 2), 2] },
+  { id: 'set6', cat: 'collect', icon: '👑', name: '神裝加身', desc: '同一套★神話裝穿滿 6 件', gems: 30, progress: (s) => [maxSet(s), 6] },
   { id: 'myth1', cat: 'collect', icon: '★', name: '神話的開端', desc: '撿到第一件★神話裝', gems: 5, progress: stat('mythics', 1) },
   { id: 'myth10', cat: 'collect', icon: '🌠', name: '神話收藏家', desc: '撿到 10 件★神話裝', gems: 15, progress: stat('mythics', 10) },
   { id: 'myth50', cat: 'collect', icon: '🌌', name: '傳說之庫', desc: '撿到 50 件★神話裝', gems: 30, progress: stat('mythics', 50) },

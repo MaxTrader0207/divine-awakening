@@ -10,6 +10,8 @@ import {
 } from '@/systems/Inventory';
 import { h } from './dom';
 import { PROFILE_LABEL } from '@/data/gear';
+import { equippedSets, setOf, setTiers } from '@/data/gearSets';
+import { GEM_SHOP, buyGemItem } from '@/systems/GemShop';
 import { CONSUMABLES, MAX_STACK, consumablesFor, type ConsumableDef } from '@/data/consumables';
 import { setQuickSlot } from '@/systems/Consumables';
 import { CLASSES } from '@/data/classes';
@@ -248,6 +250,8 @@ export function renderEquip(ctx: InvContext): HTMLElement[] {
     h('div', { class: 'card' }, [h('h4', {}, `${s.playerName}・Lv.${s.level}`), statsGrid]),
     slots,
   ];
+  const sets = equippedSets(s.equipment);
+  if (sets.length) out.push(h('div', { class: 'card set-card' }, [h('h4', {}, '🧩 套裝效果'), ...sets.map((a) => setBlock(a.set, a.count))]));
   const sel = selectedUid !== null ? findItem(s, selectedUid) : undefined;
   if (sel) out.push(detailCard(ctx, sel));
   // 下半部：裝備背包 / 道具 切換
@@ -328,8 +332,17 @@ function detailCard(ctx: InvContext, it: ItemInstance): HTMLElement {
   return h('div', { class: 'card item-detail', style: `--rc:${RARITY[it.rarity].color}` }, [
     h('div', { class: 'detail-head' }, [h('span', { class: 'big-ico' }, base.icon), h('div', {}, [h('h4', {}, itemName(it)), h('p', {}, `${SLOT_NAMES[base.slot]}・第 ${base.tier} 階・${base.named ? `★神話裝（${PROFILE_LABEL[base.profile!]}）` : '標準裝'}${equipped ? '・裝備中' : ''}`)])]),
     h('div', { class: 'lines' }, lines),
+    setOf(it.base) ? setBlock(setOf(it.base)!, equippedSets(s.equipment).find((a) => a.set.id === setOf(it.base)!.id)?.count ?? 0) : null,
     cur && !equipped ? h('p', { class: 'cmp-note' }, `與目前的「${itemName(cur)}」比較`) : null,
     h('div', { class: 'card-row' }, buttons),
+  ]);
+}
+
+/** 套裝：名稱、件數、2 / 4 / 6 件效果（達成的亮起來） */
+function setBlock(set: NonNullable<ReturnType<typeof setOf>>, count: number): HTMLElement {
+  return h('div', { class: 'set-block' }, [
+    h('div', { class: 'set-head' }, [h('b', {}, `${set.name}`), h('small', {}, `第 ${set.tier} 階・穿著 ${count}/6`)]),
+    ...setTiers(set).map((t) => h('div', { class: `set-tier${count >= t.need ? ' on' : ''}` }, [h('span', {}, `${t.need} 件`), h('span', {}, t.text)])),
   ]);
 }
 
@@ -423,6 +436,26 @@ export function renderShop(ctx: InvContext): HTMLElement[] {
     h('div', { class: 'card' }, [
       h('div', { class: 'wallet-line' }, [h('span', { class: 'coin' }), h('b', {}, String(s.gold)), h('span', { class: 'gem' }), h('b', {}, String(s.gems))]),
     ]),
+    h('div', { class: 'section-title' }, '💎 鑽石商店'),
+    h('div', { class: 'card' }, GEM_SHOP.map((g) => {
+      const why = s.gems < g.price ? null : g.blocked(s);
+      return h('div', { class: 'shop-row' }, [
+        h('span', { class: 'shop-ico' }, g.icon),
+        h('div', { class: 'shop-main' }, [h('b', {}, g.name), h('small', {}, why ? `${g.desc(s)}（${why}）` : g.desc(s))]),
+        h('button', {
+          class: 'go small gem-btn',
+          disabled: s.gems < g.price || !!why,
+          onclick: () => {
+            const r = buyGemItem(s, g.id);
+            if (!r.ok) return ctx.toast(r.why);
+            ctx.toast(`${g.icon} ${g.name}：獲得 ${r.got.join('、')}`);
+            bus.emit('shop:bought');
+            ctx.changed();
+            ctx.rerender();
+          },
+        }, `${g.price}💎`),
+      ]);
+    })),
     h('div', { class: 'section-title' }, '道具店'),
     h('div', { class: 'card' }, [potionRow('hp'), potionRow('mp')]),
     h('div', { class: 'section-title' }, `${CLASSES[s.heroClass].icon} ${CLASSES[s.heroClass].name}專屬道具`),

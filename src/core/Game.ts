@@ -1317,7 +1317,7 @@ export class Game {
     if (gold > 0) this.quest({ type: 'gold', amount: gold });
     if (gold > 0) bus.emit('float:text', { x: k.x, y: 1.4, z: k.z, text: `+${gold} 金幣`, kind: 'gold' });
     if (exp > 0) bus.emit('float:text', { x: this.player.pos.x, y: 2.6, z: this.player.pos.z, text: `+${exp} EXP`, kind: 'exp' });
-    if (k.gems > 0) bus.emit('toast', { text: `💎 獲得 ${k.gems} 寶石`, kind: 'reward' });
+    if (k.gems > 0) bus.emit('toast', { text: `💎 獲得 ${k.gems} 鑽石`, kind: 'reward' });
     this.gainExp(exp);
   }
 

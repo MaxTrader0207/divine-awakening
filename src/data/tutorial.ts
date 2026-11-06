@@ -122,7 +122,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'enhance',
     title: '強化裝備',
     text: '到強化屋把裝備強化一次',
-    hint: '強化讓裝備屬性提高（每級 +8%，最高 +10）。+2 之後有失敗機率，失敗只會花掉金幣，裝備不會壞；花 5 顆寶石可以保證成功。',
+    hint: '強化讓裝備屬性提高（每級 +8%，最高 +10）。+2 之後有失敗機率，失敗只會花掉金幣，裝備不會壞；花 5 顆鑽石可以保證成功。',
     goal: { type: 'enhance' },
     reward: { gold: 60 },
     targets: { town: { x: 22, z: -12.6 }, ...BACK_TO_TOWN },
@@ -150,7 +150,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 export function rewardText(r: TutorialReward): string {
   const parts: string[] = [];
   if (r.gold) parts.push(`${r.gold} 金幣`);
-  if (r.gems) parts.push(`${r.gems} 寶石`);
+  if (r.gems) parts.push(`${r.gems} 鑽石`);
   if (r.hp) parts.push(`紅藥水 ×${r.hp}`);
   if (r.mp) parts.push(`藍藥水 ×${r.mp}`);
   return parts.join('、');

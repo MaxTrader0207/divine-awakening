@@ -3,6 +3,7 @@ import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, 
 import { statsForLevel } from '@/data/player';
 import { CLASSES, RAGE } from '@/data/classes';
 import { codexBonus } from '@/data/codex';
+import { applySetBonus, setBonusTotal } from '@/data/gearSets';
 
 /**
  * 背包與裝備（純邏輯，不碰畫面；全部可單元測試）
@@ -55,6 +56,8 @@ export function computeStats(s: InventoryState): Stats {
     if (!it) continue;
     for (const [k, v] of Object.entries(itemStats(it)) as [keyof Stats, number][]) st[k] += v;
   }
+  // v1.69 神話裝套裝效果（同一套穿 2 / 4 / 6 件）
+  applySetBonus(st, setBonusTotal(s.equipment));
   if (s.codex) {
     const b = codexBonus(s.codex);
     st.atk *= 1 + b.atk;
