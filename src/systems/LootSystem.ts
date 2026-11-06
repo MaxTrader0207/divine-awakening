@@ -42,17 +42,17 @@ export class LootSystem {
     private state: GameState,
     private player: Player,
     private effects: Effects,
-    /** 目前區域的裝備階級 */
+    /** 目前區域這一件掉落的裝備階級（混合掉落時每次呼叫重抽） */
     private zoneTier: () => number,
     /** 撿到裝備後（重算屬性、存檔） */
     private onInventoryChanged: () => void,
     private heightAt: (x: number, z: number) => number = () => 0,
   ) {
     bus.on('enemy:killed', (k) => {
-      const tier = this.zoneTier();
       const n = k.boss ? 2 : 1;
       for (let i = 0; i < n; i++) {
-        const d = rollDrop(tier, k.boss, Math.random, this.state.heroClass);
+        // 每件各自抽階級（混合掉落的野外：3～4 階）
+        const d = rollDrop(this.zoneTier(), k.boss, Math.random, this.state.heroClass);
         if (d) this.spawn({ type: 'item', ...d }, k.x, k.z);
       }
       if (!k.boss && k.gold[1] > 0 && Math.random() < POTION_DROP_CHANCE) {

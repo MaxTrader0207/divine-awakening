@@ -15,6 +15,9 @@ export type ZoneId =
   | 'dungeon_2'
   | 'dungeon_3'
   | 'mistwood'
+  | 'delphi_path'
+  | 'marathon_field'
+  | 'troy_beach'
   | 'dungeon_4'
   | 'dungeon_5'
   | 'dungeon_6'
@@ -208,6 +211,11 @@ export interface ZoneDef {
   minLevel?: number;
   /** 掉落裝備的階級（預設：副本層數，野外 1） */
   lootTier?: number;
+  /**
+   * 混合掉落（v1.62，野外用）：每件掉落各自從這裡隨機抽一個階級，例如 [3, 3, 4] = 2/3 機率 3 階、1/3 機率 4 階。
+   * 有填時 lootTier 只拿來算首領強度與顯示用的「主要階級」。
+   */
+  lootTiers?: number[];
   /** 霧的起訖距離（預設 60 / 130） */
   fogRange?: [number, number];
   /** 飄動的霧氣 */

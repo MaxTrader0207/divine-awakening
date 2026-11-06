@@ -3,7 +3,7 @@ import { melee, row } from './helpers';
 
 /**
  * 阿卡迪亞草原（野外 Lv.1-10）
- * 新手區：潘神軟泥、德律阿得菇；東側有三個不同防禦的斯巴達訓練木樁；東邊出口通往多多納聖林。
+ * 新手區：潘神軟泥、德律阿得菇；東側有三個不同防禦的斯巴達訓練木樁；東邊出口通往多多納聖林，西邊出口通往德爾斐山徑（v1.62）。
  */
 const zone: ZoneDef = {
   id: 'grassland',
@@ -45,6 +45,7 @@ const zone: ZoneDef = {
   portals: [
     { x: 0, z: -28, radius: 2.6, to: 'town', arrive: { x: 0, z: 26 }, label: '雅典城', style: 'edge' },
     { x: 33, z: 4, radius: 2.4, to: 'mistwood', arrive: { x: -29, z: 20 }, label: '多多納聖林 Lv.11', style: 'edge' },
+    { x: -33, z: 4, radius: 2.4, to: 'delphi_path', arrive: { x: 24, z: 20 }, label: '德爾斐山徑 Lv.8', style: 'edge' },
   ],
   spawn: { x: 0, z: -24 },
   tips: ['斯巴達訓練木樁在草原東側，可以測試不同防禦下的傷害', '敵人防禦越高越需要穿透', '按住普攻鍵可以連續攻擊'],

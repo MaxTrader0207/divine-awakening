@@ -6,6 +6,9 @@ import { poseidonCoast } from './dungeon1-poseidon-coast';
 import { sirenGrotto } from './dungeon2-siren-grotto';
 import { hephaestusForge } from './dungeon3-hephaestus-forge';
 import { dodonaGrove } from './dodona-grove';
+import { delphiPath } from './field-delphi-path';
+import { marathonField } from './field-marathon';
+import { troyBeach } from './field-troy-beach';
 import { lernaSwamp } from './dungeon4-lerna-swamp';
 import { knossosLabyrinth } from './dungeon5-knossos-labyrinth';
 import { tartarusAbyss } from './dungeon6-tartarus-abyss';
@@ -43,7 +46,7 @@ import { areopagus } from './side10-areopagus';
  * 其他清單（ZONES、ENEMIES、DUNGEON_ORDER、野外清單、首領查詢…）都由這裡自動產生。
  * 新增關卡：見 docs/CONTENT.md「新增關卡」。
  */
-export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
+export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, delphiPath, marathonField, troyBeach, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
   calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
   heliconSpring, idaSummit, colchisGrove, aegaePalace,
   rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus];
@@ -77,7 +80,7 @@ export const UPCOMING_FIELDS: { name: string; range: string }[] = [
 export const WORLD_FIELDS: { name: string; range: string; zone?: ZoneId }[] = [
   ...FIELD_ORDER.map((id) => {
     const z = ZONES[id];
-    return { name: id === 'town' ? `${zoneName(id)}（安全區）` : zoneName(id), range: z.levelRange ? `Lv.${z.levelRange[0]}-${z.levelRange[1]}` : '', zone: id };
+    return { name: id === 'town' ? `${zoneName(id)}（安全區）` : zoneName(id), range: z.levelRange ? `Lv.${z.levelRange[0]}-${z.levelRange[1]}${z.lootTiers ? `・掉落 ${lootTierText(id)}` : ''}` : '', zone: id };
   }),
   ...UPCOMING_FIELDS,
 ];
@@ -124,6 +127,22 @@ export function lootTierOf(id: ZoneId): number {
   if (f >= 18) return Math.min(MAX_TIER, 8);
   if (f >= 13) return Math.min(MAX_TIER, 7);
   return Math.min(MAX_TIER, f <= 3 ? f : 3 + Math.ceil((f - 3) / 3));
+}
+
+/** 這一件掉落的階級：有 lootTiers（混合掉落）就隨機抽一個，否則 = lootTierOf() */
+export function rollZoneTier(id: ZoneId, rng: () => number = Math.random): number {
+  const list = ZONES[id]?.lootTiers;
+  if (!list?.length) return lootTierOf(id);
+  return Math.min(MAX_TIER, list[Math.floor(rng() * list.length)]);
+}
+
+/** 掉落階級的顯示文字：「3～4 階」或「4 階」 */
+export function lootTierText(id: ZoneId): string {
+  const list = ZONES[id]?.lootTiers;
+  if (!list?.length) return `${lootTierOf(id)} 階`;
+  const lo = Math.min(...list);
+  const hi = Math.max(...list);
+  return lo === hi ? `${lo} 階` : `${lo}～${hi} 階`;
 }
 
 /** 每日任務「在某區擊倒」會出的區域：等級落在 [建議下限, 建議上限 + 3]，且已解鎖、達到進入等級 */
