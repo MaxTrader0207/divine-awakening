@@ -1066,6 +1066,7 @@ export class Game {
       const p = this.player;
       p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * TOWER.healOnClear);
       run.between = TOWER.between;
+      this.quest({ type: 'tower' });
       bus.emit('player:changed');
       bus.emit('toast', { text: `第 ${run.floor} 層通過！`, duration: 1.6 });
       return;
@@ -1084,6 +1085,8 @@ export class Game {
       this.enemies.enemies = [];
     }
     this.persist();
+    // 登入雲端的話順便更新排行（本週試煉塔層數），失敗不影響遊戲
+    if (this.cloud.loggedIn && run.best >= run.start) void this.cloud.submitScore(this.state).catch(() => undefined);
     return {
       cleared: run.best >= run.start ? run.best : 0,
       startFloor: run.start,

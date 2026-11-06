@@ -10,11 +10,14 @@
 | POST | `/api/register` | `{ name }` → `{ id, token, name }`（token 只回傳這一次） |
 | GET | `/api/save` | 取得雲端存檔（需登入） |
 | PUT | `/api/save` | `{ data, baseUpdatedAt?, force? }`，雲端較新時回 409 |
-| POST | `/api/score` | `{ level, bosses, kills, playTime }` → `{ rank }` |
+| POST | `/api/score` | `{ level, bosses, kills, playTime, towerWeek?, towerFloor?, towerBest? }` → `{ rank }` |
 | GET | `/api/leaderboard?by=level\|kills` | 前 50 名 |
+| GET | `/api/leaderboard?by=tower&week=YYYY-MM-DD` | 無盡試煉塔本週前 50 名（week = 本週一，v1.71） |
 
 登入：`Authorization: Bearer <id>.<token>`（遊戲裡叫「轉移碼」）。資料庫只存 token 的 SHA-256。
-限制：存檔最大 256 KB、同一帳號 4 秒內不能重複上傳、成績有基本合理性檢查。
+限制：存檔最大 256 KB、同一帳號 4 秒內不能重複上傳、成績有基本合理性檢查（等級 ≤ 110、試煉塔層數不可能比遊戲時間還多）。
+
+**已經部署過的話**：v1.71 新增 `migrations/0002_tower.sql`（試煉塔排行欄位），更新時跑一次 `npm run db:remote` 再 `npm run deploy`。
 
 ## 第一次部署（約 5 分鐘）
 

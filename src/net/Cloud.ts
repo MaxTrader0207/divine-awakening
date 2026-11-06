@@ -26,6 +26,10 @@ export interface LeaderRow {
   bosses: number;
   kills: number;
   playTime: number;
+  /** v1.71 試煉塔：本週（週一日期）、本週最高層、歷史最高層 */
+  towerWeek?: string;
+  towerFloor?: number;
+  towerBest?: number;
 }
 
 export class CloudError extends Error {
@@ -158,12 +162,15 @@ export class Cloud {
       bosses: state.bossesDefeated.length,
       kills: state.stats.kills,
       playTime: Math.round(state.stats.playTime),
+      towerWeek: state.tower.week,
+      towerFloor: state.tower.weekBest,
+      towerBest: state.tower.best,
     });
     return r.rank;
   }
 
-  async leaderboard(by: 'level' | 'kills'): Promise<LeaderRow[]> {
-    const r = await this.req<{ rows: LeaderRow[] }>('GET', `/api/leaderboard?by=${by}&limit=50`, undefined, false);
+  async leaderboard(by: 'level' | 'kills' | 'tower', week = ''): Promise<LeaderRow[]> {
+    const r = await this.req<{ rows: LeaderRow[] }>('GET', `/api/leaderboard?by=${by}&limit=50${by === 'tower' ? `&week=${week}` : ''}`, undefined, false);
     return r.rows;
   }
 }

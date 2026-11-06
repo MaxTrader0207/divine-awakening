@@ -2,6 +2,7 @@ import { bus } from '@/core/EventBus';
 import type { GameState } from '@/core/GameState';
 import { CloudError, type Cloud, type LeaderRow } from '@/net/Cloud';
 import { h } from './dom';
+import { ensureWeek } from '@/systems/TrialTower';
 
 /**
  * 設定頁的「雲端存檔」卡片，與「排行」分頁。
@@ -162,32 +163,40 @@ export function renderCloudCard(ctx: CloudContext): HTMLElement {
 
 /* ======================= 排行 ======================= */
 
-let board: 'level' | 'kills' = 'level';
+let board: 'level' | 'kills' | 'tower' = 'level';
 
 export function renderLeaderboard(ctx: CloudContext): HTMLElement[] {
   const { cloud } = ctx;
   const list = h('div', { class: 'card lb' }, [h('p', {}, '讀取中…')]);
-  const seg = h('div', { class: 'seg seg2' }, [
+  const seg = h('div', { class: 'seg seg3' }, [
     h('button', { class: `seg-btn${board === 'level' ? ' on' : ''}`, onclick: () => ((board = 'level'), ctx.rerender()) }, '等級榜'),
     h('button', { class: `seg-btn${board === 'kills' ? ' on' : ''}`, onclick: () => ((board = 'kills'), ctx.rerender()) }, '擊倒榜'),
+    h('button', { class: `seg-btn${board === 'tower' ? ' on' : ''}`, onclick: () => ((board = 'tower'), ctx.rerender()) }, '🗼 試煉塔'),
+  ]);
+  ensureWeek(ctx.state.tower);
+  const t = ctx.state.tower;
+  // 自己的紀錄（不用連線也看得到）
+  const mine = h('div', { class: 'card lb-mine' }, [
+    h('h4', {}, '我的紀錄'),
+    h('p', {}, `Lv.${ctx.state.level}・擊倒 ${ctx.state.stats.kills.toLocaleString()}・🗼 本週 ${t.weekBest} 層（${t.week} 那週）・歷史最高 ${t.best} 層`),
   ]);
   void cloud
-    .leaderboard(board)
+    .leaderboard(board, t.week)
     .then((rows: LeaderRow[]) => {
-      if (!rows.length) return list.replaceChildren(h('p', {}, '還沒有人上榜，成為第一個吧！'));
+      if (!rows.length) return list.replaceChildren(h('p', {}, board === 'tower' ? '本週還沒有人挑戰試煉塔，成為第一個吧！（每週一 00:00 重置）' : '還沒有人上榜，成為第一個吧！'));
       const me = cloud.account?.name;
       list.replaceChildren(
         ...rows.map((r, i) =>
           h('div', { class: `lb-row${r.name === me ? ' me' : ''}` }, [
             h('b', { class: `rank r${i + 1}` }, String(i + 1)),
             h('span', { class: 'lb-name' }, r.name),
-            h('span', {}, board === 'level' ? `Lv.${r.level}・首領 ${r.bosses}` : `擊倒 ${r.kills.toLocaleString()}`),
+            h('span', {}, board === 'level' ? `Lv.${r.level}・首領 ${r.bosses}` : board === 'tower' ? `第 ${r.towerFloor ?? 0} 層・最高 ${r.towerBest ?? 0}` : `擊倒 ${r.kills.toLocaleString()}`),
           ]),
         ),
       );
     })
     .catch((e: Error) => list.replaceChildren(h('p', { class: 'cloud-status bad' }, e.message)));
-  const out: HTMLElement[] = [seg, list];
+  const out: HTMLElement[] = [seg, mine, list];
   if (!cloud.loggedIn) out.unshift(h('div', { class: 'card' }, [h('p', {}, '到「設定 → 雲端存檔」建立帳號，你的成績就會出現在排行榜。')]));
   else
     out.unshift(

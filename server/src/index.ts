@@ -4,8 +4,9 @@
  *  POST /api/register            { name }                 → { id, token, name }
  *  GET  /api/save                （需登入）                → { data, updatedAt } | 404
  *  PUT  /api/save                { data, baseUpdatedAt? } → { updatedAt } | 409 衝突
- *  POST /api/score               { level, bosses, kills, playTime } → { rank }
+ *  POST /api/score               { level, bosses, kills, playTime, towerWeek?, towerFloor?, towerBest? } → { rank }
  *  GET  /api/leaderboard?by=level|kills&limit=50          → { rows }
+ *  GET  /api/leaderboard?by=tower&week=YYYY-MM-DD&limit=50 → { rows }（無盡試煉塔本週排行，v1.71）
  *  GET  /api/health                                       → { ok }
  *
  * 登入：Authorization: Bearer <id>.<token>。token 只在註冊時回傳一次，資料庫只存 SHA-256。
@@ -109,30 +110,54 @@ async function putSave(req: Request, env: Env): Promise<Response> {
 
 /* ---------------- 排行榜 ---------------- */
 
+/** 遊戲數值上限（v1.71：最高等級 110、主線 22 層＋野外菁英＋支線守護者） */
+const MAX_LEVEL = 110;
+const MAX_BOSSES = 60;
+const MAX_TOWER = 2000;
+const WEEK_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 async function postScore(req: Request, env: Env): Promise<Response> {
   const p = await auth(req, env);
-  const b = await readJson<{ level?: number; bosses?: number; kills?: number; playTime?: number }>(req, 2048);
-  const level = int(b.level, 1, 60);
-  const bosses = int(b.bosses, 0, 20);
+  const b = await readJson<{ level?: number; bosses?: number; kills?: number; playTime?: number; towerWeek?: string; towerFloor?: number; towerBest?: number }>(req, 2048);
+  const level = int(b.level, 1, MAX_LEVEL);
+  const bosses = int(b.bosses, 0, MAX_BOSSES);
   const kills = int(b.kills, 0, 10_000_000);
   const playTime = Math.max(0, Math.min(1e8, Number(b.playTime) || 0));
   // 簡單的合理性檢查：擊倒數不可能比遊戲秒數多太多
   if (kills > playTime * 3 + 50) throw new HttpError(400, '數據不合理');
+  const towerWeek = typeof b.towerWeek === 'string' && WEEK_RE.test(b.towerWeek) ? b.towerWeek : '';
+  const towerFloor = towerWeek ? int(b.towerFloor, 0, MAX_TOWER) : 0;
+  const towerBest = Math.max(towerFloor, int(b.towerBest, 0, MAX_TOWER));
+  // 試煉塔每層至少要十幾秒：層數不可能比遊戲時間還多
+  if (towerBest > playTime / 8 + 5) throw new HttpError(400, '數據不合理');
   const now = Date.now();
+  // 本週層數：同一週取較高；新的一週直接換掉；舊的週不覆蓋
   await env.DB.prepare(
-    `INSERT INTO scores (player_id, name, level, bosses, kills, play_time, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO scores (player_id, name, level, bosses, kills, play_time, updated_at, tower_week, tower_floor, tower_best) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(player_id) DO UPDATE SET name = excluded.name, level = MAX(scores.level, excluded.level), bosses = MAX(scores.bosses, excluded.bosses),
-     kills = MAX(scores.kills, excluded.kills), play_time = MAX(scores.play_time, excluded.play_time), updated_at = excluded.updated_at`,
-  ).bind(p.id, p.name, level, bosses, kills, playTime, now).run();
+     kills = MAX(scores.kills, excluded.kills), play_time = MAX(scores.play_time, excluded.play_time), updated_at = excluded.updated_at,
+     tower_floor = CASE WHEN excluded.tower_week = scores.tower_week THEN MAX(scores.tower_floor, excluded.tower_floor)
+                        WHEN excluded.tower_week > scores.tower_week THEN excluded.tower_floor ELSE scores.tower_floor END,
+     tower_week = CASE WHEN excluded.tower_week > scores.tower_week THEN excluded.tower_week ELSE scores.tower_week END,
+     tower_best = MAX(scores.tower_best, excluded.tower_best)`,
+  ).bind(p.id, p.name, level, bosses, kills, playTime, now, towerWeek, towerFloor, towerBest).run();
   const rank = await env.DB.prepare('SELECT COUNT(*) + 1 AS r FROM scores WHERE level > ? OR (level = ? AND kills > ?)').bind(level, level, kills).first<{ r: number }>();
   return json({ rank: rank?.r ?? null });
 }
 
 async function leaderboard(url: URL, env: Env): Promise<Response> {
-  const by = url.searchParams.get('by') === 'kills' ? 'kills' : 'level';
+  const q = url.searchParams.get('by');
+  const by = q === 'kills' || q === 'tower' ? q : 'level';
   const limit = int(url.searchParams.get('limit') ?? 50, 1, 100);
+  const cols = 'name, level, bosses, kills, play_time AS playTime, updated_at AS updatedAt, tower_week AS towerWeek, tower_floor AS towerFloor, tower_best AS towerBest';
+  if (by === 'tower') {
+    const week = url.searchParams.get('week') ?? '';
+    if (!WEEK_RE.test(week)) throw new HttpError(400, '週別格式錯誤');
+    const { results } = await env.DB.prepare(`SELECT ${cols} FROM scores WHERE tower_week = ? AND tower_floor > 0 ORDER BY tower_floor DESC, level ASC, updated_at ASC LIMIT ?`).bind(week, limit).all();
+    return json({ by, week, rows: results });
+  }
   const order = by === 'kills' ? 'kills DESC, level DESC' : 'level DESC, bosses DESC, kills DESC';
-  const { results } = await env.DB.prepare(`SELECT name, level, bosses, kills, play_time AS playTime, updated_at AS updatedAt FROM scores ORDER BY ${order} LIMIT ?`).bind(limit).all();
+  const { results } = await env.DB.prepare(`SELECT ${cols} FROM scores ORDER BY ${order} LIMIT ?`).bind(limit).all();
   return json({ by, rows: results });
 }
 

@@ -57,3 +57,17 @@ describe('無盡試煉塔', () => {
     expect(m.zoneId).toBe('town');
   });
 });
+
+import { generateDaily, progressQuests } from './DailyQuests';
+
+describe('試煉塔每日任務（v1.71）', () => {
+  it('開放前不會出現；開放後某些天會出現，打過一層 +1', () => {
+    const days = Array.from({ length: 60 }, (_, i) => `2026-12-${String((i % 28) + 1).padStart(2, '0')}|${i}`);
+    expect(days.some((d) => generateDaily(d, 30, []).quests.some((q) => q.kind === 'tower'))).toBe(false);
+    const withTower = days.map((d) => generateDaily(d, 30, ['dungeon_1', 'dungeon_2', 'dungeon_3'])).find((d) => d.quests.some((q) => q.kind === 'tower'));
+    expect(withTower).toBeTruthy();
+    const q = withTower!.quests.find((x) => x.kind === 'tower')!;
+    progressQuests(withTower!, { type: 'tower' });
+    expect(q.progress).toBe(1);
+  });
+});

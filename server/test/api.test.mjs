@@ -19,9 +19,19 @@ out.score = (await r('POST', '/api/score', { level: 12, bosses: 2, kills: 300, p
 out.cheat = (await r('POST', '/api/score', { level: 60, bosses: 3, kills: 999999, playTime: 10 }, tok)).s;
 const reg2 = await r('POST', '/api/register', { name: 'Bob' }); await r('POST', '/api/score', { level: 20, bosses: 4, kills: 900, playTime: 7200 }, reg2.j.id + '.' + reg2.j.token);
 out.board = (await r('GET', '/api/leaderboard?by=level')).j.rows.map(x => `${x.name} Lv${x.level} k${x.kills}`);
+// v1.71：等級上限 110、試煉塔每週排行
+out.lv110 = (await r('POST', '/api/score', { level: 110, bosses: 30, kills: 900, playTime: 9000 }, tok)).s;
+await r('POST', '/api/score', { level: 110, bosses: 30, kills: 900, playTime: 9000, towerWeek: '2026-11-02', towerFloor: 18, towerBest: 18 }, tok);
+await r('POST', '/api/score', { level: 110, bosses: 30, kills: 900, playTime: 9000, towerWeek: '2026-11-02', towerFloor: 12, towerBest: 12 }, tok);
+await r('POST', '/api/score', { level: 20, bosses: 4, kills: 900, playTime: 7200, towerWeek: '2026-11-02', towerFloor: 25, towerBest: 25 }, reg2.j.id + '.' + reg2.j.token);
+out.tower = (await r('GET', '/api/leaderboard?by=tower&week=2026-11-02')).j.rows.map(x => `${x.name} ${x.towerFloor}/${x.towerBest}`).join(',');
+await r('POST', '/api/score', { level: 110, bosses: 30, kills: 900, playTime: 9000, towerWeek: '2026-11-09', towerFloor: 3, towerBest: 18 }, tok);
+out.towerNext = (await r('GET', '/api/leaderboard?by=tower&week=2026-11-09')).j.rows.map(x => `${x.name} ${x.towerFloor}/${x.towerBest}`).join(',');
+out.towerCheat = (await r('POST', '/api/score', { level: 20, bosses: 4, kills: 900, playTime: 7200, towerWeek: '2026-11-02', towerFloor: 1999 }, reg2.j.id + '.' + reg2.j.token)).s;
+out.badWeek = (await r('GET', '/api/leaderboard?by=tower&week=abc')).s;
 out.big = (await r('PUT', '/api/save', { data: { x: 'a'.repeat(300000) } }, tok)).s;
 console.log(JSON.stringify(out, null, 1));
-const expect = { health: 200, badName: 400, reg: 201, noAuth: 401, badAuth: 401, noSave: 404, put1: 200, tooFast: 429, conflict: 409, put2: 200, cheat: 400, big: 413 };
+const expect = { health: 200, badName: 400, reg: 201, noAuth: 401, badAuth: 401, noSave: 404, put1: 200, tooFast: 429, conflict: 409, put2: 200, cheat: 400, big: 413, lv110: 200, tower: 'Bob 25/25,小法師Max 18/18', towerNext: '小法師Max 3/18', towerCheat: 400, badWeek: 400 };
 const fails = Object.entries(expect).filter(([k, v]) => out[k] !== v);
 if (fails.length) { console.error('失敗：', fails); process.exit(1); }
 console.log('全部通過');

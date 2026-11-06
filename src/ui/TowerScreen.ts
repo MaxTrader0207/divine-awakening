@@ -1,4 +1,5 @@
 import { h } from './dom';
+import { towerLevel } from '@/systems/TrialTower';
 
 /**
  * 無盡試煉塔結算畫面（v1.70）：到達的層數、紀錄、鑽石，以及「再挑戰 / 回主城」。
@@ -45,7 +46,7 @@ export class TowerScreen {
         h('span', {}, [h('small', {}, '歷史最高'), h('b', {}, `${r.best} 層`)]),
       ]),
       r.gems ? h('p', { class: 'wb-done' }, `💎 本週新打過的首領層：獲得 ${r.gems} 鑽石`) : h('p', { class: 'ps-hint' }, '本週第一次打過首領層（每 5 層）會得到鑽石'),
-      h('div', { class: 'ps-row' }, r.starts.map((f) => h('button', { class: 'ps-btn gold', onclick: () => this.pick(() => this.actions.retry(f)) }, `再挑戰・第 ${f} 層`))),
+      h('div', { class: 'ps-row' }, r.starts.map((f) => h('button', { class: 'ps-btn gold', onclick: () => this.pick(() => this.actions.retry(f)) }, f === 1 ? '再挑戰・第 1 層' : `第 ${f} 層・Lv.${towerLevel(f)}`))),
       h('button', { class: 'ps-btn', onclick: () => this.pick(() => this.actions.toTown()) }, '回到主城'),
     );
     this.visible = true;
