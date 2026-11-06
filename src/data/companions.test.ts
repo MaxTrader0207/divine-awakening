@@ -41,7 +41,7 @@ describe('守護者夥伴', () => {
 
   it('存檔 v13：舊存檔補上空的夥伴資料，壞資料被清掉', () => {
     const old = migrate({ version: 12, level: 20 } as never)!;
-    expect(old.companions).toEqual({ owned: [], active: null, attempts: {} });
+    expect(old.companions).toEqual({ owned: [], active: null, attempts: {}, growth: {} });
     const bad = migrate({ version: 13, companions: { owned: ['pegasus', 'nope'], active: 'nope', attempts: { pegasus: 2 } } } as never)!;
     expect(bad.companions.owned).toEqual(['pegasus']);
     expect(bad.companions.active).toBeNull();

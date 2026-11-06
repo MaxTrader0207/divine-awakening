@@ -51,8 +51,11 @@ export class MinionManager {
     return this.list.filter((m) => m.alive && (id ? m.def.id === id : !m.def.guardian)).length;
   }
 
-  /** 召喚 n 隻；超過上限時最舊的先消失 */
-  summon(id: MinionId, n = 1) {
+  /**
+   * 召喚 n 隻；超過上限時最舊的先消失。
+   * opts（v1.66 夥伴養成）：mul = 生命 / 攻擊 / 防禦倍率，life = 存在秒數（取代 def.life）
+   */
+  summon(id: MinionId, n = 1, opts?: { mul?: number; life?: number }) {
     const def = MINIONS[id];
     const p = this.ctx.player;
     const fx = this.ctx.effects;
@@ -66,6 +69,12 @@ export class MinionManager {
       const m = new Minion(def, p.stats, x, z, def.guardian ? this.avatarOf(def.guardian, def.avatarScale ?? 0.6) : undefined);
       m.facing = p.facing;
       m.slot = this.seq++;
+      if (opts?.mul && opts.mul !== 1) {
+        m.maxHp = Math.round(m.maxHp * opts.mul);
+        m.hp = m.maxHp;
+        m.stats = { ...m.stats, atk: m.stats.atk * opts.mul, def: m.stats.def * opts.mul, maxHp: m.maxHp };
+      }
+      if (opts?.life) m.life = opts.life;
       const pos = { x, z };
       this.ctx.collision().resolve(pos, def.radius);
       m.pos.x = pos.x;

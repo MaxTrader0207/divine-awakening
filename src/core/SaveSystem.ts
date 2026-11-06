@@ -240,7 +240,7 @@ export function migrate(data: Partial<GameState>): GameState | null {
   // v12 → v13：新增守護者夥伴（舊存檔從零開始）
   const c = data.companions;
   merged.companions = c && typeof c === 'object'
-    ? { owned: Array.isArray(c.owned) ? c.owned.filter((id) => COMPANIONS[id]) : [], active: c.active && COMPANIONS[c.active] ? c.active : null, attempts: { ...(c.attempts ?? {}) } }
+    ? { owned: Array.isArray(c.owned) ? c.owned.filter((id) => COMPANIONS[id]) : [], active: c.active && COMPANIONS[c.active] ? c.active : null, attempts: { ...(c.attempts ?? {}) }, growth: {} }
     : newCompanionState();
   if (merged.companions.active && !merged.companions.owned.includes(merged.companions.active)) merged.companions.active = null;
   // v13 → v14：新增怪物圖鑑與成就。舊存檔的首領圖鑑從破關紀錄補上（破關次數 = 擊殺數），
@@ -265,6 +265,16 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.login = lg && typeof lg === 'object' && typeof lg.next === 'number'
     ? { last: String(lg.last ?? ''), next: Math.max(0, Math.floor(lg.next)) % 7, total: Math.max(0, lg.total ?? 0) }
     : newLoginState();
-  // 未來版本：if ((data.version ?? 0) < 16) { ... }
+  // v15 → v16：夥伴養成（等級、經驗、好感度）；已收服的夥伴從 Lv.1、好感 0 開始
+  const g = (c && typeof c === 'object' ? (c as { growth?: Record<string, { lv?: number; exp?: number; bond?: number }> }).growth : undefined) ?? {};
+  for (const id of merged.companions.owned) {
+    const v = g[id];
+    merged.companions.growth[id] = {
+      lv: Math.min(30, Math.max(1, Math.floor(v?.lv ?? 1))),
+      exp: Math.max(0, v?.exp ?? 0),
+      bond: Math.max(0, v?.bond ?? 0),
+    };
+  }
+  // 未來版本：if ((data.version ?? 0) < 17) { ... }
   return merged;
 }

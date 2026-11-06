@@ -3,6 +3,7 @@ import type { ZoneId } from './types';
 import { DUNGEON_ORDER, FIELD_ORDER, ZONES, bossOf } from './stages';
 import { CODEX_ENTRIES, CODEX_MAX_POINTS, codexFound, codexPoints } from './codex';
 import { COMPANION_LIST } from './companions';
+import { GROWTH, bondLevel } from './companionGrowth';
 import { ENHANCE_MAX, RARITY_ORDER } from './items';
 
 /**
@@ -42,6 +43,9 @@ const sRanks = (s: GameState, zones?: ZoneId[]) =>
   Object.entries(s.clears).filter(([z, c]) => c?.bestRank === 'S' && (!zones || zones.includes(z as ZoneId))).length;
 /** 有菁英首領的野外 */
 const ELITE_FIELDS = FIELD_ORDER.filter((z) => bossOf(z));
+const growthList = (s: GameState) => Object.values(s.companions.growth ?? {});
+const maxPetLv = (s: GameState) => Math.max(0, ...growthList(s).map((g) => g.lv));
+const maxBond = (s: GameState) => Math.max(0, ...growthList(s).map((g) => bondLevel(g.bond)));
 const allGear = (s: GameState) => [...Object.values(s.equipment), ...s.inventory].filter(Boolean);
 
 export const ACHIEVEMENTS: AchievementDef[] = [
@@ -80,6 +84,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'pet1', cat: 'collect', icon: '🪽', name: '神獸之友', desc: '收服第一隻守護者夥伴', gems: 10, progress: (s) => [Math.min(s.companions.owned.length, 1), 1] },
   { id: 'pet5', cat: 'collect', icon: '🦅', name: '馴神者', desc: '收服 5 隻守護者夥伴', gems: 20, progress: (s) => [Math.min(s.companions.owned.length, 5), 5] },
   { id: 'petAll', cat: 'collect', icon: '🌈', name: '萬神殿', desc: `收服全部 ${COMPANION_LIST.length} 隻守護者夥伴`, gems: 50, progress: (s) => [s.companions.owned.length, COMPANION_LIST.length] },
+  { id: 'petLv10', cat: 'collect', icon: '🐾', name: '並肩作戰', desc: '任一隻夥伴升到 Lv.10', gems: 10, progress: (s) => [Math.min(maxPetLv(s), 10), 10] },
+  { id: 'petLvMax', cat: 'collect', icon: '🏅', name: '神獸導師', desc: `任一隻夥伴升到 Lv.${GROWTH.maxLv}`, gems: 30, progress: (s) => [Math.min(maxPetLv(s), GROWTH.maxLv), GROWTH.maxLv] },
+  { id: 'petBond3', cat: 'collect', icon: '💞', name: '心意相通', desc: '任一隻夥伴好感度 ♥♥♥（學會專屬技能）', gems: 10, progress: (s) => [Math.min(maxBond(s), 3), 3] },
+  { id: 'petBond5', cat: 'collect', icon: '💖', name: '永恆的羈絆', desc: '任一隻夥伴好感度 ♥♥♥♥♥', gems: 25, progress: (s) => [Math.min(maxBond(s), 5), 5] },
   { id: 'myth1', cat: 'collect', icon: '★', name: '神話的開端', desc: '撿到第一件★神話裝', gems: 5, progress: stat('mythics', 1) },
   { id: 'myth10', cat: 'collect', icon: '🌠', name: '神話收藏家', desc: '撿到 10 件★神話裝', gems: 15, progress: stat('mythics', 10) },
   { id: 'myth50', cat: 'collect', icon: '🌌', name: '傳說之庫', desc: '撿到 50 件★神話裝', gems: 30, progress: stat('mythics', 50) },

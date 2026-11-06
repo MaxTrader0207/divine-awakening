@@ -17,6 +17,7 @@ import { addConsumable } from '@/systems/Consumables';
 import { bus } from '@/core/EventBus';
 import { isZoneUnlocked } from '@/core/GameState';
 import { CAPTURE, COMPANION_LIST, pityLeft } from '@/data/companions';
+import { BOND_PERKS, COMPANION_SKILLS, FEED, GROWTH, addBond, addCompExp, bondLevel, bondNext, compCooldown, compDuration, compExpToNext, compStatMul, feedCost, growthOf, skillUnlocked } from '@/data/companionGrowth';
 import { ELEMENTS, ELEMENT_STRONG_MUL, ELEMENT_WEAK_MUL, STRONG, counterOf, type Element } from '@/data/elements';
 import { ZONES, zoneLabel } from '@/data/zones';
 
@@ -98,12 +99,12 @@ function companionCards(ctx: InvContext): HTMLElement[] {
     const weakTo = ELEMENTS[counterOf(def.element)];
     const strongTo = ELEMENTS[STRONG[def.element]];
     out.push(
-      h('div', { class: `card comp-card${owned ? '' : ' locked'}`, style: `--el:${el.color}` }, [
+      h('div', { class: `card comp-card${owned ? '' : ' locked'}${active ? ' active' : ''}`, style: `--el:${el.color}` }, [
         h('div', { class: 'comp-ico' }, owned ? def.icon : '？'),
         h('h4', {}, [owned || open ? def.name : '？？？', h('small', {}, `${el.icon}${el.name}屬性${active ? '・帶著' : ''}`)]),
         h('p', {}, owned ? `${def.title}。${def.role}` : `住在支線「${zone.name}」。打倒守護者有 ${Math.round(CAPTURE.chance * 100)}% 機率收服，第 ${CAPTURE.pity} 次一定成功。`),
-        h('p', {}, owned ? def.lore : STRONG[STRONG[def.element]] === def.element ? `與 ${strongTo.icon}${strongTo.name} 互剋（打牠 ×${ELEMENT_STRONG_MUL}、被牠打也 ×${ELEMENT_STRONG_MUL}）` : `剋 ${strongTo.icon}${strongTo.name}、被 ${weakTo.icon}${weakTo.name} 剋`),
-        h('div', { class: 'card-row' }, [action]),
+        owned ? growthBlock(ctx, def.id) : h('p', {}, STRONG[STRONG[def.element]] === def.element ? `與 ${strongTo.icon}${strongTo.name} 互剋（打牠 ×${ELEMENT_STRONG_MUL}、被牠打也 ×${ELEMENT_STRONG_MUL}）` : `剋 ${strongTo.icon}${strongTo.name}、被 ${weakTo.icon}${weakTo.name} 剋`),
+        h('div', { class: 'card-row' }, [action, ...(owned ? [feedButton(ctx, def.id)] : [])]),
       ]),
     );
   }
@@ -116,9 +117,58 @@ function companionCards(ctx: InvContext): HTMLElement[] {
         h('span', {}, `${elName('light')} ⇄ ${elName('dark')}、${elName('metal')} ⇄ ${elName('poison')}（互剋）`),
       ]),
     ]),
-    h('p', { class: 'empty-note' }, `戰鬥中按「夥伴」（電腦 G）召喚帶著的夥伴：存在 ${CAPTURE.duration} 秒、冷卻 ${CAPTURE.cooldown} 秒；AUTO 會在首領戰自動召喚。數值跟著你的等級與裝備成長。`),
+    h('div', { class: 'card' }, [
+      h('h4', {}, '夥伴養成'),
+      h('p', {}, `等級：帶著的夥伴從你打倒的每隻敵人拿經驗（在場上 ×${GROWTH.liveMul}、首領 ${GROWTH.bossExp}），也可以花金幣餵食（+${FEED.exp} 經驗、+${FEED.bond} 好感）；再次打倒已收服的守護者，那隻夥伴 +${GROWTH.repeatExp} 經驗。每級生命、攻擊、防禦 +${GROWTH.perLv * 100}%，最高 Lv.${GROWTH.maxLv}。`),
+      h('p', {}, `好感度：召喚 +${GROWTH.bondSummon}、在場時打倒首領 +${GROWTH.bondBoss}。${BOND_PERKS.map((t, i) => `${'♥'.repeat(i + 1)} ${t}`).join('；')}。`),
+    ]),
+    h('p', { class: 'empty-note' }, `戰鬥中按「夥伴」（電腦 G）召喚帶著的夥伴：基本存在 ${CAPTURE.duration} 秒、冷卻 ${CAPTURE.cooldown} 秒（好感度會縮短）；AUTO 會在首領戰自動召喚。數值跟著你的等級、裝備與夥伴等級成長。`),
   );
   return out;
+}
+
+/** 夥伴卡片：等級、好感度、專屬技能 */
+function growthBlock(ctx: InvContext, id: string): HTMLElement {
+  const g = growthOf(ctx.state.companions, id);
+  const b = bondLevel(g.bond);
+  const nextBond = bondNext(g.bond);
+  const max = g.lv >= GROWTH.maxLv;
+  const sk = COMPANION_SKILLS[id];
+  const unlocked = skillUnlocked(g);
+  return h('div', { class: 'comp-grow' }, [
+    h('div', { class: 'comp-line' }, [
+      h('b', {}, `Lv.${g.lv}`),
+      h('div', { class: 'quest-bar' }, [h('i', { style: `width:${max ? 100 : (g.exp / compExpToNext(g.lv)) * 100}%` })]),
+      h('small', {}, max ? '已滿級' : `${g.exp} / ${compExpToNext(g.lv)}`),
+    ]),
+    h('div', { class: 'comp-line' }, [
+      h('b', { class: 'hearts' }, '♥'.repeat(b) + '♡'.repeat(5 - b)),
+      h('small', {}, nextBond ? `好感 ${g.bond} / ${nextBond}・下一階：${BOND_PERKS[b]}` : `好感 ${g.bond}・羈絆已滿`),
+    ]),
+    h('p', {}, `屬性 ×${compStatMul(g).toFixed(2)}・存在 ${compDuration(g)} 秒・冷卻 ${compCooldown(g)} 秒`),
+    h('p', { class: `comp-skill${unlocked ? ' on' : ''}` }, [h('b', {}, `${unlocked ? '✦' : '🔒'} ${sk.name}`), `　${sk.desc}${unlocked ? '' : '（好感 ♥♥♥ 解鎖）'}`]),
+  ]);
+}
+
+/** 餵食神饌點心：花金幣換經驗與好感 */
+function feedButton(ctx: InvContext, id: string): HTMLElement {
+  const s = ctx.state;
+  const g = growthOf(s.companions, id);
+  const cost = feedCost(g);
+  const maxed = g.lv >= GROWTH.maxLv && bondLevel(g.bond) >= 5;
+  return h('button', {
+    class: 'go ghost small',
+    disabled: s.gold < cost || maxed,
+    onclick: () => {
+      if (s.gold < cost) return ctx.toast('金幣不夠');
+      s.gold -= cost;
+      const ups = addCompExp(g, FEED.exp);
+      const bondUp = addBond(g, FEED.bond);
+      ctx.toast(`🍯 餵食神饌點心：經驗 +${FEED.exp}、好感 +${FEED.bond}${ups ? `，升到 Lv.${g.lv}！` : ''}${bondUp ? `，好感度 ${'♥'.repeat(bondLevel(g.bond))}` : ''}`);
+      ctx.changed();
+      ctx.rerender();
+    },
+  }, maxed ? '已滿' : `🍯 餵食 ${cost.toLocaleString()} 金`);
 }
 
 /** 跨分頁記住選取的物品 */

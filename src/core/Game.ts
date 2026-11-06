@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { bus } from './EventBus';
 import { isZoneUnlocked, newGameState, type GameState } from './GameState';
 import { elementMul } from '@/data/elements';
-import { CAPTURE, COMPANIONS, companionOfGuardian, pityLeft, tryCapture } from '@/data/companions';
+import { COMPANIONS, companionOfGuardian, pityLeft, tryCapture } from '@/data/companions';
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
 import { PauseScreen, type PauseStatus } from '@/ui/PauseScreen';
@@ -35,6 +35,7 @@ import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
 import { codexEntry, recordKill } from '@/data/codex';
 import { newlyDone } from '@/systems/Achievements';
+import { COMPANION_SKILLS, GROWTH, addBond, addCompExp, bondLevel, compCooldown, compDuration, compStatMul, growthOf, skillInterval, skillUnlocked } from '@/data/companionGrowth';
 import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineReward } from '@/systems/Welcome';
 import { WelcomeScreen } from '@/ui/WelcomeScreen';
 import { localDate } from '@/systems/DailyQuests';
@@ -429,7 +430,10 @@ export class Game {
     bus.on('enhance:done', () => quest({ type: 'enhance' }));
 
     // ---- 圖鑑與成就（v1.64） ----
-    bus.on('enemy:killed', (k) => this.onCodexKill(k.enemyId, k.boss));
+    bus.on('enemy:killed', (k) => {
+      this.onCodexKill(k.enemyId, k.boss);
+      this.onCompanionKill(k.boss);
+    });
     bus.on('enhance:done', ({ success }) => success && this.state.stats.enhanceOk++);
     bus.on('loot:picked', ({ base }) => base && ITEM_BASES[base]?.named && this.state.stats.mythics++);
 
@@ -744,6 +748,7 @@ export class Game {
     }
     this.minions.update(dt, this.rig.camera);
     this.companionCd = Math.max(0, this.companionCd - dt);
+    this.updateCompanionSkill(dt);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
@@ -828,7 +833,8 @@ export class Game {
 
   private refreshCompanionHud() {
     const def = COMPANIONS[this.state.companions.active ?? ''];
-    this.hud.setCompanion(def?.icon ?? null, def?.name ?? '', this.companionCd, CAPTURE.cooldown, this.companionLive());
+    const g = def ? this.state.companions.growth?.[def.id] : undefined;
+    this.hud.setCompanion(def?.icon ?? null, def?.name ?? '', this.companionCd, compCooldown(g), this.companionLive());
   }
 
   /** 召喚夥伴（夥伴按鈕 / G 鍵 / AUTO 首領戰）：存在 CAPTURE.duration 秒、冷卻 CAPTURE.cooldown 秒 */
@@ -850,10 +856,108 @@ export class Game {
       if (!quiet) bus.emit('toast', { text: this.companionLive() ? `${def.name} 正在戰鬥` : `${def.name} 休息中（${Math.ceil(this.companionCd)} 秒）` });
       return;
     }
-    this.minions.summon(def.minion, 1);
-    this.companionCd = CAPTURE.cooldown;
-    bus.emit('toast', { text: `${def.icon} ${def.name} 前來助陣！`, duration: 2 });
+    const g = growthOf(c, def.id);
+    this.minions.summon(def.minion, 1, { mul: compStatMul(g), life: compDuration(g) });
+    this.companionCd = compCooldown(g);
+    this.compSkillT = skillUnlocked(g) ? skillInterval(def.id, g) * 0.4 : 0; // 出場不久就放第一次
+    this.compRebirthUsed = false;
+    bus.emit('toast', { text: `${def.icon} ${def.name}（Lv.${g.lv}）前來助陣！`, duration: 2 });
+    if (addBond(g, GROWTH.bondSummon)) this.onBondUp(def.id);
     bus.emit('camera:shake', { power: 0.15 });
+  }
+
+  private compSkillT = 0;
+  private compRebirthUsed = false;
+
+  /** 場上的夥伴（沒有回傳 undefined） */
+  private liveCompanion() {
+    const def = COMPANIONS[this.state.companions.active ?? ''];
+    return def ? this.minions.list.find((m) => m.alive && m.def.id === def.minion) : undefined;
+  }
+
+  /** 夥伴養成：帶著的夥伴從擊殺拿經驗；在場時打倒首領加好感 */
+  private onCompanionKill(boss: boolean) {
+    const c = this.state.companions;
+    const def = COMPANIONS[c.active ?? ''];
+    if (!def) return;
+    const g = growthOf(c, def.id);
+    const live = this.companionLive();
+    const ups = addCompExp(g, (boss ? GROWTH.bossExp : GROWTH.killExp) * (live ? GROWTH.liveMul : 1));
+    if (ups) bus.emit('toast', { text: `${def.icon} ${def.name} 升到 Lv.${g.lv}！`, duration: 2.5, kind: 'reward' });
+    if (boss && live && addBond(g, GROWTH.bondBoss)) this.onBondUp(def.id);
+  }
+
+  /** 好感度升階提示 */
+  private onBondUp(id: string) {
+    const def = COMPANIONS[id];
+    const g = growthOf(this.state.companions, id);
+    const b = bondLevel(g.bond);
+    const perk = b === 3 ? `，學會專屬技能「${COMPANION_SKILLS[id].name}」` : '';
+    bus.emit('toast', { text: `${def.icon} ${def.name} 好感度 ${'♥'.repeat(b)}${perk}`, duration: 3, kind: 'reward' });
+    if (b === 3) bus.emit('banner', { text: `${def.icon} 學會「${COMPANION_SKILLS[id].name}」` });
+  }
+
+  /** 夥伴專屬技能（♥3 解鎖；夥伴在場時自動施放） */
+  private updateCompanionSkill(dt: number) {
+    const c = this.state.companions;
+    const id = c.active;
+    if (!id) return;
+    const g = c.growth?.[id];
+    if (!skillUnlocked(g)) return;
+    const m = this.liveCompanion();
+    if (!m) return;
+    const sk = COMPANION_SKILLS[id];
+    const p = this.player;
+    const color = m.def.color;
+    const label = (text: string) => bus.emit('float:text', { x: m.pos.x, y: 2.8, z: m.pos.z, text, kind: 'info' });
+    if (sk.skill.kind === 'rebirth') {
+      if (this.compRebirthUsed || !p.alive || p.hp >= p.stats.maxHp * sk.skill.at) return;
+      this.compRebirthUsed = true;
+      p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * sk.skill.ratio);
+      this.effects.pillar(p.pos.x, p.pos.z, 1.2, color, 1);
+      this.effects.ring(p.pos.x, p.pos.z, 0.5, 3, color, 0.7);
+      label(`🔥 ${sk.name}`);
+      bus.emit('player:changed');
+      return;
+    }
+    this.compSkillT -= dt;
+    if (this.compSkillT > 0) return;
+    const sx = sk.skill;
+    const radius = 'radius' in sx ? sx.radius ?? 0 : 0;
+    // 傷害技：附近沒有敵人就等一下再放
+    if (sx.kind === 'nova' && !this.enemies.enemies.some((e) => e.alive && Math.hypot(e.pos.x - m.pos.x, e.pos.z - m.pos.z) <= radius + e.radius)) {
+      this.compSkillT = 0.5;
+      return;
+    }
+    this.compSkillT = skillInterval(id, g!);
+    label(sk.name);
+    switch (sx.kind) {
+      case 'nova':
+        damageArea(this.enemies.enemies, m.pos.x, m.pos.z, sx.radius, m.stats, sx.power, undefined, m);
+        this.effects.ring(m.pos.x, m.pos.z, 0.4, sx.radius, color, 0.5);
+        this.effects.pillar(m.pos.x, m.pos.z, 0.8, color, 0.5);
+        bus.emit('camera:shake', { power: 0.12 });
+        break;
+      case 'heal':
+        p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * sx.ratio);
+        this.effects.ring(p.pos.x, p.pos.z, 0.4, 1.8, color, 0.6);
+        if (sx.radius && sx.power) {
+          damageArea(this.enemies.enemies, m.pos.x, m.pos.z, sx.radius, m.stats, sx.power, undefined, m);
+          this.effects.ring(m.pos.x, m.pos.z, 0.4, sx.radius, color, 0.5);
+        }
+        bus.emit('player:changed');
+        break;
+      case 'shield':
+        this.shield = { hp: Math.max(this.shield.hp, Math.round(p.stats.maxHp * sx.ratio)), t: sx.duration };
+        this.effects.ring(p.pos.x, p.pos.z, 0.5, 1.6, color, 0.7);
+        bus.emit('player:changed');
+        break;
+      case 'buff':
+        this.cbuff[sx.stat] = { t: sx.duration, v: Math.max(sx.value, this.cbuff[sx.stat]?.v ?? 0) };
+        this.recalcStats();
+        this.effects.pillar(p.pos.x, p.pos.z, 0.8, color, 0.6);
+        break;
+    }
   }
 
   /** 快捷道具欄（左下第 3、4 格；電腦 3、4）：空格或用完 → 打開「裝備 → 道具」去設定 / 購買 */
@@ -1241,6 +1345,14 @@ export class Game {
       const result = tryCapture(s.companions, comp.id);
       capture = { result, name: comp.name, icon: comp.icon, left: pityLeft(s.companions, comp.id) };
       if (result === 'captured') bus.emit('toast', { text: `${comp.icon} 收服了 ${comp.name}！`, kind: 'reward' });
+      if (result === 'owned') {
+        // 再次打倒已收服的守護者：那隻夥伴拿經驗與好感（不用帶著也算）
+        const g = growthOf(s.companions, comp.id);
+        const ups = addCompExp(g, GROWTH.repeatExp);
+        const bondUp = addBond(g, GROWTH.repeatBond);
+        bus.emit('toast', { text: `${comp.icon} ${comp.name} 認出了你：經驗 +${GROWTH.repeatExp}、好感 +${GROWTH.repeatBond}${ups ? `（Lv.${g.lv}）` : ''}`, duration: 3, kind: 'reward' });
+        if (bondUp) this.onBondUp(comp.id);
+      }
     }
     const sideUnlocked = first ? SIDE_ORDER.filter((id) => ZONES[id].side!.unlockAfter === zoneId) : [];
     bus.emit('banner', { text: `擊敗${name}！` });

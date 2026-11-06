@@ -1,6 +1,7 @@
 import type { Element } from './elements';
 import type { MinionId } from './minions';
 import type { ZoneId } from './types';
+import type { CompanionGrowth } from './companionGrowth';
 
 /**
  * 守護者夥伴（v1.58）
@@ -183,10 +184,12 @@ export interface CompanionState {
   active: string | null;
   /** 還沒收服前，打倒守護者的次數（保底用） */
   attempts: Record<string, number>;
+  /** v16：每隻夥伴的等級、經驗、好感度（data/companionGrowth.ts） */
+  growth: Record<string, CompanionGrowth>;
 }
 
 export function newCompanionState(): CompanionState {
-  return { owned: [], active: null, attempts: {} };
+  return { owned: [], active: null, attempts: {}, growth: {} };
 }
 
 /**
@@ -200,6 +203,8 @@ export function tryCapture(st: CompanionState, id: string, rng: () => number = M
   if (n >= CAPTURE.pity || rng() < CAPTURE.chance) {
     st.owned.push(id);
     delete st.attempts[id];
+    st.growth ??= {};
+    st.growth[id] ??= { lv: 1, exp: 0, bond: 0 };
     if (!st.active) st.active = id;
     return 'captured';
   }

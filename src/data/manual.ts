@@ -8,6 +8,7 @@ import { CAPTURE, COMPANION_LIST } from './companions';
 import { ELEMENTS, ELEMENT_STRONG_MUL, ELEMENT_WEAK_MUL } from './elements';
 import { PAR_SECS } from '@/systems/StageClear';
 import type { ZoneId } from './types';
+import { BOND_PERKS, COMPANION_SKILLS, FEED, GROWTH } from './companionGrowth';
 import { CODEX_BONUS_MAX, CODEX_ENTRIES, CODEX_TIERS } from './codex';
 import { ACHIEVEMENTS } from './achievements';
 import { LOGIN_DAYS, OFFLINE } from '@/systems/Welcome';
@@ -187,7 +188,9 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         `在「選單 → 裝備」下方切到「夥伴」帶上一隻；戰鬥中按右下的「夥伴」按鈕（電腦 G）召喚：存在 ${CAPTURE.duration} 秒、冷卻 ${CAPTURE.cooldown} 秒，AUTO 會在首領戰自動召喚。夥伴的數值跟著你的等級與裝備成長。`,
         `**屬性**：每隻守護者和每個首領都有屬性（首領血條上顯示）。夥伴打首領、首領打夥伴都算相剋：剋制 ×${ELEMENT_STRONG_MUL}、被剋 ×${ELEMENT_WEAK_MUL}。`,
         '火 → 冰 → 風 → 土 → 雷 → 水 → 火（箭頭方向＝剋）；光 ⇄ 暗、金 ⇄ 毒 互剋。挑剋制首領的夥伴，牠會更有用、也更耐打。',
-        ...COMPANION_LIST.map((c) => `${c.icon} **${c.name}**（${ELEMENTS[c.element].icon}${ELEMENTS[c.element].name}）：${c.role}`),
+        `**夥伴養成**：帶著的夥伴從你打倒的敵人拿經驗（夥伴在場上 ×${GROWTH.liveMul}），也可以在夥伴卡片花金幣餵食（+${FEED.exp} 經驗、+${FEED.bond} 好感）；再次打倒已收服的守護者，那隻夥伴 +${GROWTH.repeatExp} 經驗。每級屬性 +${GROWTH.perLv * 100}%，最高 Lv.${GROWTH.maxLv}。`,
+        `**好感度**：召喚、在場時打倒首領、餵食都會增加。${BOND_PERKS.map((t, i) => `${'♥'.repeat(i + 1)} ${t}`).join('；')}。`,
+        ...COMPANION_LIST.map((c) => `${c.icon} **${c.name}**（${ELEMENTS[c.element].icon}${ELEMENTS[c.element].name}）：${c.role}專屬技能「${COMPANION_SKILLS[c.id].name}」：${COMPANION_SKILLS[c.id].desc}。`),
       ],
     },
     {

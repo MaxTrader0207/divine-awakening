@@ -935,3 +935,17 @@ html.clear-open .hud { opacity: 0; pointer-events: none; transition: opacity 0.3
 .wb-day.got { opacity: 0.5; }
 .wb-day.got span { color: #9fe58a; }
 .card.login-ready { border-color: var(--gold); }
+
+/* ---- 夥伴養成（v1.66） ---- */
+.comp-card.active { border-color: var(--el, var(--gold)); }
+.comp-grow { grid-column: 2; display: grid; gap: 5px; }
+.comp-line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.comp-line b { font-size: 13px; color: var(--text); min-width: 40px; }
+.comp-line small { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.comp-line:nth-child(2) { grid-template-columns: auto minmax(0, 1fr); }
+.comp-line .hearts { color: #ff7a9a; letter-spacing: 1px; }
+.comp-skill { padding: 6px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.25); }
+.comp-skill b { color: var(--muted); }
+.comp-skill.on b { color: var(--el, var(--gold)); }
+.comp-card .card-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.go:disabled { opacity: 0.45; }
