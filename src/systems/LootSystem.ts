@@ -164,7 +164,7 @@ export class LootSystem {
     }
     const color = new THREE.Color(RARITY[k.rarity].color).getHex();
     if (k.rarity !== 'common') this.effects.pillar(d.x, d.z, 0.6, color, 0.7);
-    bus.emit('loot:picked', { name: itemName(it), rarity: k.rarity });
+    bus.emit('loot:picked', { name: itemName(it), rarity: k.rarity, base: it.base });
     this.onInventoryChanged();
     return true;
   }

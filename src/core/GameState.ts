@@ -6,6 +6,8 @@ import { CLASSES, type HeroClass } from '@/data/classes';
 import type { ClearRecord } from '@/systems/StageClear';
 import { DUNGEON_ORDER, ZONES } from '@/data/zones';
 import { newCompanionState, type CompanionState } from '@/data/companions';
+import { newAchievementState, type AchievementState } from '@/systems/Achievements';
+import { newLoginState, type LoginState } from '@/systems/Welcome';
 
 /**
  * GameState：唯一需要存檔的「玩家進度」資料。
@@ -13,7 +15,7 @@ import { newCompanionState, type CompanionState } from '@/data/companions';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 15;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -68,8 +70,24 @@ export interface GameState {
   clears: Partial<Record<ZoneId, ClearRecord>>;
   /** v13：守護者夥伴（已收服、目前帶著的、收服保底次數） */
   companions: CompanionState;
-  /** 統計（結算畫面、平衡用） */
-  stats: { kills: number; deaths: number; playTime: number };
+  /** v14：怪物圖鑑（敵人 id → 擊殺數，見 data/codex.ts） */
+  codex: Record<string, number>;
+  /** v14：成就（已領取、已通知；進度從存檔算，見 data/achievements.ts） */
+  achievements: AchievementState;
+  /** v15：每日簽到（7 天一輪） */
+  login: LoginState;
+  /** 統計（結算畫面、平衡、成就用；v14 新增 bossKills 以後的欄位，舊存檔從 0 開始） */
+  stats: {
+    kills: number;
+    deaths: number;
+    playTime: number;
+    bossKills: number;
+    enhanceOk: number;
+    itemsUsed: number;
+    questsDone: number;
+    mythics: number;
+    goldEarned: number;
+  };
   settings: Settings;
 }
 
@@ -102,7 +120,10 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     consumables: { hestia_bread: 2, hermes_feather: 1 },
     quickSlots: ['hestia_bread', 'hermes_feather'],
     boosts: { exp: 0, gold: 0 },
-    stats: { kills: 0, deaths: 0, playTime: 0 },
+    codex: {},
+    achievements: newAchievementState(),
+    login: newLoginState(),
+    stats: { kills: 0, deaths: 0, playTime: 0, bossKills: 0, enhanceOk: 0, itemsUsed: 0, questsDone: 0, mythics: 0, goldEarned: 0 },
     settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7 },
   };
 }

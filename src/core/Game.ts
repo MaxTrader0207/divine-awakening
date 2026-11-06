@@ -33,6 +33,12 @@ import { openCompanionView, openItemsView } from '@/ui/InventoryTabs';
 import { AutoBattle, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
+import { codexEntry, recordKill } from '@/data/codex';
+import { newlyDone } from '@/systems/Achievements';
+import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineReward } from '@/systems/Welcome';
+import { WelcomeScreen } from '@/ui/WelcomeScreen';
+import { localDate } from '@/systems/DailyQuests';
+import { ITEM_BASES } from '@/data/items';
 import { LootSystem } from '@/systems/LootSystem';
 import { Telegraphs } from '@/systems/Telegraphs';
 import { BossController } from '@/systems/BossController';
@@ -120,6 +126,9 @@ export class Game {
   private aiCtx!: AiContext;
   private fadeEl: HTMLElement;
   private pauseScreen!: PauseScreen;
+  private welcome!: WelcomeScreen;
+  private offlinePending: OfflineReward | null = null;
+  private lastDay = localDate();
   /** 破關畫面（v1.34）：首領戰紀錄 → 慢動作特寫 → 結算畫面 */
   private clearScreen!: StageClearScreen;
   private bossFight: BossFight | null = null;
@@ -137,6 +146,8 @@ export class Game {
 
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement, initialClass: HeroClass = 'mage') {
     this.state = this.save.load() ?? newGameState(initialClass);
+    // 離線收益：一定要在第一次存檔（會改 updatedAt）之前算
+    this.offlinePending = offlineReward(this.state.level, Date.now() - (this.state.updatedAt || Date.now()));
     const cls = CLASSES[this.state.heroClass] ?? CLASSES.mage;
     applyClassGear(CLASSES[this.state.heroClass] ? this.state.heroClass : 'mage'); // 裝備名稱、圖示、欄位名稱依職業改寫
     this.player = new Player(cls.anims);
@@ -261,6 +272,7 @@ export class Game {
       },
       onInventoryChanged: () => this.onInventoryChanged(),
       onUseConsumable: (id) => this.useConsumable(id),
+      onLogin: () => void this.doLogin(),
       onCelebrate: () => {
         this.audio.play('enhance');
         const { x, z } = this.player.pos;
@@ -338,6 +350,14 @@ export class Game {
     });
     bus.on('pause:toggle', () => this.setPaused(!this.paused));
 
+    this.welcome = new WelcomeScreen(uiRoot, {
+      claimOffline: (double) => this.claimOffline(double),
+      claimLogin: () => this.doLogin(),
+      gems: () => this.state.gems,
+      level: () => this.state.level,
+      onClose: () => this.persist(),
+    });
+
     this.clearScreen = new StageClearScreen(uiRoot, {
       close: () => this.endClearScreen(),
       goNext: (id) => {
@@ -408,6 +428,11 @@ export class Game {
     bus.on('skill:cast', ({ slot }) => slot === 'potion' && quest({ type: 'potion' }));
     bus.on('enhance:done', () => quest({ type: 'enhance' }));
 
+    // ---- 圖鑑與成就（v1.64） ----
+    bus.on('enemy:killed', (k) => this.onCodexKill(k.enemyId, k.boss));
+    bus.on('enhance:done', ({ success }) => success && this.state.stats.enhanceOk++);
+    bus.on('loot:picked', ({ base }) => base && ITEM_BASES[base]?.named && this.state.stats.mythics++);
+
     // ---- 怒氣（狂戰士）與嗜血 ----
     bus.on('combat:hit', (hit) => {
       const p = this.player;
@@ -456,6 +481,38 @@ export class Game {
     }
     this.tutorial(null); // 輪到的步驟如果已經達成（例如已在草原），直接完成
     this.guideLast = { ...this.player.pos };
+    // 歡迎回來：離線收益＋每日簽到（新玩家第一次進遊戲不跳，簽到可以在「任務」領）
+    if (!firstTime) this.welcome.show(this.offlinePending, canClaimLogin(this.state) ? { day: this.state.login.next, total: this.state.login.total } : null);
+    else this.offlinePending = null;
+  }
+
+  /** 領離線收益（歡迎回來畫面）；double = 花鑽石領 2 倍 */
+  private claimOffline(double: boolean): boolean {
+    const o = this.offlinePending;
+    if (!o) return false;
+    const s = this.state;
+    if (double) {
+      if (s.gems < OFFLINE.doubleCost) return false;
+      s.gems -= OFFLINE.doubleCost;
+    }
+    const k = double ? 2 : 1;
+    this.offlinePending = null;
+    s.gold += o.gold * k;
+    this.gainExp(o.exp * k);
+    bus.emit('toast', { text: `⏳ 離線收益：+${(o.exp * k).toLocaleString()} 經驗、+${(o.gold * k).toLocaleString()} 金幣`, kind: 'reward' });
+    bus.emit('player:changed');
+    this.persist();
+    return true;
+  }
+
+  /** 每日簽到（歡迎回來畫面、選單「任務」） */
+  doLogin(): string[] | null {
+    const got = claimLogin(this.state);
+    if (!got) return null;
+    bus.emit('toast', { text: `📅 簽到獎勵：${got.join('、')}`, duration: 3, kind: 'reward' });
+    this.onInventoryChanged();
+    bus.emit('quests:changed');
+    return got;
   }
 
   start() {
@@ -692,6 +749,11 @@ export class Game {
     this.effects.update(dt);
     this.loot.update(dt);
     this.state.stats.playTime += dt;
+    this.achCheck -= dt;
+    if (this.achCheck <= 0) {
+      this.achCheck = 1;
+      this.checkAchievements();
+    }
     this.projectiles.update(dt, this.rig.camera);
     this.targets.update(dt);
     this.zones.update(dt, this.player.pos.x, this.player.pos.z);
@@ -931,6 +993,7 @@ export class Game {
       return false;
     }
     const def = consume(s, id, ctx)!;
+    s.stats.itemsUsed++;
     const e = def.effect;
     switch (e.type) {
       case 'heal':
@@ -1077,10 +1140,40 @@ export class Game {
     this.guideArrow.update(dt, p.x, p.z, zone ? targetFor(t, zone.def.id) : null, (x, z) => zone?.heightAt(x, z) ?? 0);
   }
 
+  private achCheck = 2;
+
+  /** 圖鑑記一筆；升星時提示，並重算屬性（圖鑑加成） */
+  private onCodexKill(id: string, boss: boolean) {
+    const s = this.state;
+    if (boss) s.stats.bossKills++;
+    const stars = recordKill(s.codex, id);
+    if (!stars) return;
+    const e = codexEntry(id)!;
+    bus.emit('toast', { text: stars === 1 ? `📖 圖鑑新發現：${e.name}` : `📖 圖鑑 ${e.name} 升到 ${'★'.repeat(stars)}`, duration: 2.2, kind: 'reward' });
+    this.recalcStats();
+  }
+
+  /** 每秒檢查一次有沒有新達成的成就 */
+  private checkAchievements() {
+    const today = localDate();
+    if (today !== this.lastDay) {
+      this.lastDay = today;
+      ensureToday(this.state);
+      bus.emit('quests:changed'); // 過了午夜：新的每日任務與簽到
+    }
+    const done = newlyDone(this.state);
+    if (!done.length) return;
+    const text = done.length === 1 ? `🏆 成就達成：${done[0].name}（選單「收藏」領取 ${done[0].gems}💎）` : `🏆 達成 ${done.length} 個成就！到選單「收藏」領取獎勵`;
+    bus.emit('toast', { text, duration: 3.5, kind: 'reward' });
+    if (done.length === 1) bus.emit('banner', { text: `🏆 ${done[0].name}` });
+    bus.emit('quests:changed');
+  }
+
   /** 推進每日任務 */
   quest(ev: QuestEvent) {
     if (!this.state.daily) return;
     const done = progressQuests(this.state.daily, ev);
+    this.state.stats.questsDone += done.length;
     for (const q of done) bus.emit('toast', { text: `📋 每日任務完成：${questText(q)}`, duration: 3, kind: 'reward' });
     bus.emit('quests:changed');
   }
@@ -1102,13 +1195,20 @@ export class Game {
     if (k.boss) this.onBossDefeated(k.name, exp, gold, k.gems);
     if (exp <= 0 && gold <= 0) return;
     s.gold += gold;
+    s.stats.goldEarned += gold;
     s.gems += k.gems;
     if (gold > 0) this.quest({ type: 'gold', amount: gold });
-    const r = addExp(s.level, s.exp, exp);
-    s.exp = r.exp;
     if (gold > 0) bus.emit('float:text', { x: k.x, y: 1.4, z: k.z, text: `+${gold} 金幣`, kind: 'gold' });
     if (exp > 0) bus.emit('float:text', { x: this.player.pos.x, y: 2.6, z: this.player.pos.z, text: `+${exp} EXP`, kind: 'exp' });
     if (k.gems > 0) bus.emit('toast', { text: `💎 獲得 ${k.gems} 寶石`, kind: 'reward' });
+    this.gainExp(exp);
+  }
+
+  /** 加經驗，處理升級（回滿血、特效、升級事件） */
+  private gainExp(exp: number) {
+    const s = this.state;
+    const r = addExp(s.level, s.exp, exp);
+    s.exp = r.exp;
     if (r.levelsGained > 0) {
       s.level = r.level;
       this.recalcStats();

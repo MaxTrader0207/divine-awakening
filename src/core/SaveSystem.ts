@@ -5,7 +5,10 @@ import { TUTORIAL_STEPS } from '@/data/tutorial';
 
 /** v12 插入的「快捷道具」步驟索引 */
 const TUTORIAL_ITEM_STEP = 6;
-import { ZONES } from '@/data/zones';
+import { ZONES, bossOf } from '@/data/zones';
+import type { ZoneId } from '@/data/types';
+import { newAchievementState } from '@/systems/Achievements';
+import { newLoginState } from '@/systems/Welcome';
 import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
 
@@ -240,6 +243,28 @@ export function migrate(data: Partial<GameState>): GameState | null {
     ? { owned: Array.isArray(c.owned) ? c.owned.filter((id) => COMPANIONS[id]) : [], active: c.active && COMPANIONS[c.active] ? c.active : null, attempts: { ...(c.attempts ?? {}) } }
     : newCompanionState();
   if (merged.companions.active && !merged.companions.owned.includes(merged.companions.active)) merged.companions.active = null;
-  // 未來版本：if ((data.version ?? 0) < 14) { ... }
+  // v13 → v14：新增怪物圖鑑與成就。舊存檔的首領圖鑑從破關紀錄補上（破關次數 = 擊殺數），
+  // 首領擊殺統計也一併補上；小怪從 0 開始記
+  merged.codex = data.codex && typeof data.codex === 'object' ? { ...data.codex } : {};
+  if ((data.version ?? 1) < 14) {
+    let bossKills = 0;
+    for (const [z, c] of Object.entries(merged.clears)) {
+      const boss = bossOf(z as ZoneId);
+      if (!boss || !c?.count) continue;
+      merged.codex[boss.id] = Math.max(merged.codex[boss.id] ?? 0, c.count);
+      bossKills += c.count;
+    }
+    merged.stats.bossKills = Math.max(merged.stats.bossKills ?? 0, bossKills);
+  }
+  const a = data.achievements;
+  merged.achievements = a && typeof a === 'object'
+    ? { claimed: Array.isArray(a.claimed) ? [...a.claimed] : [], seen: Array.isArray(a.seen) ? [...a.seen] : [] }
+    : newAchievementState();
+  // v14 → v15：新增每日簽到（舊存檔從第 1 天開始）
+  const lg = data.login;
+  merged.login = lg && typeof lg === 'object' && typeof lg.next === 'number'
+    ? { last: String(lg.last ?? ''), next: Math.max(0, Math.floor(lg.next)) % 7, total: Math.max(0, lg.total ?? 0) }
+    : newLoginState();
+  // 未來版本：if ((data.version ?? 0) < 16) { ... }
   return merged;
 }

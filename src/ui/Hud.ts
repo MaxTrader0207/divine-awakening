@@ -11,6 +11,8 @@ import type { SkillSystem } from '@/systems/SkillSystem';
 import { Minimap } from './Minimap';
 import { RARITY } from '@/data/items';
 import { claimableCount } from '@/systems/DailyQuests';
+import { claimableAchievements } from '@/systems/Achievements';
+import { canClaimLogin } from '@/systems/Welcome';
 import { h } from './dom';
 import { currentStep, progressText, targetFor } from '@/systems/Tutorial';
 import { TUTORIAL_STEPS } from '@/data/tutorial';
@@ -117,7 +119,7 @@ export class Hud {
       h('div', { class: 'tr-row' }, [
         h('div', { class: 'tr-btns' }, [
           h('button', { class: 'icon-btn pause-btn', 'aria-label': '暫停', onclick: () => bus.emit('pause:toggle') }, [h('span', {}, '⏸'), h('small', {}, '暫停')]),
-          h('button', { class: 'icon-btn', 'aria-label': '選單', onclick: () => bus.emit('menu:open', claimableCount(this.state.daily) ? { tab: 'quests' } : {}) }, [
+          h('button', { class: 'icon-btn', 'aria-label': '選單', onclick: () => bus.emit('menu:open', claimableCount(this.state.daily) || canClaimLogin(this.state) ? { tab: 'quests' } : claimableAchievements(this.state) ? { tab: 'collect' } : {}) }, [
             h('span', {}, '☰'),
             h('small', {}, '選單'),
             (this.els.badge = h('i', { class: 'badge' })),
@@ -575,7 +577,7 @@ export class Hud {
   }
 
   refreshBadge() {
-    const n = claimableCount(this.state.daily);
+    const n = claimableCount(this.state.daily) + claimableAchievements(this.state) + (canClaimLogin(this.state) ? 1 : 0);
     this.els.badge.textContent = n ? String(n) : '';
     this.els.badge.style.display = n ? 'flex' : 'none';
   }

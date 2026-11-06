@@ -27,7 +27,7 @@ export interface GameEvents {
   'player:hurt': { amount: number; source: unknown };
   'player:died': void;
   'player:levelup': { level: number };
-  'loot:picked': { name: string; rarity: string };
+  'loot:picked': { name: string; rarity: string; base?: string };
   'settings:changed': void;
   /** 強化一次（成功或失敗） */
   'enhance:done': { success: boolean };
@@ -54,7 +54,7 @@ export interface GameEvents {
   'tutorial:changed': void;
 }
 
-export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'guide' | 'rank' | 'map' | 'saves' | 'settings';
+export type MenuTab = 'equip' | 'enhance' | 'shop' | 'quests' | 'guide' | 'rank' | 'map' | 'saves' | 'settings' | 'collect';
 
 type Handler<T> = (payload: T) => void;
 

@@ -2,6 +2,7 @@ import type { EquipSlot, Rarity, Stats } from '@/data/types';
 import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore , CRIT_KEYS, CRIT_RARITY_DAMP, CRIT_RATE_MAX, CRIT_DMG_MAX } from '@/data/items';
 import { statsForLevel } from '@/data/player';
 import { CLASSES, RAGE } from '@/data/classes';
+import { codexBonus } from '@/data/codex';
 
 /**
  * 背包與裝備（純邏輯，不碰畫面；全部可單元測試）
@@ -23,6 +24,8 @@ export interface InventoryState {
   gems: number;
   level: number;
   heroClass?: import('@/data/classes').HeroClass;
+  /** v1.64 怪物圖鑑：點數換成永久加成（攻擊、生命、防禦 %） */
+  codex?: Record<string, number>;
 }
 
 /** 背包格數（v1.28 從 40 擴充到 100） */
@@ -51,6 +54,12 @@ export function computeStats(s: InventoryState): Stats {
     const it = s.equipment[slot];
     if (!it) continue;
     for (const [k, v] of Object.entries(itemStats(it)) as [keyof Stats, number][]) st[k] += v;
+  }
+  if (s.codex) {
+    const b = codexBonus(s.codex);
+    st.atk *= 1 + b.atk;
+    st.maxHp *= 1 + b.maxHp;
+    st.def *= 1 + b.def;
   }
   st.maxHp = Math.round(st.maxHp);
   st.maxMp = Math.round(st.maxMp);

@@ -889,3 +889,49 @@ html.clear-open .hud { opacity: 0; pointer-events: none; transition: opacity 0.3
 .el-chart b { color: var(--fg, #fff); font-weight: 700; }
 .skill.companion.hide { display: none; }
 .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ---- 收藏：成就 / 圖鑑（v1.64） ---- */
+.seg.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.collect-cat { margin: 6px 2px 0; font-size: 13px; color: var(--gold); letter-spacing: 0.06em; }
+.card.ach .quest-head { flex-wrap: wrap; }
+.card.ach .quest-head small { color: var(--muted); white-space: normal; }
+.card.ach.ready { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(255, 211, 107, 0.35) inset; }
+.card.ach.done { opacity: 0.55; }
+.dex-group summary { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; cursor: pointer; list-style: none; }
+.dex-group summary::-webkit-details-marker { display: none; }
+.dex-group summary::before { content: '▸'; color: var(--muted); margin-right: 4px; }
+.dex-group[open] summary::before { content: '▾'; }
+.dex-group summary b { flex: 1; font-size: 14px; }
+.dex-group summary small { color: var(--muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dex-group.full { border-color: var(--gold); }
+.dex-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 64px; gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--line); }
+.dex-row small { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.dex-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dex-row.unknown .dex-name { color: var(--muted); }
+.dex-row.boss .dex-name { color: #ffd36b; }
+.dex-stars { color: var(--gold); letter-spacing: 1px; font-size: 12px; }
+.dex-kills { text-align: right; }
+
+/* ---- 歡迎回來：離線收益＋每日簽到（v1.65） ---- */
+.pause-screen.welcome { z-index: 32; }
+.wb-box { max-width: 360px; gap: 12px; }
+.wb-sec { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); text-align: left; }
+.wb-title { font-size: 14px; color: #fff2c4; }
+.wb-text { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.wb-gain { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wb-gain span { display: grid; gap: 2px; padding: 8px; border-radius: 10px; background: rgba(0, 0, 0, 0.3); text-align: center; }
+.wb-gain small { font-size: 11px; color: var(--muted); }
+.wb-gain b { font-size: 17px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.wb-done { margin: 0; font-size: 12px; color: #9fe58a; text-align: center; line-height: 1.5; }
+.ps-btn.gold { background: linear-gradient(#ffe07a, var(--gold)); color: #4a3308; border: none; }
+.ps-btn:disabled { opacity: 0.45; }
+.wb-days { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.wb-day { display: grid; justify-items: center; gap: 1px; padding: 5px 2px; border-radius: 9px; background: rgba(0, 0, 0, 0.28); border: 1px solid transparent; min-width: 0; }
+.wb-day small { font-size: 10px; color: var(--muted); }
+.wb-day span { font-size: 18px; line-height: 1.2; }
+.wb-day em { font-style: normal; font-size: 9.5px; color: var(--text); text-align: center; line-height: 1.25; max-width: 100%; overflow-wrap: anywhere; }
+.wb-day.big { grid-column: span 2; background: rgba(195, 139, 255, 0.16); }
+.wb-day.today { border-color: var(--gold); background: rgba(255, 211, 107, 0.16); }
+.wb-day.got { opacity: 0.5; }
+.wb-day.got span { color: #9fe58a; }
+.card.login-ready { border-color: var(--gold); }

@@ -8,6 +8,9 @@ import { CAPTURE, COMPANION_LIST } from './companions';
 import { ELEMENTS, ELEMENT_STRONG_MUL, ELEMENT_WEAK_MUL } from './elements';
 import { PAR_SECS } from '@/systems/StageClear';
 import type { ZoneId } from './types';
+import { CODEX_BONUS_MAX, CODEX_ENTRIES, CODEX_TIERS } from './codex';
+import { ACHIEVEMENTS } from './achievements';
+import { LOGIN_DAYS, OFFLINE } from '@/systems/Welcome';
 
 /**
  * 遊戲說明（選單「指引」分頁下半部）。
@@ -194,6 +197,18 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         '每天 00:00（你的時區）會有 3 個新任務，內容依你的等級決定。',
         '完成後到「選單 → 任務」領獎，三個都領完還有一個獎勵寶箱。',
         '右上「選單」按鈕出現紅點代表有獎勵可以領。',
+        `**每日簽到**：每天第一次進遊戲可以簽到一次，${LOGIN_DAYS} 天一輪，漏掉的天數不會重來，第 ${LOGIN_DAYS} 天必得**★神話裝**。進遊戲沒簽到的話，也可以在「選單 → 任務」最上面簽。`,
+        `**離線收益**：離開 ${OFFLINE.minMinutes} 分鐘以上，回來時會拿到經驗與金幣（最多算 ${OFFLINE.capHours} 小時），可以花 ${OFFLINE.doubleCost} 顆鑽石領 2 倍。`,
+      ],
+    },
+    {
+      icon: '📖',
+      title: '成就與怪物圖鑑',
+      lines: [
+        `「選單 → 收藏」有 ${ACHIEVEMENTS.length} 個**成就**，達成後領取鑽石；進度從你的冒險紀錄自動計算。`,
+        `**怪物圖鑑**收錄 ${CODEX_ENTRIES.length} 種敵人：小怪打倒 ${CODEX_TIERS.mob.join(' / ')} 隻、首領（含菁英、守護者）打倒 ${CODEX_TIERS.boss.join(' / ')} 次各得一顆星。`,
+        `星星會變成**永久加成**，全部收集滿是攻擊 +${CODEX_BONUS_MAX.atk * 100}%、生命 +${CODEX_BONUS_MAX.maxHp * 100}%、防禦 +${CODEX_BONUS_MAX.def * 100}%（照比例給，每顆星都有用）。`,
+        '想刷圖鑑：低等地圖的小怪也算，挑打得快的地方開 AUTO 就好。',
       ],
     },
     {

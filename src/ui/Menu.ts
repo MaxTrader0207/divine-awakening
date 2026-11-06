@@ -15,6 +15,8 @@ import type { Cloud } from '@/net/Cloud';
 import type { SlotInfo } from '@/core/SaveSystem';
 import { CLASSES } from '@/data/classes';
 import { renderGuide } from './GuideTab';
+import { renderCollect } from './CollectTab';
+import { LOGIN_DAYS, canClaimLogin, loginRewardDef } from '@/systems/Welcome';
 import { restartTutorial } from '@/systems/Tutorial';
 
 /** 開發模式或網址帶 ?debug 才顯示開發工具 */
@@ -25,6 +27,7 @@ const TABS: { id: MenuTab; label: string }[] = [
   { id: 'enhance', label: '強化' },
   { id: 'shop', label: '商城' },
   { id: 'quests', label: '任務' },
+  { id: 'collect', label: '收藏' },
   { id: 'guide', label: '指引' },
   { id: 'rank', label: '排行' },
   { id: 'map', label: '地圖' },
@@ -45,6 +48,8 @@ export interface MenuActions {
   onInventoryChanged(): void;
   onCelebrate(): void;
   onUseConsumable(id: string): void;
+  /** 每日簽到 */
+  onLogin(): void;
   onVolume(kind: 'music' | 'sfx', v: number): void;
   /** 回傳目前實際畫質（高 / 中 / 低） */
   onQuality(q: 'auto' | 'high' | 'medium' | 'low'): string;
@@ -123,6 +128,19 @@ export class Menu {
     if (tab === 'rank') return renderLeaderboard(this.cloudCtx());
     if (tab === 'settings') return this.renderSettings();
     if (tab === 'saves') return this.renderSaves();
+    if (tab === 'collect')
+      return renderCollect({
+        state: this.state,
+        rerender: () => {
+          const top = this.body.scrollTop;
+          this.show('collect');
+          this.body.scrollTop = top;
+        },
+        onChanged: () => {
+          this.actions.onInventoryChanged();
+          bus.emit('quests:changed');
+        },
+      });
     if (tab === 'guide')
       return renderGuide({
         state: this.state,
@@ -390,7 +408,27 @@ export class Menu {
     const s = this.state;
     ensureToday(s);
     const d = s.daily!;
-    const out: HTMLElement[] = [h('div', { class: 'card' }, [h('h4', {}, `每日任務・${d.date}`), h('p', {}, '每天 00:00（你的時區）重置。完成後在這裡領獎，三個都領完還有獎勵寶箱。')])];
+    const lg = s.login;
+    const canLogin = canClaimLogin(s);
+    const today = loginRewardDef(lg.next, s.level);
+    const out: HTMLElement[] = [
+      h('div', { class: `card quest${canLogin ? ' login-ready' : ' done'}` }, [
+        h('div', { class: 'quest-head' }, [h('b', {}, `📅 每日簽到・第 ${lg.next + 1} / ${LOGIN_DAYS} 天`), h('small', {}, `累計 ${lg.total} 天`)]),
+        h('div', { class: 'quest-row' }, [
+          h('span', {}, canLogin ? `今天：${today.icon} ${today.label}` : `明天：${today.icon} ${today.label}`),
+          canLogin
+            ? h('button', {
+                class: 'go small',
+                onclick: () => {
+                  this.actions.onLogin();
+                  this.show('quests');
+                },
+              }, '簽到')
+            : h('span', { class: 'pill' }, '今天已簽到'),
+        ]),
+      ]),
+      h('div', { class: 'card' }, [h('h4', {}, `每日任務・${d.date}`), h('p', {}, '每天 00:00（你的時區）重置。完成後在這裡領獎，三個都領完還有獎勵寶箱。')]),
+    ];
     d.quests.forEach((q) => {
       const pct = Math.min(100, (q.progress / q.target) * 100);
       const btn = q.claimed
