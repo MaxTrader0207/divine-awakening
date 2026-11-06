@@ -72,7 +72,7 @@ export class Hud {
   /** 快捷道具欄（key：上次畫的內容，沒變就不動 DOM） */
   private quick: { btn: HTMLElement; ico: Element; count: HTMLElement; cd: HTMLElement; key: string }[] = [];
   /** 夥伴按鈕（v1.58；沒有夥伴時隱藏） */
-  private comp!: { btn: HTMLElement; ico: Element; cd: HTMLElement; num: HTMLElement; key: string; wasCd: boolean };
+  private comp!: { btn: HTMLElement; ico: Element; cd: HTMLElement; num: HTMLElement; sub: HTMLElement; key: string; wasCd: boolean };
   private hudTimer = 0;
   private notes: Note[] = [];
   private noteQueue: { text: string; duration: number }[] = [];
@@ -203,8 +203,9 @@ export class Hud {
       const btn = this.actionButton('skill companion hide', 'companion', IS_DESKTOP ? 'G' : '');
       const cd = h('div', { class: 'cd' });
       const num = h('b', { class: 'cd-num' });
-      btn.append(cd, num, h('small', { class: 'comp-label' }, '夥伴'));
-      this.comp = { btn, ico: btn.querySelector('.ico')!, cd, num, key: '', wasCd: false };
+      const sub = h('i', { class: 'comp-sub' });
+      btn.append(cd, num, sub, h('small', { class: 'comp-label' }, '夥伴'));
+      this.comp = { btn, ico: btn.querySelector('.ico')!, cd, num, sub, key: '', wasCd: false };
       skillArea.appendChild(btn);
     }
     skillArea.appendChild((this.els.skillTip = h('div', { class: 'skill-tip' })));
@@ -402,13 +403,15 @@ export class Hud {
   }
 
   /** 夥伴按鈕：icon = 目前帶的夥伴（null = 沒有夥伴，按鈕隱藏）、cd = 剩餘冷卻秒數、live = 夥伴在場上 */
-  setCompanion(icon: string | null, name: string, cd: number, cdMax: number, live: boolean) {
+  setCompanion(icon: string | null, name: string, cd: number, cdMax: number, live: boolean, subIcon: string | null = null) {
     const c = this.comp;
-    const key = `${icon}|${name}`;
+    const key = `${icon}|${name}|${subIcon}`;
     if (key !== c.key) {
       c.key = key;
       c.btn.classList.toggle('hide', !icon);
       c.ico.textContent = icon ?? '';
+      c.sub.textContent = subIcon ?? '';
+      c.sub.style.display = subIcon ? '' : 'none';
       c.btn.title = `召喚夥伴：${name}${IS_DESKTOP ? '（G）' : ''}`;
       requestAnimationFrame(() => this.fitQuick());
     }

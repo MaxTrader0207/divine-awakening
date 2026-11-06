@@ -35,7 +35,7 @@ import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
 import { codexEntry, recordKill } from '@/data/codex';
 import { newlyDone } from '@/systems/Achievements';
-import { COMPANION_SKILLS, GROWTH, addBond, addCompExp, bondLevel, compCooldown, compDuration, compStatMul, growthOf, skillInterval, skillUnlocked } from '@/data/companionGrowth';
+import { COMPANION_SKILLS, DUO, GROWTH, addBond, addCompExp, bondLevel, compCooldown, compDuration, compStatMul, growthOf, skillInterval, skillUnlocked, teamOf } from '@/data/companionGrowth';
 import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineReward } from '@/systems/Welcome';
 import { WelcomeScreen } from '@/ui/WelcomeScreen';
 import { localDate } from '@/systems/DailyQuests';
@@ -748,7 +748,7 @@ export class Game {
     }
     this.minions.update(dt, this.rig.camera);
     this.companionCd = Math.max(0, this.companionCd - dt);
-    this.updateCompanionSkill(dt);
+    this.updateCompanionSkills(dt);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
@@ -821,26 +821,29 @@ export class Game {
     if (this.input.consume('item2')) this.useQuickSlot(1);
     if (this.input.consume('companion')) this.summonCompanion();
     // AUTO：首領戰中夥伴冷卻好就自動召喚
-    else if (this.auto.on && this.companionCd <= 0 && this.state.companions.active && this.enemies.engagedBoss()) this.summonCompanion(true);
+    else if (this.auto.on && this.companionCd <= 0 && teamOf(this.state.companions).length && this.enemies.engagedBoss()) this.summonCompanion(true);
     this.autoPotion();
   }
 
-  /** 夥伴是否在場上 */
+  /** 夥伴（主力或支援）是否有任何一隻在場上 */
   private companionLive(): boolean {
-    const def = COMPANIONS[this.state.companions.active ?? ''];
-    return !!def && this.minions.count(def.minion) > 0;
+    return teamOf(this.state.companions).some((id) => this.minions.count(COMPANIONS[id].minion) > 0);
   }
 
   private refreshCompanionHud() {
-    const def = COMPANIONS[this.state.companions.active ?? ''];
-    const g = def ? this.state.companions.growth?.[def.id] : undefined;
-    this.hud.setCompanion(def?.icon ?? null, def?.name ?? '', this.companionCd, compCooldown(g), this.companionLive());
+    const c = this.state.companions;
+    const team = teamOf(c);
+    const def = team[0] ? COMPANIONS[team[0]] : undefined;
+    const sub = team[1] ? COMPANIONS[team[1]] : undefined;
+    const g = def ? c.growth?.[def.id] : undefined;
+    this.hud.setCompanion(def?.icon ?? null, def ? `${def.name}${sub ? `＋${sub.name}` : ''}` : '', this.companionCd, compCooldown(g), this.companionLive(), sub?.icon ?? null);
   }
 
-  /** 召喚夥伴（夥伴按鈕 / G 鍵 / AUTO 首領戰）：存在 CAPTURE.duration 秒、冷卻 CAPTURE.cooldown 秒 */
+  /** 召喚夥伴（夥伴按鈕 / G 鍵 / AUTO 首領戰）：主力＋支援一起出場，冷卻跟著主力 */
   private summonCompanion(quiet = false) {
     const c = this.state.companions;
-    const def = c.active ? COMPANIONS[c.active] : undefined;
+    const team = teamOf(c);
+    const def = team[0] ? COMPANIONS[team[0]] : undefined;
     if (!def) {
       if (quiet) return;
       openCompanionView();
@@ -856,35 +859,42 @@ export class Game {
       if (!quiet) bus.emit('toast', { text: this.companionLive() ? `${def.name} 正在戰鬥` : `${def.name} 休息中（${Math.ceil(this.companionCd)} 秒）` });
       return;
     }
-    const g = growthOf(c, def.id);
-    this.minions.summon(def.minion, 1, { mul: compStatMul(g), life: compDuration(g) });
-    this.companionCd = compCooldown(g);
-    this.compSkillT = skillUnlocked(g) ? skillInterval(def.id, g) * 0.4 : 0; // 出場不久就放第一次
-    this.compRebirthUsed = false;
-    bus.emit('toast', { text: `${def.icon} ${def.name}（Lv.${g.lv}）前來助陣！`, duration: 2 });
-    if (addBond(g, GROWTH.bondSummon)) this.onBondUp(def.id);
+    const names: string[] = [];
+    team.forEach((id, i) => {
+      const d = COMPANIONS[id];
+      const g = growthOf(c, id);
+      this.minions.summon(d.minion, 1, { mul: compStatMul(g) * (i > 0 ? DUO.supportMul : 1), life: compDuration(g) });
+      this.compSkillT.set(id, skillUnlocked(g) ? skillInterval(id, g) * (i > 0 ? 0.7 : 0.4) : 0); // 出場不久就放第一次（兩隻錯開）
+      this.compRebirthUsed.delete(id);
+      names.push(`${d.icon} ${d.name}（Lv.${g.lv}）`);
+      if (addBond(g, GROWTH.bondSummon)) this.onBondUp(id);
+    });
+    this.companionCd = compCooldown(growthOf(c, def.id));
+    bus.emit('toast', { text: `${names.join('、')} 前來助陣！`, duration: 2 });
     bus.emit('camera:shake', { power: 0.15 });
   }
 
-  private compSkillT = 0;
-  private compRebirthUsed = false;
+  /** 每隻夥伴的專屬技能計時、浴火重生是否已用 */
+  private compSkillT = new Map<string, number>();
+  private compRebirthUsed = new Set<string>();
 
-  /** 場上的夥伴（沒有回傳 undefined） */
-  private liveCompanion() {
-    const def = COMPANIONS[this.state.companions.active ?? ''];
+  /** 某隻夥伴在場上的召喚物（沒有回傳 undefined） */
+  private liveCompanion(id: string) {
+    const def = COMPANIONS[id];
     return def ? this.minions.list.find((m) => m.alive && m.def.id === def.minion) : undefined;
   }
 
-  /** 夥伴養成：帶著的夥伴從擊殺拿經驗；在場時打倒首領加好感 */
+  /** 夥伴養成：帶著的夥伴（主力、支援）從擊殺拿經驗；在場時打倒首領加好感 */
   private onCompanionKill(boss: boolean) {
     const c = this.state.companions;
-    const def = COMPANIONS[c.active ?? ''];
-    if (!def) return;
-    const g = growthOf(c, def.id);
-    const live = this.companionLive();
-    const ups = addCompExp(g, (boss ? GROWTH.bossExp : GROWTH.killExp) * (live ? GROWTH.liveMul : 1));
-    if (ups) bus.emit('toast', { text: `${def.icon} ${def.name} 升到 Lv.${g.lv}！`, duration: 2.5, kind: 'reward' });
-    if (boss && live && addBond(g, GROWTH.bondBoss)) this.onBondUp(def.id);
+    for (const id of teamOf(c)) {
+      const def = COMPANIONS[id];
+      const g = growthOf(c, id);
+      const live = this.minions.count(def.minion) > 0;
+      const ups = addCompExp(g, (boss ? GROWTH.bossExp : GROWTH.killExp) * (live ? GROWTH.liveMul : 1));
+      if (ups) bus.emit('toast', { text: `${def.icon} ${def.name} 升到 Lv.${g.lv}！`, duration: 2.5, kind: 'reward' });
+      if (boss && live && addBond(g, GROWTH.bondBoss)) this.onBondUp(id);
+    }
   }
 
   /** 好感度升階提示 */
@@ -897,22 +907,24 @@ export class Game {
     if (b === 3) bus.emit('banner', { text: `${def.icon} 學會「${COMPANION_SKILLS[id].name}」` });
   }
 
-  /** 夥伴專屬技能（♥3 解鎖；夥伴在場時自動施放） */
-  private updateCompanionSkill(dt: number) {
+  /** 夥伴專屬技能（♥3 解鎖；在場的夥伴各自施放） */
+  private updateCompanionSkills(dt: number) {
+    for (const id of teamOf(this.state.companions)) this.updateCompanionSkill(id, dt);
+  }
+
+  private updateCompanionSkill(id: string, dt: number) {
     const c = this.state.companions;
-    const id = c.active;
-    if (!id) return;
     const g = c.growth?.[id];
     if (!skillUnlocked(g)) return;
-    const m = this.liveCompanion();
+    const m = this.liveCompanion(id);
     if (!m) return;
     const sk = COMPANION_SKILLS[id];
     const p = this.player;
     const color = m.def.color;
     const label = (text: string) => bus.emit('float:text', { x: m.pos.x, y: 2.8, z: m.pos.z, text, kind: 'info' });
     if (sk.skill.kind === 'rebirth') {
-      if (this.compRebirthUsed || !p.alive || p.hp >= p.stats.maxHp * sk.skill.at) return;
-      this.compRebirthUsed = true;
+      if (this.compRebirthUsed.has(id) || !p.alive || p.hp >= p.stats.maxHp * sk.skill.at) return;
+      this.compRebirthUsed.add(id);
       p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * sk.skill.ratio);
       this.effects.pillar(p.pos.x, p.pos.z, 1.2, color, 1);
       this.effects.ring(p.pos.x, p.pos.z, 0.5, 3, color, 0.7);
@@ -920,16 +932,17 @@ export class Game {
       bus.emit('player:changed');
       return;
     }
-    this.compSkillT -= dt;
-    if (this.compSkillT > 0) return;
+    const t = (this.compSkillT.get(id) ?? 0) - dt;
+    this.compSkillT.set(id, t);
+    if (t > 0) return;
     const sx = sk.skill;
     const radius = 'radius' in sx ? sx.radius ?? 0 : 0;
     // 傷害技：附近沒有敵人就等一下再放
     if (sx.kind === 'nova' && !this.enemies.enemies.some((e) => e.alive && Math.hypot(e.pos.x - m.pos.x, e.pos.z - m.pos.z) <= radius + e.radius)) {
-      this.compSkillT = 0.5;
+      this.compSkillT.set(id, 0.5);
       return;
     }
-    this.compSkillT = skillInterval(id, g!);
+    this.compSkillT.set(id, skillInterval(id, g!));
     label(sk.name);
     switch (sx.kind) {
       case 'nova':

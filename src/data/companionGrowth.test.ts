@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAPTURE, COMPANION_LIST, newCompanionState, tryCapture } from './companions';
-import { COMPANION_SKILLS, GROWTH, addBond, addCompExp, bondLevel, compCooldown, compDuration, compExpToNext, compStatMul, growthOf, newGrowth, skillInterval, skillUnlocked } from './companionGrowth';
+import { COMPANION_SKILLS, DUO, GROWTH, duoUnlocked, teamOf, addBond, addCompExp, bondLevel, compCooldown, compDuration, compExpToNext, compStatMul, growthOf, newGrowth, skillInterval, skillUnlocked } from './companionGrowth';
 import { newGameState } from '@/core/GameState';
 import { migrate } from '@/core/SaveSystem';
 
@@ -48,5 +48,25 @@ describe('夥伴養成', () => {
     old.companions = { owned: ['pegasus', 'ares'], active: 'ares', attempts: {} };
     const m = migrate(old as never)!;
     expect(m.companions.growth).toEqual({ pegasus: { lv: 1, exp: 0, bond: 0 }, ares: { lv: 1, exp: 0, bond: 0 } });
+  });
+
+  it('雙夥伴：收服 3 隻後開放，支援不能和主力相同', () => {
+    const st = newCompanionState();
+    st.owned = ['pegasus', 'aetos'];
+    st.active = 'pegasus';
+    st.support = 'aetos';
+    expect(duoUnlocked(st)).toBe(false);
+    expect(teamOf(st)).toEqual(['pegasus']);
+    st.owned.push('ares');
+    expect(DUO.unlockOwned).toBe(3);
+    expect(teamOf(st)).toEqual(['pegasus', 'aetos']);
+    st.support = 'pegasus';
+    expect(teamOf(st)).toEqual(['pegasus']);
+    const old = newGameState('mage') as unknown as { version: number; companions: Record<string, unknown> };
+    old.version = 16;
+    old.companions = { owned: ['pegasus', 'ares', 'aetos'], active: 'ares', support: 'pegasus', attempts: {}, growth: {} };
+    expect(migrate(old as never)!.companions.support).toBe('pegasus');
+    old.companions.support = 'phobos';
+    expect(migrate(old as never)!.companions.support).toBeNull();
   });
 });

@@ -17,7 +17,7 @@ import { addConsumable } from '@/systems/Consumables';
 import { bus } from '@/core/EventBus';
 import { isZoneUnlocked } from '@/core/GameState';
 import { CAPTURE, COMPANION_LIST, pityLeft } from '@/data/companions';
-import { BOND_PERKS, COMPANION_SKILLS, FEED, GROWTH, addBond, addCompExp, bondLevel, bondNext, compCooldown, compDuration, compExpToNext, compStatMul, feedCost, growthOf, skillUnlocked } from '@/data/companionGrowth';
+import { BOND_PERKS, COMPANION_SKILLS, FEED, GROWTH, DUO, addBond, addCompExp, bondLevel, bondNext, compCooldown, compDuration, compExpToNext, compStatMul, duoUnlocked, feedCost, growthOf, skillUnlocked } from '@/data/companionGrowth';
 import { ELEMENTS, ELEMENT_STRONG_MUL, ELEMENT_WEAK_MUL, STRONG, counterOf, type Element } from '@/data/elements';
 import { ZONES, zoneLabel } from '@/data/zones';
 
@@ -84,24 +84,49 @@ function companionCards(ctx: InvContext): HTMLElement[] {
   const s = ctx.state;
   const c = s.companions;
   const out: HTMLElement[] = [];
+  const duo = duoUnlocked(c);
+  out.push(
+    h('div', { class: `card duo-card${duo ? ' on' : ''}` }, [
+      h('h4', {}, duo ? '👥 雙夥伴已開放' : '👥 雙夥伴'),
+      h('p', {}, duo
+        ? `除了主力，還可以多帶一隻「支援」：按一次夥伴鍵兩隻一起出場，冷卻跟著主力。支援夥伴屬性 ×${DUO.supportMul}，兩隻都會拿經驗與好感，專屬技能各自施放。挑兩種屬性一起帶，打首領更容易剋到。`
+        : `收服 ${DUO.unlockOwned} 隻夥伴後，可以同時帶 2 隻（主力＋支援）一起出場。目前 ${c.owned.length} / ${DUO.unlockOwned}。`),
+    ]),
+  );
   for (const def of COMPANION_LIST) {
     const owned = c.owned.includes(def.id);
     const el = ELEMENTS[def.element];
     const zone = ZONES[def.zone];
     const open = isZoneUnlocked(s, def.zone);
     const active = c.active === def.id;
+    const support = duo && c.support === def.id;
+    const set = (main: string | null, sup: string | null, msg?: string) => {
+      c.active = main;
+      c.support = sup && sup !== main ? sup : null;
+      if (msg) ctx.toast(msg);
+      ctx.changed();
+      ctx.rerender();
+    };
     let action: HTMLElement;
-    if (owned)
-      action = active
-        ? h('button', { class: 'go ghost small', onclick: () => { c.active = null; ctx.changed(); ctx.rerender(); } }, '收回（不帶）')
-        : h('button', { class: 'go small', onclick: () => { c.active = def.id; ctx.toast(`${def.icon} 帶上 ${def.name}`); ctx.changed(); ctx.rerender(); } }, '帶上牠');
+    if (owned) {
+      const btns: HTMLElement[] = [];
+      if (active) btns.push(h('button', { class: 'go ghost small', onclick: () => set(c.support, null) }, c.support && duo ? '收回（支援改當主力）' : '收回（不帶）'));
+      else if (support) {
+        btns.push(h('button', { class: 'go small', onclick: () => set(def.id, c.active, `${def.icon} ${def.name} 改當主力`) }, '換成主力'));
+        btns.push(h('button', { class: 'go ghost small', onclick: () => set(c.active, null) }, '收回支援'));
+      } else {
+        btns.push(h('button', { class: 'go small', onclick: () => set(def.id, c.support === def.id ? null : c.support, `${def.icon} 帶上 ${def.name}`) }, duo ? '當主力' : '帶上牠'));
+        if (duo) btns.push(h('button', { class: 'go small alt', onclick: () => (c.active ? set(c.active, def.id, `${def.icon} ${def.name} 擔任支援`) : set(def.id, null, `${def.icon} 帶上 ${def.name}`)) }, '當支援'));
+      }
+      action = h('span', { class: 'comp-actions' }, btns);
+    }
     else action = h('span', { class: 'pill locked' }, open ? `再打倒 ${pityLeft(c, def.id)} 次內必定收服` : `🔒 擊敗${zoneLabel(zone.side!.unlockAfter)}後開放`);
     const weakTo = ELEMENTS[counterOf(def.element)];
     const strongTo = ELEMENTS[STRONG[def.element]];
     out.push(
-      h('div', { class: `card comp-card${owned ? '' : ' locked'}${active ? ' active' : ''}`, style: `--el:${el.color}` }, [
+      h('div', { class: `card comp-card${owned ? '' : ' locked'}${active || support ? ' active' : ''}`, style: `--el:${el.color}` }, [
         h('div', { class: 'comp-ico' }, owned ? def.icon : '？'),
-        h('h4', {}, [owned || open ? def.name : '？？？', h('small', {}, `${el.icon}${el.name}屬性${active ? '・帶著' : ''}`)]),
+        h('h4', {}, [owned || open ? def.name : '？？？', h('small', {}, `${el.icon}${el.name}屬性${active ? (duo ? '・主力' : '・帶著') : support ? '・支援' : ''}`)]),
         h('p', {}, owned ? `${def.title}。${def.role}` : `住在支線「${zone.name}」。打倒守護者有 ${Math.round(CAPTURE.chance * 100)}% 機率收服，第 ${CAPTURE.pity} 次一定成功。`),
         owned ? growthBlock(ctx, def.id) : h('p', {}, STRONG[STRONG[def.element]] === def.element ? `與 ${strongTo.icon}${strongTo.name} 互剋（打牠 ×${ELEMENT_STRONG_MUL}、被牠打也 ×${ELEMENT_STRONG_MUL}）` : `剋 ${strongTo.icon}${strongTo.name}、被 ${weakTo.icon}${weakTo.name} 剋`),
         h('div', { class: 'card-row' }, [action, ...(owned ? [feedButton(ctx, def.id)] : [])]),

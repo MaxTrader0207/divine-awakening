@@ -180,8 +180,10 @@ export function companionOfGuardian(enemyId: string): CompanionDef | undefined {
 export interface CompanionState {
   /** 已收服的夥伴 id */
   owned: string[];
-  /** 目前帶著的夥伴（null = 沒帶） */
+  /** 目前帶著的夥伴（主力；null = 沒帶） */
   active: string | null;
+  /** v17：支援夥伴（第二隻，收服 DUO.unlockOwned 隻後開放；和主力一起召喚） */
+  support: string | null;
   /** 還沒收服前，打倒守護者的次數（保底用） */
   attempts: Record<string, number>;
   /** v16：每隻夥伴的等級、經驗、好感度（data/companionGrowth.ts） */
@@ -189,7 +191,7 @@ export interface CompanionState {
 }
 
 export function newCompanionState(): CompanionState {
-  return { owned: [], active: null, attempts: {}, growth: {} };
+  return { owned: [], active: null, support: null, attempts: {}, growth: {} };
 }
 
 /**

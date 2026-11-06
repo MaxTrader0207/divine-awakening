@@ -949,3 +949,8 @@ html.clear-open .hud { opacity: 0; pointer-events: none; transition: opacity 0.3
 .comp-skill.on b { color: var(--el, var(--gold)); }
 .comp-card .card-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .go:disabled { opacity: 0.45; }
+/* 雙夥伴（v1.67）：夥伴按鈕右下角的支援夥伴小圖示 */
+.skill.companion .comp-sub { position: absolute; right: -6px; bottom: -4px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-style: normal; background: #2e2a1c; border: 2px solid rgba(255, 216, 74, 0.8); pointer-events: none; }
+.comp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.go.small.alt { background: linear-gradient(#9fd8ff, #4fa3e8); color: #0d2a44; }
+.duo-card.on { border-color: var(--gold); }

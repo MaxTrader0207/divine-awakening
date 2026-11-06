@@ -240,7 +240,7 @@ export function migrate(data: Partial<GameState>): GameState | null {
   // v12 → v13：新增守護者夥伴（舊存檔從零開始）
   const c = data.companions;
   merged.companions = c && typeof c === 'object'
-    ? { owned: Array.isArray(c.owned) ? c.owned.filter((id) => COMPANIONS[id]) : [], active: c.active && COMPANIONS[c.active] ? c.active : null, attempts: { ...(c.attempts ?? {}) }, growth: {} }
+    ? { owned: Array.isArray(c.owned) ? c.owned.filter((id) => COMPANIONS[id]) : [], active: c.active && COMPANIONS[c.active] ? c.active : null, attempts: { ...(c.attempts ?? {}) }, growth: {}, support: null }
     : newCompanionState();
   if (merged.companions.active && !merged.companions.owned.includes(merged.companions.active)) merged.companions.active = null;
   // v13 → v14：新增怪物圖鑑與成就。舊存檔的首領圖鑑從破關紀錄補上（破關次數 = 擊殺數），
@@ -275,6 +275,9 @@ export function migrate(data: Partial<GameState>): GameState | null {
       bond: Math.max(0, v?.bond ?? 0),
     };
   }
-  // 未來版本：if ((data.version ?? 0) < 17) { ... }
+  // v16 → v17：支援夥伴（第二隻）；舊存檔沒有
+  const sup = c && typeof c === 'object' ? (c as { support?: unknown }).support : null;
+  merged.companions.support = typeof sup === 'string' && merged.companions.owned.includes(sup) && sup !== merged.companions.active ? sup : null;
+  // 未來版本：if ((data.version ?? 0) < 18) { ... }
   return merged;
 }

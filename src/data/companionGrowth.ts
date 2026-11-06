@@ -34,6 +34,27 @@ export const GROWTH = {
   bond5SkillCd: 0.7,
 };
 
+/**
+ * 雙夥伴（v1.67）：收服 unlockOwned 隻後可以多帶一隻「支援夥伴」，按一次夥伴鍵兩隻一起出場。
+ * 支援夥伴屬性 × supportMul；冷卻跟著主力；兩隻都拿經驗、好感，專屬技能各自施放。
+ */
+export const DUO = {
+  unlockOwned: 3,
+  supportMul: 0.8,
+};
+
+export function duoUnlocked(st: CompanionState): boolean {
+  return st.owned.length >= DUO.unlockOwned;
+}
+
+/** 帶著的夥伴 id（主力在前；沒開放雙夥伴時只有主力） */
+export function teamOf(st: CompanionState): string[] {
+  const out: string[] = [];
+  if (st.active && COMPANIONS[st.active]) out.push(st.active);
+  if (duoUnlocked(st) && st.support && st.support !== st.active && COMPANIONS[st.support]) out.push(st.support);
+  return out;
+}
+
 /** 餵食神饌點心：花金幣換經驗與好感（價格隨夥伴等級上升） */
 export const FEED = {
   exp: 40,
