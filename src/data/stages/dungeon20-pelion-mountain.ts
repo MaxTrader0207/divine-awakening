@@ -64,6 +64,8 @@ const zone: ZoneDef = {
     { enemy: 'lapith_shade', x: -12, z: -6, count: 3, spread: 3 },
     { enemy: 'pelion_lion', x: 0, z: -6, count: 2, spread: 2.5 },
     { enemy: 'nessus', x: 0, z: -23 },
+    { enemy: 'pelion_boar', x: 10, z: 18, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'peak_harpy', x: 12, z: -6, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 20, enemyDefense: 375, unlockAfter: 'dungeon_19' },
 };
@@ -99,6 +101,20 @@ export const pelionMountain: StageDef = {
       attack: melee(2.8, 0.55, 1.6),
       exp: 99000, gold: [34200, 41700], gems: 60,
       bossSkills: ['nessus_volley', 'nessus_trample', 'nessus_blood'],
+    },
+    pelion_boar: {
+      id: 'pelion_boar', name: '佩利翁野豬', level: 99, aggro: 'aggressive', shape: 'boar',
+      radius: 0.7, respawn: 12, scale: 1.21, color: 0x5a4a3a,
+      stats: { maxHp: 19800, atk: 973, def: 375, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 7270, gold: [498, 711],
+    },
+    peak_harpy: {
+      id: 'peak_harpy', name: '山巔鷹妖', level: 97, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x9a8a6a,
+      stats: { maxHp: 11900, atk: 858, def: 375, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 6030, gold: [408, 583],
     },
   },
 };

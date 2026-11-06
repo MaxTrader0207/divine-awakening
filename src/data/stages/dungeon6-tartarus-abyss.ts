@@ -72,6 +72,8 @@ const zone: ZoneDef = {
     { enemy: 'keres', x: 12, z: -2, count: 2, spread: 3 },
     { enemy: 'tartarus_warden', x: -8, z: -10, count: 1 },
     { enemy: 'cerberus', x: 0, z: -21 },
+    { enemy: 'styx_ferryman', x: 8, z: 12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'erinys_handmaid', x: -12, z: -2, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 6, enemyDefense: 95, unlockAfter: 'dungeon_5' },
 };
@@ -107,6 +109,20 @@ export const tartarusAbyss: StageDef = {
       attack: melee(2.6, 0.5, 1.6),
       exp: 10500, gold: [3600, 4600], gems: 20,
       bossSkills: ['hellfire_breath', 'cerberus_pounce', 'underworld_flames'],
+    },
+    styx_ferryman: {
+      id: 'styx_ferryman', name: '冥河擺渡亡魂', level: 27, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_rogue',
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xc8c8d8,
+      stats: { maxHp: 2450, atk: 226, def: 95, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 580, gold: [67, 96],
+    },
+    erinys_handmaid: {
+      id: 'erinys_handmaid', name: '復仇女神侍從', level: 29, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x6a3a5a,
+      stats: { maxHp: 2600, atk: 250, def: 95, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 730, gold: [78, 112],
     },
   },
 };

@@ -64,6 +64,8 @@ const zone: ZoneDef = {
     { enemy: 'arcadian_lynx', x: -12, z: -6, count: 2, spread: 3 },
     { enemy: 'artemis_huntress', x: 0, z: -5, count: 2, spread: 2.5 },
     { enemy: 'golden_hind', x: 0, z: -23 },
+    { enemy: 'forest_boar', x: 10, z: 18, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'moon_bat', x: 10, z: -6, count: 3, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 16, enemyDefense: 295, unlockAfter: 'dungeon_15' },
 };
@@ -98,6 +100,20 @@ export const ceryneianMountain: StageDef = {
       attack: melee(2.6, 0.5, 1.5),
       exp: 66000, gold: [21700, 26500], gems: 48,
       bossSkills: ['hind_charge', 'hind_stomp', 'hind_moonfall'],
+    },
+    forest_boar: {
+      id: 'forest_boar', name: '山林野豬', level: 79, aggro: 'aggressive', shape: 'boar',
+      radius: 0.7, respawn: 12, scale: 1.21, color: 0x6a4a32,
+      stats: { maxHp: 12300, atk: 775, def: 295, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 4850, gold: [340, 486],
+    },
+    moon_bat: {
+      id: 'moon_bat', name: '月夜蝙蝠', level: 76, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x8a8ab8,
+      stats: { maxHp: 5500, atk: 538, def: 295, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 2110, gold: [146, 209],
     },
   },
 };

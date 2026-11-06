@@ -59,6 +59,9 @@ const zone: ZoneDef = {
     { enemy: 'rhodes_colossus', x: 12, z: -13, count: 2, spread: 3 },
     { enemy: 'sun_harpy', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_phoenix', x: 0, z: -23 },
+    { enemy: 'helios_hound', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'sun_priest', x: -12, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'helios_cattle', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_phoenix', unlockAfter: 'dungeon_10' },
 };
@@ -87,6 +90,27 @@ export const rhodesSunTemple: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 23800, gold: [8500, 10400], gems: 29,
       bossSkills: ['phoenix_flame', 'phoenix_rain', 'phoenix_dive', 'phoenix_rebirth'],
+    },
+    helios_hound: {
+      id: 'helios_hound', name: '太陽神的火犬', level: 53, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0xe8783a,
+      stats: { maxHp: 6250, atk: 444, def: 162, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 1890, gold: [154, 220],
+    },
+    sun_priest: {
+      id: 'sun_priest', name: '日神祭司亡魂', level: 54, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xf0e0b0,
+      stats: { maxHp: 5650, atk: 478, def: 180, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 2160, gold: [177, 253],
+    },
+    helios_cattle: {
+      id: 'helios_cattle', name: '赫利俄斯聖牛', level: 55, aggro: 'aggressive', shape: 'bull',
+      radius: 0.7, respawn: 12, scale: 1.21, color: 0xf0d0a0,
+      stats: { maxHp: 10550, atk: 565, def: 198, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 2710, gold: [218, 312],
     },
   },
 };

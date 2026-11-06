@@ -66,6 +66,8 @@ const zone: ZoneDef = {
     { enemy: 'hera_gadfly', x: -12, z: -3, count: 3, spread: 3 },
     { enemy: 'argus_watcher', x: 0, z: -6, count: 1 },
     { enemy: 'argus', x: 0, z: -23 },
+    { enemy: 'pasture_dog', x: 10, z: 10, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'peacock_harpy', x: 12, z: -5, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 17, enemyDefense: 315, unlockAfter: 'dungeon_16' },
 };
@@ -101,6 +103,20 @@ export const argosPasture: StageDef = {
       attack: melee(3.2, 0.6, 1.7),
       exp: 74000, gold: [24300, 29600], gems: 51,
       bossSkills: ['argus_gaze', 'argus_club', 'argus_watch'],
+    },
+    pasture_dog: {
+      id: 'pasture_dog', name: '牧場守犬', level: 82, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x9a8a6a,
+      stats: { maxHp: 9800, atk: 680, def: 315, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 4020, gold: [279, 399],
+    },
+    peacock_harpy: {
+      id: 'peacock_harpy', name: '赫拉的孔雀妖', level: 84, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x3a8a9a,
+      stats: { maxHp: 9500, atk: 743, def: 315, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 4650, gold: [326, 465],
     },
   },
 };

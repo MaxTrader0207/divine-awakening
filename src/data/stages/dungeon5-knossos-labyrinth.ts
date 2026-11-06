@@ -67,6 +67,8 @@ const zone: ZoneDef = {
     { enemy: 'athenian_shade', x: -18, z: 1, count: 2, spread: 2 },
     { enemy: 'cretan_bull', x: 18, z: -9, count: 2, spread: 2.5 },
     { enemy: 'minotaur', x: 0, z: -22 },
+    { enemy: 'maze_bat', x: -12, z: 11, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'daedalus_apprentice', x: 6, z: 1, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 5, enemyDefense: 75, unlockAfter: 'dungeon_4' },
 };
@@ -102,6 +104,20 @@ export const knossosLabyrinth: StageDef = {
       attack: melee(2.8, 0.6, 1.7),
       exp: 7600, gold: [2600, 3400], gems: 16,
       bossSkills: ['labrys_sweep', 'bull_rush', 'labyrinth_quake'],
+    },
+    maze_bat: {
+      id: 'maze_bat', name: '迷宮蝙蝠', level: 21, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a4a5a,
+      stats: { maxHp: 1100, atk: 142, def: 75, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 230, gold: [30, 43],
+    },
+    daedalus_apprentice: {
+      id: 'daedalus_apprentice', name: '代達洛斯學徒亡魂', level: 23, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xe8e2d0,
+      stats: { maxHp: 1900, atk: 192, def: 75, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 500, gold: [63, 90],
     },
   },
 };

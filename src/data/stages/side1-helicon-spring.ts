@@ -75,6 +75,9 @@ const zone: ZoneDef = {
     { enemy: 'helicon_harpy', x: 12, z: -12, count: 2, spread: 3 },
     { enemy: 'helicon_ibex', x: -12, z: -10, count: 2, spread: 3 },
     { enemy: 'guardian_pegasus', x: 0, z: -22 },
+    { enemy: 'spring_naiad', x: 14, z: 8, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'helicon_boar', x: -12, z: -10, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'spring_snake', x: 14, z: 8, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_pegasus', unlockAfter: 'dungeon_2' },
 };
@@ -103,6 +106,27 @@ export const heliconSpring: StageDef = {
       attack: melee(2.4, 0.55, 1.7),
       exp: 1800, gold: [700, 900], gems: 10,
       bossSkills: ['pegasus_thunder', 'pegasus_gallop', 'pegasus_storm', 'pegasus_dive'],
+    },
+    spring_naiad: {
+      id: 'spring_naiad', name: '靈泉水精', level: 10, aggro: 'aggressive', shape: 'slime',
+      radius: 0.65, respawn: 12, scale: 0.92, color: 0x9ad8f0,
+      stats: { maxHp: 460, atk: 76, def: 19, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 60, gold: [13, 19],
+    },
+    helicon_boar: {
+      id: 'helicon_boar', name: '赫利孔山豬', level: 12, aggro: 'aggressive', shape: 'boar',
+      radius: 0.7, respawn: 12, scale: 1.21, color: 0x7a5a40,
+      stats: { maxHp: 1140, atk: 125, def: 26, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 160, gold: [32, 46],
+    },
+    spring_snake: {
+      id: 'spring_snake', name: '泉邊蛇', level: 11, aggro: 'aggressive', shape: 'serpent',
+      radius: 0.6, respawn: 12, scale: 1.15, color: 0x5a9a6a,
+      stats: { maxHp: 710, atk: 100, def: 22, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 120, gold: [23, 33],
     },
   },
 };

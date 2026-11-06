@@ -61,6 +61,8 @@ const zone: ZoneDef = {
     { enemy: 'nereid_wraith', x: -6, z: -2, count: 3, spread: 3 },
     { enemy: 'cetus_spawn', x: 4, z: -4, count: 2, spread: 2.5 },
     { enemy: 'cetus', x: 2, z: -23 },
+    { enemy: 'abyss_jelly', x: 6, z: 12, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'coral_colossus', x: 12, z: -6, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 19, enemyDefense: 355, unlockAfter: 'dungeon_18' },
 };
@@ -96,6 +98,20 @@ export const aethiopianCoast: StageDef = {
       attack: melee(3.0, 0.6, 1.7),
       exp: 90000, gold: [30500, 37200], gems: 57,
       bossSkills: ['cetus_wave', 'cetus_tail', 'cetus_spout'],
+    },
+    abyss_jelly: {
+      id: 'abyss_jelly', name: '深海水母', level: 91, aggro: 'aggressive', shape: 'slime',
+      radius: 0.65, respawn: 12, scale: 0.92, color: 0x5a8ad8,
+      stats: { maxHp: 7700, atk: 625, def: 355, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 2850, gold: [194, 277],
+    },
+    coral_colossus: {
+      id: 'coral_colossus', name: '珊瑚巨像', level: 94, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xe88a8a,
+      stats: { maxHp: 22700, atk: 714, def: 355, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 7240, gold: [499, 713],
     },
   },
 };

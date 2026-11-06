@@ -49,6 +49,9 @@ const zone: ZoneDef = {
     { enemy: 'lava_slime', x: -10, z: -6, count: 2, spread: 3 },
     { enemy: 'ember_frog', x: 12, z: 16, count: 2, spread: 3 },
     { enemy: 'magma_frog', x: 0, z: -21 },
+    { enemy: 'bronze_automaton', x: 6, z: 0, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'forge_hound', x: 12, z: 16, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'forge_cyclops', x: 6, z: 0, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 3, enemyDefense: 40, unlockAfter: 'dungeon_2' },
 };
@@ -77,6 +80,27 @@ export const hephaestusForge: StageDef = {
       attack: melee(2.6, 0.6, 1.8),
       exp: 2600, gold: [900, 1200], gems: 12,
       bossSkills: ['leap', 'lava_spit'],
+    },
+    bronze_automaton: {
+      id: 'bronze_automaton', name: '青銅自動人偶', level: 14, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xc8963a,
+      stats: { maxHp: 1670, atk: 101, def: 40, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 230, gold: [43, 61],
+    },
+    forge_hound: {
+      id: 'forge_hound', name: '熔爐火犬', level: 12, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0xd8582a,
+      stats: { maxHp: 750, atk: 104, def: 40, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 120, gold: [24, 35],
+    },
+    forge_cyclops: {
+      id: 'forge_cyclops', name: '熔爐獨眼學徒', level: 14, aggro: 'aggressive', shape: 'cyclops',
+      radius: 0.65, respawn: 12, scale: 0.99, color: 0x9a7a68,
+      stats: { maxHp: 1360, atk: 134, def: 40, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 210, gold: [40, 57],
     },
   },
 };

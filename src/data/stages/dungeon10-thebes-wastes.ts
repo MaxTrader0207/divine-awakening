@@ -68,6 +68,8 @@ const zone: ZoneDef = {
     { enemy: 'ismenian_serpent', x: -10, z: -8, count: 3, spread: 3 },
     { enemy: 'amphion_guardian', x: 2, z: -11, count: 1 },
     { enemy: 'sphinx', x: 0, z: -22 },
+    { enemy: 'thebes_sand_harpy', x: 7, z: 15, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'seven_shade', x: 15, z: -1, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 10, enemyDefense: 175, unlockAfter: 'dungeon_9' },
 };
@@ -103,6 +105,20 @@ export const thebesWastes: StageDef = {
       attack: melee(2.8, 0.55, 1.6),
       exp: 28000, gold: [9400, 11400], gems: 30,
       bossSkills: ['sphinx_swipe', 'sphinx_dive', 'riddle_seal'],
+    },
+    thebes_sand_harpy: {
+      id: 'thebes_sand_harpy', name: '底比斯沙妖', level: 47, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xc8a868,
+      stats: { maxHp: 4550, atk: 403, def: 175, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 1610, gold: [137, 196],
+    },
+    seven_shade: {
+      id: 'seven_shade', name: '七將攻底比斯亡魂', level: 49, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior',
+      radius: 0.55, respawn: 12, scale: 1.16, color: 0xe8e2d0,
+      stats: { maxHp: 7600, atk: 477, def: 175, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 2090, gold: [174, 248],
     },
   },
 };

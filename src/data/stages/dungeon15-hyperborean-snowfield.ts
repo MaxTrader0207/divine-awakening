@@ -63,6 +63,8 @@ const zone: ZoneDef = {
     { enemy: 'arimaspian', x: -12, z: -2, count: 2, spread: 3 },
     { enemy: 'griffin_fledgling', x: 0, z: -5, count: 2, spread: 2.5 },
     { enemy: 'griffin', x: 0, z: -23 },
+    { enemy: 'ice_golem', x: 10, z: 17, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'snow_harpy', x: 13, z: -11, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 15, enemyDefense: 275, unlockAfter: 'dungeon_14' },
 };
@@ -98,6 +100,20 @@ export const hyperboreanSnowfield: StageDef = {
       attack: melee(2.7, 0.55, 1.6),
       exp: 59000, gold: [19400, 23700], gems: 45,
       bossSkills: ['griffin_dive', 'griffin_talon', 'griffin_gale'],
+    },
+    ice_golem: {
+      id: 'ice_golem', name: '冰晶魔像', level: 74, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xbfe8ff,
+      stats: { maxHp: 15100, atk: 551, def: 275, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 4680, gold: [341, 487],
+    },
+    snow_harpy: {
+      id: 'snow_harpy', name: '北境雪妖', level: 72, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xe0ecf4,
+      stats: { maxHp: 8000, atk: 621, def: 275, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 3500, gold: [253, 362],
     },
   },
 };

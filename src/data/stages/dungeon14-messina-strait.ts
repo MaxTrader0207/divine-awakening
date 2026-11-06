@@ -66,6 +66,8 @@ const zone: ZoneDef = {
     { enemy: 'strait_serpent', x: -10, z: -2, count: 2, spread: 3 },
     { enemy: 'whirl_crab', x: 0, z: -5, count: 2, spread: 2.5 },
     { enemy: 'scylla', x: 0, z: -23 },
+    { enemy: 'strait_siren', x: 9, z: 18, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'whirl_jelly', x: 10, z: -3, count: 3, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 14, enemyDefense: 255, unlockAfter: 'dungeon_13' },
 };
@@ -101,6 +103,20 @@ export const messinaStrait: StageDef = {
       attack: melee(2.8, 0.55, 1.6),
       exp: 52000, gold: [17300, 21100], gems: 42,
       bossSkills: ['scylla_dogs', 'scylla_tentacles', 'charybdis_whirl'],
+    },
+    strait_siren: {
+      id: 'strait_siren', name: '海峽塞壬', level: 67, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x8ab8d8,
+      stats: { maxHp: 7000, atk: 581, def: 255, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 3080, gold: [230, 329],
+    },
+    whirl_jelly: {
+      id: 'whirl_jelly', name: '漩渦水母', level: 66, aggro: 'aggressive', shape: 'slime',
+      radius: 0.65, respawn: 12, scale: 0.92, color: 0x9ad8f0,
+      stats: { maxHp: 5500, atk: 458, def: 255, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 1630, gold: [121, 173],
     },
   },
 };

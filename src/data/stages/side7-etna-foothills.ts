@@ -60,6 +60,9 @@ const zone: ZoneDef = {
     { enemy: 'lava_golem', x: 12, z: -13, count: 2, spread: 3 },
     { enemy: 'etna_smith', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_briareos', x: 0, z: -23 },
+    { enemy: 'lava_hound', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'magma_slime', x: -12, z: -12, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'ash_harpy', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_briareos', unlockAfter: 'dungeon_14' },
 };
@@ -88,6 +91,27 @@ export const etnaFoothills: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 41300, gold: [14500, 17800], gems: 41,
       bossSkills: ['bri_fists', 'bri_quake', 'bri_boulders', 'bri_slam'],
+    },
+    lava_hound: {
+      id: 'lava_hound', name: '熔岩獵犬', level: 73, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0xd8481a,
+      stats: { maxHp: 8300, atk: 602, def: 234, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 3260, gold: [237, 338],
+    },
+    magma_slime: {
+      id: 'magma_slime', name: '岩漿軟泥', level: 72, aggro: 'aggressive', shape: 'slime',
+      radius: 0.65, respawn: 12, scale: 0.92, color: 0xff6a2a,
+      stats: { maxHp: 6000, atk: 502, def: 208, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 1910, gold: [138, 197],
+    },
+    ash_harpy: {
+      id: 'ash_harpy', name: '火山灰鳥妖', level: 74, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x5a4a48,
+      stats: { maxHp: 7500, atk: 643, def: 260, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 3680, gold: [268, 383],
     },
   },
 };

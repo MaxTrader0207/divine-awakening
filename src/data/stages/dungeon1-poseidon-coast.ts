@@ -57,6 +57,9 @@ const zone: ZoneDef = {
     { enemy: 'bubble_frog', x: 2, z: 0, count: 3, spread: 4 },
     { enemy: 'hermit_crab', x: -15, z: 2, count: 3, spread: 3 },
     { enemy: 'crab_king', x: -2, z: -21 },
+    { enemy: 'foam_slime', x: 2, z: 0, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'shoal_eel', x: -6, z: 12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'reef_golem', x: -15, z: 2, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 1, enemyDefense: 0 },
 };
@@ -85,6 +88,27 @@ export const poseidonCoast: StageDef = {
       attack: melee(2.4, 0.6, 1.8),
       exp: 320, gold: [150, 220], gems: 5,
       bossSkills: ['claw_slam', 'charge'],
+    },
+    foam_slime: {
+      id: 'foam_slime', name: '海沫軟泥', level: 2, aggro: 'aggressive', shape: 'slime',
+      radius: 0.65, respawn: 12, scale: 0.92, color: 0xbfe8f0,
+      stats: { maxHp: 120, atk: 19, def: 0, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 12, gold: [4, 5],
+    },
+    shoal_eel: {
+      id: 'shoal_eel', name: '淺灘海鰻', level: 4, aggro: 'aggressive', shape: 'serpent',
+      radius: 0.6, respawn: 12, scale: 1.15, color: 0x3a8aa8,
+      stats: { maxHp: 200, atk: 28, def: 0, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 25, gold: [7, 10],
+    },
+    reef_golem: {
+      id: 'reef_golem', name: '珊瑚礁石怪', level: 5, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xd88a7a,
+      stats: { maxHp: 400, atk: 26, def: 0, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 36, gold: [10, 14],
     },
   },
 };

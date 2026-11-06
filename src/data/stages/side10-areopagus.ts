@@ -61,6 +61,9 @@ const zone: ZoneDef = {
     { enemy: 'ares_shade', x: 12, z: -13, count: 2, spread: 3 },
     { enemy: 'ares_boar', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_ares', x: 0, z: -23 },
+    { enemy: 'ares_hound', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'war_priest', x: -12, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'ares_firebull', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_ares', unlockAfter: 'dungeon_20' },
 };
@@ -89,6 +92,27 @@ export const areopagus: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 75600, gold: [28700, 35000], gems: 59,
       bossSkills: ['ares_spear', 'ares_charge', 'ares_volley', 'ares_warcry'],
+    },
+    ares_hound: {
+      id: 'ares_hound', name: '阿瑞斯戰犬', level: 103, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x6a3a2a,
+      stats: { maxHp: 14500, atk: 865, def: 342, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 6080, gold: [420, 600],
+    },
+    war_priest: {
+      id: 'war_priest', name: '戰神祭司亡魂', level: 104, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xe8d0b0,
+      stats: { maxHp: 14100, atk: 926, def: 380, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 6830, gold: [474, 677],
+    },
+    ares_firebull: {
+      id: 'ares_firebull', name: '戰神火牛', level: 105, aggro: 'aggressive', shape: 'bull',
+      radius: 0.7, respawn: 12, scale: 1.21, color: 0x9a2a1a,
+      stats: { maxHp: 23300, atk: 1059, def: 418, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 8150, gold: [570, 815],
     },
   },
 };

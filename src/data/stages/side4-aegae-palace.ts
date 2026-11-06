@@ -64,6 +64,9 @@ const zone: ZoneDef = {
     { enemy: 'aegae_eel', x: -10, z: -12, count: 2, spread: 3 },
     { enemy: 'aegae_crab', x: 10, z: -14, count: 2, spread: 3 },
     { enemy: 'guardian_hippocampus', x: 0, z: -23 },
+    { enemy: 'palace_jelly', x: 11, z: 4, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'gold_palace_guard', x: 10, z: -14, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'aegae_siren', x: 11, z: 4, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_hippocampus', unlockAfter: 'dungeon_8' },
 };
@@ -92,6 +95,27 @@ export const aegaePalace: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 16000, gold: [5400, 6800], gems: 22,
       bossSkills: ['hippo_wave', 'hippo_surge', 'hippo_whirl', 'hippo_rain'],
+    },
+    palace_jelly: {
+      id: 'palace_jelly', name: '海宮水母', level: 42, aggro: 'aggressive', shape: 'slime',
+      radius: 0.65, respawn: 12, scale: 0.92, color: 0x8ad8e8,
+      stats: { maxHp: 2750, atk: 282, def: 108, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 670, gold: [62, 89],
+    },
+    gold_palace_guard: {
+      id: 'gold_palace_guard', name: '黃金宮衛像', level: 45, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xd8b04a,
+      stats: { maxHp: 9250, atk: 335, def: 169, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 1880, gold: [167, 238],
+    },
+    aegae_siren: {
+      id: 'aegae_siren', name: '海妖塞壬', level: 43, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x6ab8c8,
+      stats: { maxHp: 4000, atk: 362, def: 135, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 1290, gold: [118, 168],
     },
   },
 };

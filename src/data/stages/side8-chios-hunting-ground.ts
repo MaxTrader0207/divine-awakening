@@ -68,6 +68,9 @@ const zone: ZoneDef = {
     { enemy: 'scorp_brood', x: 12, z: -13, count: 2, spread: 3 },
     { enemy: 'orion_hound', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_scorpius', x: 0, z: -23 },
+    { enemy: 'chios_viper', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'chios_boar', x: -12, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'hunt_harpy', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_scorpius', unlockAfter: 'dungeon_16' },
 };
@@ -96,6 +99,27 @@ export const chiosHuntingGround: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 51800, gold: [18200, 22200], gems: 47,
       bossSkills: ['scorp_sting', 'scorp_spray', 'scorp_burrow', 'scorp_cloud'],
+    },
+    chios_viper: {
+      id: 'chios_viper', name: '林間毒蛇', level: 83, aggro: 'aggressive', shape: 'serpent',
+      radius: 0.6, respawn: 12, scale: 1.15, color: 0x5a7a2a,
+      stats: { maxHp: 9600, atk: 694, def: 270, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 4120, gold: [288, 411],
+    },
+    chios_boar: {
+      id: 'chios_boar', name: '希俄斯野豬', level: 85, aggro: 'aggressive', shape: 'boar',
+      radius: 0.7, respawn: 12, scale: 1.21, color: 0x5a4030,
+      stats: { maxHp: 15500, atk: 851, def: 330, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 5530, gold: [390, 557],
+    },
+    hunt_harpy: {
+      id: 'hunt_harpy', name: '獵場鷹妖', level: 84, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x7a6a4a,
+      stats: { maxHp: 9500, atk: 743, def: 300, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 4650, gold: [326, 465],
     },
   },
 };

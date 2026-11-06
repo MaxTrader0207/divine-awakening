@@ -57,6 +57,9 @@ const zone: ZoneDef = {
     { enemy: 'green_slime', x: 20, z: 12, count: 3, spread: 4 },
     { enemy: 'meadow_mushroom', x: -6, z: 20, count: 3, spread: 4 },
     { enemy: 'meadow_mushroom', x: -22, z: -16, count: 2, spread: 3 },
+    { enemy: 'meadow_boarlet', x: 20, z: 12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'pan_bat', x: -22, z: -16, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'meadow_snake', x: 20, z: 12, count: 2, spread: 3.5 }, // v1.63
   ],
 };
 
@@ -82,6 +85,27 @@ export const grassland: StageDef = {
       stats: { maxHp: 230, atk: 22, def: 3, moveSpeed: 2.4 },
       attack: melee(1.2, 0.6, 1.8),
       exp: 24, gold: [5, 9],
+    },
+    meadow_boarlet: {
+      id: 'meadow_boarlet', name: '阿卡迪亞小野豬', level: 5, aggro: 'passive', shape: 'boar',
+      radius: 0.7, respawn: 12, scale: 0.94, color: 0x8a6a48,
+      stats: { maxHp: 250, atk: 26, def: 2, moveSpeed: 3.2 },
+      attack: melee(1.4, 0.5, 1.6),
+      exp: 26, gold: [7, 10],
+    },
+    pan_bat: {
+      id: 'pan_bat', name: '牧神蝙蝠', level: 6, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x6a5a7a,
+      stats: { maxHp: 160, atk: 27, def: 1, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 17, gold: [4, 6],
+    },
+    meadow_snake: {
+      id: 'meadow_snake', name: '草原錦蛇', level: 7, aggro: 'aggressive', shape: 'serpent',
+      radius: 0.6, respawn: 12, scale: 1.26, color: 0x6a9a3a,
+      stats: { maxHp: 480, atk: 44, def: 2, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 48, gold: [9, 14],
     },
   },
 };

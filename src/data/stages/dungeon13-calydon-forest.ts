@@ -65,6 +65,8 @@ const zone: ZoneDef = {
     { enemy: 'calydon_sow', x: -12, z: -4, count: 2, spread: 3 },
     { enemy: 'curete_shade', x: 0, z: -6, count: 2, spread: 2.5 },
     { enemy: 'calydonian_boar', x: 0, z: -23 },
+    { enemy: 'calydon_harpy', x: 10, z: 18, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'oak_golem', x: 12, z: -4, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 13, enemyDefense: 235, unlockAfter: 'dungeon_12' },
 };
@@ -100,6 +102,20 @@ export const calydonForest: StageDef = {
       attack: melee(2.6, 0.55, 1.6),
       exp: 45000, gold: [15500, 18900], gems: 39,
       bossSkills: ['boar_gore', 'boar_tusk_sweep', 'boar_quake'],
+    },
+    calydon_harpy: {
+      id: 'calydon_harpy', name: '森林鳥妖', level: 62, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x6a7a4a,
+      stats: { maxHp: 6500, atk: 532, def: 235, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 2670, gold: [209, 299],
+    },
+    oak_golem: {
+      id: 'oak_golem', name: '卡呂冬古木魔像', level: 64, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0x6a5a3a,
+      stats: { maxHp: 13400, atk: 477, def: 235, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 3590, gold: [282, 403],
     },
   },
 };

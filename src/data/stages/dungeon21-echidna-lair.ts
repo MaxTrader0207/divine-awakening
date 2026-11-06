@@ -65,6 +65,8 @@ const zone: ZoneDef = {
     { enemy: 'echidna_brood', x: -12, z: -4, count: 3, spread: 3 },
     { enemy: 'empusa', x: 0, z: -5, count: 2, spread: 2.5 },
     { enemy: 'echidna', x: 0, z: -22 },
+    { enemy: 'orthrus_pup', x: 10, z: 15, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'lair_bat', x: 12, z: -8, count: 3, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 21, enemyDefense: 395, unlockAfter: 'dungeon_20' },
 };
@@ -100,6 +102,20 @@ export const echidnaLair: StageDef = {
       attack: melee(3.0, 0.55, 1.6),
       exp: 108000, gold: [38300, 46700], gems: 63,
       bossSkills: ['echidna_brood', 'echidna_venom', 'echidna_coil'],
+    },
+    orthrus_pup: {
+      id: 'orthrus_pup', name: '奧特洛斯幼犬', level: 102, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x4a3a3a,
+      stats: { maxHp: 14000, atk: 848, def: 395, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 5950, gold: [409, 584],
+    },
+    lair_bat: {
+      id: 'lair_bat', name: '巢穴蝙蝠', level: 101, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x3a2a3a,
+      stats: { maxHp: 9400, atk: 694, def: 395, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 3430, gold: [235, 336],
     },
   },
 };

@@ -78,6 +78,8 @@ const zone: ZoneDef = {
     { enemy: 'lamia', x: -12, z: -1, count: 2, spread: 3 },
     { enemy: 'erinys', x: 0, z: -4, count: 2, spread: 2.5 },
     { enemy: 'chimera', x: 0, z: -23 },
+    { enemy: 'hades_hound', x: 10, z: 18, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'styx_bat', x: 12, z: -2, count: 3, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 12, enemyDefense: 215, unlockAfter: 'dungeon_11' },
 };
@@ -113,6 +115,20 @@ export const realmOfHades: StageDef = {
       attack: melee(2.9, 0.55, 1.6),
       exp: 40000, gold: [13800, 16800], gems: 36,
       bossSkills: ['chimera_flame', 'chimera_charge', 'chimera_rain'],
+    },
+    hades_hound: {
+      id: 'hades_hound', name: '冥府獵犬', level: 57, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x3a3048,
+      stats: { maxHp: 6450, atk: 470, def: 215, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 2200, gold: [171, 244],
+    },
+    styx_bat: {
+      id: 'styx_bat', name: '冥河蝙蝠', level: 56, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x3a2a4a,
+      stats: { maxHp: 5300, atk: 387, def: 215, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 1260, gold: [99, 142],
     },
   },
 };

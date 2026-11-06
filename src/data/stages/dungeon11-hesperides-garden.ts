@@ -67,6 +67,8 @@ const zone: ZoneDef = {
     { enemy: 'siren_singer', x: -12, z: 1, count: 3, spread: 3 },
     { enemy: 'atlas_warden', x: 8, z: -9, count: 1 },
     { enemy: 'ladon', x: 0, z: -22 },
+    { enemy: 'garden_serpent', x: 8, z: 20, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'apple_hind', x: 10, z: -1, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 11, enemyDefense: 195, unlockAfter: 'dungeon_10' },
 };
@@ -102,6 +104,20 @@ export const hesperidesGarden: StageDef = {
       attack: melee(3, 0.6, 1.7),
       exp: 34000, gold: [11400, 13800], gems: 33,
       bossSkills: ['dragon_breath', 'dragon_tail', 'golden_meteor'],
+    },
+    garden_serpent: {
+      id: 'garden_serpent', name: '聖園守蛇', level: 52, aggro: 'aggressive', shape: 'serpent',
+      radius: 0.6, respawn: 12, scale: 1.15, color: 0x4a8a3a,
+      stats: { maxHp: 5800, atk: 432, def: 195, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 1820, gold: [147, 210],
+    },
+    apple_hind: {
+      id: 'apple_hind', name: '金蘋果鹿', level: 51, aggro: 'passive', shape: 'hind',
+      radius: 0.575, respawn: 12, scale: 0.72, color: 0xe8c870,
+      stats: { maxHp: 7150, atk: 374, def: 195, moveSpeed: 3.2 },
+      attack: melee(1.4, 0.5, 1.6),
+      exp: 1750, gold: [141, 202],
     },
   },
 };

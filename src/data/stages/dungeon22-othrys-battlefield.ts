@@ -65,6 +65,8 @@ const zone: ZoneDef = {
     { enemy: 'titan_soldier', x: -4, z: -5, count: 2, spread: 3 },
     { enemy: 'thunder_cyclops', x: 6, z: -4, count: 1 },
     { enemy: 'kampe', x: 0, z: -23 },
+    { enemy: 'titan_shade', x: 10, z: 16, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'storm_harpy', x: 14, z: -8, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 22, enemyDefense: 415, unlockAfter: 'dungeon_21' },
 };
@@ -100,6 +102,20 @@ export const othrysBattlefield: StageDef = {
       attack: melee(3.2, 0.6, 1.7),
       exp: 117000, gold: [42900, 52300], gems: 66,
       bossSkills: ['kampe_heads', 'kampe_sting', 'kampe_hellfire', 'kampe_leap'],
+    },
+    titan_shade: {
+      id: 'titan_shade', name: '泰坦亡靈將', level: 109, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior',
+      radius: 0.55, respawn: 12, scale: 1.16, color: 0xd8d0c0,
+      stats: { maxHp: 28900, atk: 1143, def: 415, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 9030, gold: [626, 894],
+    },
+    storm_harpy: {
+      id: 'storm_harpy', name: '風暴鷹身女妖', level: 107, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x6a7a9a,
+      stats: { maxHp: 15500, atk: 948, def: 415, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 7200, gold: [493, 705],
     },
   },
 };

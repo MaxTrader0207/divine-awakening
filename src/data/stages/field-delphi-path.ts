@@ -71,6 +71,8 @@ const zone: ZoneDef = {
     { enemy: 'delphi_harpy', x: -14, z: -6, count: 3, spread: 4 },
     { enemy: 'python_brood', x: 4, z: -14, count: 2, spread: 3 },
     { enemy: 'great_python', x: 14, z: -20 },
+    { enemy: 'parnassus_statue', x: -12, z: 12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'oracle_bat', x: 4, z: -14, count: 3, spread: 3.5 }, // v1.63
   ],
 };
 
@@ -105,6 +107,20 @@ export const delphiPath: StageDef = {
       attack: melee(2.4, 0.55, 1.7),
       exp: 2600, gold: [900, 1200], gems: 8,
       bossSkills: ['venom_spit', 'charge', 'ground_slam'],
+    },
+    parnassus_statue: {
+      id: 'parnassus_statue', name: '帕納索斯石像', level: 13, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xd8d0b8,
+      stats: { maxHp: 1520, atk: 94, def: 32, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 200, gold: [37, 53],
+    },
+    oracle_bat: {
+      id: 'oracle_bat', name: '神諭洞蝠', level: 10, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a4a6a,
+      stats: { maxHp: 460, atk: 76, def: 21, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 60, gold: [13, 19],
     },
   },
 };

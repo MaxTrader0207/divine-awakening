@@ -71,6 +71,8 @@ const zone: ZoneDef = {
     { enemy: 'nemean_wolf', x: 14, z: -3, count: 3, spread: 3 },
     { enemy: 'ocypete_harpy', x: -2, z: -8, count: 2, spread: 3 },
     { enemy: 'nemean_lion', x: 0, z: -21 },
+    { enemy: 'nemean_cub', x: 9, z: 15, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'valley_viper', x: -14, z: -4, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 7, enemyDefense: 115, unlockAfter: 'dungeon_6' },
 };
@@ -106,6 +108,20 @@ export const nemeanValley: StageDef = {
       attack: melee(2.8, 0.55, 1.6),
       exp: 14000, gold: [4800, 6000], gems: 22,
       bossSkills: ['lion_claw', 'lion_pounce', 'lion_roar'],
+    },
+    nemean_cub: {
+      id: 'nemean_cub', name: '涅墨亞幼獅', level: 34, aggro: 'aggressive', shape: 'lion',
+      radius: 0.6, respawn: 12, scale: 0.91, color: 0xd8a858,
+      stats: { maxHp: 5100, atk: 329, def: 115, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 1050, gold: [109, 156],
+    },
+    valley_viper: {
+      id: 'valley_viper', name: '山谷毒蛇', level: 31, aggro: 'aggressive', shape: 'serpent',
+      radius: 0.6, respawn: 12, scale: 1.15, color: 0x8a7a3a,
+      stats: { maxHp: 2950, atk: 248, def: 115, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 710, gold: [75, 107],
     },
   },
 };

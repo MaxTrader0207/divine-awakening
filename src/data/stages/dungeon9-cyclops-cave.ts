@@ -65,6 +65,8 @@ const zone: ZoneDef = {
     { enemy: 'cyclops_smith', x: -12, z: -4, count: 2, spread: 3 },
     { enemy: 'laestrygonian', x: 0, z: -9, count: 1 },
     { enemy: 'polyphemus', x: 0, z: -22 },
+    { enemy: 'cave_bat_swarm', x: 8, z: 13, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'cyclops_sheepdog', x: 12, z: -6, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 9, enemyDefense: 155, unlockAfter: 'dungeon_8' },
 };
@@ -100,6 +102,20 @@ export const cyclopsCave: StageDef = {
       attack: melee(3, 0.6, 1.8),
       exp: 23000, gold: [7600, 9400], gems: 28,
       bossSkills: ['club_sweep', 'boulder_toss', 'cyclops_stomp'],
+    },
+    cave_bat_swarm: {
+      id: 'cave_bat_swarm', name: '洞窟蝙蝠群', level: 41, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a4a3a,
+      stats: { maxHp: 2650, atk: 272, def: 155, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 640, gold: [59, 85],
+    },
+    cyclops_sheepdog: {
+      id: 'cyclops_sheepdog', name: '獨眼巨人的牧犬', level: 43, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x8a7a6a,
+      stats: { maxHp: 4250, atk: 344, def: 155, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 1170, gold: [107, 153],
     },
   },
 };

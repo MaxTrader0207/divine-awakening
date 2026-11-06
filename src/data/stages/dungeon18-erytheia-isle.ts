@@ -64,6 +64,8 @@ const zone: ZoneDef = {
     { enemy: 'erytheia_hound', x: -12, z: -2, count: 3, spread: 3 },
     { enemy: 'giant_herder', x: -2, z: -7, count: 1 },
     { enemy: 'geryon', x: 0, z: -23 },
+    { enemy: 'giant_shade', x: 6, z: 18, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'sunset_harpy', x: 6, z: -4, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 18, enemyDefense: 335, unlockAfter: 'dungeon_17' },
 };
@@ -99,6 +101,20 @@ export const erytheiaIsle: StageDef = {
       attack: melee(3.0, 0.6, 1.7),
       exp: 82000, gold: [27200, 33200], gems: 54,
       bossSkills: ['geryon_spears', 'geryon_sweep', 'geryon_leap'],
+    },
+    giant_shade: {
+      id: 'giant_shade', name: '巨人戰士亡魂', level: 89, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior',
+      radius: 0.55, respawn: 12, scale: 1.16, color: 0xe8e2d0,
+      stats: { maxHp: 17100, atk: 874, def: 335, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 6010, gold: [410, 586],
+    },
+    sunset_harpy: {
+      id: 'sunset_harpy', name: '夕陽鳥妖', level: 87, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xe88a4a,
+      stats: { maxHp: 10200, atk: 769, def: 335, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 4950, gold: [337, 481],
     },
   },
 };

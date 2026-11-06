@@ -65,6 +65,7 @@ const zone: ZoneDef = {
     { enemy: 'skeleton_mage', x: -12, z: -8, count: 3, spread: 4 },
     { enemy: 'skeleton_warrior', x: 4, z: -12, count: 2, spread: 3 },
     { enemy: 'skeleton_lord', x: 0, z: -24 },
+    { enemy: 'dodona_wolf', x: 8, z: 18, count: 2, spread: 3.5 }, // v1.63
   ],
 };
 
@@ -106,6 +107,13 @@ export const dodonaGrove: StageDef = {
       attack: melee(2.2, 0.6, 1.6),
       exp: 4200, gold: [1500, 2000], gems: 10,
       bossSkills: ['charge', 'ground_slam'],
+    },
+    dodona_wolf: {
+      id: 'dodona_wolf', name: '多多納林狼', level: 18, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x6a6a5a,
+      stats: { maxHp: 1280, atk: 148, def: 32, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 280, gold: [43, 61],
     },
   },
 };

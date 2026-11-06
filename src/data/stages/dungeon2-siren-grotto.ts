@@ -50,6 +50,9 @@ const zone: ZoneDef = {
     { enemy: 'coral_slime', x: 12, z: -4, count: 2, spread: 3 },
     { enemy: 'cave_bat', x: 14, z: 18, count: 2, spread: 3 },
     { enemy: 'tide_golem', x: 6, z: -21 },
+    { enemy: 'grotto_crab', x: -4, z: 0, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'siren_maid', x: 14, z: 18, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'cave_eel', x: -4, z: 0, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 2, enemyDefense: 18, unlockAfter: 'dungeon_1' },
 };
@@ -78,6 +81,27 @@ export const sirenGrotto: StageDef = {
       attack: melee(2.6, 0.7, 2),
       exp: 950, gold: [400, 520], gems: 8,
       bossSkills: ['ground_slam', 'tide_rain'],
+    },
+    grotto_crab: {
+      id: 'grotto_crab', name: '海蝕洞寄居蟹', level: 9, aggro: 'aggressive', shape: 'crab',
+      radius: 0.7, respawn: 12, scale: 1.5, color: 0x9a6a5a,
+      stats: { maxHp: 1200, atk: 80, def: 18, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 130, gold: [27, 38],
+    },
+    siren_maid: {
+      id: 'siren_maid', name: '賽蓮侍女', level: 8, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xc8a8d8,
+      stats: { maxHp: 540, atk: 82, def: 18, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 92, gold: [20, 29],
+    },
+    cave_eel: {
+      id: 'cave_eel', name: '洞窟海鰻', level: 7, aggro: 'aggressive', shape: 'serpent',
+      radius: 0.6, respawn: 12, scale: 1.15, color: 0x2a6a7a,
+      stats: { maxHp: 330, atk: 60, def: 18, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 43, gold: [12, 17],
     },
   },
 };

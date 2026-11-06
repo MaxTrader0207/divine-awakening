@@ -58,6 +58,9 @@ const zone: ZoneDef = {
     { enemy: 'thracian_wolf', x: 12, z: -13, count: 2, spread: 3 },
     { enemy: 'boread', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_boreas', x: 0, z: -23 },
+    { enemy: 'frost_statue', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'thrace_snow_boar', x: -12, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'ice_cave_bat', x: 13, z: 6, count: 3, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_boreas', unlockAfter: 'dungeon_12' },
 };
@@ -86,6 +89,27 @@ export const thracianPeak: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 31500, gold: [11600, 14200], gems: 35,
       bossSkills: ['boreas_breath', 'boreas_blizzard', 'boreas_gust', 'boreas_frost'],
+    },
+    frost_statue: {
+      id: 'frost_statue', name: '冰晶石像', level: 65, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xcfeaff,
+      stats: { maxHp: 14200, atk: 482, def: 275, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 3620, gold: [287, 410],
+    },
+    thrace_snow_boar: {
+      id: 'thrace_snow_boar', name: '色雷斯雪豬', level: 64, aggro: 'aggressive', shape: 'boar',
+      radius: 0.7, respawn: 12, scale: 1.21, color: 0xd8d8d0,
+      stats: { maxHp: 10900, atk: 636, def: 242, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 3340, gold: [262, 374],
+    },
+    ice_cave_bat: {
+      id: 'ice_cave_bat', name: '冰窟蝙蝠', level: 62, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x8ab8d8,
+      stats: { maxHp: 4900, atk: 431, def: 176, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 1460, gold: [114, 163],
     },
   },
 };

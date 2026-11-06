@@ -69,6 +69,8 @@ const zone: ZoneDef = {
     { enemy: 'lerna_toad', x: -14, z: 0, count: 2, spread: 3 },
     { enemy: 'aello_harpy', x: -6, z: -9, count: 2, spread: 3 },
     { enemy: 'hydra', x: 0, z: -21 },
+    { enemy: 'swamp_slime', x: 6, z: 3, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'marsh_crab', x: 13, z: -6, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 4, enemyDefense: 55, unlockAfter: 'dungeon_3' },
 };
@@ -104,6 +106,20 @@ export const lernaSwamp: StageDef = {
       attack: melee(3, 0.6, 1.8),
       exp: 5400, gold: [1900, 2500], gems: 14,
       bossSkills: ['venom_spit', 'hydra_heads', 'poison_rain'],
+    },
+    swamp_slime: {
+      id: 'swamp_slime', name: '沼澤毒泥', level: 16, aggro: 'aggressive', shape: 'slime',
+      radius: 0.65, respawn: 12, scale: 0.92, color: 0x7a9a3a,
+      stats: { maxHp: 810, atk: 112, def: 55, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 140, gold: [22, 31],
+    },
+    marsh_crab: {
+      id: 'marsh_crab', name: '沼澤鉗蟹', level: 19, aggro: 'aggressive', shape: 'crab',
+      radius: 0.7, respawn: 12, scale: 1.5, color: 0x5a6a3a,
+      stats: { maxHp: 2570, atk: 140, def: 55, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 460, gold: [65, 93],
     },
   },
 };

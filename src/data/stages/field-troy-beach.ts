@@ -59,6 +59,8 @@ const zone: ZoneDef = {
     { enemy: 'troy_serpent', x: 10, z: -14, count: 3, spread: 4 },
     { enemy: 'trojan_shade', x: -18, z: -16, count: 2, spread: 3 },
     { enemy: 'troy_cetus', x: 18, z: 8 },
+    { enemy: 'trojan_priest', x: -4, z: -8, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'troy_wall_guard', x: -18, z: -16, count: 2, spread: 3.5 }, // v1.63
   ],
 };
 
@@ -93,6 +95,20 @@ export const troyBeach: StageDef = {
       attack: melee(2.6, 0.55, 1.7),
       exp: 3900, gold: [1300, 1800], gems: 10,
       bossSkills: ['cetus_wave', 'tide_rain', 'cetus_tail'],
+    },
+    trojan_priest: {
+      id: 'trojan_priest', name: '特洛伊祭司亡魂', level: 19, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xe8e2d0,
+      stats: { maxHp: 1280, atk: 163, def: 39, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 360, gold: [51, 73],
+    },
+    troy_wall_guard: {
+      id: 'troy_wall_guard', name: '特洛伊城牆石衛', level: 20, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xb8a888,
+      stats: { maxHp: 2800, atk: 146, def: 49, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 480, gold: [66, 95],
     },
   },
 };

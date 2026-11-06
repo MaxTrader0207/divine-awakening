@@ -59,6 +59,9 @@ const zone: ZoneDef = {
     { enemy: 'spartan_shade', x: 12, z: -13, count: 2, spread: 3 },
     { enemy: 'terror_shade', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_phobos', x: 0, z: -23 },
+    { enemy: 'spartan_scout', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'dread_statue', x: -12, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'dread_priest', x: 13, z: 6, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_phobos', unlockAfter: 'dungeon_18' },
 };
@@ -87,6 +90,27 @@ export const spartaPhobosShrine: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 63000, gold: [22900, 27900], gems: 53,
       bossSkills: ['phobos_reap', 'phobos_terror', 'phobos_shadow', 'phobos_nightfall'],
+    },
+    spartan_scout: {
+      id: 'spartan_scout', name: '斯巴達斥候亡魂', level: 93, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_rogue',
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xd8d0e0,
+      stats: { maxHp: 11500, atk: 778, def: 306, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 5060, gold: [347, 496],
+    },
+    dread_statue: {
+      id: 'dread_statue', name: '恐懼石像', level: 95, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0x4a4058,
+      stats: { maxHp: 23700, atk: 716, def: 425, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 7300, gold: [508, 726],
+    },
+    dread_priest: {
+      id: 'dread_priest', name: '恐懼祭司亡魂', level: 94, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_mage', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0xc8b8e0,
+      stats: { maxHp: 11300, atk: 832, def: 340, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 5690, gold: [392, 560],
     },
   },
 };

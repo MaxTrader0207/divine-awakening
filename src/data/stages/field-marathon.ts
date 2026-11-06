@@ -62,6 +62,8 @@ const zone: ZoneDef = {
     { enemy: 'marathon_ox', x: 14, z: 14, count: 3, spread: 4 },
     { enemy: 'marathon_hoplite', x: 18, z: -6, count: 2, spread: 3 },
     { enemy: 'marathon_bull', x: 0, z: -20 },
+    { enemy: 'battlefield_dog', x: -14, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'stymphalian_bird', x: 18, z: -6, count: 2, spread: 3.5 }, // v1.63
   ],
 };
 
@@ -96,6 +98,20 @@ export const marathonField: StageDef = {
       attack: melee(2.5, 0.55, 1.7),
       exp: 3300, gold: [1100, 1500], gems: 9,
       bossSkills: ['bull_rush', 'lava_spit', 'ground_slam'],
+    },
+    battlefield_dog: {
+      id: 'battlefield_dog', name: '戰場野狗', level: 14, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x7a6a52,
+      stats: { maxHp: 890, atk: 112, def: 29, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 170, gold: [31, 44],
+    },
+    stymphalian_bird: {
+      id: 'stymphalian_bird', name: '斯廷法利斯怪鳥', level: 16, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x8a8a9a,
+      stats: { maxHp: 1080, atk: 139, def: 33, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 250, gold: [40, 57],
     },
   },
 };

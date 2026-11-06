@@ -74,6 +74,8 @@ const zone: ZoneDef = {
     { enemy: 'petrified_warrior', x: -10, z: -5, count: 2, spread: 3 },
     { enemy: 'graeae_witch', x: 9, z: -10, count: 2, spread: 2.5 },
     { enemy: 'medusa', x: 0, z: -22 },
+    { enemy: 'gorgon_bat', x: 9, z: 12, count: 3, spread: 3.5 }, // v1.63
+    { enemy: 'petrified_crab', x: 6, z: -1, count: 2, spread: 3.5 }, // v1.63
   ],
   dungeon: { floor: 8, enemyDefense: 135, unlockAfter: 'dungeon_7' },
 };
@@ -109,6 +111,20 @@ export const gorgonIsle: StageDef = {
       attack: melee(2.6, 0.55, 1.6),
       exp: 18000, gold: [6000, 7600], gems: 25,
       bossSkills: ['gorgon_gaze', 'snake_hair', 'gorgon_arrows'],
+    },
+    gorgon_bat: {
+      id: 'gorgon_bat', name: '戈爾貢夜蝠', level: 36, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x4a5a4a,
+      stats: { maxHp: 2300, atk: 251, def: 135, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 540, gold: [54, 77],
+    },
+    petrified_crab: {
+      id: 'petrified_crab', name: '石化巨蟹', level: 39, aggro: 'aggressive', shape: 'crab',
+      radius: 0.7, respawn: 12, scale: 1.5, color: 0x9a9a90,
+      stats: { maxHp: 7150, atk: 280, def: 135, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 1420, gold: [135, 193],
     },
   },
 };

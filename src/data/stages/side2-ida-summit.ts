@@ -70,6 +70,9 @@ const zone: ZoneDef = {
     { enemy: 'ida_harpy', x: 12, z: 14, count: 2, spread: 3 },
     { enemy: 'ida_boar', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_aetos', x: 0, z: -23 },
+    { enemy: 'ida_wolf', x: 14, z: -6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'summit_statue', x: -12, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'crag_bat', x: 14, z: -6, count: 3, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_aetos', unlockAfter: 'dungeon_4' },
 };
@@ -98,6 +101,27 @@ export const idaSummit: StageDef = {
       attack: melee(2.4, 0.5, 1.6),
       exp: 5300, gold: [1800, 2400], gems: 13,
       bossSkills: ['aetos_gale', 'aetos_feathers', 'aetos_dive', 'aetos_cyclone'],
+    },
+    ida_wolf: {
+      id: 'ida_wolf', name: '伊達山狼', level: 23, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x8a8a7a,
+      stats: { maxHp: 2000, atk: 183, def: 54, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 460, gold: [57, 82],
+    },
+    summit_statue: {
+      id: 'summit_statue', name: '山巔石像', level: 25, aggro: 'aggressive', shape: 'golem',
+      radius: 0.7, respawn: 12, scale: 1.41, color: 0xc8c4b8,
+      stats: { maxHp: 4150, atk: 186, def: 75, moveSpeed: 2.3 },
+      attack: melee(1.6, 0.6, 1.9),
+      exp: 680, gold: [85, 122],
+    },
+    crag_bat: {
+      id: 'crag_bat', name: '岩洞蝙蝠', level: 22, aggro: 'aggressive', shape: 'bat',
+      radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a5a5a,
+      stats: { maxHp: 1300, atk: 148, def: 48, moveSpeed: 4.4 },
+      attack: melee(1.2, 0.35, 1.1),
+      exp: 250, gold: [32, 46],
     },
   },
 };

@@ -71,6 +71,9 @@ const zone: ZoneDef = {
     { enemy: 'colchis_serpent', x: 13, z: -12, count: 2, spread: 3 },
     { enemy: 'colchis_bull', x: -12, z: -12, count: 2, spread: 3 },
     { enemy: 'guardian_chrysomallos', x: 0, z: -22 },
+    { enemy: 'colchis_hound', x: 14, z: 6, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'spartoi', x: -12, z: -12, count: 2, spread: 3.5 }, // v1.63
+    { enemy: 'grove_harpy', x: 14, z: 6, count: 2, spread: 3.5 }, // v1.63
   ],
   side: { guardian: 'guardian_chrysomallos', unlockAfter: 'dungeon_6' },
 };
@@ -99,6 +102,27 @@ export const colchisGrove: StageDef = {
       attack: melee(2.3, 0.55, 1.7),
       exp: 9700, gold: [3400, 4400], gems: 18,
       bossSkills: ['ram_charge', 'ram_radiance', 'ram_sunfall', 'ram_quake'],
+    },
+    colchis_hound: {
+      id: 'colchis_hound', name: '科爾基斯獵犬', level: 33, aggro: 'aggressive', shape: 'hound',
+      radius: 0.55, respawn: 12, scale: 1.1, color: 0x7a5a3a,
+      stats: { maxHp: 3100, atk: 266, def: 86, moveSpeed: 5.0 },
+      attack: melee(1.3, 0.35, 1.2),
+      exp: 780, gold: [82, 117],
+    },
+    spartoi: {
+      id: 'spartoi', name: '龍牙戰士', level: 35, aggro: 'aggressive', shape: 'skeleton', model: 'skeleton_warrior',
+      radius: 0.55, respawn: 12, scale: 1.16, color: 0xe8e2d0,
+      stats: { maxHp: 5100, atk: 348, def: 105, moveSpeed: 3.0 },
+      attack: melee(1.7, 0.6, 1.8),
+      exp: 1060, gold: [111, 159],
+    },
+    grove_harpy: {
+      id: 'grove_harpy', name: '聖林鳥妖', level: 33, aggro: 'aggressive', shape: 'harpy', ranged: true,
+      radius: 0.55, respawn: 12, scale: 1.05, color: 0x8aa858,
+      stats: { maxHp: 2950, atk: 279, def: 95, moveSpeed: 2.6 },
+      attack: { range: 7, windup: 0.9, cooldown: 2.4 },
+      exp: 860, gold: [90, 129],
     },
   },
 };
