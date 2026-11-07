@@ -54,6 +54,9 @@ function renderAchievements(ctx: CollectContext): HTMLElement[] {
         : h('span', {}, ''),
     ]),
   ];
+  // v1.76 看過結局之後可以重看
+  if (s.endingSeen)
+    out.push(h('div', { class: 'card' }, [h('h4', {}, '🎬 神格覺醒・終章'), h('p', {}, '打倒獄龍坎佩之後的結局與製作名單。'), h('button', { class: 'go small', onclick: () => bus.emit('ending:replay') }, '重看結局')]));
   // 依分類；可領的排前面，已領的排最後
   for (const cat of Object.keys(ACH_CATS) as AchievementCat[]) {
     const list = ACHIEVEMENTS.filter((a) => a.cat === cat);

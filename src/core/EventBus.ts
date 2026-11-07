@@ -16,6 +16,8 @@ export interface GameEvents {
   banner: { text: string };
   /** 無盡試煉塔：從第 floor 層開始（地圖頁） */
   'tower:start': { floor: number };
+  /** v1.76 重看結局（選單「收藏」） */
+  'ending:replay': void;
   'menu:open': { tab?: MenuTab };
   /** HUD 暫停鈕 */
   'pause:toggle': void;

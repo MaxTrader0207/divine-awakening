@@ -5,6 +5,7 @@ import { bus } from '@/core/EventBus';
 import type { GameState } from '@/core/GameState';
 import type { ZoneDef } from '@/data/types';
 import { expToNext } from '@/data/player';
+import { divExpToNext, divinityOpen, freePoints } from '@/systems/Divinity';
 import type { Player } from '@/entities/Player';
 import { IS_DESKTOP, KEY_LABELS, type InputManager, type ActionKey } from '@/input/InputManager';
 import type { SkillSlot } from '@/data/types';
@@ -102,7 +103,7 @@ export class Hud {
         h('div', { class: 'status-head' }, [(this.els.title = h('b', { class: 'status-title' }))]),
         h('div', { class: 'bar-row hp' }, [h('em', { class: 'bar-tag' }, 'HP'), h('div', { class: 'bar hp' }, [(this.els.hpTrail = h('u')), (this.els.hpFill = h('i')), (this.els.hpText = h('span'))])]),
         h('div', { class: 'bar-row' }, [h('em', { class: 'bar-tag' }, skills.usesRage ? '怒' : 'MP'), h('div', { class: 'bar mp' }, [(this.els.mpFill = h('i')), (this.els.mpText = h('span'))])]),
-        h('div', { class: 'bar-row exp' }, [h('em', { class: 'bar-tag' }, 'EXP'), h('div', { class: 'bar exp' }, [(this.els.expFill = h('i'))]), (this.els.expText = h('span', { class: 'exp-pct' }))]),
+        h('div', { class: 'bar-row exp' }, [(this.els.expTag = h('em', { class: 'bar-tag' }, 'EXP')), h('div', { class: 'bar exp' }, [(this.els.expFill = h('i'))]), (this.els.expText = h('span', { class: 'exp-pct' }))]),
       ]),
     ]);
     this.els.buffs = h('div', { class: 'buffs' });
@@ -628,7 +629,7 @@ export class Hud {
   }
 
   refreshBadge() {
-    const n = claimableCount(this.state.daily) + claimableAchievements(this.state) + (canClaimLogin(this.state) ? 1 : 0);
+    const n = claimableCount(this.state.daily) + claimableAchievements(this.state) + (canClaimLogin(this.state) ? 1 : 0) + (divinityOpen(this.state.level) && freePoints(this.state.divinity) > 0 ? 1 : 0);
     this.els.badge.textContent = n ? String(n) : '';
     this.els.badge.style.display = n ? 'flex' : 'none';
   }
@@ -641,9 +642,13 @@ export class Hud {
     this.els.title.textContent = s.playerName;
     this.els.zoneName.textContent = zone ? (zone.kind === 'dungeon' ? zone.name : zone.subtitle.split('・')[0]) : '';
     this.refreshBars();
-    const expR = Math.min(1, s.exp / expToNext(s.level));
+    // v1.76 滿級後：經驗條改顯示神格等級進度（紫色）
+    const div = divinityOpen(s.level);
+    const expR = div ? Math.min(1, s.divinity.exp / divExpToNext(s.divinity.lv)) : Math.min(1, s.exp / expToNext(s.level));
+    this.root.classList.toggle('divine', div);
+    this.els.expTag.textContent = div ? '神格' : 'EXP';
     this.els.avatar.style.setProperty('--exp', String(expR));
-    this.els.expText.textContent = `${Math.floor(expR * 100)}%`;
+    this.els.expText.textContent = div ? `Lv.${s.divinity.lv}・${Math.floor(expR * 100)}%` : `${Math.floor(expR * 100)}%`;
     this.els.expFill.style.width = `${expR * 100}%`;
     this.root.classList.toggle('near-level', expR >= 0.9);
     this.els.gold.textContent = String(s.gold);

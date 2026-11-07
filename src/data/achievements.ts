@@ -83,6 +83,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'tower10', cat: 'story', icon: '🗼', name: '試煉者', desc: '無盡試煉塔打到第 10 層', gems: 10, progress: (s) => [Math.min(s.tower.best, 10), 10] },
   { id: 'tower30', cat: 'story', icon: '🏯', name: '登塔者', desc: '無盡試煉塔打到第 30 層', gems: 20, progress: (s) => [Math.min(s.tower.best, 30), 30] },
   { id: 'tower60', cat: 'story', icon: '⛰', name: '奧林帕斯之巔', desc: '無盡試煉塔打到第 60 層', gems: 40, progress: (s) => [Math.min(s.tower.best, 60), 60] },
+  { id: 'div10', cat: 'story', icon: '✨', name: '神格初醒', desc: '神格等級到 Lv.10（滿級後的經驗會累積神格）', gems: 20, progress: (s) => [Math.min(s.divinity.lv, 10), 10] },
+  { id: 'div50', cat: 'story', icon: '🌌', name: '半神', desc: '神格等級到 Lv.50', gems: 50, progress: (s) => [Math.min(s.divinity.lv, 50), 50] },
   { id: 'elites', cat: 'story', icon: '🗺', name: '野外霸主', desc: `打倒全部 ${ELITE_FIELDS.length} 張野外的菁英首領`, gems: 15, progress: (s) => [ELITE_FIELDS.filter((z) => (s.clears[z]?.count ?? 0) > 0).length, ELITE_FIELDS.length] },
 
   // ---- 收集 ----

@@ -1,3 +1,4 @@
+import { applyDivinity } from './Divinity';
 import type { EquipSlot, Rarity, Stats } from '@/data/types';
 import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore , CRIT_KEYS, CRIT_RARITY_DAMP, CRIT_RATE_MAX, CRIT_DMG_MAX } from '@/data/items';
 import { statsForLevel } from '@/data/player';
@@ -27,6 +28,8 @@ export interface InventoryState {
   heroClass?: import('@/data/classes').HeroClass;
   /** v1.64 怪物圖鑑：點數換成永久加成（攻擊、生命、防禦 %） */
   codex?: Record<string, number>;
+  /** v1.76 神格等級：點數分配的永久加成 */
+  divinity?: import('./Divinity').DivinityState;
 }
 
 /** 背包格數（v1.28 從 40 擴充到 100） */
@@ -64,6 +67,8 @@ export function computeStats(s: InventoryState): Stats {
     st.maxHp *= 1 + b.maxHp;
     st.def *= 1 + b.def;
   }
+  // v1.76 神格等級（滿級後的點數分配）
+  applyDivinity(st, s.divinity);
   st.maxHp = Math.round(st.maxHp);
   st.maxMp = Math.round(st.maxMp);
   // 怒氣職業：上限固定 100（裝備的 MP 不加怒氣）

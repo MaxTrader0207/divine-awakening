@@ -11,6 +11,8 @@ import type { ZoneId } from './types';
 import { SET_4, SET_6 } from './gearSets';
 import { TOWER, TOWER_AFFIXES, bossGems } from '@/systems/TrialTower';
 import { GEM_SHOP } from '@/systems/GemShop';
+import { DIVINITY, DIV_STATS, divBonusText } from '@/systems/Divinity';
+import { MAX_LEVEL } from '@/systems/Progression';
 import { BOND_PERKS, COMPANION_SKILLS, DUO, FEED, GROWTH } from './companionGrowth';
 import { CODEX_BONUS_MAX, CODEX_ENTRIES, CODEX_TIERS } from './codex';
 import { ACHIEVEMENTS } from './achievements';
@@ -210,6 +212,15 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         `**層數詞綴**（第 6 層起；20 層起每層 1 個、40 層起每層 2 個）：${Object.values(TOWER_AFFIXES).map((a) => `${a.icon}${a.name}（${a.desc}）`).join('、')}。不利的詞綴層通過時有額外金幣。同一週同一層的怪和詞綴大家都一樣，排行比的是同一座塔。`,
         `每 ${TOWER.checkpoint} 層是檢查點，下次可以從最高紀錄以下最近的檢查點開始。本週第一次打過首領層有鑽石（第 5 層 ${bossGems(5)}💎，越高越多），每週一 00:00 重置本週紀錄。`,
         '登入雲端存檔的話，每次結算會自動更新「排行 → 🗼 試煉塔」的本週排行；試煉塔開放後，每日任務也可能出現「在試煉塔打過 5 層」。',
+      ],
+    },
+    {
+      icon: '✨',
+      title: '破關後：結局與神格等級',
+      lines: [
+        `打倒最終首領**${ZONES[DUNGEON_ORDER[DUNGEON_ORDER.length - 1]].name}**的首領之後會播結局與製作名單，之後可以在「選單 → 收藏」重看。`,
+        `等級到 Lv.${MAX_LEVEL} 之後，打怪的經驗會累積成**神格等級**（左上經驗條變成紫色的「神格」）。每升一級得到 1 點神格點數和 ${DIVINITY.gems}💎，第 1 級要 ${DIVINITY.base.toLocaleString()} 經驗，之後每級多 ${DIVINITY.growth * 100}%。`,
+        `到「選單 → 裝備」的「✨ 神格等級」卡分配點數：${DIV_STATS.map((d) => `${d.icon}${d.name} 每點 ${divBonusText(d.id, 1)}（上限 ${d.cap} 點）`).join('、')}。投錯了可以花 ${DIVINITY.resetCost}💎 全部退回重配。爆擊率、爆擊傷害仍然有上限（${Math.round(CRIT_RATE_MAX * 100)}%、×${CRIT_DMG_MAX}）。`,
       ],
     },
     {

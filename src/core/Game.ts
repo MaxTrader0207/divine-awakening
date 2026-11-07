@@ -57,6 +57,8 @@ import { rewardText } from '@/data/tutorial';
 import { StageClearScreen, type ClearInfo } from '@/ui/StageClearScreen';
 import { finishClear, type BossFight } from '@/systems/StageClear';
 import { CLASS_CLEAR } from '@/data/stageClear';
+import { EndingScreen, type EndingInfo } from '@/ui/EndingScreen';
+import { DIVINITY, addDivExp, divinityOpen } from '@/systems/Divinity';
 import { GuideArrow } from '@/world/GuideArrow';
 import { consume, cannotUse } from '@/systems/Consumables';
 import type { BuffStat } from '@/data/consumables';
@@ -139,6 +141,9 @@ export class Game {
   private lastDay = localDate();
   /** 破關畫面（v1.34）：首領戰紀錄 → 慢動作特寫 → 結算畫面 */
   private clearScreen!: StageClearScreen;
+  private endingScreen!: EndingScreen;
+  /** v1.76 破關畫面關掉後要播結局 */
+  private endingPending = false;
   private bossFight: BossFight | null = null;
   private clearSeq: { t: number; info: ClearInfo } | null = null;
   /** 特寫時暫時藏起來的名牌、地名（Sprite）與敵人 */
@@ -373,14 +378,13 @@ export class Game {
 
     this.clearScreen = new StageClearScreen(uiRoot, {
       close: () => this.endClearScreen(),
-      goNext: (id) => {
-        this.endClearScreen();
-        void this.changeZone(id);
-      },
-      goTown: () => {
-        this.endClearScreen();
-        void this.changeZone('town');
-      },
+      goNext: (id) => this.endClearScreen(() => void this.changeZone(id)),
+      goTown: () => this.endClearScreen(() => void this.changeZone('town')),
+    });
+    this.endingScreen = new EndingScreen(uiRoot);
+    bus.on('ending:replay', () => {
+      this.menu.close();
+      this.endingScreen.show(this.endingInfo());
     });
 
     this.fadeEl = document.createElement('div');
@@ -567,7 +571,7 @@ export class Game {
           }
         });
       }
-    } else if (this.clearScreen.open) {
+    } else if (this.clearScreen.open || this.endingScreen.visible) {
       this.showcaseFrame(Math.min(0.05, realDt));
     } else {
       this.quality.sample(realDt);
@@ -670,8 +674,42 @@ export class Game {
     this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
   }
 
-  private endClearScreen() {
+  private endClearScreen(after?: () => void) {
     this.clearScreen.hide();
+    // v1.76 第一次打倒最終首領：破關畫面之後播結局（特寫鏡頭留著當背景）
+    if (this.endingPending) {
+      this.endingPending = false;
+      this.state.endingSeen = true;
+      this.persist();
+      this.endingScreen.show(this.endingInfo(), () => {
+        this.restoreShowcase();
+        after?.();
+      });
+      return;
+    }
+    this.restoreShowcase();
+    after?.();
+  }
+
+  /** 結局畫面要的冒險紀錄 */
+  private endingInfo(): EndingInfo {
+    const s = this.state;
+    return {
+      heroClass: s.heroClass,
+      playerName: s.playerName,
+      level: s.level,
+      playTime: s.stats.playTime,
+      kills: s.stats.kills,
+      deaths: s.stats.deaths,
+      bossKills: s.stats.bossKills,
+      companions: s.companions.owned.length,
+      mythics: s.stats.mythics,
+      towerBest: s.tower.best,
+    };
+  }
+
+  /** 關掉破關特寫：鏡頭回來、名牌與敵人顯示 */
+  private restoreShowcase() {
     this.rig.setCinematic(false);
     for (const o of this.hiddenSprites) o.visible = true;
     this.hiddenSprites = [];
@@ -1548,6 +1586,11 @@ export class Game {
   /** 加經驗，處理升級（回滿血、特效、升級事件） */
   private gainExp(exp: number) {
     const s = this.state;
+    // v1.76 滿級後：經驗改累積神格等級
+    if (divinityOpen(s.level)) {
+      this.gainDivinity(exp);
+      return;
+    }
     const r = addExp(s.level, s.exp, exp);
     s.exp = r.exp;
     if (r.levelsGained > 0) {
@@ -1565,6 +1608,24 @@ export class Game {
     bus.emit('player:changed');
   }
 
+  /** 神格經驗（v1.76）：升級給點數與鑽石 */
+  private gainDivinity(exp: number) {
+    const s = this.state;
+    const ups = addDivExp(s.divinity, exp);
+    if (ups > 0) {
+      s.gems += ups * DIVINITY.gems;
+      const { x, z } = this.player.pos;
+      this.effects.pillar(x, z, 1.3, 0xb48cff, 1.3);
+      this.effects.ring(x, z, 0.5, 3.8, 0xe2d2ff, 0.8);
+      bus.emit('banner', { text: `神格提升！ 神格 Lv.${s.divinity.lv}` });
+      bus.emit('toast', { text: `✨ 神格點數 +${ups}、💎 +${ups * DIVINITY.gems}（選單「裝備」分配）`, duration: 3, kind: 'reward' });
+      this.player.cheer();
+      bus.emit('player:levelup', { level: s.level });
+      this.persist();
+    }
+    bus.emit('player:changed');
+  }
+
   /** 擊敗首領：記錄、解鎖下一層，進入破關特寫與破關畫面 */
   private onBossDefeated(name: string, exp: number, gold: number, gems: number) {
     const s = this.state;
@@ -1574,6 +1635,8 @@ export class Game {
     const idx = DUNGEON_ORDER.indexOf(zoneId);
     const next = idx >= 0 ? DUNGEON_ORDER[idx + 1] : undefined;
     const allDone = first && idx === DUNGEON_ORDER.length - 1;
+    // 結局：最終首領、還沒看過（舊存檔打倒過也沒看過，再打一次就會播）
+    if (idx === DUNGEON_ORDER.length - 1 && !s.endingSeen) this.endingPending = true;
     // 支線：打倒守護者擲收服（v1.58）；主線：第一次擊敗時開放對應的支線地圖
     const guardian = ZONES[zoneId]?.side?.guardian;
     const comp = guardian ? companionOfGuardian(guardian) : undefined;

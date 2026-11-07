@@ -9,6 +9,7 @@ import {
   type ItemInstance,
 } from '@/systems/Inventory';
 import { h } from './dom';
+import { DIVINITY, DIV_MAX_POINTS, DIV_STATS, allocPoint, divBonusText, divExpToNext, divinityOpen, freePoints, resetAlloc, spentPoints } from '@/systems/Divinity';
 import { PROFILE_LABEL } from '@/data/gear';
 import { equippedSets, setOf, setTiers } from '@/data/gearSets';
 import { GEM_SHOP, buyGemItem } from '@/systems/GemShop';
@@ -209,6 +210,50 @@ const STAT_KEYS: (keyof Stats)[] = ['atk', 'def', 'maxHp', 'maxMp', 'pen', 'crit
 
 /* ======================= 裝備 ======================= */
 
+/** 神格等級卡（v1.76）：進度、5 種屬性投點、重新分配 */
+function divinityCard(ctx: InvContext): HTMLElement {
+  const s = ctx.state;
+  const d = s.divinity;
+  const free = freePoints(d);
+  const r = Math.min(1, d.exp / divExpToNext(d.lv));
+  const rows = DIV_STATS.map((def) =>
+    h('div', { class: 'div-row' }, [
+      h('span', { class: 'ico' }, def.icon),
+      h('div', {}, [h('b', {}, def.name), h('small', {}, `每點 ${divBonusText(def.id, 1)}・${d.alloc[def.id]}/${def.cap}`)]),
+      h('span', { class: 'val' }, divBonusText(def.id, d.alloc[def.id])),
+      h('button', {
+        disabled: free <= 0 || d.alloc[def.id] >= def.cap,
+        onclick: () => {
+          const why = allocPoint(d, def.id);
+          if (why) ctx.toast(why);
+          ctx.changed();
+          ctx.rerender();
+        },
+      }, '＋'),
+    ]),
+  );
+  return h('div', { class: 'card div-card' }, [
+    h('h4', {}, ['✨ 神格等級 Lv.' + d.lv, h('small', {}, free ? `可用點數 ${free}` : '點數已分配完')]),
+    h('div', { class: 'div-bar' }, [h('i', { style: `width:${r * 100}%` })]),
+    h('small', { class: 'div-locked' }, `滿級後打怪的經驗會累積神格：下一級還要 ${Math.max(0, divExpToNext(d.lv) - Math.floor(d.exp)).toLocaleString()} 經驗；每升一級 +1 點、+${DIVINITY.gems} 💎`),
+    ...rows,
+    h('div', { class: 'div-foot' }, [
+      h('span', {}, `已分配 ${spentPoints(d)}・全部投滿要 ${DIV_MAX_POINTS} 點`),
+      h('button', {
+        disabled: spentPoints(d) === 0,
+        onclick: () => {
+          if (s.gems < DIVINITY.resetCost) return ctx.toast(`鑽石不夠（需要 ${DIVINITY.resetCost}💎）`);
+          s.gems -= DIVINITY.resetCost;
+          resetAlloc(d);
+          ctx.toast(`點數已全部退回（-${DIVINITY.resetCost}💎）`);
+          ctx.changed();
+          ctx.rerender();
+        },
+      }, `重新分配 ${DIVINITY.resetCost}💎`),
+    ]),
+  ]);
+}
+
 export function renderEquip(ctx: InvContext): HTMLElement[] {
   const s = ctx.state;
   const st = computeStats(s);
@@ -248,8 +293,10 @@ export function renderEquip(ctx: InvContext): HTMLElement[] {
 
   const out: HTMLElement[] = [
     h('div', { class: 'card' }, [h('h4', {}, `${s.playerName}・Lv.${s.level}`), statsGrid]),
-    slots,
   ];
+  // v1.76 神格等級：滿級後顯示（有點數沒分配時排在裝備格前面）
+  if (divinityOpen(s.level)) out.push(divinityCard(ctx));
+  out.push(slots);
   const sets = equippedSets(s.equipment);
   if (sets.length) out.push(h('div', { class: 'card set-card' }, [h('h4', {}, '🧩 套裝效果'), ...sets.map((a) => setBlock(a.set, a.count))]));
   const sel = selectedUid !== null ? findItem(s, selectedUid) : undefined;

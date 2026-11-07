@@ -10,6 +10,7 @@ import type { ZoneId } from '@/data/types';
 import { newAchievementState } from '@/systems/Achievements';
 import { newLoginState } from '@/systems/Welcome';
 import { newTowerState } from '@/systems/TrialTower';
+import { normalizeDivinity } from '@/systems/Divinity';
 import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
 
@@ -286,6 +287,9 @@ export function migrate(data: Partial<GameState>): GameState | null {
     merged.zoneId = 'town';
     merged.pos = { ...ZONES.town.spawn };
   }
-  // 未來版本：if ((data.version ?? 0) < 19) { ... }
+  // v18 → v19：神格等級、看過結局（舊存檔就算打倒過最終首領也沒看過，下次再打倒坎佩時播）
+  merged.divinity = normalizeDivinity(data.divinity);
+  merged.endingSeen = data.endingSeen === true;
+  // 未來版本：if ((data.version ?? 0) < 20) { ... }
   return merged;
 }
