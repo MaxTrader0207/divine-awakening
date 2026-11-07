@@ -1,4 +1,5 @@
 import './ui/style.css';
+import './ui/landscape';
 import { Game } from './core/Game';
 import * as Inventory from './systems/Inventory';
 import { renderTrack } from './audio/Music';

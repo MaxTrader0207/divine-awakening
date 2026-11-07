@@ -1,3 +1,4 @@
+import { LANDSCAPE } from './landscape';
 import { ELEMENTS, type Element as Elem } from '@/data/elements';
 import { CONSUMABLE_MAP } from '@/data/consumables';
 import { bus } from '@/core/EventBus';
@@ -178,6 +179,16 @@ export class Hud {
     });
     this.root.appendChild(potions);
 
+    // ---- 橫式版面（v1.74 試作）：小地圖移到左上、狀態框＋道具列移到下方中央 ----
+    if (LANDSCAPE) {
+      this.root.classList.add('land');
+      const left = this.root.querySelector('.top-left')!;
+      const side = h('div', { class: 'land-side' }, [this.els.buffs, this.els.guide]);
+      left.replaceChildren(mapBox, side);
+      const dock = h('div', { class: 'land-dock' }, [potions, status]);
+      this.root.appendChild(dock);
+    }
+
     // ---- 右下技能 ----
     const skillArea = h('div', { class: 'skills' });
     skillArea.appendChild(
@@ -254,6 +265,7 @@ export class Hud {
    * 若會壓到技能 / AUTO 按鈕，就改成 2×2（③④ 疊在藥水上面）。
    */
   private fitQuick() {
+    if (LANDSCAPE) return;
     const box = this.quick[0]?.btn.parentElement;
     if (!box) return;
     const others = [...this.root.querySelectorAll('.skills .act, .skills .auto-btn, .top-left > *, .top-right > *')]

@@ -1019,3 +1019,54 @@ html.clear-open .hud { opacity: 0; pointer-events: none; transition: opacity 0.3
 .hud.tower-on .notes { top: calc(max(10px, env(safe-area-inset-top)) + 196px * var(--ui)); }
 .hud.tower-on.boss-on .notes { top: calc(max(10px, env(safe-area-inset-top)) + 252px * var(--ui)); }
 .tower-bar { white-space: normal; text-align: center; max-width: calc(100% - var(--gutter) * 2); width: max-content; line-height: 1.35; border-radius: 14px; }
+
+/* ================= 橫式版面（v1.74 試作，網址 ?landscape） =================
+ * 參考 MOBA：左上小地圖＋指引、右上錢包與按鈕、上方中央首領血條、
+ * 下方中央「角色面板」（頭像、HP / MP / EXP）＋道具列、左下搖桿、右下技能扇形。 */
+html.landscape #app { width: 100vw; }
+.hud.land { --gold-line: #c8aa6e; }
+/* 左上：小地圖（大一點）＋右邊直排增益與指引 */
+.hud.land .top-left { width: auto; flex-direction: row; align-items: flex-start; gap: 8px; }
+.hud.land .top-left .minimap-box { width: 112px; height: 112px; flex: none; border-color: var(--gold-line); border-width: 2px; border-radius: 10px; }
+.hud.land .land-side { display: flex; flex-direction: column; gap: 6px; width: 220px; }
+.hud.land .land-side .guide-card {
+  position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 8px; text-align: left; color: #fff;
+  background: linear-gradient(90deg, rgba(58, 44, 18, 0.92), rgba(27, 34, 50, 0.86)); border: 1px solid rgba(255, 211, 107, 0.55);
+  border-radius: 12px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+/* 右上：錢包在左、暫停 / 選單橫排在右 */
+.hud.land .top-right { flex-direction: row-reverse; align-items: center; gap: 8px; }
+.hud.land .tr-btns { flex-direction: row; }
+.hud.land .wallet { border: 1px solid rgba(200, 170, 110, 0.45); }
+/* 上方中央：首領血條貼頂、試煉塔列在下面，提示與通知再往下 */
+.hud.land .boss-bar { top: max(8px, env(safe-area-inset-top)); width: min(44%, 400px); }
+.hud.land .tower-bar { top: max(8px, env(safe-area-inset-top)); max-width: 44%; }
+.hud.land.boss-on .tower-bar { top: calc(max(8px, env(safe-area-inset-top)) + 58px * var(--ui)); }
+.hud.land .tip { top: calc(max(8px, env(safe-area-inset-top)) + 64px); max-width: 44%; }
+.hud.land .notes, .hud.land.tower-on .notes { top: calc(max(8px, env(safe-area-inset-top)) + 100px * var(--ui)); width: 44%; }
+.hud.land.tower-on.boss-on .notes { top: calc(max(8px, env(safe-area-inset-top)) + 150px * var(--ui)); }
+.hud.land .zone-banner { top: 57%; }
+/* 獎勵訊息：小地圖下方 */
+.hud.land .loot-feed { top: calc(max(10px, env(safe-area-inset-top)) + 132px * var(--ui)); bottom: auto; max-width: 30%; }
+/* 搖桿感應區：左邊 40%、下面 3/4 */
+.hud.land .joy-zone, html.landscape .joy-zone { width: 26%; height: 75%; }
+/* 下方中央：扁平角色面板（LoL 風格深藍底＋金邊）：頭像＋HP / MP / EXP，右邊一排 4 格道具 */
+.hud.land .land-dock {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) scale(var(--ui)); transform-origin: bottom center;
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 10px;
+  padding: 6px 12px max(6px, env(safe-area-inset-bottom)) 8px; border-radius: 16px 16px 0 0;
+  background: linear-gradient(180deg, rgba(11, 22, 34, 0.92), rgba(1, 10, 19, 0.95));
+  border: 1px solid #785a28; border-bottom: 0; box-shadow: inset 0 1px 0 rgba(200, 170, 110, 0.6), 0 -2px 14px rgba(0, 0, 0, 0.45);
+}
+.hud.land .land-dock .potions { position: relative; left: auto; bottom: auto; transform: none; width: auto; height: auto; display: flex; gap: 8px; padding-left: 10px; border-left: 1px solid rgba(200, 170, 110, 0.35); }
+.hud.land .land-dock .potion { position: relative; left: auto; top: auto; width: 42px; height: 42px; }
+.hud.land .land-dock .status-card {
+  position: relative; top: auto; left: auto; width: 230px; display: flex; align-items: center; gap: 8px; text-align: left; color: var(--text); font: inherit; cursor: pointer;
+  padding: 0; background: none; border: 0; box-shadow: none;
+}
+.hud.land .land-dock .status-head { display: none; }
+.hud.land .land-dock .avatar { width: 46px; height: 46px; }
+.hud.land .land-dock .avatar-face { font-size: 21px; }
+.hud.land .land-dock .status-card:active { transform: scale(0.98); }
+/* 首領戰時收起指引卡，讓首領血條有位置 */
+.hud.land.boss-on .land-side .guide-card { display: none; }

@@ -66,7 +66,10 @@ export class CameraRig {
   resize(aspect: number) {
     this.camera.aspect = aspect;
     // 直式畫面視野較窄，稍微拉大 FOV
-    this.camera.fov = aspect < 0.75 ? 50 : 42;
+    this.camera.fov = aspect < 0.75 ? 50 : aspect > 1.4 ? 46 : 42;
+    // 橫式（v1.74）：下方中央有角色面板，畫面往上推 6%，角色站低一點、前方看得比較遠
+    if (aspect > 1.4) this.camera.setViewOffset(1000 * aspect, 1000, 0, -60, 1000 * aspect, 1000);
+    else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
   }
 
