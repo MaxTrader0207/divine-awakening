@@ -1,4 +1,4 @@
-import { LANDSCAPE } from './landscape';
+import { LANDSCAPE, onLandscapeChange } from './landscape';
 import { ELEMENTS, type Element as Elem } from '@/data/elements';
 import { CONSUMABLE_MAP } from '@/data/consumables';
 import { bus } from '@/core/EventBus';
@@ -76,6 +76,8 @@ export class Hud {
   private comp!: { btn: HTMLElement; ico: Element; cd: HTMLElement; num: HTMLElement; sub: HTMLElement; key: string; wasCd: boolean };
   private hudTimer = 0;
   private notes: Note[] = [];
+  /** 切換橫式 / 直式版面（v1.75） */
+  private setLand: (on: boolean) => void = () => {};
   private noteQueue: { text: string; duration: number }[] = [];
   /** 戰鬥中（剛受傷或剛攻擊）：不輪播提示 */
   private combatT = 99;
@@ -179,15 +181,28 @@ export class Hud {
     });
     this.root.appendChild(potions);
 
-    // ---- 橫式版面（v1.74 試作）：小地圖移到左上、狀態框＋道具列移到下方中央 ----
-    if (LANDSCAPE) {
-      this.root.classList.add('land');
-      const left = this.root.querySelector('.top-left')!;
-      const side = h('div', { class: 'land-side' }, [this.els.buffs, this.els.guide]);
-      left.replaceChildren(mapBox, side);
-      const dock = h('div', { class: 'land-dock' }, [potions, status]);
-      this.root.appendChild(dock);
-    }
+    // ---- 橫式版面（v1.74）：小地圖移到左上、狀態框＋道具列移到下方中央；手機轉向時自動切換（v1.75） ----
+    const topLeft = this.root.querySelector('.top-left') as HTMLElement;
+    const trRow = topRight.querySelector('.tr-row') as HTMLElement;
+    const side = h('div', { class: 'land-side' });
+    const dock = h('div', { class: 'land-dock' });
+    this.setLand = (on: boolean) => {
+      this.root.classList.toggle('land', on);
+      if (on) {
+        side.replaceChildren(this.els.buffs, this.els.guide);
+        topLeft.replaceChildren(mapBox, side);
+        dock.replaceChildren(potions, status);
+        if (!dock.parentElement) this.root.appendChild(dock);
+      } else {
+        topLeft.replaceChildren(status, this.els.buffs, this.els.guide);
+        trRow.appendChild(mapBox);
+        this.root.insertBefore(potions, dock.parentElement ? dock : null);
+        dock.remove();
+      }
+      requestAnimationFrame(() => this.fitQuick());
+    };
+    if (LANDSCAPE) this.setLand(true);
+    onLandscapeChange((on) => this.setLand(on));
 
     // ---- 右下技能 ----
     const skillArea = h('div', { class: 'skills' });
@@ -265,7 +280,10 @@ export class Hud {
    * 若會壓到技能 / AUTO 按鈕，就改成 2×2（③④ 疊在藥水上面）。
    */
   private fitQuick() {
-    if (LANDSCAPE) return;
+    if (LANDSCAPE) {
+      this.quick[0]?.btn.parentElement?.classList.remove('stack');
+      return;
+    }
     const box = this.quick[0]?.btn.parentElement;
     if (!box) return;
     const others = [...this.root.querySelectorAll('.skills .act, .skills .auto-btn, .top-left > *, .top-right > *')]

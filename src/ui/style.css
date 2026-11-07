@@ -1070,3 +1070,17 @@ html.landscape #app { width: 100vw; }
 .hud.land .land-dock .status-card:active { transform: scale(0.98); }
 /* 首領戰時收起指引卡，讓首領血條有位置 */
 .hud.land.boss-on .land-side .guide-card { display: none; }
+
+/* ---- 橫式：全螢幕卡片（暫停、試煉塔結算、簽到…）高度不夠時可以捲動；暫停畫面改成左右兩欄 ---- */
+html.landscape .pause-screen { padding-block: 10px; }
+html.landscape .ps-box { max-height: calc(100dvh - 20px); overflow-y: auto; overscroll-behavior: contain; }
+html.landscape .ps-box:has(.ps-status) {
+  max-width: 660px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: row dense; column-gap: 18px; align-items: start; padding: 16px 18px 12px;
+}
+html.landscape .ps-box:has(.ps-status) > :is(.ps-icon, h2, .ps-info, .ps-status, .ps-items) { grid-column: 1; }
+html.landscape .ps-box:has(.ps-status) > :is(.ps-btn, .ps-row, .ps-hint) { grid-column: 2; }
+html.landscape .ps-box:has(.ps-status) .ps-icon { display: none; }
+/* ---- 橫式：選單幾乎全高、置中，左右留邊（版面沿用直式，內容自己捲動） ---- */
+html.landscape .menu-overlay { padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+html.landscape .menu-panel { max-width: 760px; height: 100%; }
+html.landscape .menu-tab { padding: 8px 0; }
