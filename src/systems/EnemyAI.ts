@@ -75,13 +75,13 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
   const homeDist = Math.hypot(e.pos.x - e.home.x, e.pos.z - e.home.z);
   const atk = e.def.attack ?? { range: 1.2, windup: 0.5, cooldown: 1.5 };
   const reach = atk.range + tgt.radius + e.radius * 0.5;
-  const speed = e.def.stats.moveSpeed * e.slowMul;
+  const speed = e.def.stats.moveSpeed * e.slowMul * e.hasteMul;
   if (e.def.boss) e.counterCd = Math.max(0, e.counterCd - dt);
 
   // 共通：脫戰條件
   if (e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') {
     const playerHome = Math.hypot(p.pos.x - e.home.x, p.pos.z - e.home.z);
-    if (shouldLeash(!!e.def.boss, homeDist, playerHome, p.alive)) {
+    if (!(e.hunter && p.alive) && shouldLeash(!!e.def.boss, homeDist, playerHome, p.alive)) {
       e.ai = 'return';
       e.windup = 0;
       e.aiTimer = RETURN_TIMEOUT;
@@ -98,7 +98,7 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
   switch (e.ai) {
     case 'idle':
     case 'wander': {
-      if (p.alive && (e.provoked || (e.def.aggro === 'aggressive' && dist < AGGRO_RANGE))) {
+      if (p.alive && (e.provoked || e.hunter || (e.def.aggro === 'aggressive' && dist < AGGRO_RANGE))) {
         e.ai = 'chase';
         break;
       }
@@ -160,7 +160,7 @@ export function updateEnemyAI(e: Enemy, dt: number, ctx: AiContext) {
           if (minion) ctx.hitMinion?.(e, minion, 1);
           else if (p.alive) ctx.hitPlayer(e, 1);
         }
-        e.attackCd = atk.cooldown;
+        e.attackCd = atk.cooldown / e.hasteMul;
         e.ai = 'chase';
       }
       break;

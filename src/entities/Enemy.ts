@@ -75,6 +75,10 @@ export class Enemy {
   /** 被召喚物嘲諷：改打這隻骷髏（死掉後自動回頭打玩家） */
   aggroMinion: import('./Minion').Minion | null = null;
   slowTimer = 0;
+  /** 無盡試煉塔（v1.73）：不脫戰、一直追玩家 */
+  hunter = false;
+  /** 無盡試煉塔詞綴「狂暴」：移動與出手速度倍率 */
+  hasteMul = 1;
   slowMul = 1;
   /** 出手動作剩餘秒數（前搖結束那一下：往前撲、身體前傾，之後收回） */
   strikeT = 0;

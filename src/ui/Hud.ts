@@ -408,12 +408,16 @@ export class Hud {
   setTower(text: string | null, urgent = false) {
     const el = this.els.tower;
     if (text === null) {
-      if (el.classList.contains('show')) el.classList.remove('show', 'urgent');
+      if (el.classList.contains('show')) {
+        el.classList.remove('show', 'urgent');
+        this.root.classList.remove('tower-on');
+      }
       return;
     }
     if (el.textContent !== text) el.textContent = text;
     el.classList.add('show');
     el.classList.toggle('urgent', urgent);
+    this.root.classList.add('tower-on');
   }
 
   setCompanion(icon: string | null, name: string, cd: number, cdMax: number, live: boolean, subIcon: string | null = null) {

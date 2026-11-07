@@ -39,7 +39,7 @@ import { COMPANION_SKILLS, DUO, GROWTH, addBond, addCompExp, bondLevel, compCool
 import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineReward } from '@/systems/Welcome';
 import { WelcomeScreen } from '@/ui/WelcomeScreen';
 import { TowerScreen } from '@/ui/TowerScreen';
-import { TOWER, ensureWeek, floorPlan, recordFloor, startFloors } from '@/systems/TrialTower';
+import { TOWER, TOWER_AFFIXES, affixBonusGold, ensureWeek, floorPlan, recordFloor, reinforceMobs, startFloors, towerRng, type FloorPlan } from '@/systems/TrialTower';
 import { tierForLevel } from '@/data/items';
 import { localDate } from '@/systems/DailyQuests';
 import { ITEM_BASES } from '@/data/items';
@@ -133,7 +133,7 @@ export class Game {
   private welcome!: WelcomeScreen;
   private towerScreen!: TowerScreen;
   /** 進行中的試煉塔（null = 沒在挑戰） */
-  private towerRun: { floor: number; start: number; level: number; boss: boolean; timer: number; between: number; best: number; gems: number; kills: number; prevBest: number } | null = null;
+  private towerRun: { floor: number; start: number; level: number; boss: boolean; timer: number; between: number; best: number; gems: number; kills: number; prevBest: number; plan?: FloorPlan; regen: number; reinforce: number; affixText: string; wave: { id: string; elite: boolean }[]; waveT: number; haste: number; notes: string[]; notesT: number } | null = null;
   private towerResultPending: import('@/ui/TowerScreen').TowerResult | null = null;
   private offlinePending: OfflineReward | null = null;
   private lastDay = localDate();
@@ -1003,7 +1003,7 @@ export class Game {
     await this.changeZone('trial_tower', ZONES.trial_tower.spawn, true);
     if (this.state.zoneId !== 'trial_tower') return;
     s.tower.runs++;
-    this.towerRun = { floor, start: floor, level: 0, boss: false, timer: 0, between: 0, best: floor - 1, gems: 0, kills: 0, prevBest: s.tower.best };
+    this.towerRun = { floor, start: floor, level: 0, boss: false, timer: 0, between: 0, best: floor - 1, gems: 0, kills: 0, prevBest: s.tower.best, regen: 0, reinforce: 0, affixText: '', wave: [], waveT: 0, haste: 1, notes: [], notesT: 0 };
     this.player.hp = this.player.stats.maxHp;
     if (!this.usesRage) this.player.mp = this.player.stats.maxMp;
     this.spawnTowerFloor();
@@ -1011,27 +1011,113 @@ export class Game {
 
   private spawnTowerFloor() {
     const run = this.towerRun!;
-    const plan = floorPlan(run.floor);
+    ensureWeek(this.state.tower);
+    // 每週固定：同一週同一層，大家的怪和詞綴都一樣
+    const plan = floorPlan(run.floor, towerRng(this.state.tower.week, run.floor));
+    run.plan = plan;
     run.level = plan.level;
     run.boss = plan.boss;
     run.timer = plan.timeLimit;
     run.between = 0;
+    run.reinforce = 0;
+    const affixes = plan.affixes.map((a) => TOWER_AFFIXES[a]);
+    run.regen = affixes.reduce((r, a) => r + (a.regen ?? 0), 0);
+    const haste = affixes.reduce((m, a) => m * (a.haste ?? 1), 1);
+    run.affixText = affixes.map((a) => `${a.icon}${a.name}`).join(' ');
     this.enemies.clear();
-    let i = 0;
-    const total = plan.groups.reduce((n, g) => n + g.count, 0);
-    for (const g of plan.groups) {
-      for (let k = 0; k < g.count; k++, i++) {
-        // 首領在場地北邊中央；小怪排成半圓圍過來
-        const a = Math.PI + (total > 1 ? (i / (total - 1) - 0.5) * 2.4 : 0);
-        const r = plan.boss ? 6 : 8 + (i % 2) * 2;
-        const x = plan.boss ? 0 : Math.sin(a) * r;
-        const z = plan.boss ? -6 : Math.cos(a) * r;
-        const e = this.enemies.spawnOne(g.id, x, z, { hpMul: plan.hpMul, atkMul: plan.atkMul, def: plan.defense, tag: plan.boss ? `第 ${run.floor} 層首領` : `Lv.${plan.level}` });
-        if (e) e.provoked = true; // 一出場就衝過來
+    run.haste = haste;
+    // 出場名單（詞綴「菁英」：第一隻變成菁英）；一般層分兩波，第一波 60%
+    const list: { id: string; elite: boolean }[] = [];
+    for (const g of plan.groups) for (let k = 0; k < g.count; k++) list.push({ id: g.id, elite: list.length === 0 && !plan.boss && affixes.some((a) => a.elite) });
+    const first = plan.boss ? list.length : Math.max(3, Math.ceil(list.length * TOWER.firstWave));
+    run.wave = list.slice(first);
+    run.waveT = TOWER.secondWaveAt;
+    this.spawnTowerMobs(list.slice(0, first), plan.boss ? 'boss' : 'front');
+    // 詞綴「神眷」：你這層攻擊提高
+    const bless = affixes.reduce((v, a) => Math.max(v, a.blessAtk ?? 0), 0);
+    if (bless) {
+      this.cbuff.atk = { t: plan.timeLimit, v: Math.max(bless, this.cbuff.atk?.v ?? 0) };
+      this.recalcStats();
+    }
+    const title = plan.boss ? `🗼 第 ${run.floor} 層・首領戰` : `🗼 第 ${run.floor} 層`;
+    bus.emit('banner', { text: run.affixText ? `${title}　${run.affixText}` : title });
+    // 詞綴說明等開場橫幅消失後再提示，避免和橫幅疊在一起
+    run.notes = affixes.map((a) => `${a.icon} ${a.name}：${a.desc}`);
+    run.notesT = 1.8;
+    if (plan.boss) bus.emit('camera:shake', { power: 0.2 });
+  }
+
+  /** 生出一批塔裡的敵人：首領在北邊中央；第一波排成半圓；第二波從場地兩側進場 */
+  private spawnTowerMobs(list: { id: string; elite: boolean }[], where: 'boss' | 'front' | 'flank') {
+    const run = this.towerRun!;
+    const plan = run.plan!;
+    list.forEach((m, i) => {
+      const n = list.length;
+      let x = 0;
+      let z = -6;
+      if (where === 'front') {
+        const a = Math.PI + (n > 1 ? (i / (n - 1) - 0.5) * 2.4 : 0);
+        const r = 8 + (i % 2) * 2;
+        x = Math.sin(a) * r;
+        z = Math.cos(a) * r;
+      } else if (where === 'flank') {
+        x = (i % 2 ? 1 : -1) * 11;
+        z = -4 + Math.floor(i / 2) * 3;
+      }
+      const e = this.enemies.spawnOne(m.id, x, z, {
+        hpMul: plan.hpMul * (m.elite ? 3 : 1),
+        atkMul: plan.atkMul * (m.elite ? 1.4 : 1),
+        def: plan.defense,
+        tag: where === 'boss' ? `第 ${run.floor} 層首領` : m.elite ? `👑菁英・Lv.${plan.level}` : `Lv.${plan.level}`,
+      });
+      if (!e) return;
+      if (m.elite) e.object.scale.multiplyScalar(1.3);
+      e.provoked = true; // 一出場就衝過來
+      e.hunter = true; // 不會脫戰回家（以前跑太遠會回家回滿血，清場很慢）
+      e.hasteMul = run.haste;
+    });
+  }
+
+  /** 試煉塔詞綴：再生、首領援軍（每幀） */
+  private towerAffixTick(dt: number) {
+    const run = this.towerRun!;
+    const plan = run.plan;
+    if (!plan) return;
+    if (run.notes.length && (run.notesT -= dt) <= 0) {
+      for (const text of run.notes) bus.emit('toast', { text, duration: 3 });
+      run.notes = [];
+    }
+    if (run.wave.length) {
+      run.waveT -= dt;
+      const alive = this.enemies.enemies.filter((e) => e.alive).length;
+      if (run.waveT <= 0 || alive <= 2) {
+        this.spawnTowerMobs(run.wave, 'flank');
+        run.wave = [];
+        bus.emit('toast', { text: '第二波敵人從兩側進場！', duration: 1.6 });
       }
     }
-    bus.emit('banner', { text: plan.boss ? `🗼 第 ${run.floor} 層・首領戰` : `🗼 第 ${run.floor} 層` });
-    if (plan.boss) bus.emit('camera:shake', { power: 0.2 });
+    if (run.regen > 0) {
+      // 首領只回 1/4（模擬：鐵壁＋再生的首領回血比大部分職業的輸出還快）
+      for (const e of this.enemies.enemies) if (e.alive) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * run.regen * (e.def.boss ? 0.25 : 1) * dt);
+    }
+    if (plan.boss && plan.affixes.includes('reinforce') && run.reinforce < 2) {
+      const boss = this.enemies.enemies.find((e) => e.alive && e.def.boss);
+      const frac = boss ? boss.hp / boss.maxHp : 1;
+      if (boss && frac <= (run.reinforce === 0 ? 0.6 : 0.3)) {
+        run.reinforce++;
+        const ids = reinforceMobs(plan.level, towerRng(`${this.state.tower.week}+${run.reinforce}`, run.floor));
+        ids.forEach((id, i) => {
+          const a = (i / ids.length) * Math.PI * 2;
+          const m = this.enemies.spawnOne(id, boss.pos.x + Math.cos(a) * 3, boss.pos.z + Math.sin(a) * 3, { hpMul: TOWER.mobHp, atkMul: 1, def: plan.defense, tag: `援軍・Lv.${plan.level}` });
+          if (m) {
+            m.provoked = true;
+            m.hunter = true;
+          }
+        });
+        bus.emit('toast', { text: '📯 首領叫來了援軍！', duration: 2 });
+        bus.emit('camera:shake', { power: 0.15 });
+      }
+    }
   }
 
   private updateTower(dt: number) {
@@ -1052,8 +1138,10 @@ export class Game {
     }
     if (!this.player.alive) return;
     run.timer -= dt;
-    this.hud.setTower(`🗼 第 ${run.floor} 層${run.boss ? '・首領' : ''}　⏱ ${Math.max(0, Math.ceil(run.timer))} 秒　剩 ${alive} 隻`, run.timer < 10);
-    if (alive === 0) {
+    this.towerAffixTick(dt);
+    const left = alive + run.wave.length;
+    this.hud.setTower(`🗼 第 ${run.floor} 層${run.boss ? '・首領' : ''}${run.affixText ? ` ${run.affixText}` : ''}　⏱ ${Math.max(0, Math.ceil(run.timer))} 秒　剩 ${left} 隻`, run.timer < 10);
+    if (left === 0) {
       // 過關：記錄、回一點血，準備上樓
       const s = this.state;
       const gems = recordFloor(s.tower, run.floor);
@@ -1062,6 +1150,11 @@ export class Game {
         s.gems += gems;
         run.gems += gems;
         bus.emit('toast', { text: `💎 本週首次打過第 ${run.floor} 層：+${gems} 鑽石`, kind: 'reward' });
+      }
+      const bonus = run.plan ? affixBonusGold(run.plan) : 0;
+      if (bonus) {
+        s.gold += bonus;
+        bus.emit('toast', { text: `🗼 詞綴層通過：+${bonus.toLocaleString()} 金幣`, kind: 'reward' });
       }
       const p = this.player;
       p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * TOWER.healOnClear);

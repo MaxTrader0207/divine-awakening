@@ -1013,3 +1013,9 @@ html.clear-open .hud { opacity: 0; pointer-events: none; transition: opacity 0.3
 /* 獎勵訊息：改成從快捷欄上方往上堆，不再蓋到道具 / 藥水按鈕；一則一行 */
 .loot-feed { top: auto; bottom: calc(max(22px, env(safe-area-inset-bottom)) + 296px * var(--ui)); max-width: min(62%, 300px); }
 .feed-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+.tower-bar { top: calc(max(10px, env(safe-area-inset-top)) + 136px * var(--ui)); }
+.hud.boss-on .tower-bar { top: calc(max(10px, env(safe-area-inset-top)) + 192px * var(--ui)); }
+.hud.tower-on .tip { display: none; }
+.hud.tower-on .notes { top: calc(max(10px, env(safe-area-inset-top)) + 196px * var(--ui)); }
+.hud.tower-on.boss-on .notes { top: calc(max(10px, env(safe-area-inset-top)) + 252px * var(--ui)); }
+.tower-bar { white-space: normal; text-align: center; max-width: calc(100% - var(--gutter) * 2); width: max-content; line-height: 1.35; border-radius: 14px; }

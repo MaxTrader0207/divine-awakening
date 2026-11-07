@@ -9,7 +9,7 @@ import { ELEMENTS, ELEMENT_STRONG_MUL, ELEMENT_WEAK_MUL } from './elements';
 import { PAR_SECS } from '@/systems/StageClear';
 import type { ZoneId } from './types';
 import { SET_4, SET_6 } from './gearSets';
-import { TOWER, bossGems } from '@/systems/TrialTower';
+import { TOWER, TOWER_AFFIXES, bossGems } from '@/systems/TrialTower';
 import { GEM_SHOP } from '@/systems/GemShop';
 import { BOND_PERKS, COMPANION_SKILLS, DUO, FEED, GROWTH } from './companionGrowth';
 import { CODEX_BONUS_MAX, CODEX_ENTRIES, CODEX_TIERS } from './codex';
@@ -205,8 +205,9 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
       lines: [
         `擊敗第三層首領後開放，從「選單 → 地圖」最上面的卡片進入。`,
         `每層打倒全部敵人就上樓（回復 ${TOWER.healOnClear * 100}% 生命），每 5 層有首領；第 N 層的敵人約 Lv.4＋2N，到 Lv.110 之後每層再變強 ${Math.round((TOWER.overflow - 1) * 100)}%。`,
-        `一般層 ${TOWER.timeNormal} 秒、首領層 ${TOWER.timeBoss} 秒；時間到或倒下就結算。塔裡倒下**不會掉金幣**，打怪的經驗、金幣、掉落照拿（掉落階級跟著層數）。`,
-        `塔裡的首領**不會自動調整強度**——越往上越難，看你能撐到第幾層。`,
+        `一般層 ${TOWER.timeBase}＋每隻敵人 ${TOWER.timePerMob} 秒、首領層 ${TOWER.timeBoss} 秒；時間到或倒下就結算。塔裡倒下**不會掉金幣**，打怪的經驗、金幣、掉落照拿（掉落階級跟著層數）。`,
+        `塔裡的首領**不會自動調整強度**——越往上越難，看你能撐到第幾層。一般層的敵人分兩波出場，第二波從場地兩側進來。`,
+        `**層數詞綴**（第 6 層起；20 層起每層 1 個、40 層起每層 2 個）：${Object.values(TOWER_AFFIXES).map((a) => `${a.icon}${a.name}（${a.desc}）`).join('、')}。不利的詞綴層通過時有額外金幣。同一週同一層的怪和詞綴大家都一樣，排行比的是同一座塔。`,
         `每 ${TOWER.checkpoint} 層是檢查點，下次可以從最高紀錄以下最近的檢查點開始。本週第一次打過首領層有鑽石（第 5 層 ${bossGems(5)}💎，越高越多），每週一 00:00 重置本週紀錄。`,
         '登入雲端存檔的話，每次結算會自動更新「排行 → 🗼 試煉塔」的本週排行；試煉塔開放後，每日任務也可能出現「在試煉塔打過 5 層」。',
       ],

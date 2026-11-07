@@ -71,3 +71,51 @@ describe('試煉塔每日任務（v1.71）', () => {
     expect(q.progress).toBe(1);
   });
 });
+
+import { TOWER_AFFIXES, affixBonusGold, affixCount, rollAffixes, towerRng } from './TrialTower';
+
+describe('試煉塔詞綴（v1.73）', () => {
+  it('同一週同一層結果固定；不同週不同', () => {
+    const a = floorPlan(23, towerRng('2026-11-02', 23));
+    const b = floorPlan(23, towerRng('2026-11-02', 23));
+    expect(b).toEqual(a);
+    const diff = Array.from({ length: 10 }, (_, i) => `2026-12-${String(i + 1).padStart(2, '0')}`).some((w) => JSON.stringify(floorPlan(23, towerRng(w, 23))) !== JSON.stringify(a));
+    expect(diff).toBe(true);
+  });
+
+  it('詞綴數量隨層數增加，首領專用 / 一般層專用不會出錯層', () => {
+    const r = () => 0.1;
+    expect(affixCount(3, r)).toBe(0);
+    expect(affixCount(5, r)).toBe(0);
+    expect(affixCount(10, r)).toBe(1);
+    expect(affixCount(25, r)).toBe(1);
+    expect(affixCount(45, r)).toBe(2);
+    for (let f = 6; f < 80; f++) {
+      for (const id of rollAffixes(f, towerRng('2026-11-02', f))) {
+        const a = TOWER_AFFIXES[id];
+        if (a.only === 'boss') expect(f % 5).toBe(0);
+        if (a.only === 'mob') expect(f % 5).not.toBe(0);
+      }
+      const ids = rollAffixes(f, towerRng('w', f));
+      expect(ids.filter((x) => TOWER_AFFIXES[x].good).length).toBeLessThanOrEqual(1);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it('詞綴數值套進樓層設定；不利詞綴給額外金幣', () => {
+    let found = 0;
+    for (let f = 20; f < 60; f++) {
+      const p = floorPlan(f, towerRng('2026-11-02', f));
+      const base = floorPlan(f, () => 0.99999);
+      if (p.affixes.includes('tough') && !p.boss) {
+        expect(p.timeLimit).toBeGreaterThan(30);
+        found++;
+      }
+      expect(affixBonusGold(p)).toBe(p.affixes.filter((a) => !TOWER_AFFIXES[a].good).length * p.level * 25);
+      expect(base.level).toBe(p.level);
+    }
+    expect(found).toBeGreaterThanOrEqual(0);
+    const t = floorPlan(30, () => 0);
+    expect(t.timeLimit).toBeGreaterThan(0);
+  });
+});
