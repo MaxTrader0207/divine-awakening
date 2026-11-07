@@ -176,6 +176,8 @@ export interface SpawnDef {
   count?: number;
   /** 散佈半徑，生成與重生都在此範圍內隨機（預設 0） */
   spread?: number;
+  /** v1.77 神話難度：顯示與結算用的等級（覆寫 EnemyDef.level） */
+  level?: number;
 }
 
 export interface ZoneDef {

@@ -58,7 +58,10 @@ import { StageClearScreen, type ClearInfo } from '@/ui/StageClearScreen';
 import { finishClear, type BossFight } from '@/systems/StageClear';
 import { CLASS_CLEAR } from '@/data/stageClear';
 import { EndingScreen, type EndingInfo } from '@/ui/EndingScreen';
+import { MAX_TIER } from '@/data/gear';
+import type { EnemyDef } from '@/data/types';
 import { DIVINITY, addDivExp, divinityOpen } from '@/systems/Divinity';
+import { MYTHIC, mythicFirstGems, mythicFloor, mythicLevel, mythicMods, mythicOpen, mythicUnlocked } from '@/systems/Mythic';
 import { GuideArrow } from '@/world/GuideArrow';
 import { consume, cannotUse } from '@/systems/Consumables';
 import type { BuffStat } from '@/data/consumables';
@@ -144,6 +147,8 @@ export class Game {
   private endingScreen!: EndingScreen;
   /** v1.76 破關畫面關掉後要播結局 */
   private endingPending = false;
+  /** v1.77 目前地圖是神話第幾層（0 = 不是神話難度） */
+  private mythicFloorNow = 0;
   private bossFight: BossFight | null = null;
   private clearSeq: { t: number; info: ClearInfo } | null = null;
   /** 特寫時暫時藏起來的名牌、地名（Sprite）與敵人 */
@@ -241,9 +246,10 @@ export class Game {
       this.state,
       this.player,
       this.effects,
-      () => (this.towerRun ? tierForLevel(this.towerRun.level) : this.zones.current ? rollZoneTier(this.zones.current.def.id) : 1),
+      () => (this.towerRun ? tierForLevel(this.towerRun.level) : this.mythicFloorNow ? MAX_TIER : this.zones.current ? rollZoneTier(this.zones.current.def.id) : 1),
       () => this.onInventoryChanged(),
       (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
+      () => (this.mythicFloorNow ? MYTHIC.bossExtraDrops : 0),
     );
     this.auto = new AutoBattle({
       minions: this.minions,
@@ -609,6 +615,23 @@ export class Game {
    * - 攻擊力：和「該層標準配備（掉落階級精良 +2、首領等級）」比，玩家血多防高就提高，最多 ×3
    * - 生命：建立 BossScaler，戰鬥中依實際輸出調整到約 180 秒
    */
+  /** 神話難度：一隻敵人的換算（生成時呼叫；重生、脫戰會回到 baseHpMul / baseAtkMul） */
+  private mythicSpawn(ed: EnemyDef, floor: number) {
+    const m = mythicMods(ed, floor);
+    return {
+      level: m.level,
+      defense: m.defense,
+      apply: (e: Enemy) => {
+        e.baseHpMul = m.hpMul;
+        e.baseAtkMul = m.atkMul;
+        e.expMul = m.expMul;
+        e.goldMul = m.goldMul;
+        e.resetScaling();
+        e.hp = e.maxHp;
+      },
+    };
+  }
+
   private scaleBoss(e: Enemy) {
     const s = this.state;
     const tier = lootTierOf(s.zoneId);
@@ -637,7 +660,7 @@ export class Game {
       if (e.def.boss) bossNear = true;
     }
     return {
-      place: zoneLabel(s.zoneId),
+      place: this.mythicFloorNow ? `🔥神話・${zoneLabel(s.zoneId)}` : zoneLabel(s.zoneId),
       level: s.level,
       className: CLASSES[s.heroClass]?.name ?? '法師',
       playTime: s.stats.playTime,
@@ -786,7 +809,8 @@ export class Game {
     const eb = this.enemies.engagedBoss();
     if (eb && !this.bossFight && !this.towerRun) {
       this.bossFight = { zoneId: this.state.zoneId, start: this.state.stats.playTime, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
-      this.scaleBoss(eb);
+      // 神話難度的首領不自動調整強度（跟試煉塔一樣）
+      if (!this.mythicFloorNow) this.scaleBoss(eb);
     } else if (!eb && this.bossFight && !this.clearSeq) this.bossFight = null;
     // 首領強度自動調整：每秒依實際輸出調整生命（目標 180 秒、最快 150 秒）
     if (eb?.scaler) {
@@ -1630,13 +1654,21 @@ export class Game {
   private onBossDefeated(name: string, exp: number, gold: number, gems: number) {
     const s = this.state;
     const zoneId = s.zoneId;
-    const first = !s.bossesDefeated.includes(zoneId);
-    if (first) s.bossesDefeated.push(zoneId);
+    const mythic = this.mythicFloorNow;
+    // v1.77 神話難度：紀錄另外存、第一次打倒有鑽石、開放下一層神話
+    const mythicFirst = mythic > 0 && !(s.mythic.clears[zoneId]?.count ?? 0);
+    const first = !mythic && !s.bossesDefeated.includes(zoneId);
+    if (!s.bossesDefeated.includes(zoneId)) s.bossesDefeated.push(zoneId);
     const idx = DUNGEON_ORDER.indexOf(zoneId);
     const next = idx >= 0 ? DUNGEON_ORDER[idx + 1] : undefined;
     const allDone = first && idx === DUNGEON_ORDER.length - 1;
     // 結局：最終首領、還沒看過（舊存檔打倒過也沒看過，再打一次就會播）
-    if (idx === DUNGEON_ORDER.length - 1 && !s.endingSeen) this.endingPending = true;
+    if (!mythic && idx === DUNGEON_ORDER.length - 1 && !s.endingSeen) this.endingPending = true;
+    if (mythicFirst) {
+      const g = mythicFirstGems(mythic);
+      s.gems += g;
+      bus.emit('toast', { text: `🔥 第一次打倒神話第 ${mythic} 層首領：+${g}💎${next ? '，開放下一層神話' : '——神話難度全部制霸！'}`, duration: 3.5, kind: 'reward' });
+    }
     // 支線：打倒守護者擲收服（v1.58）；主線：第一次擊敗時開放對應的支線地圖
     const guardian = ZONES[zoneId]?.side?.guardian;
     const comp = guardian ? companionOfGuardian(guardian) : undefined;
@@ -1661,7 +1693,7 @@ export class Game {
     const now = s.stats.playTime;
     const fight = this.bossFight?.zoneId === zoneId ? this.bossFight : { zoneId, start: now - 1, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
     this.bossFight = null;
-    const result = finishClear(s.clears, fight, now, this.itemCount());
+    const result = finishClear(mythic ? s.mythic.clears : s.clears, fight, now, this.itemCount());
     this.clearSeq = {
       t: 1.5,
       info: {
@@ -1672,9 +1704,10 @@ export class Game {
         exp,
         gold,
         gems,
-        unlocked: first ? next : undefined,
+        unlocked: first || mythicFirst ? next : undefined,
+        mythic: mythic || undefined,
         allDone,
-        next: next && isZoneUnlocked(s, next) ? next : undefined,
+        next: next && isZoneUnlocked(s, next) && (!mythic || mythicUnlocked(s.mythic, mythic + 1)) ? next : undefined,
         sideUnlocked,
         capture,
         auto: this.auto.on,
@@ -1819,7 +1852,10 @@ export class Game {
     this.effects.heightAt = h;
     this.telegraphs.heightAt = h;
     this.minions.clear();
-    this.enemies.spawnForZone(zone.def);
+    // v1.77 神話難度：開著、是主線副本、這層已開放 → 敵人換算到 Lv.110＋層數
+    const mf = mythicFloor(id);
+    this.mythicFloorNow = this.state.mythic.on && mythicOpen(this.state.bossesDefeated) && mf > 0 && mythicUnlocked(this.state.mythic, mf) ? mf : 0;
+    this.enemies.spawnForZone(zone.def, this.mythicFloorNow ? (ed) => this.mythicSpawn(ed, this.mythicFloorNow) : undefined);
     if (zone.def.safe && this.auto?.on) this.setAuto(false);
     this.state.zoneId = id;
     this.player.groundY = zone.heightAt(at.x, at.z);
@@ -1827,10 +1863,12 @@ export class Game {
     this.player.update(0, { x: 0, z: 0 }, zone.collision); // 確保出生點不在障礙物內
     this.rig.snapTo(this.player.pos.x, this.player.pos.z);
     this.hud.currentZone = zone.def;
+    this.hud.mythic = this.mythicFloorNow;
+    if (this.mythicFloorNow) bus.emit('toast', { text: `🔥 神話難度・第 ${this.mythicFloorNow} 層：敵人 Lv.${mythicLevel(this.mythicFloorNow)}，首領不會自動調整強度`, duration: 3.5 });
     this.labelDodger.setRoot(zone.group);
     this.hud.setZone(zone.def);
     const def = zone.def;
-    const range = def.levelRange ? `（Lv.${def.levelRange[0]}-${def.levelRange[1]}）` : '';
+    const range = this.mythicFloorNow ? `（🔥神話 Lv.${mythicLevel(this.mythicFloorNow)}）` : def.levelRange ? `（Lv.${def.levelRange[0]}-${def.levelRange[1]}）` : '';
     const name = def.dungeon ? `${floorLabel(def.dungeon!.floor)}・${def.name}` : def.subtitle.split('・')[0];
     bus.emit('banner', { text: def.kind === 'town' ? `回到${name}` : `進入 ${name}${range}` });
     bus.emit('zone:enter', { zoneId: id });

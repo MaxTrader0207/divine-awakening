@@ -63,6 +63,8 @@ export interface BuffInfo {
 export class Hud {
   private root: HTMLElement;
   private els: Record<string, HTMLElement> = {};
+  /** v1.77 神話難度第幾層（0 = 普通） */
+  mythic = 0;
   readonly minimap: Minimap;
   private tips: string[] = [];
   private tipIndex = 0;
@@ -379,7 +381,7 @@ export class Hud {
   private bossLastCall = 0;
 
   /** 戰鬥中的首領血條（上方中央插槽；出現時收起提示與新手指引） */
-  setBoss(e: { def: { name: string; level?: number; element?: Elem; stats: { maxHp: number } }; hp: number; maxHp: number; atkMul?: number } | null) {
+  setBoss(e: { level?: number; def: { name: string; level?: number; element?: Elem; stats: { maxHp: number } }; hp: number; maxHp: number; atkMul?: number } | null) {
     if (!e) {
       if (this.bossShown) {
         this.els.boss.classList.remove('show');
@@ -403,7 +405,7 @@ export class Hud {
       this.root.classList.add('boss-on');
       this.els.bossName.textContent = e.def.name;
       const el = e.def.element ? ELEMENTS[e.def.element] : null;
-      this.els.bossLv.textContent = (e.def.level ? `Lv.${e.def.level}` : '') + (el ? `・${el.icon}${el.name}` : '');
+      this.els.bossLv.textContent = ((e.level ?? e.def.level) ? `Lv.${e.level ?? e.def.level}` : '') + (el ? `・${el.icon}${el.name}` : '');
       this.els.boss.classList.add('show');
       this.els.tip.classList.remove('show');
       this.refreshGuide();
@@ -497,7 +499,8 @@ export class Hud {
 
   setZone(def: ZoneDef) {
     this.minimap.setZone(def);
-    this.tips = def.tips;
+    // 神話難度：跳過講防禦數值的提示（數值不一樣了）
+    this.tips = this.mythic ? def.tips.filter((t) => !t.includes('防禦')) : def.tips;
     this.tipIndex = 0;
     this.tipTimer = 0;
     this.showTip();
@@ -640,7 +643,8 @@ export class Hud {
     const zone = this.currentZone;
     this.els.lv.textContent = `Lv.${s.level}`;
     this.els.title.textContent = s.playerName;
-    this.els.zoneName.textContent = zone ? (zone.kind === 'dungeon' ? zone.name : zone.subtitle.split('・')[0]) : '';
+    this.els.zoneName.textContent = zone ? (this.mythic ? `🔥神話・${zone.name}` : zone.kind === 'dungeon' ? zone.name : zone.subtitle.split('・')[0]) : '';
+    this.root.classList.toggle('mythic', this.mythic > 0);
     this.refreshBars();
     // v1.76 滿級後：經驗條改顯示神格等級進度（紫色）
     const div = divinityOpen(s.level);

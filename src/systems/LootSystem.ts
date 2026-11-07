@@ -47,9 +47,11 @@ export class LootSystem {
     /** 撿到裝備後（重算屬性、存檔） */
     private onInventoryChanged: () => void,
     private heightAt: (x: number, z: number) => number = () => 0,
+    /** v1.77 首領額外掉落件數（神話難度） */
+    private extraBossDrops: () => number = () => 0,
   ) {
     bus.on('enemy:killed', (k) => {
-      const n = k.boss ? 2 : 1;
+      const n = k.boss ? 2 + this.extraBossDrops() : 1;
       for (let i = 0; i < n; i++) {
         // 每件各自抽階級（混合掉落的野外：3～4 階）
         const d = rollDrop(this.zoneTier(), k.boss, Math.random, this.state.heroClass);

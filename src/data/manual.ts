@@ -12,6 +12,8 @@ import { SET_4, SET_6 } from './gearSets';
 import { TOWER, TOWER_AFFIXES, bossGems } from '@/systems/TrialTower';
 import { GEM_SHOP } from '@/systems/GemShop';
 import { DIVINITY, DIV_STATS, divBonusText } from '@/systems/Divinity';
+import { MYTHIC } from '@/systems/Mythic';
+import { MAX_TIER } from './gear';
 import { MAX_LEVEL } from '@/systems/Progression';
 import { BOND_PERKS, COMPANION_SKILLS, DUO, FEED, GROWTH } from './companionGrowth';
 import { CODEX_BONUS_MAX, CODEX_ENTRIES, CODEX_TIERS } from './codex';
@@ -216,11 +218,12 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
     },
     {
       icon: '✨',
-      title: '破關後：結局與神格等級',
+      title: '破關後：結局、神格等級、神話難度',
       lines: [
         `打倒最終首領**${ZONES[DUNGEON_ORDER[DUNGEON_ORDER.length - 1]].name}**的首領之後會播結局與製作名單，之後可以在「選單 → 收藏」重看。`,
         `等級到 Lv.${MAX_LEVEL} 之後，打怪的經驗會累積成**神格等級**（左上經驗條變成紫色的「神格」）。每升一級得到 1 點神格點數和 ${DIVINITY.gems}💎，第 1 級要 ${DIVINITY.base.toLocaleString()} 經驗，之後每級多 ${DIVINITY.growth * 100}%。`,
         `到「選單 → 裝備」的「✨ 神格等級」卡分配點數：${DIV_STATS.map((d) => `${d.icon}${d.name} 每點 ${divBonusText(d.id, 1)}（上限 ${d.cap} 點）`).join('、')}。投錯了可以花 ${DIVINITY.resetCost}💎 全部退回重配。爆擊率、爆擊傷害仍然有上限（${Math.round(CRIT_RATE_MAX * 100)}%、×${CRIT_DMG_MAX}）。`,
+        `**神話難度**：打倒最終首領後，在「選單 → 地圖」切到 🔥 神話。第 N 層的敵人變成 Lv.${MYTHIC.levelBase}＋N（屬性換算到同等級，越高層每 2 級再強 ${Math.round((TOWER.overflow - 1) * 100)}%），首領**不會自動調整強度**。掉落一律第 ${MAX_TIER} 階、首領多掉 ${MYTHIC.bossExtraDrops} 件，經驗金幣也跟著變多。要依序挑戰，第一次打倒神話第 N 層首領 +(10＋2N)💎；神話的破關評價另外記錄。`,
       ],
     },
     {

@@ -34,6 +34,8 @@ export interface ClearInfo {
   /** 守護者收服結果（支線地圖，v1.58） */
   capture?: { result: 'captured' | 'failed' | 'owned'; name: string; icon: string; left: number };
   auto: boolean;
+  /** v1.77 神話難度第幾層（沒有 = 普通難度） */
+  mythic?: number;
 }
 
 export interface ClearActions {
@@ -89,8 +91,8 @@ export class StageClearScreen {
     this.root.replaceChildren(
       h('div', { class: 'cs-bg' }, [h('div', { class: 'cs-rays' }), ...petals]),
       h('div', { class: 'cs-card' }, [
-        h('div', { class: 'cs-place' }, place),
-        h('h2', { class: 'cs-title' }, info.allDone ? '全副本制霸！' : '破關！'),
+        h('div', { class: 'cs-place' }, info.mythic ? `🔥 神話・${place}` : place),
+        h('h2', { class: 'cs-title' }, info.mythic ? '神話破關！' : info.allDone ? '全副本制霸！' : '破關！'),
         h('div', { class: 'cs-epi' }, [h('span', {}, epi.emblem), ` ${epi.title}`]),
         h('div', { class: 'cs-hero' }, [
           h('div', { class: 'cs-medal' }, [h('span', {}, CLASSES[cls].icon)]),
@@ -111,7 +113,7 @@ export class StageClearScreen {
           info.gems ? h('span', {}, `💎 ${info.gems}`) : null,
         ]),
         h('p', { class: 'cs-loot' }, '首領的寶物掉在地上，記得撿起來'),
-        info.unlocked ? h('div', { class: 'cs-unlock' }, `🔓 解鎖 ${floorLabel(ZONES[info.unlocked].dungeon!.floor)}・${ZONES[info.unlocked].name}`) : null,
+        info.unlocked ? h('div', { class: 'cs-unlock' }, `🔓 ${info.mythic ? '開放神話' : '解鎖'} ${floorLabel(ZONES[info.unlocked].dungeon!.floor)}・${ZONES[info.unlocked].name}`) : null,
         info.allDone ? h('div', { class: 'cs-unlock' }, '🏆 你完成了赫拉斯大陸的全部副本') : null,
         ...(info.sideUnlocked ?? []).map((id) => h('div', { class: 'cs-unlock side' }, `🗺 開放支線・${ZONES[id].name}（守護者：${bossOf(id)?.name ?? '？'}）`)),
         info.capture ? captureLine(info.capture) : null,

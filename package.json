@@ -1,6 +1,6 @@
 {
   "name": "little-mage",
-  "version": "1.76.0",
+  "version": "1.77.0",
   "description": "神格覺醒 Divine Awakening（曾名古希臘探險、戰鬥法師 Battle Mage、小法師 Little Mage）— 手機直式 3D 動作 RPG（Three.js + TypeScript）",
   "scripts": {
     "dev": "vite --host",

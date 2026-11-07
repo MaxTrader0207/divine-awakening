@@ -29,9 +29,9 @@ export function damageEnemy(e: Enemy, attacker: AttackerStats, power: number, so
       name: e.def.name,
       x: e.pos.x,
       z: e.pos.z,
-      level: e.def.level,
-      exp: e.def.exp,
-      gold: e.def.gold,
+      level: e.level,
+      exp: Math.round(e.def.exp * e.expMul),
+      gold: (e.goldMul === 1 ? e.def.gold : [Math.round(e.def.gold[0] * e.goldMul), Math.round(e.def.gold[1] * e.goldMul)]) as [number, number],
       gems: e.def.gems ?? 0,
       boss: !!e.def.boss,
     });

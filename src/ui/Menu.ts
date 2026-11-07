@@ -17,6 +17,9 @@ import { CLASSES } from '@/data/classes';
 import { renderGuide } from './GuideTab';
 import { renderCollect } from './CollectTab';
 import { TOWER, bossGems, ensureWeek, startFloors, towerLevel } from '@/systems/TrialTower';
+import { MYTHIC, mythicBest, mythicFirstGems, mythicLevel, mythicOpen, mythicUnlocked } from '@/systems/Mythic';
+import { fmtSecs } from '@/systems/StageClear';
+import { MAX_TIER } from '@/data/gear';
 import { LOGIN_DAYS, canClaimLogin, loginRewardDef } from '@/systems/Welcome';
 import { restartTutorial } from '@/systems/Tutorial';
 
@@ -211,29 +214,60 @@ export class Menu {
       ]),
     ];
     out.push(this.towerCard());
-    for (const id of DUNGEON_ORDER) {
+    out.push(this.mythicCard());
+    const myth = s.mythic.on && mythicOpen(s.bossesDefeated);
+    DUNGEON_ORDER.forEach((id, i) => {
       const z = ZONES[id];
       const dg = z.dungeon!;
-      const unlocked = isZoneUnlocked(s, id);
+      const floor = i + 1;
+      const unlocked = myth ? mythicUnlocked(s.mythic, floor) : isZoneUnlocked(s, id);
       const cleared = s.bossesDefeated.includes(id);
+      const mrec = s.mythic.clears[id];
       let action: HTMLElement;
       if (here === id) action = h('span', { class: 'pill' }, '目前位置');
-      else if (!unlocked) action = h('span', { class: 'pill locked' }, '🔒 未解鎖');
-      else action = h('button', { class: 'go', onclick: () => this.travel(id) }, '前往');
+      else if (!unlocked) action = h('span', { class: 'pill locked' }, myth ? '🔒 先打過神話上一層' : '🔒 未解鎖');
+      else action = h('button', { class: myth ? 'go mythic' : 'go', onclick: () => this.travel(id) }, myth ? '🔥 挑戰' : '前往');
       out.push(
-        h('div', { class: `card dungeon${unlocked ? '' : ' locked'}` }, [
+        h('div', { class: `card dungeon${unlocked ? '' : ' locked'}${myth ? ' mythic' : ''}` }, [
           h('div', { class: 'card-main' }, [
-            h('h4', {}, zoneLabel(id)),
-            h('p', {}, `建議等級 Lv.${z.levelRange?.[0] ?? 1}　首領：${bossOf(id)?.name ?? '—'}${cleared ? '（已擊敗）' : ''}`),
-            h('p', {}, `裝備掉落第 ${lootTierOf(id)} 階　敵人防禦 ${dg.enemyDefense}`),
+            h('h4', {}, myth ? `🔥 ${zoneLabel(id)}` : zoneLabel(id)),
+            myth
+              ? h('p', {}, `神話 Lv.${mythicLevel(floor)}　首領：${bossOf(id)?.name ?? '—'}${mrec?.count ? `（神話最佳 ${mrec.bestRank}・${fmtSecs(mrec.best)}）` : `（首次打倒 +${mythicFirstGems(floor)}💎）`}`)
+              : h('p', {}, `建議等級 Lv.${z.levelRange?.[0] ?? 1}　首領：${bossOf(id)?.name ?? '—'}${cleared ? '（已擊敗）' : ''}`),
+            myth ? h('p', {}, `裝備掉落第 ${MAX_TIER} 階・首領多掉 ${MYTHIC.bossExtraDrops} 件`) : h('p', {}, `裝備掉落第 ${lootTierOf(id)} 階　敵人防禦 ${dg.enemyDefense}`),
           ]),
           action,
         ]),
       );
       // 支線地圖（v1.58）：排在開放它的那一層後面
-      for (const sid of SIDE_ORDER.filter((x) => ZONES[x].side!.unlockAfter === id)) out.push(this.sideCard(sid));
-    }
+      if (!myth) for (const sid of SIDE_ORDER.filter((x) => ZONES[x].side!.unlockAfter === id)) out.push(this.sideCard(sid));
+    });
     return out;
+  }
+
+  /** 神話難度卡片（v1.77）：開關與進度 */
+  private mythicCard(): HTMLElement {
+    const s = this.state;
+    const open = mythicOpen(s.bossesDefeated);
+    if (!open)
+      return h('div', { class: 'card mythic-card locked' }, [h('h4', {}, '🔥 神話難度'), h('p', {}, `🔒 打倒最終層首領（${bossOf(DUNGEON_ORDER[DUNGEON_ORDER.length - 1])?.name ?? '—'}）後開放：${DUNGEON_ORDER.length} 層副本換成 Lv.${mythicLevel(1)}～${mythicLevel(DUNGEON_ORDER.length)} 的強敵重打。`)]);
+    const set = (on: boolean) => {
+      s.mythic.on = on;
+      this.actions.onInventoryChanged();
+      const top = this.body.scrollTop;
+      this.show('map');
+      this.body.scrollTop = top;
+    };
+    const inDungeon = DUNGEON_ORDER.includes(s.zoneId);
+    return h('div', { class: `card mythic-card${s.mythic.on ? ' on' : ''}` }, [
+      h('h4', {}, '🔥 神話難度'),
+      h('p', {}, `第 N 層的敵人換成 Lv.110＋N，首領不會自動調整強度；裝備一律掉第 ${MAX_TIER} 階，經驗進神格。要依序打：先在神話難度打倒上一層首領，才能挑戰下一層。`),
+      h('div', { class: 'seg two' }, [
+        h('button', { class: `seg-btn${s.mythic.on ? '' : ' on'}`, onclick: () => set(false) }, '普通'),
+        h('button', { class: `seg-btn${s.mythic.on ? ' on' : ''}`, onclick: () => set(true) }, '🔥 神話'),
+      ]),
+      h('p', {}, `神話最高：${mythicBest(s.mythic) ? `第 ${mythicBest(s.mythic)} 層` : '還沒打過'} / ${DUNGEON_ORDER.length}${inDungeon ? '　（切換後重新進入副本才會生效）' : ''}`),
+    ]);
   }
 
   /** 無盡試煉塔卡片（v1.70） */

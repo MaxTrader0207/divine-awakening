@@ -15,7 +15,10 @@ export class EnemyManager {
 
   constructor(private scene: THREE.Scene) {}
 
-  spawnForZone(def: ZoneDef) {
+  /**
+   * 依區域生成敵人。mod（v1.77 神話難度）：每隻生成後套用難度倍率；回傳覆寫的等級與防禦（標籤要在建立時就知道）。
+   */
+  spawnForZone(def: ZoneDef, mod?: (ed: import('@/data/types').EnemyDef) => { level: number; defense: number; apply: (e: Enemy) => void } | null) {
     this.clear();
     for (const s of def.spawns ?? []) {
       const ed = ENEMIES[s.enemy];
@@ -28,7 +31,9 @@ export class EnemyManager {
         // 初次生成時均勻散開（黃金角），之後重生才隨機
         const r = n > 1 ? (s.spread ?? 0) * Math.sqrt((i + 0.5) / n) : 0;
         const a = i * 2.39996;
-        const e = new Enemy(ed, { ...s, x: s.x + Math.cos(a) * r, z: s.z + Math.sin(a) * r, count: 1, spread: s.spread ?? 0 });
+        const m = mod?.(ed) ?? null;
+        const e = new Enemy(ed, { ...s, x: s.x + Math.cos(a) * r, z: s.z + Math.sin(a) * r, count: 1, spread: s.spread ?? 0, ...(m ? { level: m.level, def: m.defense } : {}) });
+        m?.apply(e);
         e.groundY = this.heightAt(e.pos.x, e.pos.z);
         this.enemies.push(e);
         this.scene.add(e.object);

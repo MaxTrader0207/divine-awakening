@@ -120,13 +120,23 @@ export class Enemy {
   /** 首領材質（高光、地面遮蔽、邊緣光） */
   private look: BossLook | null = null;
 
+  /** v1.77 難度倍率（神話難度）：重生 / 脫戰時 resetScaling 會回到這個基準，而不是 1 */
+  baseHpMul = 1;
+  baseAtkMul = 1;
+  /** 擊倒時的經驗、金幣倍率（神話難度） */
+  expMul = 1;
+  goldMul = 1;
+  /** 顯示與結算用的等級（神話難度會高於 def.level） */
+  level: number;
+
   constructor(def: EnemyDef, spawn: SpawnDef) {
     this.def = def;
+    this.level = spawn.level ?? def.level;
     this.spawn = spawn;
     this.pos = { x: spawn.x, z: spawn.z };
     this.home = { x: spawn.x, z: spawn.z };
     this.defense = spawn.def ?? def.stats.def;
-    this.displayName = spawn.tag ? `${def.name}・${spawn.tag}` : def.boss ? `首領・${def.name}` : `Lv.${def.level} ${def.name}`;
+    this.displayName = spawn.tag ? `${def.name}・${spawn.tag}` : def.boss ? `首領・${def.name}` : `Lv.${this.level} ${def.name}`;
     this.radius = def.radius * def.scale;
     this.maxHp = def.stats.maxHp;
     this.hp = this.maxHp;
@@ -404,8 +414,8 @@ export class Enemy {
 
   /** 首領強度回到原本（脫戰、重生） */
   resetScaling() {
-    this.maxHp = this.def.stats.maxHp;
-    this.atkMul = 1;
+    this.maxHp = this.def.stats.maxHp * this.baseHpMul;
+    this.atkMul = this.baseAtkMul;
     this.scaler = null;
     this.threat.clear();
     this.threatPlayer = 0;
