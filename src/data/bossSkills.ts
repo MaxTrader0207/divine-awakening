@@ -499,6 +499,168 @@ export const BOSS_SKILLS = {
     pattern: 'leap', name: '獄龍降臨', desc: '展開黑翼飛起，砸落在玩家位置',
     windup: 1.5, power: 2.0, color: 0xff8a3a, discColor: 0x8a1a1a, radius: 4.4,
   },
+
+  /* ==== 神獸討伐（v1.86，data/stages/beast*.ts） ==== */
+  orthrus_twin_bite: {
+    pattern: 'multiLine', name: '雙首撕咬', desc: '兩顆頭同時往前方兩側噴出冥火（狂暴時四道）',
+    windup: 1.1, power: 1.4, color: 0xb48cff, angles: [-20, 20], anglesEnraged: [-36, -12, 12, 36], count: 4, start: 2, spacing: 2.1, radius: 1.5, stagger: 0.1,
+  },
+  orthrus_pounce: {
+    pattern: 'leap', name: '撲咬', desc: '躍起撲向玩家',
+    windup: 1.45, power: 1.6, color: 0xd8c0ff, discColor: 0x8a4aff, radius: 3.4,
+  },
+  orthrus_howl: {
+    pattern: 'nova', name: '雙重嚎叫', desc: '兩顆頭一起嚎叫，震盪四周（狂暴時範圍更大）',
+    windup: 1.2, power: 1.5, color: 0xb48cff, discColor: 0x5a2a8a, radius: 5, radiusEnraged: 6.4,
+  },
+  orthrus_rush: {
+    pattern: 'dash', name: '獵犬衝刺', desc: '壓低身子朝玩家直線衝刺',
+    windup: 1.1, power: 1.6, color: 0xd8c0ff, length: 13, width: 2.6,
+  },
+  mare_stampede: {
+    pattern: 'dash', name: '雷霆奔踏', desc: '化成一道雷光朝玩家直線狂奔',
+    windup: 1.15, power: 1.7, color: 0xfff4b0, length: 15, width: 2.8,
+  },
+  mare_hoof_storm: {
+    pattern: 'rain', name: '蹄下落雷', desc: '人立踏蹄，玩家附近連續落雷（狂暴時更多）',
+    windup: 1.3, power: 1.4, color: 0xffd84a, pillarColor: 0xfff4b0, count: 4, countEnraged: 6, radius: 2.1, spread: 5, stagger: 0.13,
+  },
+  mare_rear_kick: {
+    pattern: 'cone', name: '後腿踢擊', desc: '往前方扇形猛踢（狂暴時更寬）',
+    windup: 1.0, power: 1.7, color: 0xffe27a, range: 5.5, angle: 90, angleEnraged: 130,
+  },
+  mare_herd: {
+    pattern: 'multiLine', name: '馬群衝鋒', desc: '幽靈馬群往三個方向衝出（狂暴時五道）',
+    windup: 1.3, power: 1.3, color: 0xfff0a0, angles: [-28, 0, 28], anglesEnraged: [-44, -22, 0, 22, 44], count: 5, start: 2, spacing: 2.1, radius: 1.4, stagger: 0.08,
+  },
+  cacus_fire_breath: {
+    pattern: 'cone', name: '烈焰吐息', desc: '往前方噴出大片火焰（狂暴時更寬）',
+    windup: 1.15, power: 1.6, color: 0xff5a1a, range: 8, angle: 55, angleEnraged: 80,
+  },
+  cacus_club_quake: {
+    pattern: 'nova', name: '石棒震地', desc: '高舉石棒砸地，周圍噴出熔岩（狂暴時範圍更大）',
+    windup: 1.3, power: 1.8, color: 0xff8a3c, discColor: 0xff5a1a, radius: 5.5, radiusEnraged: 7,
+  },
+  cacus_magma_spit: {
+    pattern: 'line', name: '熔岩吐彈', desc: '朝玩家吐出一排熔岩彈（狂暴時更長）',
+    windup: 0.95, power: 1.3, color: 0xff6a1a, count: 6, countEnraged: 8, start: 2.5, spacing: 2.2, radius: 1.7, stagger: 0.12,
+  },
+  cacus_ember_rain: {
+    pattern: 'rain', name: '火山灰雨', desc: '洞頂落下燃燒的岩塊（狂暴時更多）',
+    windup: 1.4, power: 1.4, color: 0xff4a1a, pillarColor: 0xffb04a, count: 5, countEnraged: 7, radius: 2.1, spread: 5.5, stagger: 0.12,
+  },
+  amphisbaena_twin_venom: {
+    pattern: 'multiLine', name: '前後毒噴', desc: '兩顆頭往前後兩個方向噴毒（狂暴時四道）',
+    windup: 1.1, power: 1.4, color: 0xa8d14f, angles: [0, 180], anglesEnraged: [-30, 30, 150, 210], count: 6, start: 2, spacing: 2.1, radius: 1.6, stagger: 0.1,
+  },
+  amphisbaena_coil_whip: {
+    pattern: 'nova', name: '蛇身橫掃', desc: '身體一圈橫掃（狂暴時範圍更大）',
+    windup: 1.2, power: 1.6, color: 0x8ab84a, discColor: 0x4a6a2a, radius: 5.2, radiusEnraged: 6.6,
+  },
+  amphisbaena_acid_rain: {
+    pattern: 'rain', name: '毒沙雨', desc: '玩家附近落下毒沙（狂暴時更多）',
+    windup: 1.35, power: 1.3, color: 0xb8ff4a, pillarColor: 0xe0ff8a, count: 5, countEnraged: 7, radius: 2.0, spread: 5.5, stagger: 0.12,
+  },
+  amphisbaena_serpent_lunge: {
+    pattern: 'dash', name: '翻滾突進', desc: '像車輪一樣滾向玩家',
+    windup: 1.15, power: 1.6, color: 0xd8ff6a, length: 14, width: 2.6,
+  },
+  charybdis_maelstrom: {
+    pattern: 'nova', name: '吞海漩渦', desc: '把四周的海水全部吸進巨口（狂暴時範圍更大）',
+    windup: 1.35, power: 1.9, color: 0x4fb8ff, discColor: 0x1a5a9a, radius: 6.5, radiusEnraged: 8.5,
+  },
+  charybdis_spout: {
+    pattern: 'rain', name: '海水噴發', desc: '吐出吞下的海水，從天而降（狂暴時更多）',
+    windup: 1.4, power: 1.4, color: 0x8fe3ff, pillarColor: 0xd8f4ff, count: 6, countEnraged: 8, radius: 2.1, spread: 7, stagger: 0.1,
+  },
+  charybdis_tide_spokes: {
+    pattern: 'spokes', name: '漩渦水刃', desc: '水渦甩出一道道水刃，水刃之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.5, color: 0x4fb8ff, count: 5, countEnraged: 7, range: 10, angle: 22,
+  },
+  charybdis_tentacle_lash: {
+    pattern: 'multiLine', name: '觸鬚拍擊', desc: '觸鬚往前方好幾個方向拍下（狂暴時更多）',
+    windup: 1.2, power: 1.4, color: 0x6ac8ff, angles: [-25, 0, 25], anglesEnraged: [-45, -20, 0, 20, 45], count: 4, start: 2.2, spacing: 2.1, radius: 1.5, stagger: 0.1,
+  },
+  caucasus_gale_wing: {
+    pattern: 'cone', name: '巨翼狂風', desc: '振翅往前方颳出狂風（狂暴時更寬）',
+    windup: 1.1, power: 1.5, color: 0x8fe3b0, range: 9, angle: 60, angleEnraged: 90,
+  },
+  caucasus_sky_dive: {
+    pattern: 'leap', name: '高空俯衝', desc: '飛上高空後俯衝抓向玩家',
+    windup: 1.5, power: 1.8, color: 0xd8ffe8, discColor: 0x3a8a5a, radius: 3.8,
+  },
+  caucasus_feather_storm: {
+    pattern: 'spokes', name: '銅羽風暴', desc: '往四周射出銅羽，羽毛之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.4, color: 0xc8a050, count: 6, countEnraged: 8, range: 10, angle: 18,
+  },
+  caucasus_cyclone: {
+    pattern: 'rain', name: '旋風', desc: '玩家附近捲起好幾道旋風（狂暴時更多）',
+    windup: 1.35, power: 1.4, color: 0x8fe3b0, pillarColor: 0xd8ffe8, count: 5, countEnraged: 7, radius: 2.1, spread: 6, stagger: 0.12,
+  },
+  colchis_golden_breath: {
+    pattern: 'line', name: '金光吐息', desc: '朝玩家吐出一長排金色光焰（狂暴時更長）',
+    windup: 1.0, power: 1.5, color: 0xfff0a8, count: 8, countEnraged: 10, start: 2.6, spacing: 2.1, radius: 1.7, stagger: 0.09,
+  },
+  colchis_coil_crush: {
+    pattern: 'nova', name: '盤身絞殺', desc: '巨大的身體盤繞橫掃周圍（狂暴時範圍更大）',
+    windup: 1.25, power: 1.9, color: 0xffd36b, discColor: 0x8a6a1a, radius: 6.5, radiusEnraged: 8,
+  },
+  colchis_sleepless_gaze: {
+    pattern: 'spokes', name: '不眠之瞳', desc: '金色瞳孔射出一道道光束，光束之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.5, color: 0xfff6c8, count: 6, countEnraged: 9, range: 11, angle: 16,
+  },
+  colchis_fleece_flare: {
+    pattern: 'rain', name: '金羊毛之光', desc: '金羊毛發光，玩家附近降下光柱（狂暴時更多）',
+    windup: 1.4, power: 1.4, color: 0xffe27a, pillarColor: 0xfff6c8, count: 6, countEnraged: 8, radius: 2.0, spread: 6.5, stagger: 0.1,
+  },
+  antaeus_earth_slam: {
+    pattern: 'leap', name: '大地重摔', desc: '跳起來用全身重量砸向玩家',
+    windup: 1.5, power: 2.0, color: 0xc79a5a, discColor: 0x6a4a2a, radius: 4.2,
+  },
+  antaeus_quake: {
+    pattern: 'nova', name: '大地震盪', desc: '雙拳捶地，周圍震盪（狂暴時範圍更大）',
+    windup: 1.25, power: 1.8, color: 0xc79a5a, discColor: 0x5a7a2a, radius: 6, radiusEnraged: 7.5,
+  },
+  antaeus_rock_throw: {
+    pattern: 'rain', name: '巨岩投擲', desc: '從地上挖起巨岩亂丟（狂暴時更多）',
+    windup: 1.4, power: 1.5, color: 0xa8885a, pillarColor: 0xe0c89a, count: 5, countEnraged: 7, radius: 2.2, spread: 6, stagger: 0.12,
+  },
+  antaeus_tackle: {
+    pattern: 'dash', name: '摔角衝撞', desc: '壓低身子朝玩家直線撲抱',
+    windup: 1.15, power: 1.8, color: 0xd8b07a, length: 13, width: 3,
+  },
+  enceladus_boulder_hurl: {
+    pattern: 'line', name: '巨石投擲', desc: '把巨石往玩家方向丟出，一路彈跳（狂暴時更遠）',
+    windup: 1.1, power: 1.6, color: 0xd0d6e0, count: 7, countEnraged: 9, start: 2.5, spacing: 2.3, radius: 1.8, stagger: 0.1,
+  },
+  enceladus_shield_bash: {
+    pattern: 'cone', name: '銅盾猛擊', desc: '舉盾往前方猛撞（狂暴時更寬）',
+    windup: 1.0, power: 1.8, color: 0xffd36b, range: 6, angle: 100, angleEnraged: 140,
+  },
+  enceladus_serpent_legs: {
+    pattern: 'multiLine', name: '蛇足噬咬', desc: '兩條蛇尾往前方左右撲咬（狂暴時四道）',
+    windup: 1.15, power: 1.5, color: 0x8ac86a, angles: [-22, 22], anglesEnraged: [-40, -14, 14, 40], count: 5, start: 1.8, spacing: 2.1, radius: 1.5, stagger: 0.1,
+  },
+  enceladus_etna_eruption: {
+    pattern: 'rain', name: '埃特納噴發', desc: '大地裂開噴出火柱（狂暴時更多）',
+    windup: 1.45, power: 1.5, color: 0xff7a2a, pillarColor: 0xffc06a, count: 6, countEnraged: 9, radius: 2.1, spread: 7, stagger: 0.1,
+  },
+  typhon_hundred_heads: {
+    pattern: 'spokes', name: '百首齊噬', desc: '肩上的龍頭往四周撲咬，龍頭之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.8, color: 0xff6a2a, count: 9, countEnraged: 12, range: 11, angle: 15,
+  },
+  typhon_storm_of_gods: {
+    pattern: 'rain', name: '眾神之劫', desc: '天空降下雷霆與獄火（狂暴時更多）',
+    windup: 1.5, power: 1.6, color: 0xb48cff, pillarColor: 0xffb04a, count: 8, countEnraged: 12, radius: 2.2, spread: 8, stagger: 0.08,
+  },
+  typhon_abyss_roar: {
+    pattern: 'nova', name: '深淵咆哮', desc: '張開黑翼咆哮，震盪四周（狂暴時範圍更大）',
+    windup: 1.3, power: 1.9, color: 0xb48cff, discColor: 0x3a1a5a, radius: 6.5, radiusEnraged: 8.5,
+  },
+  typhon_dragon_flames: {
+    pattern: 'multiLine', name: '龍首獄火', desc: '好幾顆龍頭同時往前方噴火（狂暴時更多道）',
+    windup: 1.25, power: 1.5, color: 0xff5a1a, angles: [-30, -10, 10, 30], anglesEnraged: [-48, -28, -9, 9, 28, 48], count: 5, start: 2, spacing: 2.1, radius: 1.5, stagger: 0.08,
+  },
 } satisfies Record<string, BossSkillDef>;
 
 export type BossSkillId = keyof typeof BOSS_SKILLS;

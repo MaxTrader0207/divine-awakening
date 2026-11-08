@@ -1,10 +1,11 @@
 import { bus, type MenuTab } from '@/core/EventBus';
 import { isZoneUnlocked, type GameState } from '@/core/GameState';
-import { DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, WORLD_FIELDS, ZONES, bossOf, lootTierOf, zoneLabel, zoneName } from '@/data/zones';
+import { BEAST_ORDER, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, WORLD_FIELDS, ZONES, bossOf, lootTierOf, zoneLabel, zoneName } from '@/data/zones';
 import { COMPANION_LIST, pityLeft } from '@/data/companions';
 import { ELEMENTS } from '@/data/elements';
 import type { ZoneId } from '@/data/types';
 import { offlineStatus } from './offline';
+import { beastFirstGems, beastsDone } from '@/systems/BeastHunt';
 import { h } from './dom';
 import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
 import { BONUS_GEMS, canClaim, ensureToday, questText } from '@/systems/DailyQuests';
@@ -222,6 +223,7 @@ export class Menu {
     out.push(this.towerCard());
     out.push(this.mythicCard());
     out.push(this.weeklyCard());
+    out.push(this.beastCard());
     const myth = s.mythic.on && mythicOpen(s.bossesDefeated);
     DUNGEON_ORDER.forEach((id, i) => {
       const z = ZONES[id];
@@ -250,6 +252,43 @@ export class Menu {
       if (!myth) for (const sid of SIDE_ORDER.filter((x) => ZONES[x].side!.unlockAfter === id)) out.push(this.sideCard(sid));
     });
     return out;
+  }
+
+  /** 神獸討伐卡片（v1.86）：10 隻魔王，隨主線開放 */
+  private beastCard(): HTMLElement {
+    const s = this.state;
+    const done = beastsDone(s.bossesDefeated);
+    const rows = BEAST_ORDER.map((id) => {
+      const z = ZONES[id];
+      const boss = bossOf(id);
+      const el = boss?.element ? ELEMENTS[boss.element] : null;
+      const open = isZoneUnlocked(s, id);
+      const cleared = s.bossesDefeated.includes(id);
+      const rec = s.clears[id];
+      let action: HTMLElement;
+      if (s.zoneId === id) action = h('span', { class: 'pill' }, '這裡');
+      else if (!open) action = h('span', { class: 'pill locked' }, '🔒');
+      else action = h('button', { class: 'go', onclick: () => this.travel(id) }, cleared ? '再戰' : '討伐');
+      const sub = !open
+        ? `擊敗${zoneLabel(z.beast!.unlockAfter)}後開放`
+        : cleared
+          ? `✓ 已討伐${rec?.count ? `・最佳 ${rec.bestRank}・${fmtSecs(rec.best)}` : ''}`
+          : `首次討伐 +${beastFirstGems(z.beast!.order)}💎・掉落第 ${lootTierOf(id)} 階`;
+      return h('div', { class: `beast-row${open ? '' : ' locked'}${cleared ? ' done' : ''}` }, [
+        h('span', { class: 'beast-ico' }, open ? z.beast!.icon : '❔'),
+        h('div', { class: 'beast-info' }, [
+          h('b', {}, open ? `${boss?.name ?? '—'}` : `第 ${z.beast!.order} 隻神獸`),
+          h('small', {}, open ? `Lv.${boss?.level ?? '?'}${el ? `・${el.icon}${el.name}` : ''}・${z.name}` : '？？？'),
+          h('small', { class: 'beast-sub' }, sub),
+        ]),
+        action,
+      ]);
+    });
+    return h('div', { class: 'card beast-card' }, [
+      h('h4', {}, [`⚔ 神獸討伐`, h('small', {}, `已討伐 ${done} / ${BEAST_ORDER.length}`)]),
+      h('p', {}, '古希臘神話裡的 10 隻神獸，各有一座只有魔王的競技場，隨主線進度開放。每次打倒都會掉首領裝備，第一次打倒另外送鑽石。'),
+      h('div', { class: 'beast-list' }, rows),
+    ]);
   }
 
   /** 每週首領挑戰卡片（v1.78） */

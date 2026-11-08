@@ -1,6 +1,7 @@
 import type { HeroClass } from './classes';
 import { CLASSES } from './classes';
-import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, bossOf, zoneLabel } from './zones';
+import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, BEAST_ORDER, bossOf, zoneLabel } from './zones';
+import { beastFirstGems } from '@/systems/BeastHunt';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, ENHANCE_GEM_COST, ENHANCE_MAX, POTION_PRICE, RARITY, RARITY_ORDER } from './items';
 import { BOSS_PACE } from '@/systems/BossScaling';
 import { TACTICS } from '@/systems/BossTactics';
@@ -189,6 +190,8 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         ...DUNGEON_ORDER.map((id) => zoneLine(id)),
         '副本要依序解鎖：擊敗上一層的首領才能進下一層。',
         ...SIDE_ORDER.map((id) => `**支線・${ZONES[id].name}**：擊敗${zoneLabel(ZONES[id].side!.unlockAfter)}後開放，守護者是${bossOf(id)?.name ?? '？'}。`),
+        `**⚔ 神獸討伐**（地圖頁）：${BEAST_ORDER.length} 座只有一隻魔王的競技場，隨主線開放；每次打倒都掉首領裝備，第一次打倒另外送 ${beastFirstGems(1)}～${beastFirstGems(BEAST_ORDER.length)}💎。`,
+        ...BEAST_ORDER.map((id) => `**神獸討伐・${ZONES[id].name}**：擊敗${zoneLabel(ZONES[id].beast!.unlockAfter)}後開放，魔王是${bossOf(id)?.name ?? '？'}（Lv.${bossOf(id)?.level ?? '?'}）。`),
       ],
     },
     {

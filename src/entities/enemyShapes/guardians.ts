@@ -10,7 +10,7 @@ import { fourLegs } from './beasts';
  * 天馬的羽翼：pivot 在肩胛，往外展開；長羽一根根往後扇開（俯視也看得出是羽毛，不是木板）。
  * 回傳 pivot（rotation.z 控制上下拍動）。
  */
-function featherWing(b: ShapeBuilder, side: number, x: number, y: number, z: number, color: number, tip: number, size: number): THREE.Group {
+export function featherWing(b: ShapeBuilder, side: number, x: number, y: number, z: number, color: number, tip: number, size: number): THREE.Group {
   const p = b.group(x, y, z);
   // 翼骨（上緣）
   const arm = b.add(new THREE.CylinderGeometry(0.035 * size, 0.05 * size, 0.85 * size, 6), color, side * 0.4 * size, 0.05, 0, p);

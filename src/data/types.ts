@@ -47,6 +47,16 @@ export type ZoneId =
   | 'side_8'
   | 'side_9'
   | 'side_10'
+  | 'beast_1'
+  | 'beast_2'
+  | 'beast_3'
+  | 'beast_4'
+  | 'beast_5'
+  | 'beast_6'
+  | 'beast_7'
+  | 'beast_8'
+  | 'beast_9'
+  | 'beast_10'
   | 'trial_tower';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
@@ -235,6 +245,18 @@ export interface ZoneDef {
     /** 擊敗哪一層首領後開放 */
     unlockAfter: ZoneId;
   };
+  /**
+   * 神獸討伐（v1.86）：只有一隻魔王的競技場。kind 是 'field'，不列在野外清單，
+   * 地圖頁另外一張「⚔ 神獸討伐」卡；第一次打倒有額外鑽石（systems/BeastHunt.ts）。
+   */
+  beast?: {
+    /** 第幾關（1～10） */
+    order: number;
+    /** 擊敗哪一層首領後開放 */
+    unlockAfter: ZoneId;
+    /** 地圖頁圖示 */
+    icon: string;
+  };
   /** 無盡試煉塔（v1.70）：沒有固定的怪，不列在野外 / 副本清單 */
   tower?: boolean;
   /** 副本專用 */
@@ -310,7 +332,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus' | 'phoenix' | 'boreas' | 'briareos' | 'scorpius' | 'phobos' | 'ares';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus' | 'phoenix' | 'boreas' | 'briareos' | 'scorpius' | 'phobos' | 'ares' | 'orthrus' | 'mare' | 'cacus' | 'amphisbaena' | 'charybdis' | 'caucasus' | 'colchis' | 'antaeus' | 'enceladus' | 'typhon';
 
 /** 首領招式 id（招式資料在 data/bossSkills.ts） */
 export type { BossSkillId } from './bossSkills';

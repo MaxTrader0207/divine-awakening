@@ -13,7 +13,8 @@ import { MinionManager } from '@/systems/MinionManager';
 import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
-import { ZONES, DUNGEON_ORDER, SIDE_ORDER, lootTierOf, rollZoneTier, floorLabel } from '@/data/zones';
+import { ZONES, DUNGEON_ORDER, SIDE_ORDER, BEAST_ORDER, lootTierOf, rollZoneTier, floorLabel } from '@/data/zones';
+import { beastBonus, beastsDone } from '@/systems/BeastHunt';
 import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
 import { InputManager } from '@/input/InputManager';
@@ -1882,7 +1883,13 @@ export class Game {
         if (bondUp) this.onBondUp(comp.id);
       }
     }
-    const sideUnlocked = first ? SIDE_ORDER.filter((id) => ZONES[id].side!.unlockAfter === zoneId) : [];
+    const sideUnlocked = first ? [...SIDE_ORDER.filter((id) => ZONES[id].side!.unlockAfter === zoneId), ...BEAST_ORDER.filter((id) => ZONES[id].beast!.unlockAfter === zoneId)] : [];
+    // v1.86 神獸討伐：第一次打倒額外鑽石
+    const beastGems = first ? beastBonus(zoneId) : 0;
+    if (beastGems) {
+      s.gems += beastGems;
+      bus.emit('toast', { text: `⚔ 第一次討伐${name}：+${beastGems}💎（神獸討伐 ${beastsDone(s.bossesDefeated)} / ${BEAST_ORDER.length}）`, duration: 3.5, kind: 'reward' });
+    }
     bus.emit('banner', { text: `擊敗${name}！` });
     bus.emit('boss:defeated', { zoneId, first });
     // 結算（沒有開戰紀錄時——例如一擊必殺——當作 1 秒）
@@ -1899,7 +1906,7 @@ export class Game {
         bossName: name,
         exp,
         gold,
-        gems,
+        gems: gems + beastGems,
         unlocked: first || mythicFirst ? next : undefined,
         mythic: mythic || undefined,
         allDone,

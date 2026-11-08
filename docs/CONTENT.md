@@ -49,6 +49,16 @@ v1.29 起，遊戲內容依「關卡」組織：**一個關卡一個檔案**，�
 6. **破關文字**：`data/stageClear.ts` 補結局與 7 職業台詞（`stageClear.test.ts` 的關卡數 +1）。
 7. `npm test`：`companions.test.ts` 會檢查守護者 / 地圖 / 夥伴 / 屬性是否對得上。
 
+## 新增神獸討伐關卡（v1.86）
+
+只有一隻魔王的競技場，`ZoneDef.beast = { order, unlockAfter, icon }`、`kind: 'field'`，不列在野外清單，地圖頁「⚔ 神獸討伐」卡（`Menu.beastCard()`）依 `BEAST_ORDER`（`beast.order`）排序。
+
+1. `data/stages/beastN-*.ts`（可以用 scratchpad 的 `gen/gen_beasts.py` 產生後再改）：一個出生點、`levelRange` = [魔王等級 − 2, 魔王等級]、`lootTier` = `tierForLevel(等級)`。
+2. 魔王：`boss: true`、`element`、4 招（`data/bossSkills.ts` 的 `<shape>_*`）、新造型放 `entities/enemyShapes/mythbeasts.ts` 並登記。
+3. `stages/index.ts` 的 `STAGES`、`types.ts` 的 `ZoneId`。
+4. `data/stageClear.ts`：`STAGE_EPILOGUE` ＋ 7 個職業的 `CLEAR_QUOTES`（`stageClear.test.ts` 的關卡數要加）。
+5. 首殺鑽石在 `systems/BeastHunt.ts`（`BEAST`），進度就是 `bossesDefeated`。
+
 ## 新增小怪
 
 在關卡檔的 `enemies` 加一筆 `EnemyDef`：

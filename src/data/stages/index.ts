@@ -38,6 +38,16 @@ import { etnaFoothills } from './side7-etna-foothills';
 import { chiosHuntingGround } from './side8-chios-hunting-ground';
 import { spartaPhobosShrine } from './side9-sparta-phobos-shrine';
 import { areopagus } from './side10-areopagus';
+import { orthrusDen } from './beast1-orthrus-den';
+import { diomedesStables } from './beast2-diomedes-stables';
+import { aventineCave } from './beast3-aventine-cave';
+import { libyanDunes } from './beast4-libyan-dunes';
+import { whirlpoolStrait } from './beast5-whirlpool-strait';
+import { caucasusPeak } from './beast6-caucasus-peak';
+import { goldenFleeceGrove } from './beast7-golden-fleece-grove';
+import { libyanArena } from './beast8-libyan-arena';
+import { phlegraFields } from './beast9-phlegra-fields';
+import { typhonAbyss } from './beast10-typhon-abyss';
 import { trialTower } from './trial-tower';
 
 /**
@@ -50,7 +60,8 @@ import { trialTower } from './trial-tower';
 export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, delphiPath, marathonField, troyBeach, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
   calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
   heliconSpring, idaSummit, colchisGrove, aegaePalace,
-  rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus, trialTower];
+  rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus,
+  orthrusDen, diomedesStables, aventineCave, libyanDunes, whirlpoolStrait, caucasusPeak, goldenFleeceGrove, libyanArena, phlegraFields, typhonAbyss, trialTower];
 
 export const ZONES = Object.fromEntries(STAGES.map((s) => [s.zone.id, s.zone])) as Record<ZoneId, ZoneDef>;
 
@@ -68,10 +79,15 @@ export const DUNGEON_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.dungeon)
   .map((s) => s.zone.id);
 
 /** 城鎮與野外（世界地圖上可以直接前往的地方），依登記順序 */
-export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon' && !s.zone.side && !s.zone.tower).map((s) => s.zone.id);
+export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon' && !s.zone.side && !s.zone.beast && !s.zone.tower).map((s) => s.zone.id);
 
 /** 支線地圖（守護者的家，v1.58），依登記順序 */
 export const SIDE_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.side).map((s) => s.zone.id);
+
+/** 神獸討伐（v1.86），依關數排序 */
+export const BEAST_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.beast)
+  .sort((a, b) => a.zone.beast!.order - b.zone.beast!.order)
+  .map((s) => s.zone.id);
 
 /** 還沒做的地區（只在地圖頁列出名稱） */
 export const UPCOMING_FIELDS: { name: string; range: string }[] = [
@@ -151,7 +167,7 @@ export function zonesForLevel(level: number, bossesDefeated: ZoneId[]): ZoneId[]
   const out: ZoneId[] = [];
   for (const st of STAGES) {
     const z = st.zone;
-    if (z.safe || !z.levelRange) continue;
+    if (z.safe || !z.levelRange || z.beast) continue; // 神獸討伐只有魔王，不出「擊倒 N 隻」任務
     if (z.minLevel && level < z.minLevel) continue;
     const after = z.dungeon?.unlockAfter ?? z.side?.unlockAfter;
     if (after && !bossesDefeated.includes(after)) continue;

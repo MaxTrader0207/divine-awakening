@@ -12,7 +12,7 @@ import type { ShapeBuild, ShapeBuilder } from './types';
  */
 
 /** 一顆蛇頭（掛在 parent 下，嘴朝 +z）：回傳下顎 pivot */
-function snakeHead(b: ShapeBuilder, parent: THREE.Object3D, size: number, color: number, belly: number, eye: number): THREE.Group {
+export function snakeHead(b: ShapeBuilder, parent: THREE.Object3D, size: number, color: number, belly: number, eye: number): THREE.Group {
   const head = b.add(new THREE.SphereGeometry(0.22 * size, 8, 6), color, 0, 0, 0.08 * size, parent);
   head.scale.set(1, 0.75, 1.5);
   b.add(new THREE.ConeGeometry(0.12 * size, 0.22 * size, 6), color, 0, 0.02 * size, 0.38 * size, parent).rotation.x = Math.PI / 2;
@@ -29,7 +29,7 @@ function snakeHead(b: ShapeBuilder, parent: THREE.Object3D, size: number, color:
 }
 
 /** 一條由數段圓柱組成的長頸（沿 pivot 的 +y 往上），頂端回傳頭的掛點 */
-function neck(b: ShapeBuilder, parent: THREE.Object3D, segs: number, len: number, r0: number, r1: number, color: number): THREE.Group {
+export function neck(b: ShapeBuilder, parent: THREE.Object3D, segs: number, len: number, r0: number, r1: number, color: number): THREE.Group {
   let cur: THREE.Object3D = parent;
   const segLen = len / segs;
   for (let i = 0; i < segs; i++) {

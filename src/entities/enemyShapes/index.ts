@@ -7,6 +7,7 @@ import { boar, cyclops, gorgon, lion } from './legends';
 import { chimera, dragon, sphinx } from './monsters';
 import { centaur, cetus, griffin, hind, scylla } from './wilds';
 import { argus, echidna, geryon, kampe } from './primordials';
+import { amphisbaena, antaeus, cacus, caucasus, charybdis, colchis, enceladus, mare, orthrus, typhon } from './mythbeasts';
 import { aetos, ares, boreas, briareos, chrysomallos, hippocampus, pegasus, phobos, phoenix, scorpius } from './guardians';
 
 /**
@@ -54,6 +55,16 @@ export const ENEMY_SHAPES: Record<EnemyShape, ShapeBuild> = {
   scorpius,
   phobos,
   ares,
+  orthrus,
+  mare,
+  cacus,
+  amphisbaena,
+  charybdis,
+  caucasus,
+  colchis,
+  antaeus,
+  enceladus,
+  typhon,
 };
 
 export type { ShapeBuild, ShapeBuilder, ShapeAnimState, ShapeResult } from './types';
