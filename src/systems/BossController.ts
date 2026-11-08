@@ -17,6 +17,8 @@ import { TACTICS, dodgeWindupMul, nextDodgeStreak, phaseOf, pickOffset, threatTa
  * - 血量低於 50% 進入第二階段：冷卻縮短、招式用 *Enraged 參數加強，並顯示「狂暴」。
  * - 所有傷害都經過紅色預警（Telegraphs），結算時玩家在範圍內才受傷；結算那一下首領會撲出去（Enemy.strike），重擊會震動鏡頭。
  * - 衝撞、飛撲是幾幀內真的移動過去（飛撲有拋物線），不是瞬間移動。
+ *   v1.90：衝撞最快 DASH_SPEED 公尺 / 秒（越長衝越久），撞到身體才算傷害（以前預警一結束整條路線立刻判定，
+ *   首領還在遠處玩家就被打中）；飛撲最遠 LEAP_MAX 公尺、滯空時間隨距離變長，起跳有揚塵、落地有震波。
  * - 應變（v1.58，邏輯在 BossTactics.ts）：仇恨轉移、看場面挑招、70% / 35% 階段、學習閃躲（預警縮短＋連續技）。
  */
 export const SKILL_CD = 5.5;
@@ -27,7 +29,15 @@ export const ROAR_TIME = 0.9;
 export const FAR_TIME = 1.6;
 /** 衝撞移動時間、飛撲滯空時間（秒） */
 const DASH_TIME = 0.26;
-const LEAP_AIR = 0.6;
+/** 衝撞平均速度上限（公尺 / 秒）：20 公尺的衝撞約 0.83 秒，看得到首領衝過來 */
+export const DASH_SPEED = 24;
+/** 飛撲：最遠距離（再遠就落在半路）、滯空時間＝基本＋每公尺，上下限 */
+export const LEAP_MAX = 14;
+const LEAP_AIR_BASE = 0.45;
+const LEAP_AIR_PER_M = 0.035;
+const LEAP_AIR_MAX = 0.95;
+/** 飛撲起跳前至少蹲多久（秒），玩家看得出要跳了 */
+const LEAP_CROUCH = 0.3;
 /** 能打到遠處的招式（風箏時優先） */
 const REACHING = new Set<BossSkillDef['pattern']>(['leap', 'dash', 'rain', 'line', 'multiLine']);
 
@@ -44,6 +54,13 @@ interface Motion {
   tx: number;
   tz: number;
   height: number;
+  /** 衝撞：撞到玩家的判定寬度（半寬）、這次撞到了沒、撞到時呼叫 */
+  hitW?: number;
+  hitDone?: boolean;
+  onHit?: () => void;
+  /** 飛撲：已經起跳（揚塵只放一次）；衝撞：上次留下煙塵的位置 */
+  launched?: boolean;
+  trail?: number;
 }
 
 interface BossState {
@@ -243,7 +260,7 @@ export class BossController {
       // 分段碰撞，不會穿牆；不會衝出脫戰範圍，否則首領會回家補滿血
       const col = this.ctx.collision();
       const maxHome = LEASH * 2 - 3;
-      const want = m.len * (1 - (1 - u) * (1 - u)); // 快衝、尾段減速
+      const want = m.len * (1 - Math.pow(1 - u, 1.5)); // 起步最快（平均速度的 1.5 倍）、尾段減速
       const done = Math.hypot(e.pos.x - m.sx, e.pos.z - m.sz);
       const steps = 6;
       const seg = Math.max(0, want - done) / steps;
@@ -259,11 +276,23 @@ export class BossController {
         e.pos.x = nx;
         e.pos.z = nz;
         col.resolve(e.pos, e.radius);
+        // 撞到身體才算（每次衝撞最多一次）
+        const p = this.ctx.player;
+        if (!m.hitDone && m.onHit && p.alive && Math.hypot(p.pos.x - e.pos.x, p.pos.z - e.pos.z) <= (m.hitW ?? 1) + p.radius + e.radius * 0.3) {
+          m.hitDone = true;
+          m.onHit();
+        }
         // 撞牆：停下
         if (Math.hypot(e.pos.x - bx, e.pos.z - bz) < seg * 0.3) {
           m.t = m.dur;
           break;
         }
+      }
+      // 沿路揚起煙塵（每 3 公尺一團）
+      const gone = Math.hypot(e.pos.x - m.sx, e.pos.z - m.sz);
+      if (gone - (m.trail ?? 0) >= 3) {
+        m.trail = gone;
+        this.ctx.effects.ring(e.pos.x, e.pos.z, 0.3, 1.4 + e.radius * 0.5, 0xd8c8a8, 0.3);
       }
       if (m.t >= m.dur) {
         st.motion = null;
@@ -273,6 +302,11 @@ export class BossController {
       return;
     }
     // 飛撲：拋物線（起跳快、落下快），落地由預警結算處理
+    if (!m.launched) {
+      m.launched = true;
+      this.ctx.effects.ring(m.sx, m.sz, 0.4, 2 + e.radius, 0xd8c8a8, 0.4);
+      bus.emit('camera:shake', { power: 0.15 });
+    }
     const k = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
     e.pos.x = m.sx + (m.tx - m.sx) * k;
     e.pos.z = m.sz + (m.tz - m.sz) * k;
@@ -332,14 +366,25 @@ export class BossController {
       case 'dash': {
         const sx = e.pos.x;
         const sz = e.pos.z;
+        const dur = Math.max(DASH_TIME, sk.length / DASH_SPEED);
         tg.add({ kind: 'rect', x: sx, z: sz, dir, length: sk.length, width: sk.width }, t, (inside) => {
-          hit(inside);
+          release();
           if (!e.alive) return;
-          // 衝到終點（幾幀內移動過去，見 move()）
-          st.motion = { kind: 'dash', t: 0, dur: DASH_TIME, sx: e.pos.x, sz: e.pos.z, dir, len: sk.length, tx: 0, tz: 0, height: 0 };
+          // 召喚物照預警範圍判定；玩家要真的被首領撞到才算（見 move()）
+          this.ctx.hitMinionsInside?.(e, sk.power, inside);
+          st.motion = {
+            kind: 'dash', t: 0, dur, sx: e.pos.x, sz: e.pos.z, dir, len: sk.length, tx: 0, tz: 0, height: 0,
+            hitW: sk.width / 2,
+            onHit: () => {
+              st.lastHit = true;
+              this.ctx.hitPlayer(e, sk.power);
+              fx.ring(player.pos.x, player.pos.z, 0.4, 2.2, sk.color, 0.35);
+              bus.emit('camera:shake', { power: 0.3 });
+            },
+          };
           fx.ring(sx, sz, 0.5, 2.5, sk.color, 0.35);
         });
-        return t;
+        return t + dur;
       }
       case 'nova': {
         const r = enraged ? (sk.radiusEnraged ?? sk.radius) : sk.radius;
@@ -366,20 +411,24 @@ export class BossController {
         return t;
       }
       case 'leap': {
-        // 落點：預警圈中心（玩家位置）往首領這邊退一個身位，落在玩家面前而不是壓在身上
+        // 預警圈中心：玩家位置；太遠時只跳 LEAP_MAX 公尺（落在半路，不會一下子從場地另一頭飛到身邊）
         const d0 = Math.hypot(p.pos.x - e.pos.x, p.pos.z - e.pos.z);
-        const back = Math.min(d0, e.radius * 0.9 + p.radius);
-        const tx = p.pos.x - Math.sin(dir) * back;
-        const tz = p.pos.z - Math.cos(dir) * back;
-        const cx = p.pos.x;
-        const cz = p.pos.z;
-        // 先蹲低蓄力，預警最後 LEAP_AIR 秒跳起來，落地正好是結算
-        const air = Math.min(LEAP_AIR, t * 0.6);
+        const reach = Math.min(d0, LEAP_MAX);
+        const cx = e.pos.x + Math.sin(dir) * reach;
+        const cz = e.pos.z + Math.cos(dir) * reach;
+        // 落點：圈中心往首領這邊退一個身位，落在玩家面前而不是壓在身上
+        const back = Math.min(reach, e.radius * 0.9 + p.radius);
+        const tx = cx - Math.sin(dir) * back;
+        const tz = cz - Math.cos(dir) * back;
+        // 滯空時間隨距離變長（遠跳飛得久、飛得高）；先蹲低蓄力至少 LEAP_CROUCH 秒，落地正好是結算
+        const dist = Math.hypot(tx - e.pos.x, tz - e.pos.z);
+        const air = Math.min(LEAP_AIR_MAX, LEAP_AIR_BASE + dist * LEAP_AIR_PER_M);
+        const lt = Math.max(t, air + LEAP_CROUCH);
         st.motion = {
-          kind: 'leap', t: -(t - air), dur: air, sx: e.pos.x, sz: e.pos.z, dir, len: 0, tx, tz,
-          height: 1.6 + e.def.scale * 0.7,
+          kind: 'leap', t: -(lt - air), dur: air, sx: e.pos.x, sz: e.pos.z, dir, len: 0, tx, tz,
+          height: 1.6 + e.def.scale * 0.7 + dist * 0.08,
         };
-        tg.add({ kind: 'circle', x: cx, z: cz, r: sk.radius }, t, (inside) => {
+        tg.add({ kind: 'circle', x: cx, z: cz, r: sk.radius }, lt, (inside) => {
           st.motion = null;
           e.airY = 0;
           if (!e.alive) return;
@@ -388,9 +437,10 @@ export class BossController {
           this.ctx.collision().resolve(e.pos, e.radius);
           hit(inside);
           fx.ring(cx, cz, 1, sk.radius * 1.2, sk.color, 0.5);
+          fx.ring(cx, cz, sk.radius * 0.6, sk.radius * 1.8, 0xd8c8a8, 0.45);
           fx.disc(cx, cz, sk.radius, sk.discColor ?? sk.color, 0.4, 0.6);
         });
-        return t;
+        return lt;
       }
       case 'line': {
         const n = enraged ? (sk.countEnraged ?? sk.count) : sk.count;
