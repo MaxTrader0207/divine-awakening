@@ -8,12 +8,62 @@ import { updateEnemyAI, type AiContext } from './EnemyAI';
  * EnemyManager：依區域的 spawns 生成敵人、每幀更新 AI 與動畫、提供查詢。
  * 切換區域時 clear() 會釋放所有敵人。
  */
+const BLOB_MAX = 64;
+
+/** 中間深、邊緣漸淡的圓形影子貼圖 */
+function blobTexture(): THREE.Texture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.55, 'rgba(255,255,255,0.75)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export class EnemyManager {
   enemies: Enemy[] = [];
   /** 地面高度查詢（高台），由 Game 指向目前 Zone */
   heightAt: (x: number, z: number) => number = () => 0;
 
-  constructor(private scene: THREE.Scene) {}
+  /** 小怪的圓形影子（v1.84）：所有小怪共用一個 InstancedMesh，1 個 draw call */
+  private blobs: THREE.InstancedMesh;
+  private blobM = new THREE.Matrix4();
+
+  constructor(private scene: THREE.Scene) {
+    const tex = blobTexture();
+    const mat = new THREE.MeshBasicMaterial({ map: tex, color: 0x000000, transparent: true, opacity: 0.5, depthWrite: false });
+    const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    this.blobs = new THREE.InstancedMesh(geo, mat, BLOB_MAX);
+    this.blobs.count = 0;
+    this.blobs.frustumCulled = false;
+    this.blobs.renderOrder = -1;
+    scene.add(this.blobs);
+  }
+
+  /** 每幀把活著的小怪影子放到地面上（飛得越高影子越小越淡——淡用縮小近似） */
+  private updateBlobs() {
+    let n = 0;
+    for (const e of this.enemies) {
+      if (n >= BLOB_MAX) break;
+      if (e.def.boss || e.state === 'dead' || !e.object.visible) continue;
+      const r = (e.radius * 2.9 * e.blobFade) / (1 + e.blobLift * 0.35);
+      this.blobM.makeScale(r, 1, r).setPosition(e.pos.x, e.groundY + 0.035, e.pos.z);
+      this.blobs.setMatrixAt(n++, this.blobM);
+    }
+    this.blobs.count = n;
+    this.blobs.instanceMatrix.needsUpdate = true;
+  }
+
+  /** 特寫畫面暫時隱藏敵人時，影子也一起藏 */
+  setBlobsVisible(v: boolean) {
+    this.blobs.visible = v;
+  }
 
   /**
    * 依區域生成敵人。mod（v1.77 神話難度）：每隻生成後套用難度倍率；回傳覆寫的等級與防禦（標籤要在建立時就知道）。
@@ -69,6 +119,7 @@ export class EnemyManager {
       e.update(dt, camera);
     }
     this.separate();
+    this.updateBlobs();
   }
 
   /** 敵人之間互相推開，避免疊在一起 */

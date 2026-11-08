@@ -145,7 +145,8 @@ export class Enemy {
     if (def.boss) this.look = new BossLook(new THREE.Color(def.color).lerp(new THREE.Color(0xffe8d0), 0.45).getHex());
     this.height = this.buildRig() ?? this.buildBody() * def.scale;
     if (!this.rig) this.mergeTree();
-    if (!def.boss) this.limitShadows();
+    if (!def.boss) this.dropShadows();
+    if (!def.boss && !this.rig) this.skinTree();
     if (def.boss && !this.rig) {
       this.smoother = new PoseSmoother(this.body);
       this.smoother.collect();
@@ -277,6 +278,14 @@ export class Enemy {
   }
 
   /** 前搖中（出手前），身體會變紅並後仰，讓玩家看得出要攻擊了 */
+  /** 圓形影子用（v1.84）：離地高度、倒下縮小比例 */
+  get blobLift() {
+    return Math.max(0, this.airY + this.body.position.y);
+  }
+  get blobFade() {
+    return this.state === 'dying' ? Math.max(0.2, this.body.scale.x / this.def.scale) : 1;
+  }
+
   get winding() {
     return this.windup > 0;
   }
@@ -487,6 +496,102 @@ export class Enemy {
    * 動畫會直接改到位置 / 旋轉 / 縮放 / 顯示 / 顏色的網格不合併；有子物件的網格也不合併。
    * 受光零件（Lambert / Phong）合成一個，發光零件（MeshBasic、不透明）另外合成一個。
    */
+  /** 造型動畫會切換顯示或改顏色的網格（不能併進 skinTree） */
+  private animFixed = new Set<THREE.Object3D>();
+  private skeletons: THREE.Skeleton[] = [];
+
+  /**
+   * 效能（v1.84）：小怪的程式模型整隻合成 1～2 個「剛體蒙皮」網格（受光一個、發光一個）。
+   * 每個零件（含 mergeTree 合併後的網格）當作一根骨頭：頂點只跟著它原本那個零件動，權重 1。
+   * 零件物件本身留在原位（造型動畫照樣改它的位置 / 旋轉 / 縮放），只把它的幾何換成空的（不畫）。
+   * 會切換顯示、改顏色、半透明、有貼圖的零件不處理，維持原樣。
+   */
+  private skinTree() {
+    this.object.updateMatrixWorld(true);
+    const groups: Record<'lit' | 'glow', { parts: THREE.Mesh[] }> = { lit: { parts: [] }, glow: { parts: [] } };
+    this.body.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || (m as unknown as THREE.SkinnedMesh).isSkinnedMesh || Array.isArray(m.material) || this.animFixed.has(m)) return;
+      let p: THREE.Object3D | null = m;
+      while (p && p !== this.body) {
+        if (!p.visible || this.animFixed.has(p)) return;
+        p = p.parent;
+      }
+      const mat = m.material as THREE.Material;
+      if (mat.transparent || (mat as THREE.MeshLambertMaterial).map) return;
+      if (mat instanceof THREE.MeshLambertMaterial || mat instanceof THREE.MeshPhongMaterial) groups.lit.parts.push(m);
+      else if (mat instanceof THREE.MeshBasicMaterial) groups.glow.parts.push(m);
+    });
+    const total = groups.lit.parts.length + groups.glow.parts.length;
+    if (total < 3) return;
+    const inv = new THREE.Matrix4().copy(this.body.matrixWorld).invert();
+    const local = new THREE.Matrix4();
+    const EMPTY = new THREE.BufferGeometry();
+    for (const kind of ['lit', 'glow'] as const) {
+      const parts = groups[kind].parts;
+      if (!parts.length) continue;
+      const geos: THREE.BufferGeometry[] = [];
+      const boneInverses: THREE.Matrix4[] = [];
+      parts.forEach((m, bi) => {
+        local.multiplyMatrices(inv, m.matrixWorld);
+        const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(local);
+        const n = g.attributes.position.count;
+        if (local.determinant() < 0) {
+          // 鏡像零件：三角形繞向反了，換回來才不會被背面剔除
+          for (const name of Object.keys(g.attributes)) {
+            const a = g.attributes[name] as THREE.BufferAttribute;
+            for (let i = 0; i + 2 < n; i += 3) for (let c = 0; c < a.itemSize; c++) {
+              const t = a.getComponent(i + 1, c);
+              a.setComponent(i + 1, c, a.getComponent(i + 2, c));
+              a.setComponent(i + 2, c, t);
+            }
+          }
+        }
+        const mat = m.material as THREE.MeshBasicMaterial;
+        const src = g.attributes.color as THREE.BufferAttribute | undefined;
+        const col = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++) {
+          const k = mat.vertexColors && src ? 1 : 0;
+          col[i * 3] = (k ? src!.getX(i) : 1) * mat.color.r;
+          col[i * 3 + 1] = (k ? src!.getY(i) : 1) * mat.color.g;
+          col[i * 3 + 2] = (k ? src!.getZ(i) : 1) * mat.color.b;
+        }
+        for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+        if (!g.attributes.normal) g.computeVertexNormals();
+        g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+        g.setAttribute('skinIndex', new THREE.BufferAttribute(new Uint16Array(n * 4).fill(0).map((_, j) => (j % 4 === 0 ? bi : 0)), 4));
+        g.setAttribute('skinWeight', new THREE.BufferAttribute(new Float32Array(n * 4).map((_, j) => (j % 4 === 0 ? 1 : 0)), 4));
+        geos.push(g);
+        boneInverses.push(local.clone().invert());
+      });
+      const merged = mergeGeometries(geos, false);
+      geos.forEach((g) => g.dispose());
+      if (!merged) continue;
+      for (const m of parts) {
+        if (!m.geometry.userData.shared) m.geometry.dispose();
+        const mat = m.material as THREE.Material;
+        const k = this.materials.indexOf(mat as LitMaterial);
+        if (k >= 0) this.materials.splice(k, 1);
+        mat.dispose();
+        m.geometry = EMPTY;
+        m.castShadow = false;
+      }
+      const mat: THREE.Material = kind === 'lit' ? new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }) : new THREE.MeshBasicMaterial({ vertexColors: true });
+      if (kind === 'lit') this.materials.push(mat as LitMaterial);
+      const skinned = new THREE.SkinnedMesh(merged, mat);
+      skinned.name = 'rigid-skin';
+      // 骨頭就是零件物件本身（Skeleton 只用到 matrixWorld）
+      const skeleton = new THREE.Skeleton(parts as unknown as THREE.Bone[], boneInverses);
+      this.body.add(skinned);
+      skinned.bind(skeleton, new THREE.Matrix4());
+      // 包圍球：綁定姿勢再放大，涵蓋動畫的擺動（之後不重算）
+      merged.computeBoundingSphere();
+      skinned.boundingSphere = merged.boundingSphere!.clone();
+      skinned.boundingSphere.radius *= 1.5;
+      this.skeletons.push(skeleton);
+    }
+  }
+
   private mergeTree() {
     const nodes: THREE.Object3D[] = [];
     this.body.traverse((o) => nodes.push(o));
@@ -512,7 +617,11 @@ export class Enemy {
         st.strike = strike;
         anim(st);
         for (const x of snap) if (!x.o.position.equals(x.p) || !x.o.quaternion.equals(x.q) || !x.o.scale.equals(x.s) || x.o.visible !== x.v) moved.add(x.o);
-        for (const [m, k] of mats) if (matKey(m) !== k) moved.add(m);
+        for (const x of snap) if (x.o.visible !== x.v) this.animFixed.add(x.o);
+        for (const [m, k] of mats) if (matKey(m) !== k) {
+          moved.add(m);
+          this.animFixed.add(m);
+        }
       }
       for (const x of snap) {
         x.o.position.copy(x.p);
@@ -575,22 +684,13 @@ export class Enemy {
   }
 
   /**
-   * 效能（v1.81）：小怪只讓最大的 2 個零件投影子（身體、頭），腳、翅膀、尾巴這些小零件不投影。
-   * 陰影要把投影的網格再畫一次，程式模型的小怪零件多（奇美拉 42 個），這樣副本的 draw call 少很多。
+   * 效能（v1.84）：小怪不畫真正的陰影，改由 EnemyManager 統一畫圓形影子（全部小怪合起來 1 個 draw call）。
+   * v1.81 時只留最大的 2 個零件投影，副本裡小怪的陰影仍佔 25～40 個 draw call。首領照舊投影。
    */
-  private limitShadows() {
-    const meshes: { m: THREE.Mesh; r: number }[] = [];
+  private dropShadows() {
     this.body.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh || !m.castShadow) return;
-      if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
-      const s = new THREE.Vector3();
-      m.getWorldScale(s);
-      meshes.push({ m, r: (m.geometry.boundingSphere?.radius ?? 0) * Math.max(s.x, s.y, s.z) });
+      (o as THREE.Mesh).castShadow = false;
     });
-    if (meshes.length <= 2) return;
-    meshes.sort((a, b) => b.r - a.r);
-    for (let i = 2; i < meshes.length; i++) meshes[i].m.castShadow = false;
   }
 
   /** 程式模型：依 shape 從 enemyShapes 登記表建造（面向 +z），回傳模型高度（未縮放） */
@@ -634,6 +734,7 @@ export class Enemy {
 
   dispose() {
     this.rig?.dispose();
+    for (const sk of this.skeletons) sk.dispose();
     this.object.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.geometry && !mesh.geometry.userData.shared) mesh.geometry.dispose(); // 模型庫的幾何共用

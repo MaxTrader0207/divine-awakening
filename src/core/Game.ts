@@ -18,6 +18,7 @@ import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
 import { InputManager } from '@/input/InputManager';
 import { ZoneManager } from '@/world/ZoneManager';
+import { SHADOW_ONLY_LAYER } from '@/world/Zone';
 import { Hud, type BuffInfo } from '@/ui/Hud';
 import { Menu } from '@/ui/Menu';
 import { DamageNumbers } from '@/ui/DamageNumbers';
@@ -203,6 +204,8 @@ export class Game {
     sc.right = sc.top = 30;
     sc.near = 1;
     sc.far = 80;
+    // v1.84：陰影相機也看第 1 層（場景的「只投影」合併網格放在第 1 層，主鏡頭看不到）
+    sc.layers.enable(SHADOW_ONLY_LAYER);
     this.sun.shadow.bias = -0.0008;
     this.scene.add(this.sun, this.sun.target);
     this.quality = new Quality(this.renderer, this.sun, this.state.settings, () => this.resize());
@@ -603,6 +606,7 @@ export class Game {
         this.clearScreen.show(info);
         // 特寫畫面不要有名牌、地名標籤、首領屍體、小怪擋在鏡頭前（關閉時還原）
         this.hiddenSprites = [];
+        this.enemies.setBlobsVisible(false);
         for (const e of this.enemies.enemies) {
           if (e.object.visible) {
             e.object.visible = false;
@@ -775,6 +779,7 @@ export class Game {
     this.rig.setCinematic(false);
     for (const o of this.hiddenSprites) o.visible = true;
     this.hiddenSprites = [];
+    this.enemies.setBlobsVisible(true);
     this.player.invulnerable = Math.max(this.player.invulnerable, 1.5);
   }
 

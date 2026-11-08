@@ -12,6 +12,11 @@ import { Critters } from './Critters';
  * Zone：一個已載入的區域（場景物件 + 碰撞 + 傳送點）。
  * 由 ZoneManager 建立與銷毀；切換區域時整個 group 會被 dispose。
  */
+/** 只投影子的網格放的圖層（主鏡頭只看第 0 層） */
+export const SHADOW_ONLY_LAYER = 1;
+const SHADOW_PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+SHADOW_PROXY_MAT.userData.shared = true;
+
 export class Zone {
   readonly def: ZoneDef;
   readonly group = new THREE.Group();
@@ -124,14 +129,27 @@ export class Zone {
       if (!m.geometry.userData.shared) m.geometry.dispose(); // 模型庫的幾何是共用的，不能釋放
       m.removeFromParent();
     }
+    const shadowGeos: THREE.BufferGeometry[] = [];
     for (const [mat, geos] of byMat) {
       const merged = mergeGeometries(geos, false);
       geos.forEach((g) => g.dispose());
       if (!merged) continue;
       const mesh = new THREE.Mesh(merged, mat);
-      mesh.castShadow = true;
       mesh.receiveShadow = true;
       this.group.add(mesh);
+      const sg = new THREE.BufferGeometry();
+      sg.setAttribute('position', merged.getAttribute('position'));
+      shadowGeos.push(sg);
+    }
+    // 效能（v1.84）：陰影只需要形狀，不管顏色——所有靜態網格再合成一個「只投影」的網格（陰影 1 個 draw call），
+    // 放在第 1 層：主鏡頭不畫它，只有陰影相機畫（Game 的 sun.shadow.camera.layers）。
+    const shadow = shadowGeos.length ? mergeGeometries(shadowGeos, false) : null;
+    if (shadow) {
+      const proxy = new THREE.Mesh(shadow, SHADOW_PROXY_MAT);
+      proxy.castShadow = true;
+      proxy.layers.set(SHADOW_ONLY_LAYER);
+      proxy.name = 'shadow-proxy';
+      this.group.add(proxy);
     }
   }
 
