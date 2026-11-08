@@ -1254,3 +1254,9 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
 .go.wide { width: 100%; padding: 10px; }
 .daily-deals s { color: var(--muted); margin-right: 2px; }
 .deal-left { font-style: normal; font-size: 11px; font-weight: 600; color: #ffd36b; margin-left: 4px; }
+
+/* v1.98 背包的一鍵賣出：稀有度選擇＋按鈕 */
+.junk-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 2px 0 8px; }
+.junk-row .seg { flex: 0 0 auto; }
+.junk-row .go { flex: 1 1 auto; min-width: 0; }
+.junk-row small { flex-basis: 100%; opacity: .7; }

@@ -136,16 +136,25 @@ export function sell(s: InventoryState, uid: number): number {
   return price;
 }
 
-/** 一鍵賣出：比目前裝備差、且稀有度在指定以下的 */
-export function sellJunk(s: InventoryState, maxRarity: Rarity): { count: number; gold: number } {
+/**
+ * 一鍵賣出會賣掉哪些：稀有度在 maxRarity 以下、沒強化過、不是★神話裝，
+ * 而且同欄位身上有穿、身上的比較好（v1.98：★神話裝與身上沒穿東西的欄位不賣，跟撿到時自動賣出一致）
+ */
+export function junkItems(s: InventoryState, maxRarity: Rarity): ItemInstance[] {
   const limit = RARITY_ORDER.indexOf(maxRarity);
+  return s.inventory.filter((it) => {
+    const b = ITEM_BASES[it.base];
+    if (!b || b.named || it.plus > 0 || RARITY_ORDER.indexOf(it.rarity) > limit) return false;
+    const cur = s.equipment[b.slot];
+    return !!cur && itemScore(cur) >= itemScore(it);
+  });
+}
+
+/** 一鍵賣出：比目前裝備差、且稀有度在指定以下的（清單見 junkItems） */
+export function sellJunk(s: InventoryState, maxRarity: Rarity): { count: number; gold: number } {
   let count = 0;
   let gold = 0;
-  for (const it of [...s.inventory]) {
-    if (RARITY_ORDER.indexOf(it.rarity) > limit || it.plus > 0) continue;
-    const slot = ITEM_BASES[it.base]?.slot;
-    const cur = slot ? s.equipment[slot] : undefined;
-    if (cur && itemScore(cur) < itemScore(it)) continue;
+  for (const it of junkItems(s, maxRarity)) {
     gold += sell(s, it.uid);
     count++;
   }

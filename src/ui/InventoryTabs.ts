@@ -5,7 +5,7 @@ import {
   STAT_LABELS, enhanceCost, formatStat, sellPrice, shopPrice,
 } from '@/data/items';
 import {
-  INVENTORY_SIZE, addItem, computeStats, enhance, equip, findItem, itemName, itemScore, itemStats, sell, sellJunk, unequip,
+  INVENTORY_SIZE, addItem, computeStats, enhance, equip, findItem, itemName, itemScore, itemStats, junkItems, sell, sellJunk, unequip,
   type ItemInstance,
 } from '@/systems/Inventory';
 import { h } from './dom';
@@ -212,6 +212,8 @@ let selectedUid: number | null = null;
 let invView: 'gear' | 'items' | 'companions' = 'gear';
 /** 背包篩選 */
 let invFilter: 'all' | 'named' | EquipSlot = 'all';
+/** v1.98 一鍵賣出的稀有度上限（只在這次開遊戲期間記住；預設跟「撿到時自動賣出」一樣，關閉時用普通） */
+let junkLevel: 'common' | 'fine' | 'rare' | null = null;
 
 const STAT_KEYS: (keyof Stats)[] = ['atk', 'def', 'maxHp', 'maxMp', 'pen', 'critRate', 'critDmg', 'moveSpeed'];
 
@@ -395,21 +397,36 @@ function renderEquipInner(ctx: InvContext): HTMLElement[] {
     ),
   );
   out.push(
-    h('div', { class: 'inv-head' }, [
-      h('span', { class: 'section-title' }, `背包 ${s.inventory.length}/${INVENTORY_SIZE} 格`),
-      h('button', {
-        class: 'go ghost small',
-        onclick: () => {
-          const r = sellJunk(s, 'fine');
-          ctx.toast(r.count ? `賣出 ${r.count} 件，獲得 ${r.gold} 金幣` : '沒有可以賣的裝備（只賣精良以下、比身上差的）');
-          if (r.count) ctx.changed();
-          ctx.rerender();
-        },
-      }, '一鍵賣出較差裝備'),
-    ]),
+    h('div', { class: 'inv-head' }, [h('span', { class: 'section-title' }, `背包 ${s.inventory.length}/${INVENTORY_SIZE} 格`)]),
+    junkRow(ctx),
     grid,
   );
   return out;
+}
+
+/** v1.98 一鍵賣出：選稀有度上限（普通 / 精良以下 / 稀有以下），按鈕上顯示會賣幾件、可以拿多少金幣 */
+function junkRow(ctx: InvContext): HTMLElement {
+  const s = ctx.state;
+  const level = junkLevel ?? (s.settings.autoSell !== 'off' ? s.settings.autoSell : 'common');
+  const list = junkItems(s, level);
+  const gold = list.reduce((g, it) => g + sellPrice(ITEM_BASES[it.base]?.tier ?? 1, it.rarity, it.plus), 0);
+  const opts: ['common' | 'fine' | 'rare', string][] = [['common', '普通'], ['fine', '精良以下'], ['rare', '稀有以下']];
+  return h('div', { class: 'junk-row' }, [
+    h('div', { class: 'seg' }, opts.map(([v, label]) =>
+      h('button', { class: `seg-btn${level === v ? ' on' : ''}`, onclick: () => { junkLevel = v; ctx.rerender(); } }, label),
+    )),
+    h('button', {
+      class: 'go small',
+      disabled: !list.length,
+      onclick: () => {
+        const r = sellJunk(s, level);
+        ctx.toast(r.count ? `賣出 ${r.count} 件，獲得 ${r.gold} 金幣` : '沒有可以賣的裝備');
+        if (r.count) ctx.changed();
+        ctx.rerender();
+      },
+    }, list.length ? `一鍵賣出較差裝備 ${list.length} 件（+${gold}）` : '沒有較差的裝備'),
+    h('small', { class: 'dim' }, '只賣比身上同部位差、沒強化過的；★神話裝不會賣'),
+  ]);
 }
 
 function detailCard(ctx: InvContext, it: ItemInstance): HTMLElement {

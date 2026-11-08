@@ -1,5 +1,6 @@
+import { ITEM_BASES } from '@/data/items';
 import { describe, expect, it } from 'vitest';
-import { addItem, autoSellPrice, computeStats, enhance, equip, itemName, itemStats, sell, sellJunk, unequip, INVENTORY_SIZE, type InventoryState } from './Inventory';
+import { addItem, autoSellPrice, computeStats, enhance, equip, itemName, itemStats, junkItems, sell, sellJunk, unequip, INVENTORY_SIZE, type InventoryState } from './Inventory';
 import { rollDrop } from './LootTable';
 import { statsForLevel } from '@/data/player';
 
@@ -65,6 +66,22 @@ describe('Inventory', () => {
     const r = sellJunk(s, 'fine');
     expect(r.count).toBe(1);
     expect(s.inventory.map((i) => i.base).sort()).toEqual(['hat_t1', 'weapon_t3']);
+  });
+
+  it('一鍵賣出（v1.98）：可選稀有度上限；身上沒穿的部位、★神話裝不賣', () => {
+    const s = fresh();
+    equip(s, addItem(s, 'weapon_t3', 'rare')!.uid);
+    addItem(s, 'weapon_t1', 'common'); // 普通 → 賣
+    addItem(s, 'weapon_t2', 'fine'); // 精良：只有選「精良以下」才賣
+    addItem(s, 'hat_t1', 'common'); // 帽子沒穿 → 留
+    expect(junkItems(s, 'common').map((i) => i.base)).toEqual(['weapon_t1']);
+    expect(junkItems(s, 'fine').map((i) => i.base).sort()).toEqual(['weapon_t1', 'weapon_t2']);
+    const named = Object.keys(ITEM_BASES).find((k) => ITEM_BASES[k].named && ITEM_BASES[k].slot === 'weapon' && (ITEM_BASES[k].tier ?? 1) === 1);
+    if (named) {
+      addItem(s, named, 'common');
+      expect(junkItems(s, 'rare').some((i) => i.base === named)).toBe(false);
+    }
+    expect(sellJunk(s, 'common').count).toBe(1);
   });
 
   it('強化成功 / 失敗 / 鑽石保證', () => {
