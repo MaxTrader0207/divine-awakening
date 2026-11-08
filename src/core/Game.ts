@@ -58,6 +58,8 @@ import { StageClearScreen, type ClearInfo } from '@/ui/StageClearScreen';
 import { finishClear, type BossFight } from '@/systems/StageClear';
 import { CLASS_CLEAR } from '@/data/stageClear';
 import { EndingScreen, type EndingInfo } from '@/ui/EndingScreen';
+import { DeathScreen } from '@/ui/DeathScreen';
+import { REVIVE, payRevive, reviveCost } from '@/systems/Revive';
 import { setOrientationPref } from '@/ui/landscape';
 import { WeeklyScreen, type WeeklyResult } from '@/ui/WeeklyScreen';
 import { WEEKLY, WEEKLY_DIFF_MAP, ensureWeeklyWeek, recordWeeklyWin, weeklyAffixMods, weeklyPick, type WeeklyDiff } from '@/systems/WeeklyBoss';
@@ -154,6 +156,10 @@ export class Game {
   /** 破關畫面（v1.34）：首領戰紀錄 → 慢動作特寫 → 結算畫面 */
   private clearScreen!: StageClearScreen;
   private endingScreen!: EndingScreen;
+  /** v1.82 倒下後的復活選擇 */
+  private deathScreen!: DeathScreen;
+  /** 這次進地圖後付費原地復活了幾次（越用越貴） */
+  private revivesHere = 0;
   /** v1.76 破關畫面關掉後要播結局 */
   private endingPending = false;
   /** v1.77 目前地圖是神話第幾層（0 = 不是神話難度） */
@@ -404,6 +410,11 @@ export class Game {
       goTown: () => this.endClearScreen(() => void this.changeZone('town')),
     });
     this.endingScreen = new EndingScreen(uiRoot);
+    this.deathScreen = new DeathScreen(uiRoot, {
+      here: () => this.reviveHere(),
+      entrance: () => this.reviveAtEntrance(),
+      town: () => this.respawnAfterDeath(),
+    });
     bus.on('ending:replay', () => {
       this.menu.close();
       this.endingScreen.show(this.endingInfo());
@@ -800,8 +811,9 @@ export class Game {
     this.counterTimer = Math.max(0, this.counterTimer - dt);
     if (this.deathTimer > 0) {
       this.deathTimer -= dt;
-      if (this.deathTimer <= 0) this.respawnAfterDeath();
+      if (this.deathTimer <= 0) this.afterDeath();
     }
+    this.deathScreen.update(dt, !this.zones.current?.def.safe);
     this.regen(dt);
 
     if (canAct) {
@@ -820,7 +832,8 @@ export class Game {
     this.aiCtx.collision = collision;
     const zoneNow = this.zones.current!;
     this.player.groundY += (zoneNow.heightAt(this.player.pos.x, this.player.pos.z) - this.player.groundY) * Math.min(1, dt * 14);
-    this.enemies.update(dt, this.rig.camera, this.aiCtx);
+    // v1.82 倒下後等玩家選復活方式：怪物的 AI 先停住（首領不脫戰、不回血），原地復活時戰場跟倒下時一樣
+    this.enemies.update(dt, this.rig.camera, this.player.alive ? this.aiCtx : undefined);
     // 首領戰紀錄：開戰時開始計時；首領脫戰回家就作廢（擊敗時在 onBossDefeated 結算）
     const eb = this.enemies.engagedBoss();
     if (eb && !this.bossFight && !this.towerRun && !this.weeklyRun) {
@@ -841,7 +854,7 @@ export class Game {
     this.updateCompanionSkills(dt);
     this.updateTower(dt);
     this.updateWeekly(dt);
-    this.bosses.update(dt, this.enemies.enemies);
+    if (this.player.alive) this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
     this.loot.update(dt);
@@ -1887,12 +1900,73 @@ export class Game {
     this.deathGoldLost = this.towerRun || this.weeklyRun ? 0 : Math.floor(this.state.gold * DEATH_GOLD_PENALTY);
     if (this.towerRun) this.towerResultPending = this.endTower('dead');
     if (this.weeklyRun) this.weeklyResultPending = this.endWeekly('dead');
-    this.state.gold -= this.deathGoldLost;
+    // 金幣等選了復活方式才扣（原地復活不扣）
     bus.emit('banner', { text: '你被擊敗了…' });
   }
 
-  private respawnAfterDeath() {
+  /** 倒地動畫結束：試煉塔 / 每週挑戰 / 安全區直接回主城結算，其他地方讓玩家選復活方式 */
+  private afterDeath() {
+    if (this.towerResultPending || this.weeklyResultPending || this.zones.current?.def.safe) {
+      this.respawnAfterDeath();
+      return;
+    }
+    const s = this.state;
+    const boss = this.enemies.engagedBoss() ?? (this.bossFight ? this.enemies.enemies.find((e) => e.def.boss && e.alive) : undefined);
+    this.deathScreen.show({
+      place: this.mythicFloorNow ? `🔥神話・${zoneLabel(s.zoneId)}` : zoneLabel(s.zoneId),
+      cost: reviveCost(s.revive, this.revivesHere),
+      gems: s.gems,
+      goldLoss: this.deathGoldLost,
+      entrance: true,
+      bossPct: boss ? Math.max(1, Math.round((boss.hp / boss.maxHp) * 100)) : undefined,
+      autoSecs: this.auto.on ? REVIVE.autoSecs : undefined,
+    });
+  }
+
+  /** 原地復活：不扣金幣，花鑽石（每天第一次免費），幾秒無敵 */
+  private reviveHere() {
+    const s = this.state;
+    const cost = reviveCost(s.revive, this.revivesHere);
+    if (!payRevive(s.revive, s, this.revivesHere)) {
+      bus.emit('toast', { text: `鑽石不夠（需要 ${cost}💎）` });
+      this.afterDeath();
+      return;
+    }
+    if (cost > 0) this.revivesHere++; // 免費那次不算，付費的第一次是基本價
+    this.deathGoldLost = 0;
+    this.player.revive();
+    this.player.invulnerable = REVIVE.invuln;
+    this.skills.reset();
+    const { x, z } = this.player.pos;
+    this.effects.pillar(x, z, 1.2, 0xffe9a0, 1.2);
+    this.effects.ring(x, z, 0.5, 4, 0xfff4c0, 0.8);
+    bus.emit('toast', { text: cost ? `✨ 原地復活（-${cost}💎），${REVIVE.invuln} 秒無敵` : `✨ 原地復活（今天的免費次數），${REVIVE.invuln} 秒無敵`, duration: 2.6 });
+    this.persist();
+    bus.emit('player:changed');
+  }
+
+  /** 在這張地圖的入口復活：扣金幣（跟回主城一樣），怪物維持原狀 */
+  private reviveAtEntrance() {
     const lost = this.deathGoldLost;
+    this.state.gold -= lost;
+    this.deathGoldLost = 0;
+    const zone = this.zones.current!;
+    const at = zone.def.spawn;
+    this.player.revive();
+    this.skills.reset();
+    this.player.groundY = zone.heightAt(at.x, at.z);
+    this.player.teleport(at.x, at.z);
+    this.rig.snapTo(at.x, at.z);
+    bus.emit('toast', { text: lost > 0 ? `在入口復活，損失 ${lost} 金幣` : '在入口復活', duration: 2.6 });
+    this.persist();
+    bus.emit('player:changed');
+  }
+
+  private respawnAfterDeath() {
+    this.deathScreen.hide();
+    const lost = this.deathGoldLost;
+    this.state.gold -= lost;
+    this.deathGoldLost = 0;
     this.enterZone('town', ZONES.town.spawn);
     this.player.revive();
     this.skills.reset();
@@ -1979,6 +2053,8 @@ export class Game {
   }
 
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
+    this.revivesHere = 0;
+    this.deathScreen?.hide();
     this.bossFight = null;
     if (this.weeklyRun) this.endWeekly('leave');
     if (this.towerRun && id !== 'trial_tower') {

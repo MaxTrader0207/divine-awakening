@@ -13,6 +13,7 @@ import { newTowerState } from '@/systems/TrialTower';
 import { normalizeDivinity } from '@/systems/Divinity';
 import { normalizeMythic } from '@/systems/Mythic';
 import { normalizeWeekly } from '@/systems/WeeklyBoss';
+import { normalizeRevive } from '@/systems/Revive';
 import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
 
@@ -300,6 +301,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   if (!['auto', 'portrait', 'landscape'].includes(merged.settings.orientation)) merged.settings.orientation = 'auto';
   // v22 → v23：設定新增 autoSell（預設關閉）
   if (!['off', 'common', 'fine', 'rare'].includes(merged.settings.autoSell)) merged.settings.autoSell = 'off';
-  // 未來版本：if ((data.version ?? 0) < 24) { ... }
+  // v23 → v24：倒下後原地復活的免費次數
+  merged.revive = normalizeRevive(data.revive);
+  // 未來版本：if ((data.version ?? 0) < 25) { ... }
   return merged;
 }

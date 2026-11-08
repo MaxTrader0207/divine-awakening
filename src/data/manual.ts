@@ -13,6 +13,7 @@ import { TOWER, TOWER_AFFIXES, bossGems } from '@/systems/TrialTower';
 import { GEM_SHOP } from '@/systems/GemShop';
 import { DIVINITY, DIV_STATS, divBonusText } from '@/systems/Divinity';
 import { MYTHIC } from '@/systems/Mythic';
+import { REVIVE } from '@/systems/Revive';
 import { WEEKLY, WEEKLY_DIFFS } from '@/systems/WeeklyBoss';
 import { MAX_TIER } from './gear';
 import { MAX_LEVEL } from '@/systems/Progression';
@@ -115,7 +116,7 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         '離開戰鬥 5 秒後會慢慢回血；在雅典城裡回得很快。',
         '**自動補血**：HP 低於 70% 會自動喝紅藥水（不用開 AUTO；「選單 → 設定 → 自動補血」可以改成 50% / 85% 或關閉，主城不會喝）。',
         `**爆擊**：爆擊時傷害乘上爆擊傷害倍率。爆擊率最高 ${Math.round(CRIT_RATE_MAX * 100)}%、爆擊傷害最高 ×${CRIT_DMG_MAX}（含道具）；劍俠、弓手、狂戰士天生比較容易爆擊。`,
-        '血量歸零會在雅典城復活，並損失 10% 金幣。',
+        `血量歸零後可以選：**原地復活**（每天第一次免費，之後 ${REVIVE.gemBase}💎 起、同一張地圖越用越貴，最多 ${REVIVE.gemMax}💎；不扣金幣、${REVIVE.invuln} 秒無敵，等你選的時候戰場是停住的，首領保留血量）、**在入口復活**或**回主城**（都損失 10% 金幣）。AUTO 開著時 ${REVIVE.autoSecs} 秒後自動在入口復活。試煉塔、每週首領倒下直接結算。`,
       ],
     },
     {
