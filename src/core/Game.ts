@@ -1150,6 +1150,7 @@ export class Game {
         this.onInventoryChanged();
       }
       bus.emit('banner', { text: `打倒每週首領・${run.name}！` });
+      this.quest({ type: 'weekly' });
     } else {
       // 沒打倒：首領移除（失敗不給獎勵；倒下、離開的話換地圖也會清掉）
       this.enemies.clear();
@@ -1773,6 +1774,7 @@ export class Game {
     const allDone = first && idx === DUNGEON_ORDER.length - 1;
     // 結局：最終首領、還沒看過（舊存檔打倒過也沒看過，再打一次就會播）
     if (!mythic && idx === DUNGEON_ORDER.length - 1 && !s.endingSeen) this.endingPending = true;
+    if (mythic) this.quest({ type: 'mythic' });
     if (mythicFirst) {
       const g = mythicFirstGems(mythic);
       s.gems += g;
@@ -1914,11 +1916,41 @@ export class Game {
   }
 
 
+  /**
+   * 太陽跟著畫面走。v1.81：陰影範圍不再固定 60×60 公尺，改成「畫面在地面上看得到的範圍」外加一點邊，
+   * 畫面外的東西不畫陰影（省 draw call），陰影也比較細。
+   */
+  private shadowHalf = 30;
   private followSun() {
-    const { x, z } = this.player.pos;
-    this.sun.position.set(x + 14, 30, z + 10);
-    this.sun.target.position.set(x, 0, z);
+    const cam = this.rig.camera;
+    cam.updateMatrixWorld();
+    let cx = 0, cz = 0;
+    const pts: [number, number][] = [];
+    for (const [nx, ny] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 0]]) {
+      this.tmpV.set(nx, ny, 0.5).unproject(cam).sub(cam.position).normalize();
+      // 射線打到地面（y = 0）；接近水平（看到天邊）就取 60 公尺
+      const t = this.tmpV.y < -0.05 ? Math.min(60, -cam.position.y / this.tmpV.y) : 60;
+      const px = cam.position.x + this.tmpV.x * t, pz = cam.position.z + this.tmpV.z * t;
+      pts.push([px, pz]);
+      cx += px;
+      cz += pz;
+    }
+    cx /= pts.length;
+    cz /= pts.length;
+    let r = 0;
+    for (const [px, pz] of pts) r = Math.max(r, Math.hypot(px - cx, pz - cz));
+    const half = Math.min(40, Math.max(14, r + 4));
+    this.sun.position.set(cx + 14, 30, cz + 10);
+    this.sun.target.position.set(cx, 0, cz);
+    if (Math.abs(half - this.shadowHalf) > 0.5) {
+      this.shadowHalf = half;
+      const sc = this.sun.shadow.camera;
+      sc.left = sc.bottom = -half;
+      sc.right = sc.top = half;
+      sc.updateProjectionMatrix();
+    }
   }
+  private tmpV = new THREE.Vector3();
 
   private setZoom(z: number) {
     this.rig.setZoom(z);

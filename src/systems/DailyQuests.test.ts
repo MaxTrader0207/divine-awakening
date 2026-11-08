@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { claimableCount, ensureToday, generateDaily, progressQuests, zonesForLevel } from './DailyQuests';
+import type { ZoneId } from '@/data/types';
 
 describe('DailyQuests', () => {
   it('同一天同等級區間產生相同任務', () => {
@@ -46,5 +47,25 @@ describe('DailyQuests', () => {
     expect(zonesForLevel(3, [])).toEqual(['grassland', 'dungeon_1']);
     expect(zonesForLevel(15, ['dungeon_1', 'dungeon_2'])).toEqual(['dungeon_3', 'mistwood', 'delphi_path', 'marathon_field', 'troy_beach', 'side_1']);
     expect(zonesForLevel(22, ['dungeon_1', 'dungeon_2'])).toEqual(['mistwood', 'troy_beach']);
+  });
+});
+
+describe('破關後的每日任務（v1.81）', () => {
+  const all = Array.from({ length: 22 }, (_, i) => `dungeon_${i + 1}`) as ZoneId[];
+  it('打倒最終首領後，第三個任務固定是神話或每週首領；沒破關不會出現', () => {
+    for (let d = 1; d <= 20; d++) {
+      const date = `2026-11-${String(d).padStart(2, '0')}`;
+      const post = generateDaily(date, 110, all);
+      expect(['mythic', 'weekly']).toContain(post.quests[2].kind);
+      expect(new Set(post.quests.map((q) => q.kind)).size).toBe(3);
+      const pre = generateDaily(date, 60, all.slice(0, 12));
+      expect(pre.quests.some((q) => q.kind === 'mythic' || q.kind === 'weekly')).toBe(false);
+    }
+  });
+  it('事件推進', () => {
+    const daily = generateDaily('2026-11-03', 110, all);
+    const q = daily.quests[2];
+    const done = progressQuests(daily, { type: q.kind as 'mythic' | 'weekly' });
+    expect(done).toContain(q);
   });
 });

@@ -2,6 +2,7 @@ import type { Rarity, ZoneId } from '@/data/types';
 import { STAGES, zoneName, zonesForLevel } from '@/data/zones';
 
 import { TOWER } from './TrialTower';
+import { mythicOpen } from './Mythic';
 
 /**
  * 每日任務（純邏輯，可單元測試）
@@ -10,7 +11,7 @@ import { TOWER } from './TrialTower';
  * - 進度由遊戲事件推進：擊倒、首領、強化、撿到稀有裝備、喝藥、賺金幣。
  * - 每個任務完成後到選單「任務」領獎；三個都領完再領一個獎勵寶箱。
  */
-export type QuestKind = 'kill' | 'kill_zone' | 'boss' | 'enhance' | 'loot_rare' | 'potion' | 'gold' | 'tower';
+export type QuestKind = 'kill' | 'kill_zone' | 'boss' | 'enhance' | 'loot_rare' | 'potion' | 'gold' | 'tower' | 'mythic' | 'weekly';
 
 export interface Quest {
   kind: QuestKind;
@@ -48,6 +49,10 @@ export function questText(q: Quest): string {
       return `從怪物身上獲得 ${q.target} 金幣`;
     case 'tower':
       return `在無盡試煉塔打過 ${q.target} 層`;
+    case 'mythic':
+      return `在🔥神話難度擊敗首領 ${q.target} 次`;
+    case 'weekly':
+      return `打倒👑每週首領 ${q.target} 次（任何難度）`;
   }
 }
 
@@ -88,6 +93,12 @@ export function generateDaily(date: string, level: number, bossesDefeated: ZoneI
   ];
   // v1.71：試煉塔開放後多一種任務（打過 5 層）
   if (bossesDefeated.includes(TOWER.unlockAfter)) pool.push(() => ({ kind: 'tower', target: 5, progress: 0, claimed: false, reward: { gold: goldScale * 3, gems: 2 } }));
+  // v1.81：破關後（打倒最終首領）多兩種任務，而且固定抽到其中一種
+  const post = mythicOpen(bossesDefeated);
+  if (post) {
+    pool.push(() => ({ kind: 'mythic', target: 1, progress: 0, claimed: false, reward: { gold: goldScale * 4, gems: 4 } }));
+    pool.push(() => ({ kind: 'weekly', target: 1, progress: 0, claimed: false, reward: { gold: goldScale * 4, gems: 4 } }));
+  }
   // 洗牌後取 3 個，第一個固定是擊倒類（每天都有能穩定完成的任務）
   const idx = pool.map((_, i) => i).slice(2);
   for (let i = idx.length - 1; i > 0; i--) {
@@ -95,6 +106,12 @@ export function generateDaily(date: string, level: number, bossesDefeated: ZoneI
     [idx[i], idx[j]] = [idx[j], idx[i]];
   }
   const first = rnd() < 0.5 ? 0 : 1;
+  // 破關後：第三個任務固定是神話或每週首領（前兩個照舊）
+  if (post) {
+    const postIdx = rnd() < 0.5 ? pool.length - 2 : pool.length - 1;
+    const rest = idx.filter((i) => i < pool.length - 2);
+    return { date, quests: [pool[first](), pool[rest[0]](), pool[postIdx]()], bonusClaimed: false };
+  }
   const quests = [pool[first](), pool[idx[0]](), pool[idx[1]]()];
   return { date, quests, bonusClaimed: false };
 }
@@ -113,7 +130,9 @@ export type QuestEvent =
   | { type: 'loot'; rarity: Rarity }
   | { type: 'potion' }
   | { type: 'gold'; amount: number }
-  | { type: 'tower' };
+  | { type: 'tower' }
+  | { type: 'mythic' }
+  | { type: 'weekly' };
 
 /** 推進進度；回傳這次「剛完成」的任務（用來顯示提示） */
 export function progressQuests(daily: DailyState, ev: QuestEvent): Quest[] {
@@ -128,6 +147,8 @@ export function progressQuests(daily: DailyState, ev: QuestEvent): Quest[] {
     else if (ev.type === 'potion' && q.kind === 'potion') add = 1;
     else if (ev.type === 'gold' && q.kind === 'gold') add = ev.amount;
     else if (ev.type === 'tower' && q.kind === 'tower') add = 1;
+    else if (ev.type === 'mythic' && q.kind === 'mythic') add = 1;
+    else if (ev.type === 'weekly' && q.kind === 'weekly') add = 1;
     if (!add) continue;
     q.progress = Math.min(q.target, q.progress + add);
     if (q.progress >= q.target) done.push(q);

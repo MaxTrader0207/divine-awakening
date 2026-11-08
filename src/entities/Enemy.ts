@@ -144,7 +144,8 @@ export class Enemy {
 
     if (def.boss) this.look = new BossLook(new THREE.Color(def.color).lerp(new THREE.Color(0xffe8d0), 0.45).getHex());
     this.height = this.buildRig() ?? this.buildBody() * def.scale;
-    if (!this.rig) this.mergeBody();
+    if (!this.rig) this.mergeTree();
+    if (!def.boss) this.limitShadows();
     if (def.boss && !this.rig) {
       this.smoother = new PoseSmoother(this.body);
       this.smoother.collect();
@@ -480,22 +481,71 @@ export class Enemy {
   }
 
   /**
-   * 效能：把身體上直接掛著的零件合併成一個「頂點顏色」網格（一隻敵人 1 個 draw call）。
-   * 會動的零件（蝙蝠翅膀掛在 pivot 下）與發光零件（MeshBasicMaterial）保持獨立。
+   * 效能：把零件合併成「頂點顏色」網格，減少 draw call。
+   * v1.81：從「只合併身體直屬的零件」擴大到每個關節群組（頭、腳、尾巴的 pivot）——群組裡的零件一起動，
+   * 合併後動畫照樣能動。為了不弄壞造型動畫，先實際跑幾種姿勢（走路、蓄力、出手），
+   * 動畫會直接改到位置 / 旋轉 / 縮放 / 顯示 / 顏色的網格不合併；有子物件的網格也不合併。
+   * 受光零件（Lambert / Phong）合成一個，發光零件（MeshBasic、不透明）另外合成一個。
    */
-  private mergeBody() {
-    const parts: THREE.Mesh[] = [];
-    for (const c of this.body.children) {
-      const m = c as THREE.Mesh;
-      if (m.isMesh && (m.material instanceof THREE.MeshLambertMaterial || m.material instanceof THREE.MeshPhongMaterial)) parts.push(m);
+  private mergeTree() {
+    const nodes: THREE.Object3D[] = [];
+    this.body.traverse((o) => nodes.push(o));
+    const moved = new Set<THREE.Object3D>();
+    const anim = this.shapeAnim;
+    if (anim) {
+      const snap = nodes.map((o) => ({ o, p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone(), v: o.visible }));
+      const matKey = (m: THREE.Mesh) => {
+        const mat = m.material as THREE.MeshBasicMaterial;
+        return `${mat.color?.getHexString?.() ?? ''}|${mat.opacity}|${mat.visible}`;
+      };
+      const mats = new Map<THREE.Mesh, string>();
+      for (const o of nodes) if ((o as THREE.Mesh).isMesh) mats.set(o as THREE.Mesh, matKey(o as THREE.Mesh));
+      const st = this.animState;
+      const samples: [number, boolean, boolean, number][] = [[0.37, false, false, 0], [1.93, true, false, 0], [3.31, false, true, 0.5], [5.07, true, true, 1], [7.7, false, false, 0.9]];
+      for (const [t, mv, wd, strike] of samples) {
+        st.t = t;
+        st.dt = 0.016;
+        st.moving = mv;
+        st.winding = wd;
+        st.lean = 0.2;
+        st.scale = 1;
+        st.strike = strike;
+        anim(st);
+        for (const x of snap) if (!x.o.position.equals(x.p) || !x.o.quaternion.equals(x.q) || !x.o.scale.equals(x.s) || x.o.visible !== x.v) moved.add(x.o);
+        for (const [m, k] of mats) if (matKey(m) !== k) moved.add(m);
+      }
+      for (const x of snap) {
+        x.o.position.copy(x.p);
+        x.o.quaternion.copy(x.q);
+        x.o.scale.copy(x.s);
+        x.o.visible = x.v;
+      }
     }
+    // 每個容器（身體、群組）各自合併直屬的零件
+    for (const node of nodes) {
+      if ((node as THREE.Mesh).isMesh) continue;
+      const lit: THREE.Mesh[] = [];
+      const glow: THREE.Mesh[] = [];
+      for (const c of node.children) {
+        const m = c as THREE.Mesh;
+        if (!m.isMesh || moved.has(m) || m.children.length || !m.visible) continue;
+        if (m.material instanceof THREE.MeshLambertMaterial || m.material instanceof THREE.MeshPhongMaterial) lit.push(m);
+        else if (m.material instanceof THREE.MeshBasicMaterial && !m.material.transparent && !m.material.map) glow.push(m);
+      }
+      this.mergeParts(node, lit, true);
+      this.mergeParts(node, glow, false);
+    }
+  }
+
+  private mergeParts(parent: THREE.Object3D, parts: THREE.Mesh[], lit: boolean) {
     if (parts.length < 2) return;
     const geos: THREE.BufferGeometry[] = [];
     for (const m of parts) {
       m.updateMatrix();
       const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrix);
       for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
-      const col = (m.material as LitMaterial).color;
+      if (!g.attributes.normal) g.computeVertexNormals();
+      const col = (m.material as THREE.MeshBasicMaterial).color;
       const n = g.attributes.position.count;
       const arr = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) arr.set([col.r, col.g, col.b], i * 3);
@@ -505,17 +555,42 @@ export class Enemy {
     const merged = mergeGeometries(geos, false);
     geos.forEach((g) => g.dispose());
     if (!merged) return;
+    const shadow = parts.some((m) => m.castShadow);
     for (const m of parts) {
       m.geometry.dispose();
-      (m.material as THREE.Material).dispose();
-      this.materials.splice(this.materials.indexOf(m.material as LitMaterial), 1);
+      const mat = m.material as THREE.Material;
+      const k = this.materials.indexOf(mat as LitMaterial);
+      if (k >= 0) this.materials.splice(k, 1);
+      mat.dispose();
       m.removeFromParent();
     }
-    const mat = this.look ? this.look.material({ vertexColors: true }) : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-    this.materials.push(mat);
+    let mat: THREE.Material;
+    if (lit) {
+      mat = this.look ? this.look.material({ vertexColors: true }) : new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+      this.materials.push(mat as LitMaterial);
+    } else mat = new THREE.MeshBasicMaterial({ vertexColors: true });
     const mesh = new THREE.Mesh(merged, mat);
-    mesh.castShadow = true;
-    this.body.add(mesh);
+    mesh.castShadow = lit && shadow;
+    parent.add(mesh);
+  }
+
+  /**
+   * 效能（v1.81）：小怪只讓最大的 2 個零件投影子（身體、頭），腳、翅膀、尾巴這些小零件不投影。
+   * 陰影要把投影的網格再畫一次，程式模型的小怪零件多（奇美拉 42 個），這樣副本的 draw call 少很多。
+   */
+  private limitShadows() {
+    const meshes: { m: THREE.Mesh; r: number }[] = [];
+    this.body.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || !m.castShadow) return;
+      if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere();
+      const s = new THREE.Vector3();
+      m.getWorldScale(s);
+      meshes.push({ m, r: (m.geometry.boundingSphere?.radius ?? 0) * Math.max(s.x, s.y, s.z) });
+    });
+    if (meshes.length <= 2) return;
+    meshes.sort((a, b) => b.r - a.r);
+    for (let i = 2; i < meshes.length; i++) meshes[i].m.castShadow = false;
   }
 
   /** 程式模型：依 shape 從 enemyShapes 登記表建造（面向 +z），回傳模型高度（未縮放） */
