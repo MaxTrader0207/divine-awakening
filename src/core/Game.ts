@@ -35,7 +35,7 @@ import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
 import { openCompanionView, openItemsView } from '@/ui/InventoryTabs';
-import { AutoBattle, AUTO_CHEST_RANGE, AUTO_HP_POTION } from '@/systems/AutoBattle';
+import { AutoBattle, AUTO_CHEST_GIVEUP, AUTO_CHEST_RANGE, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
 import { codexEntry, recordKill } from '@/data/codex';
@@ -1842,16 +1842,38 @@ export class Game {
   }
 
   /** v1.96 AUTO 用：最近一個還沒打開、在 AUTO_CHEST_RANGE 公尺內的寶箱 */
+  /** v1.96 AUTO 要去開的寶箱；v1.97：追了 AUTO_CHEST_GIVEUP 秒還沒打開（例如站在首領高台上、走不過去）就放棄這個寶箱 */
+  private chestChase: { key: string; since: number } | null = null;
+  private chestSkip = new Set<string>();
   private nearestChest(): { x: number; z: number } | null {
-    const spots = this.zones.current?.treasures?.remaining() ?? [];
+    const zone = this.zones.current;
+    const spots = zone?.treasures?.remaining() ?? [];
+    const now = this.state.stats.playTime;
+    const myH = zone ? zone.heightAt(this.player.pos.x, this.player.pos.z) : 0;
     let best: { x: number; z: number } | null = null;
+    let bk = '';
     let bd = AUTO_CHEST_RANGE;
     for (const c of spots) {
+      const key = `${this.state.zoneId}:${c.x}:${c.z}`;
+      if (this.chestSkip.has(key)) continue;
+      // 高度不同（在高台上、寶箱在下面）直線走不過去，不追
+      if (zone && Math.abs(zone.heightAt(c.x, c.z) - myH) > 0.5) continue;
       const d = Math.hypot(c.x - this.player.pos.x, c.z - this.player.pos.z);
       if (d < bd) {
         bd = d;
         best = c;
+        bk = key;
       }
+    }
+    if (!best) {
+      this.chestChase = null;
+      return null;
+    }
+    if (this.chestChase?.key !== bk) this.chestChase = { key: bk, since: now };
+    else if (now - this.chestChase.since > AUTO_CHEST_GIVEUP) {
+      this.chestSkip.add(bk);
+      this.chestChase = null;
+      return null;
     }
     return best;
   }
@@ -2185,6 +2207,8 @@ export class Game {
   }
 
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
+    this.chestSkip.clear();
+    this.chestChase = null;
     this.revivesHere = 0;
     this.deathScreen?.hide();
     this.bossFight = null;

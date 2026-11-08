@@ -3,10 +3,11 @@ import { newGameState } from '@/core/GameState';
 import { DUNGEON_ORDER } from '@/data/zones';
 import { REBIRTH, applyRebirth, equipBlock, normalizeRebirth, rebirthBlocked, rebirthExpMul, rebirthStatMul } from './Rebirth';
 import { INVENTORY_SIZE, computeStats, equip } from './Inventory';
+import { MAX_LEVEL } from './Progression';
 
 const endgame = () => {
   const s = newGameState('knight');
-  s.level = 110;
+  s.level = MAX_LEVEL;
   s.bossesDefeated = [...DUNGEON_ORDER];
   s.equipment = { weapon: { uid: 50, base: 'weapon_t8', rarity: 'epic', plus: 5 }, hat: { uid: 51, base: 'hat_t8', rarity: 'rare', plus: 2 } };
   s.gems = 10;
@@ -15,7 +16,7 @@ const endgame = () => {
 };
 
 describe('轉生（v1.83）', () => {
-  it('條件：Lv.110＋打倒最終首領，上限次數', () => {
+  it('條件：滿級＋打倒最終首領，上限次數', () => {
     const s = newGameState('mage');
     expect(rebirthBlocked(s)).not.toBeNull();
     const e = endgame();
@@ -49,7 +50,7 @@ describe('轉生（v1.83）', () => {
     const t8 = s.inventory.find((i) => i.base === 'weapon_t8')!;
     expect(equipBlock(s, t8)).toContain('Lv.');
     expect(equip(s, t8.uid)).toBe(false);
-    s.level = 110;
+    s.level = MAX_LEVEL;
     expect(equipBlock(s, t8)).toBeNull();
     expect(equip(s, t8.uid)).toBe(true);
     // 沒轉生過的角色沒有限制

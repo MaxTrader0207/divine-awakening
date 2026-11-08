@@ -11,7 +11,7 @@ import type { HeroClass } from './classes';
  */
 export type GearProfile = 'power' | 'crit' | 'pierce' | 'fury' | 'guard' | 'vital' | 'arcane' | 'swift';
 
-/** 裝備階級：1~3 對應第一～三層，4 = 第四～六層、5 = 第七～九層、6 = 第十～十二層、7 = 第十三～十七層、8 = 第十八～二十二層 */
+/** 裝備階級：1~3 對應第一～三層，4 = 第四～六層、5 = 第七～九層、6 = 第十～十二層、7 = 第十三～十七層、8 = 第十八～三十層 */
 export type Tier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export const MAX_TIER = 8;
 export const TIERS: Tier[] = [1, 2, 3, 4, 5, 6, 7, 8];

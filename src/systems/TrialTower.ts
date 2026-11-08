@@ -38,10 +38,12 @@ export const TOWER = {
   /** 等級封頂後每層的生命、攻擊倍率 */
   overflow: 1.07,
   checkpoint: 10,
+  /** 敵人等級上限（v1.97 主線加到 Lv.150，但塔維持 110 封頂、之後靠 overflow 變強，排行標準不變） */
+  levelCap: 110,
 };
 
 export function towerLevel(floor: number): number {
-  return Math.min(110, 4 + floor * 2);
+  return Math.min(TOWER.levelCap, 4 + floor * 2);
 }
 
 export function isBossFloor(floor: number): boolean {
@@ -50,7 +52,7 @@ export function isBossFloor(floor: number): boolean {
 
 /** 等級封頂後的屬性倍率 */
 export function overflowMul(floor: number): number {
-  const capFloor = Math.ceil((110 - 4) / 2);
+  const capFloor = Math.ceil((TOWER.levelCap - 4) / 2);
   return Math.pow(TOWER.overflow, Math.max(0, floor - capFloor));
 }
 
@@ -165,8 +167,8 @@ export function towerDefense(level: number): number {
   return Math.max(0, Math.round((level - 5) * 3.9));
 }
 
-const MOB_POOL = (): EnemyDef[] => Object.values(ENEMIES).filter((e) => !e.boss && e.aggro === 'aggressive' && e.exp > 0);
-const BOSS_POOL = (): EnemyDef[] => Object.values(ENEMIES).filter((e) => e.boss && (e.bossSkills?.length ?? 0) > 0);
+const MOB_POOL = (): EnemyDef[] => Object.values(ENEMIES).filter((e) => !e.boss && e.aggro === 'aggressive' && e.exp > 0 && e.level <= TOWER.levelCap);
+const BOSS_POOL = (): EnemyDef[] => Object.values(ENEMIES).filter((e) => e.boss && (e.bossSkills?.length ?? 0) > 0 && e.level <= TOWER.levelCap + 3);
 
 /** 等級最接近的 n 個 */
 function nearest(pool: EnemyDef[], level: number, n: number): EnemyDef[] {

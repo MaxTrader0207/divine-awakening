@@ -8,6 +8,7 @@ import { chimera, dragon, sphinx } from './monsters';
 import { centaur, cetus, griffin, hind, scylla } from './wilds';
 import { argus, echidna, geryon, kampe } from './primordials';
 import { amphisbaena, antaeus, cacus, caucasus, charybdis, colchis, enceladus, mare, orthrus, typhon } from './mythbeasts';
+import { aloadae, empusa, khalkotauros, kronos, lamia, ophiotaurus, stymphalian, vulpes } from './titans';
 import { aetos, ares, boreas, briareos, chrysomallos, hippocampus, pegasus, phobos, phoenix, scorpius } from './guardians';
 
 /**
@@ -65,6 +66,14 @@ export const ENEMY_SHAPES: Record<EnemyShape, ShapeBuild> = {
   antaeus,
   enceladus,
   typhon,
+  lamia,
+  khalkotauros,
+  vulpes,
+  empusa,
+  ophiotaurus,
+  stymphalian,
+  aloadae,
+  kronos,
 };
 
 export type { ShapeBuild, ShapeBuilder, ShapeAnimState, ShapeResult } from './types';

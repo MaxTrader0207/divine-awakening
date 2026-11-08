@@ -57,7 +57,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'lv30', cat: 'growth', icon: '🌿', name: '嶄露頭角', desc: '升到 Lv.30', gems: 10, progress: lv(30) },
   { id: 'lv60', cat: 'growth', icon: '🌳', name: '英雄之路', desc: '升到 Lv.60', gems: 20, progress: lv(60) },
   { id: 'lv90', cat: 'growth', icon: '⚡', name: '半神', desc: '升到 Lv.90', gems: 30, progress: lv(90) },
-  { id: 'lv110', cat: 'growth', icon: '👑', name: '神格覺醒', desc: '升到最高等級 Lv.110', gems: 50, progress: lv(110) },
+  { id: 'lv110', cat: 'growth', icon: '👑', name: '神格覺醒', desc: '升到 Lv.110', gems: 50, progress: lv(110) },
+  { id: 'lv130', cat: 'growth', icon: '🌠', name: '泰坦之敵', desc: '升到 Lv.130', gems: 60, progress: lv(130) },
+  { id: 'lv150', cat: 'growth', icon: '⏳', name: '超越時間', desc: '升到最高等級 Lv.150', gems: 80, progress: lv(150) },
   { id: 'play1h', cat: 'growth', icon: '⏳', name: '流連忘返', desc: '遊玩 1 小時', gems: 5, progress: (s) => [Math.min(Math.floor(s.stats.playTime / 60), 60), 60] },
   { id: 'play10h', cat: 'growth', icon: '⌛', name: '忠實冒險者', desc: '遊玩 10 小時', gems: 15, progress: (s) => [Math.min(Math.floor(s.stats.playTime / 3600), 10), 10] },
   { id: 'quest10', cat: 'growth', icon: '📋', name: '使命必達', desc: '完成 10 個每日任務', gems: 5, progress: stat('questsDone', 10) },
@@ -77,10 +79,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'death1', cat: 'battle', icon: '🩹', name: '勝敗乃兵家常事', desc: '第一次倒下', gems: 3, progress: stat('deaths', 1) },
 
   // ---- 征途（主線、野外） ----
-  ...[3, 6, 9, 12, 16, 19].map((n, i): AchievementDef => ({
-    id: `floor${n}`, cat: 'story', icon: '🏛', name: `${ZONES[DUNGEON_ORDER[n - 1]].name}的勝利者`, desc: `擊敗第 ${n} 層首領`, gems: [5, 10, 15, 20, 25, 30][i], progress: floor(n),
+  ...[3, 6, 9, 12, 16, 19, 22, 26].map((n, i): AchievementDef => ({
+    // floor22 以前是「最終層」成就的 id（v1.97 最終層改成第 30 層，那個成就沿用 id floor22）；這裡的第 22 層用 floor22b
+    id: n === 22 ? 'floor22b' : `floor${n}`, cat: 'story', icon: '🏛', name: `${ZONES[DUNGEON_ORDER[n - 1]].name}的勝利者`, desc: `擊敗第 ${n} 層首領`, gems: [5, 10, 15, 20, 25, 30, 40, 50][i], progress: floor(n),
   })),
-  { id: 'floor22', cat: 'story', icon: '🏆', name: '奧林帕斯的守護者', desc: `擊敗最終層首領（第 ${DUNGEON_ORDER.length} 層）`, gems: 60, progress: floor(DUNGEON_ORDER.length) },
+  { id: 'floor22', cat: 'story', icon: '🏆', name: '奧林帕斯的守護者', desc: `擊敗最終層首領（第 ${DUNGEON_ORDER.length} 層）`, gems: 80, progress: floor(DUNGEON_ORDER.length) },
   { id: 'tower10', cat: 'story', icon: '🗼', name: '試煉者', desc: '無盡試煉塔打到第 10 層', gems: 10, progress: (s) => [Math.min(s.tower.best, 10), 10] },
   { id: 'tower30', cat: 'story', icon: '🏯', name: '登塔者', desc: '無盡試煉塔打到第 30 層', gems: 20, progress: (s) => [Math.min(s.tower.best, 30), 30] },
   { id: 'tower60', cat: 'story', icon: '⛰', name: '奧林帕斯之巔', desc: '無盡試煉塔打到第 60 層', gems: 40, progress: (s) => [Math.min(s.tower.best, 60), 60] },

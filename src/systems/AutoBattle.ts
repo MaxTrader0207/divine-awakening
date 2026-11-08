@@ -24,6 +24,8 @@ import { MINIONS, type MinionId } from '@/data/minions';
 export const AUTO_SEARCH_RANGE = 32;
 /** v1.96 AUTO 順路開寶箱：寶箱在這個距離內、附近沒有戰鬥時才去開 */
 export const AUTO_CHEST_RANGE = 22;
+/** v1.97 追同一個寶箱超過幾秒還沒打開就放棄（換地圖後重來） */
+export const AUTO_CHEST_GIVEUP = 10;
 export const AUTO_HP_POTION = 0.4;
 export const AUTO_MP_POTION = 0.2;
 
@@ -84,7 +86,8 @@ export class AutoBattle {
 
     // 3. 撿東西、開寶箱（附近沒有戰鬥時；寶箱由 ctx.nearestLoot 一併回傳）
     const loot = this.ctx.nearestLoot();
-    const fighting = enemies.enemies.some((e) => e.alive && (e.ai === 'chase' || e.ai === 'attack') && dist(e, p) < 8);
+    // v1.97：首領開戰中（包含正在放招的 'boss' 狀態）不離開去撿東西、開寶箱
+    const fighting = enemies.enemies.some((e) => e.alive && ((e.def.boss && e.engaged) || ((e.ai === 'chase' || e.ai === 'attack' || e.ai === 'boss') && dist(e, p) < 8)));
     if (loot && !fighting) {
       this.moveTo(loot.x, loot.z);
       return;

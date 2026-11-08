@@ -17,7 +17,7 @@ export interface WeeklyDiffDef {
   id: WeeklyDiff;
   name: string;
   icon: string;
-  /** 換算用的神話層數（等級 = 110 + floor） */
+  /** 換算用的神話層數（等級 = MAX_LEVEL + floor） */
   floor: number;
   gems: number;
   /** ★神話裝件數與稀有度 */

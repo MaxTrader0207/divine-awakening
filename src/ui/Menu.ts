@@ -343,7 +343,7 @@ export class Menu {
     const inDungeon = DUNGEON_ORDER.includes(s.zoneId);
     return h('div', { class: `card mythic-card${s.mythic.on ? ' on' : ''}` }, [
       h('h4', {}, '🔥 神話難度'),
-      h('p', {}, `第 N 層的敵人換成 Lv.110＋N，首領不會自動調整強度；裝備一律掉第 ${MAX_TIER} 階，經驗進神格。要依序打：先在神話難度打倒上一層首領，才能挑戰下一層。`),
+      h('p', {}, `第 N 層的敵人換成 Lv.${MYTHIC.levelBase}＋N，首領不會自動調整強度；裝備一律掉第 ${MAX_TIER} 階，經驗進神格。要依序打：先在神話難度打倒上一層首領，才能挑戰下一層。`),
       h('div', { class: 'seg two' }, [
         h('button', { class: `seg-btn${s.mythic.on ? '' : ' on'}`, onclick: () => set(false) }, '普通'),
         h('button', { class: `seg-btn${s.mythic.on ? ' on' : ''}`, onclick: () => set(true) }, '🔥 神話'),

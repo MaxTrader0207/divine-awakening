@@ -306,6 +306,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.revive = normalizeRevive(data.revive);
   // v24 → v25：轉生
   merged.rebirth = normalizeRebirth(data.rebirth);
-  // 未來版本：if ((data.version ?? 0) < 26) { ... }
+  // v27 → v28（v1.97）：主線加到 30 層、最終首領換成克洛諾斯；舊存檔看過的是坎佩版結局，打倒克洛諾斯時再播一次新結局
+  if ((data.version ?? 0) < 28 && !merged.bossesDefeated.includes('dungeon_30')) merged.endingSeen = false;
+  // 未來版本：if ((data.version ?? 0) < 29) { ... }
   return merged;
 }

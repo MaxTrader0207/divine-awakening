@@ -102,7 +102,9 @@ describe('內容一致性（關卡 / 小怪 / 首領 / 招式）', () => {
     expect(bossOf('dungeon_22')?.name).toBe('塔爾塔洛斯獄龍坎佩');
     expect(bossOf('mistwood')?.name).toBe('龍牙將軍');
     expect(bossOf('town')).toBeUndefined();
-    expect(DUNGEON_ORDER.map(lootTierOf)).toEqual([1, 2, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8]);
+    expect(bossOf('dungeon_30')?.name).toBe('泰坦之王克洛諾斯');
+    expect(DUNGEON_ORDER.length).toBe(30);
+    expect(DUNGEON_ORDER.map(lootTierOf)).toEqual([1, 2, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8]);
     expect(lootTierOf('mistwood')).toBe(4);
     expect([1, 10, 11, 12, 20, 25].map(floorLabel)).toEqual(['第一層', '第十層', '第十一層', '第十二層', '第二十層', '第二十五層']);
   });

@@ -28,6 +28,14 @@ import { aethiopianCoast } from './dungeon19-aethiopian-coast';
 import { pelionMountain } from './dungeon20-pelion-mountain';
 import { echidnaLair } from './dungeon21-echidna-lair';
 import { othrysBattlefield } from './dungeon22-othrys-battlefield';
+import { libyanSerpentCave } from './dungeon23-libyan-serpent-cave';
+import { fieldOfAres } from './dungeon24-field-of-ares';
+import { teumessosMountain } from './dungeon25-teumessos-mountain';
+import { hecateCrossroads } from './dungeon26-hecate-crossroads';
+import { styxSource } from './dungeon27-styx-source';
+import { stymphalianLake } from './dungeon28-stymphalian-lake';
+import { mountOssa } from './dungeon29-mount-ossa';
+import { olympusSummit } from './dungeon30-olympus-summit';
 import { heliconSpring } from './side1-helicon-spring';
 import { idaSummit } from './side2-ida-summit';
 import { colchisGrove } from './side3-colchis-grove';
@@ -59,6 +67,7 @@ import { trialTower } from './trial-tower';
  */
 export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, delphiPath, marathonField, troyBeach, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
   calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
+  libyanSerpentCave, fieldOfAres, teumessosMountain, hecateCrossroads, styxSource, stymphalianLake, mountOssa, olympusSummit,
   heliconSpring, idaSummit, colchisGrove, aegaePalace,
   rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus,
   orthrusDen, diomedesStables, aventineCave, libyanDunes, whirlpoolStrait, caucasusPeak, goldenFleeceGrove, libyanArena, phlegraFields, typhonAbyss, trialTower];
@@ -135,7 +144,7 @@ export function bossOf(id: ZoneId): EnemyDef | undefined {
 /**
  * 這張地圖掉落的裝備階級：有填 lootTier 就用它；副本依層數——
  * 第一～三層 = 1~3 階、第四～六層 = 4 階、第七～九層 = 5 階、第十～十二層 = 6 階、
- * 第十三～十七層 = 7 階、第十八～二十二層 = 8 階（最高 8）
+ * 第十三～十七層 = 7 階、第十八層以後 = 8 階（最高 8；v1.97 的第二十三～三十層也是 8 階）
  */
 export function lootTierOf(id: ZoneId): number {
   const z = ZONES[id];

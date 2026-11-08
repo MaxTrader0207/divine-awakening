@@ -37,6 +37,14 @@ export type ZoneId =
   | 'dungeon_20'
   | 'dungeon_21'
   | 'dungeon_22'
+  | 'dungeon_23'
+  | 'dungeon_24'
+  | 'dungeon_25'
+  | 'dungeon_26'
+  | 'dungeon_27'
+  | 'dungeon_28'
+  | 'dungeon_29'
+  | 'dungeon_30'
   | 'side_1'
   | 'side_2'
   | 'side_3'
@@ -336,7 +344,7 @@ export interface ItemDef {
 
 export type AggroType = 'aggressive' | 'passive';
 
-export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus' | 'phoenix' | 'boreas' | 'briareos' | 'scorpius' | 'phobos' | 'ares' | 'orthrus' | 'mare' | 'cacus' | 'amphisbaena' | 'charybdis' | 'caucasus' | 'colchis' | 'antaeus' | 'enceladus' | 'typhon';
+export type EnemyShape = 'dummy' | 'crab' | 'frog' | 'slime' | 'golem' | 'mushroom' | 'bat' | 'skeleton' | 'serpent' | 'hydra' | 'harpy' | 'bull' | 'minotaur' | 'hound' | 'boar' | 'lion' | 'gorgon' | 'cyclops' | 'sphinx' | 'dragon' | 'chimera' | 'scylla' | 'griffin' | 'hind' | 'argus' | 'geryon' | 'cetus' | 'centaur' | 'echidna' | 'kampe' | 'pegasus' | 'aetos' | 'chrysomallos' | 'hippocampus' | 'phoenix' | 'boreas' | 'briareos' | 'scorpius' | 'phobos' | 'ares' | 'orthrus' | 'mare' | 'cacus' | 'amphisbaena' | 'charybdis' | 'caucasus' | 'colchis' | 'antaeus' | 'enceladus' | 'typhon' | 'lamia' | 'khalkotauros' | 'vulpes' | 'empusa' | 'ophiotaurus' | 'stymphalian' | 'aloadae' | 'kronos';
 
 /** 首領招式 id（招式資料在 data/bossSkills.ts） */
 export type { BossSkillId } from './bossSkills';

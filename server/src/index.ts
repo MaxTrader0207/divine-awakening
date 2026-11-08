@@ -110,9 +110,9 @@ async function putSave(req: Request, env: Env): Promise<Response> {
 
 /* ---------------- 排行榜 ---------------- */
 
-/** 遊戲數值上限（v1.71：最高等級 110、主線 22 層＋野外菁英＋支線守護者） */
-const MAX_LEVEL = 110;
-const MAX_BOSSES = 60;
+/** 遊戲數值上限（v1.71：最高等級 110、主線 22 層＋野外菁英＋支線守護者；v1.97：等級 150、主線 30 層＋神獸討伐） */
+const MAX_LEVEL = 150; // v1.97 等級上限 150
+const MAX_BOSSES = 80; // v1.97 首領數變多（主線 30 層）
 const MAX_TOWER = 2000;
 const WEEK_RE = /^\d{4}-\d{2}-\d{2}$/;
 

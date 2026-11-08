@@ -3,13 +3,14 @@ import { ENEMIES } from '@/data/enemies';
 import { DUNGEON_ORDER } from '@/data/zones';
 import { BOSS_PACE } from './BossScaling';
 import type { ClearRecord } from './StageClear';
-import { TOWER, towerDefense } from './TrialTower';
+import { TOWER } from './TrialTower';
+import { MAX_LEVEL } from './Progression';
 
 /**
  * 神話難度（v1.77，純邏輯，可單元測試）
  * ------------------------------------------------------------
- * 打倒最終首領後開放。22 層副本可以切到「神話」重打：
- * - 第 N 層的敵人都換算成 Lv.(110＋N)：小怪依「同等級小怪的中位數屬性」換算生命 / 攻擊 / 防禦，
+ * 打倒最終首領後開放。主線副本（v1.97 起 30 層）可以切到「神話」重打：
+ * - 第 N 層的敵人都換算成 Lv.(MAX_LEVEL＋N)（v1.97 起 150＋N）：小怪依「同等級小怪的中位數屬性」換算生命 / 攻擊 / 防禦，
  *   首領依最終首領的屬性換算；再乘上試煉塔同樣的超越倍率（每 2 級 ×TOWER.overflow）。
  * - 首領**不會自動調整強度**（跟試煉塔一樣），看你的裝備、神格夠不夠。
  * - 掉落一律最高階（MAX_TIER），首領多掉 1 件；經驗、金幣也跟著換算（滿級後經驗進神格）。
@@ -17,8 +18,8 @@ import { TOWER, towerDefense } from './TrialTower';
  * 數值都在 MYTHIC；改了要看一下說明頁（data/manual.ts）的文字。
  */
 export const MYTHIC = {
-  /** 第 N 層的敵人等級 = base + N */
-  levelBase: 110,
+  /** 第 N 層的敵人等級 = base + N（跟著等級上限） */
+  levelBase: MAX_LEVEL,
   /** 首領生命（相對「最終首領原本生命 × 換算」；原本約為標準配備 180 秒） */
   bossHp: 0.5,
   /** 首領多掉幾件裝備 */
@@ -81,7 +82,7 @@ export function mythicFirstGems(floor: number): number {
   return 10 + floor * 2;
 }
 
-/** 超過 Lv.110 之後的生命 / 攻擊倍率（跟試煉塔一樣：每 2 級 ×overflow） */
+/** 超過等級上限之後的生命 / 攻擊倍率（跟試煉塔一樣：每 2 級 ×overflow） */
 export function mythicOver(floor: number): number {
   return Math.pow(TOWER.overflow, floor / 2);
 }
@@ -149,7 +150,7 @@ export function mythicMods(def: EnemyDef, floor: number): MythicMods {
       level,
       hpMul: MYTHIC.bossHp * hpR * over,
       atkMul: BOSS_PACE.atkBase * atkR * over,
-      defense: towerDefense(cap),
+      defense: fb.stats.def,
       expMul: Math.pow(expR * over, MYTHIC.rewardPow),
       goldMul: Math.pow(goldR * over, MYTHIC.rewardPow),
     };

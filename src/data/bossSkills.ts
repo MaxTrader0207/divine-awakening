@@ -661,6 +661,144 @@ export const BOSS_SKILLS = {
     pattern: 'multiLine', name: '龍首獄火', desc: '好幾顆龍頭同時往前方噴火（狂暴時更多道）',
     windup: 1.25, power: 1.5, color: 0xff5a1a, angles: [-30, -10, 10, 30], anglesEnraged: [-48, -28, -9, 9, 28, 48], count: 5, start: 2, spacing: 2.1, radius: 1.5, stagger: 0.08,
   },
+
+  /* ==== 第二十三～三十層（v1.97，scratchpad gen/gen_titans.py 產生） ==== */
+  /* ---- 第二十三層 蛇身女王拉彌亞 ---- */
+  lamia_coil: {
+    pattern: 'nova', name: '蛇身絞殺', desc: '盤起蛇身往四周猛甩（狂暴時範圍更大）',
+    windup: 1.2, power: 1.8, color: 0x9aff6a, discColor: 0x3a6a2a, radius: 5.5, radiusEnraged: 7,
+  },
+  lamia_venom: {
+    pattern: 'multiLine', name: '毒牙噴吐', desc: '朝前方三個方向噴出毒液（狂暴時五道）',
+    windup: 1.1, power: 1.5, color: 0xb8ff4a, angles: [-25, 0, 25], anglesEnraged: [-40, -20, 0, 20, 40], count: 6, start: 2.5, spacing: 2.1, radius: 1.5, stagger: 0.09,
+  },
+  lamia_lunge: {
+    pattern: 'dash', name: '蛇行突襲', desc: '壓低身子朝玩家直線竄出',
+    windup: 1.0, power: 1.8, color: 0xd8ff8a, length: 14, width: 2.6,
+  },
+  lamia_grief: {
+    pattern: 'rain', name: '噬子之怨', desc: '被吞噬的孩子們的怨念從地底湧出',
+    windup: 1.4, power: 1.5, color: 0x9a6aff, pillarColor: 0xd8b0ff, count: 6, countEnraged: 9, radius: 2.1, spread: 7, stagger: 0.1,
+  },
+  /* ---- 第二十四層 科爾基斯青銅火牛 ---- */
+  khalko_charge: {
+    pattern: 'dash', name: '青銅衝鋒', desc: '低頭朝玩家直線衝撞',
+    windup: 1.0, power: 2.0, color: 0xffb06a, length: 16, width: 3,
+  },
+  khalko_breath: {
+    pattern: 'cone', name: '鼻孔噴火', desc: '朝前方扇形噴出烈焰（狂暴時更寬）',
+    windup: 1.0, power: 1.7, color: 0xff7a1a, range: 8, angle: 70, angleEnraged: 110,
+  },
+  khalko_furrow: {
+    pattern: 'multiLine', name: '火犁', desc: '拖著火焰犁出三道火溝（狂暴時五道）',
+    windup: 1.2, power: 1.5, color: 0xff5a1a, angles: [-30, 0, 30], anglesEnraged: [-48, -24, 0, 24, 48], count: 7, start: 2, spacing: 2.1, radius: 1.5, stagger: 0.07,
+  },
+  khalko_stomp: {
+    pattern: 'nova', name: '銅蹄震地', desc: '人立起來重重踏地（狂暴時範圍更大）',
+    windup: 1.2, power: 1.8, color: 0xffd08a, discColor: 0x8a3a1a, radius: 5.5, radiusEnraged: 7,
+  },
+  /* ---- 第二十五層 透墨索斯天狐 ---- */
+  fox_dash: {
+    pattern: 'dash', name: '疾風奔襲', desc: '化成一陣風朝玩家直線衝過去',
+    windup: 0.9, power: 1.8, color: 0xbff6ff, length: 16, width: 2.6,
+  },
+  fox_tails: {
+    pattern: 'spokes', name: '三尾風刃', desc: '三條尾巴往四周甩出風刃，風刃之間是安全區（狂暴時更多）',
+    windup: 1.1, power: 1.6, color: 0x9af0ff, count: 6, countEnraged: 9, range: 9, angle: 18,
+  },
+  fox_whirl: {
+    pattern: 'rain', name: '旋風', desc: '玩家附近捲起好幾道旋風（狂暴時更多）',
+    windup: 1.3, power: 1.4, color: 0x9af0ff, pillarColor: 0xe8ffff, count: 5, countEnraged: 8, radius: 2.2, spread: 6, stagger: 0.12,
+  },
+  fox_pounce: {
+    pattern: 'leap', name: '天狐撲擊', desc: '高高躍起撲向玩家',
+    windup: 1.3, power: 1.8, color: 0xd8f8ff, discColor: 0x4a9ab8, radius: 3.8,
+  },
+  /* ---- 第二十六層 銅足夜魔恩普莎 ---- */
+  empusa_flames: {
+    pattern: 'rain', name: '冥火之髮', desc: '火焰長髮甩出冥火，落在玩家附近（狂暴時更多）',
+    windup: 1.3, power: 1.5, color: 0xff5ad8, pillarColor: 0xffb0f0, count: 6, countEnraged: 9, radius: 2.1, spread: 7, stagger: 0.1,
+  },
+  empusa_kick: {
+    pattern: 'leap', name: '銅足踐踏', desc: '跳起來用青銅腿踩向玩家',
+    windup: 1.3, power: 1.9, color: 0xffc070, discColor: 0x6a3a1a, radius: 4,
+  },
+  empusa_shriek: {
+    pattern: 'nova', name: '夜魔尖嘯', desc: '發出刺耳的尖嘯，震盪四周（狂暴時範圍更大）',
+    windup: 1.1, power: 1.6, color: 0xff8ae8, discColor: 0x5a1a4a, radius: 5, radiusEnraged: 6.6,
+  },
+  empusa_claws: {
+    pattern: 'cone', name: '吸血利爪', desc: '往前方扇形撕抓（狂暴時更寬）',
+    windup: 1.0, power: 1.8, color: 0xff3a8a, range: 6, angle: 100, angleEnraged: 140,
+  },
+  /* ---- 第二十七層 牛蛇俄菲奧陶洛斯 ---- */
+  ophio_gore: {
+    pattern: 'dash', name: '牛角衝撞', desc: '低頭朝玩家直線衝撞',
+    windup: 1.0, power: 1.9, color: 0x9af0ff, length: 14, width: 2.8,
+  },
+  ophio_tail: {
+    pattern: 'cone', name: '蛇尾橫掃', desc: '蛇尾往前方大範圍橫掃（狂暴時更寬）',
+    windup: 1.1, power: 1.7, color: 0x6ae0ff, range: 7, angle: 120, angleEnraged: 170,
+  },
+  ophio_flood: {
+    pattern: 'rain', name: '冥河漲潮', desc: '冥河的水從地底湧出（狂暴時更多）',
+    windup: 1.4, power: 1.5, color: 0x4fb8ff, pillarColor: 0x9ae8ff, count: 7, countEnraged: 10, radius: 2.2, spread: 7, stagger: 0.09,
+  },
+  ophio_coils: {
+    pattern: 'spokes', name: '盤蛇鎖地', desc: '蛇身往四周鋪開，蛇身之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.6, color: 0x6ae0ff, count: 7, countEnraged: 10, range: 10, angle: 15,
+  },
+  /* ---- 第二十八層 斯廷法利斯銅羽鳥王 ---- */
+  stymph_feathers: {
+    pattern: 'multiLine', name: '銅羽齊射', desc: '往前方射出好幾排銅羽（狂暴時更多）',
+    windup: 1.1, power: 1.5, color: 0xf0d890, angles: [-30, -10, 10, 30], anglesEnraged: [-45, -27, -9, 9, 27, 45], count: 7, start: 2, spacing: 2.0, radius: 1.4, stagger: 0.06,
+  },
+  stymph_dive: {
+    pattern: 'leap', name: '鳥王俯衝', desc: '飛到高空再俯衝砸向玩家',
+    windup: 1.4, power: 1.9, color: 0xffe8a0, discColor: 0x8a6a2a, radius: 4.2,
+  },
+  stymph_storm: {
+    pattern: 'rain', name: '銅羽暴雨', desc: '銅羽從天上像雨一樣落下（狂暴時更多）',
+    windup: 1.4, power: 1.4, color: 0xf0d890, pillarColor: 0xfff4c0, count: 8, countEnraged: 12, radius: 1.9, spread: 8, stagger: 0.07,
+  },
+  stymph_wings: {
+    pattern: 'spokes', name: '刃翼迴旋', desc: '展開刃翼旋轉，羽刃之間是安全區（狂暴時更多）',
+    windup: 1.1, power: 1.7, color: 0xffd890, count: 8, countEnraged: 11, range: 9, angle: 14,
+  },
+  /* ---- 第二十九層 阿洛伊代雙子巨人 ---- */
+  aloadae_boulder: {
+    pattern: 'rain', name: '疊山落石', desc: '把山岩往天上疊，碎石落在玩家附近（狂暴時更多）',
+    windup: 1.5, power: 1.6, color: 0xc8b090, pillarColor: 0xe8d8b0, count: 6, countEnraged: 9, radius: 2.4, spread: 7, stagger: 0.12,
+  },
+  aloadae_spears: {
+    pattern: 'multiLine', name: '雙矛突刺', desc: '兩兄弟的長矛同時刺出兩排（狂暴時四排）',
+    windup: 1.0, power: 1.7, color: 0xe8e0d0, angles: [-14, 14], anglesEnraged: [-30, -10, 10, 30], count: 7, start: 2, spacing: 2.2, radius: 1.6, stagger: 0.06,
+  },
+  aloadae_quake: {
+    pattern: 'nova', name: '雙子震地', desc: '兩個巨人一起跺腳（狂暴時範圍更大）',
+    windup: 1.2, power: 1.9, color: 0xd8b070, discColor: 0x6a4a2a, radius: 6, radiusEnraged: 7.5,
+  },
+  aloadae_leap: {
+    pattern: 'leap', name: '巨人飛躍', desc: '跳起來砸在玩家位置',
+    windup: 1.5, power: 2.0, color: 0xffe0a0, discColor: 0x6a4a2a, radius: 4.6,
+  },
+  /* ---- 第三十層 泰坦之王克洛諾斯 ---- */
+  kronos_harpe: {
+    pattern: 'cone', name: '哈耳珀之鐮', desc: '巨鐮往前方大範圍橫掃（狂暴時更寬）',
+    windup: 1.1, power: 2.0, color: 0xc8e8ff, range: 8, angle: 120, angleEnraged: 170,
+  },
+  kronos_hours: {
+    pattern: 'spokes', name: '十二時辰', desc: '時之輪的指針往四周掃出，指針之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.8, color: 0x9ae8ff, count: 12, countEnraged: 16, range: 11, angle: 11,
+  },
+  kronos_freeze: {
+    pattern: 'rain', name: '時間凍結', desc: '凍結的時間碎片從天而降（狂暴時更多）',
+    windup: 1.5, power: 1.6, color: 0x9ae8ff, pillarColor: 0xe8faff, count: 9, countEnraged: 13, radius: 2.2, spread: 8, stagger: 0.08,
+  },
+  kronos_devour: {
+    pattern: 'leap', name: '吞噬眾神', desc: '泰坦之王躍起，砸落在玩家位置',
+    windup: 1.5, power: 2.1, color: 0xd8f0ff, discColor: 0x2a3a6a, radius: 4.8,
+  },
 } satisfies Record<string, BossSkillDef>;
 
 export type BossSkillId = keyof typeof BOSS_SKILLS;

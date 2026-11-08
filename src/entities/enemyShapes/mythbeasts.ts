@@ -19,7 +19,7 @@ import { featherWing } from './guardians';
  */
 
 /** 巨人上半身（卡庫斯、安泰俄斯、恩刻拉多斯共用）：回傳頭、手臂 pivot */
-function giantTop(
+export function giantTop(
   b: ShapeBuilder,
   o: { skin: number; y: number; w: number; chest: number; belt?: number; armor?: number; headR?: number },
 ): { head: THREE.Group; arms: THREE.Group[]; chest: THREE.Group } {

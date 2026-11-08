@@ -19,15 +19,15 @@ describe('神話難度', () => {
     expect(mythicFirstGems(22)).toBeGreaterThan(mythicFirstGems(1));
   });
 
-  it('第一層的小怪換算後跟 Lv.110 小怪差不多強，而且越高層越強', () => {
-    const lv110 = mobsOf(22);
+  it('第一層的小怪換算後跟最終層（Lv.150）小怪差不多強，而且越高層越強', () => {
+    const lv110 = mobsOf(DUNGEON_ORDER.length);
     const medHp = lv110.map((e) => e.stats.maxHp).sort((a, b) => a - b)[Math.floor(lv110.length / 2)];
     for (const e of mobsOf(1)) {
       const m = mythicMods(e, 1);
       const hp = e.stats.maxHp * m.hpMul;
       expect(hp).toBeGreaterThan(medHp * 0.4);
       expect(hp).toBeLessThan(medHp * 3);
-      expect(m.level).toBe(111);
+      expect(m.level).toBe(151);
     }
     const e = mobsOf(5)[0];
     expect(mythicMods(e, 20).hpMul).toBeGreaterThan(mythicMods(e, 5).hpMul);
@@ -35,7 +35,7 @@ describe('神話難度', () => {
 
   it('首領換算到最終首領等級，獎勵也變多', () => {
     const b1 = bossOf(1);
-    const b22 = bossOf(22);
+    const b22 = bossOf(DUNGEON_ORDER.length);
     const m1 = mythicMods(b1, 1);
     expect(b1.stats.maxHp * m1.hpMul).toBeGreaterThan(b22.stats.maxHp * 0.3);
     expect(m1.expMul).toBeGreaterThan(10);

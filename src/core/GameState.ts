@@ -21,7 +21,7 @@ import { newRebirthState, type RebirthState } from '@/systems/Rebirth';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 27;
+export const SAVE_VERSION = 28;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5

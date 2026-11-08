@@ -7,7 +7,7 @@ import { CLASS_GEAR, MAX_TIER, NAMED_TIERS, TIERS, type GearProfile, type Tier }
  * ------------------------------------------------------------
  * 裝備 = 底材（slot × tier）× 稀有度倍率 × 強化倍率。
  * tier 1 = 阿卡迪亞草原 / 第一層、tier 2 = 第二層、tier 3 = 第三層、tier 4 = 第四～六層（與多多納聖林）、
- * tier 5 = 第七～九層、tier 6 = 第十～十二層、tier 7 = 第十三～十七層、tier 8 = 第十八～二十二層。
+ * tier 5 = 第七～九層、tier 6 = 第十～十二層、tier 7 = 第十三～十七層、tier 8 = 第十八～三十層。
  * 「穿透」集中在帽子與戒指：這是突破第二、三層防禦的關鍵。
  */
 

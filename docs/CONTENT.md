@@ -193,6 +193,14 @@ export const serpent: ShapeBuild = (b) => {
 | 第二十層・佩利翁山 | `dungeon20-pelion-mountain.ts` | 96-100，防禦 375 | 半人馬掠奪者、拉庇泰亡魂、佩利翁山獅、佩利翁野豬、山巔鷹妖 | 半人馬涅索斯 | 連珠箭、馬蹄踐踏、毒血之雨 |
 | 第二十一層・萬怪之母的巢穴 | `dungeon21-echidna-lair.ts` | 101-105，防禦 395 | 蛇母幼蛇、奇美拉幼獸、恩普薩、奧特洛斯幼犬、巢穴蝙蝠 | 萬怪之母厄喀德那 | 萬怪之吼、雙尾毒牙、蛇身絞纏 |
 | 第二十二層・俄特律斯山 | `dungeon22-othrys-battlefield.ts` | 106-110，防禦 415 | 泰坦戰士、雷霆獨眼巨人、塔爾塔洛斯翼龍、泰坦亡靈將、風暴鷹身女妖 | 塔爾塔洛斯獄龍坎佩 | 五十獸首、蠍尾毒刺、塔爾塔洛斯獄火、獄龍降臨 |
+| 第二十三層・利比亞蛇窟 | `dungeon23-libyan-serpent-cave.ts` | 111-115，防禦 425 | 利比亞角蝰、利比亞沙巨像、拉彌亞之女、利比亞沙獅、沙丘巨鉗蟹 | 蛇身女王拉彌亞 | 蛇身絞殺、毒牙噴吐、蛇行突襲、噬子之怨 |
+| 第二十四層・戰神之野 | `dungeon24-field-of-ares.ts` | 116-120，防禦 435 | 戰神之野龍牙兵、青銅牛犢、龍牙祭司、科爾基斯戰狼、戰神牛頭衛兵 | 科爾基斯青銅火牛 | 青銅衝鋒、鼻孔噴火、火犁、銅蹄震地 |
+| 第二十五層・透墨索斯山 | `dungeon25-teumessos-mountain.ts` | 121-125，防禦 445 | 透墨索斯小狐、底比斯岩像、透墨索斯半人馬射手、萊拉普斯幻影、透墨索斯野豬 | 透墨索斯天狐 | 疾風奔襲、三尾風刃、旋風、天狐撲擊 |
+| 第二十六層・黑卡蒂的三岔路口 | `dungeon26-hecate-crossroads.ts` | 126-130，防禦 455 | 黑卡蒂冥犬、三岔路亡靈騎士、黑卡蒂女巫、斯特里克斯夜梟、冥月奇美拉 | 銅足夜魔恩普莎 | 冥火之髮、銅足踐踏、夜魔尖嘯、吸血利爪 |
+| 第二十七層・斯堤克斯河源 | `dungeon27-styx-source.ts` | 131-135，防禦 465 | 冥河鰻群、背誓的泰坦亡靈、冥河毒蟾、誓約獵犬、斯堤克斯巨蟹 | 牛蛇俄菲奧陶洛斯 | 牛角衝撞、蛇尾橫掃、冥河漲潮、盤蛇鎖地 |
+| 第二十八層・斯廷法利斯湖 | `dungeon28-stymphalian-lake.ts` | 136-140，防禦 475 | 銅羽蝠鳥、沼澤泥巨像、銅羽鷹身女妖、湖畔銅蹄鹿、沼澤野豬 | 斯廷法利斯銅羽鳥王 | 銅羽齊射、鳥王俯衝、銅羽暴雨、刃翼迴旋 |
+| 第二十九層・奧薩山 | `dungeon29-mount-ossa.ts` | 141-145，防禦 485 | 巨人族少年、奧薩山岩巨像、奧薩山蛇髮女妖、阿蒂蜜絲幻鹿、奧薩山野牛 | 阿洛伊代雙子巨人 | 疊山落石、雙矛突刺、雙子震地、巨人飛躍 |
+| 第三十層・奧林帕斯之巔 | `dungeon30-olympus-summit.ts` | 146-150，防禦 495 | 泰坦重步兵、時之巨像、時之亡巫、時空翼龍、泰坦獨眼巨人 | 泰坦之王克洛諾斯 | 哈耳珀之鐮、十二時辰、時間凍結、吞噬眾神 |
 
 ### 首領招式庫
 
@@ -262,6 +270,38 @@ export const serpent: ShapeBuild = (b) => {
 | `kampe_sting` | 蠍尾毒刺 | line | 塔爾塔洛斯獄龍坎佩 |
 | `kampe_hellfire` | 塔爾塔洛斯獄火 | rain | 塔爾塔洛斯獄龍坎佩 |
 | `kampe_leap` | 獄龍降臨 | leap | 塔爾塔洛斯獄龍坎佩 |
+| `lamia_coil` | 蛇身絞殺 | nova | 蛇身女王拉彌亞 |
+| `lamia_venom` | 毒牙噴吐 | multiLine | 蛇身女王拉彌亞 |
+| `lamia_lunge` | 蛇行突襲 | dash | 蛇身女王拉彌亞 |
+| `lamia_grief` | 噬子之怨 | rain | 蛇身女王拉彌亞 |
+| `khalko_charge` | 青銅衝鋒 | dash | 科爾基斯青銅火牛 |
+| `khalko_breath` | 鼻孔噴火 | cone | 科爾基斯青銅火牛 |
+| `khalko_furrow` | 火犁 | multiLine | 科爾基斯青銅火牛 |
+| `khalko_stomp` | 銅蹄震地 | nova | 科爾基斯青銅火牛 |
+| `fox_dash` | 疾風奔襲 | dash | 透墨索斯天狐 |
+| `fox_tails` | 三尾風刃 | spokes | 透墨索斯天狐 |
+| `fox_whirl` | 旋風 | rain | 透墨索斯天狐 |
+| `fox_pounce` | 天狐撲擊 | leap | 透墨索斯天狐 |
+| `empusa_flames` | 冥火之髮 | rain | 銅足夜魔恩普莎 |
+| `empusa_kick` | 銅足踐踏 | leap | 銅足夜魔恩普莎 |
+| `empusa_shriek` | 夜魔尖嘯 | nova | 銅足夜魔恩普莎 |
+| `empusa_claws` | 吸血利爪 | cone | 銅足夜魔恩普莎 |
+| `ophio_gore` | 牛角衝撞 | dash | 牛蛇俄菲奧陶洛斯 |
+| `ophio_tail` | 蛇尾橫掃 | cone | 牛蛇俄菲奧陶洛斯 |
+| `ophio_flood` | 冥河漲潮 | rain | 牛蛇俄菲奧陶洛斯 |
+| `ophio_coils` | 盤蛇鎖地 | spokes | 牛蛇俄菲奧陶洛斯 |
+| `stymph_feathers` | 銅羽齊射 | multiLine | 斯廷法利斯銅羽鳥王 |
+| `stymph_dive` | 鳥王俯衝 | leap | 斯廷法利斯銅羽鳥王 |
+| `stymph_storm` | 銅羽暴雨 | rain | 斯廷法利斯銅羽鳥王 |
+| `stymph_wings` | 刃翼迴旋 | spokes | 斯廷法利斯銅羽鳥王 |
+| `aloadae_boulder` | 疊山落石 | rain | 阿洛伊代雙子巨人 |
+| `aloadae_spears` | 雙矛突刺 | multiLine | 阿洛伊代雙子巨人 |
+| `aloadae_quake` | 雙子震地 | nova | 阿洛伊代雙子巨人 |
+| `aloadae_leap` | 巨人飛躍 | leap | 阿洛伊代雙子巨人 |
+| `kronos_harpe` | 哈耳珀之鐮 | cone | 泰坦之王克洛諾斯 |
+| `kronos_hours` | 十二時辰 | spokes | 泰坦之王克洛諾斯 |
+| `kronos_freeze` | 時間凍結 | rain | 泰坦之王克洛諾斯 |
+| `kronos_devour` | 吞噬眾神 | leap | 泰坦之王克洛諾斯 |
 
 ### 敵人造型
 
@@ -296,4 +336,12 @@ export const serpent: ShapeBuild = (b) => {
 | `argus` | `primordials.ts` | 瘦高巨人、全身會眨的眼睛、牧杖（前搖高舉牧杖） | 百眼守望者、百眼巨人阿爾戈斯 |
 | `geryon` | `primordials.ts` | 一個腰上三個身體、三顆羽盔頭、兩支長矛＋圓盾 | 三身巨人革律翁 |
 | `echidna` | `primordials.ts` | 女身＋盤地蛇身＋兩條蛇頭尾巴、頭上有角 | 萬怪之母厄喀德那 |
-| `kampe` | `primordials.ts` | 龍身四足、腰間一圈獸首、蛇髮、蠍尾、黑翼（最終首領） | 塔爾塔洛斯獄龍坎佩 |
+| `kampe` | `primordials.ts` | 龍身四足、腰間一圈獸首、蛇髮、蠍尾、黑翼（v1.96 以前的最終首領） | 塔爾塔洛斯獄龍坎佩 |
+| `lamia` | `titans.ts` | 盤繞的蛇尾、女王上身、金冠、長髮、利爪 | 蛇身女王拉彌亞 |
+| `khalkotauros` | `titans.ts` | 青銅牛身、胸口熔爐、鼻孔噴火、鉚釘甲片 | 科爾基斯青銅火牛 |
+| `vulpes` | `titans.ts` | 細長狐身、大耳、三條發光的風之尾 | 透墨索斯天狐 |
+| `empusa` | `titans.ts` | 火焰長髮、一隻銅腿一隻驢腿、破爛長袍、浮空 | 銅足夜魔恩普莎 |
+| `ophiotaurus` | `titans.ts` | 前半公牛、後半長蛇尾、冥河紋 | 牛蛇俄菲奧陶洛斯 |
+| `stymphalian` | `titans.ts` | 青銅巨鳥、刀刃銅羽、長頸彎喙 | 斯廷法利斯銅羽鳥王 |
+| `aloadae` | `titans.ts` | 兩個巨人上身連在一起，各扛山岩與長矛 | 阿洛伊代雙子巨人 |
+| `kronos` | `titans.ts` | 長鬍子泰坦、王冠、巨鐮、沙漏、背後的時之輪（最終首領） | 泰坦之王克洛諾斯 |
