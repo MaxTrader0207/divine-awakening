@@ -16,8 +16,9 @@ import type { SlotInfo } from '@/core/SaveSystem';
 import { CLASSES } from '@/data/classes';
 import { renderGuide } from './GuideTab';
 import { renderCollect } from './CollectTab';
-import { TOWER, bossGems, ensureWeek, startFloors, towerLevel } from '@/systems/TrialTower';
+import { TOWER, TOWER_AFFIXES, bossGems, ensureWeek, startFloors, towerLevel } from '@/systems/TrialTower';
 import { MYTHIC, mythicBest, mythicFirstGems, mythicLevel, mythicOpen, mythicUnlocked } from '@/systems/Mythic';
+import { WEEKLY, WEEKLY_DIFFS, ensureWeeklyWeek, hoursToReset, weeklyPick } from '@/systems/WeeklyBoss';
 import { fmtSecs } from '@/systems/StageClear';
 import { MAX_TIER } from '@/data/gear';
 import { LOGIN_DAYS, canClaimLogin, loginRewardDef } from '@/systems/Welcome';
@@ -215,6 +216,7 @@ export class Menu {
     ];
     out.push(this.towerCard());
     out.push(this.mythicCard());
+    out.push(this.weeklyCard());
     const myth = s.mythic.on && mythicOpen(s.bossesDefeated);
     DUNGEON_ORDER.forEach((id, i) => {
       const z = ZONES[id];
@@ -243,6 +245,30 @@ export class Menu {
       if (!myth) for (const sid of SIDE_ORDER.filter((x) => ZONES[x].side!.unlockAfter === id)) out.push(this.sideCard(sid));
     });
     return out;
+  }
+
+  /** 每週首領挑戰卡片（v1.78） */
+  private weeklyCard(): HTMLElement {
+    const s = this.state;
+    if (!mythicOpen(s.bossesDefeated))
+      return h('div', { class: 'card weekly-card locked' }, [h('h4', {}, '👑 每週首領挑戰'), h('p', {}, '🔒 打倒最終層首領後開放：每週一換一隻強化首領，限時單挑，三種難度各有每週獎勵。')]);
+    ensureWeeklyWeek(s.weekly);
+    const pick = weeklyPick(s.weekly.week);
+    const el = pick.boss.element ? ELEMENTS[pick.boss.element] : undefined;
+    const affixes = pick.affixes.map((a) => TOWER_AFFIXES[a]);
+    return h('div', { class: 'card weekly-card' }, [
+      h('h4', {}, `👑 每週首領挑戰・${pick.boss.name}${el ? `　${el.icon}${el.name}` : ''}`),
+      h('p', {}, `本週詞綴：${affixes.map((a) => `${a.icon}${a.name}（${a.id === 'regen' ? `首領每秒回復 ${WEEKLY.bossRegen * 100}%` : a.desc.replace('敵人', '首領')}）`).join('、')}。在試煉塔競技場單挑，限時 ${Math.round(WEEKLY.time / 60)} 分鐘，首領不會自動調整強度。還有 ${hoursToReset()} 小時換下一隻。`),
+      h('div', { class: 'weekly-diffs' }, WEEKLY_DIFFS.map((d) => {
+        const got = s.weekly.claimed.includes(d.id);
+        const best = s.weekly.best[d.id];
+        return h('button', { class: `weekly-diff${got ? ' got' : ''}`, onclick: () => { this.close(); bus.emit('weekly:start', { diff: d.id }); } }, [
+          h('b', {}, `${d.icon} ${d.name}`),
+          h('small', {}, `Lv.${mythicLevel(d.floor)}`),
+          h('small', {}, got ? `✓ 已領・最快 ${fmtSecs(best ?? 0)}` : `💎${d.gems}＋★${d.gear} 件${d.rarity === 'epic' ? '史詩' : ''}`),
+        ]);
+      })),
+    ]);
   }
 
   /** 神話難度卡片（v1.77）：開關與進度 */

@@ -12,6 +12,7 @@ import { newLoginState } from '@/systems/Welcome';
 import { newTowerState } from '@/systems/TrialTower';
 import { normalizeDivinity } from '@/systems/Divinity';
 import { normalizeMythic } from '@/systems/Mythic';
+import { normalizeWeekly } from '@/systems/WeeklyBoss';
 import { tutorialForExisting } from '@/systems/Tutorial';
 import type { HeroClass } from '@/data/classes';
 
@@ -293,6 +294,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.endingSeen = data.endingSeen === true;
   // v19 → v20：神話難度
   merged.mythic = normalizeMythic(data.mythic);
-  // 未來版本：if ((data.version ?? 0) < 21) { ... }
+  // v20 → v21：每週首領挑戰
+  merged.weekly = normalizeWeekly(data.weekly);
+  // 未來版本：if ((data.version ?? 0) < 22) { ... }
   return merged;
 }

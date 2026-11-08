@@ -18,6 +18,8 @@ export interface GameEvents {
   'tower:start': { floor: number };
   /** v1.76 重看結局（選單「收藏」） */
   'ending:replay': void;
+  /** v1.78 每週首領挑戰（選單「地圖」） */
+  'weekly:start': { diff: import('@/systems/WeeklyBoss').WeeklyDiff };
   'menu:open': { tab?: MenuTab };
   /** HUD 暫停鈕 */
   'pause:toggle': void;

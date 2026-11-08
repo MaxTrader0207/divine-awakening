@@ -1166,3 +1166,11 @@ html.landscape .end-box > * { max-width: 560px; }
 .card.dungeon.mythic h4 { color: #ffc29a; }
 .go.mythic { background: linear-gradient(#ff9a5a, #e2552a); color: #fff; }
 .hud.mythic .map-caption { color: #ffb08a; }
+
+/* ---- v1.78 每週首領挑戰 ---- */
+.card.weekly-card { border-color: rgba(255, 211, 107, 0.55); background: linear-gradient(135deg, rgba(150, 110, 20, 0.24), var(--panel-2)); display: grid; gap: 8px; }
+.weekly-diffs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.weekly-diff { display: grid; gap: 3px; justify-items: center; padding: 8px 4px; border-radius: 11px; background: linear-gradient(#ffe07a, var(--gold)); color: #4a3308; border: 0; text-align: center; }
+.weekly-diff b { font-size: 14px; }
+.weekly-diff small { font-size: 10.5px; line-height: 1.3; }
+.weekly-diff.got { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }

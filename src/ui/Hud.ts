@@ -381,7 +381,9 @@ export class Hud {
   private bossLastCall = 0;
 
   /** 戰鬥中的首領血條（上方中央插槽；出現時收起提示與新手指引） */
-  setBoss(e: { level?: number; def: { name: string; level?: number; element?: Elem; stats: { maxHp: number } }; hp: number; maxHp: number; atkMul?: number } | null) {
+  setBoss(e: { level?: number; def: { name: string; level?: number; element?: Elem; stats: { maxHp: number } }; hp: number; maxHp: number; atkMul?: number; scaler?: object | null } | null) {
+    // 只有會自動調整強度的首領才顯示「依實力調整」（試煉塔、神話難度、每週首領不調整）
+    if (e) this.els.bossAdj.style.display = e.scaler ? '' : 'none';
     if (!e) {
       if (this.bossShown) {
         this.els.boss.classList.remove('show');

@@ -58,6 +58,10 @@ import { StageClearScreen, type ClearInfo } from '@/ui/StageClearScreen';
 import { finishClear, type BossFight } from '@/systems/StageClear';
 import { CLASS_CLEAR } from '@/data/stageClear';
 import { EndingScreen, type EndingInfo } from '@/ui/EndingScreen';
+import { WeeklyScreen, type WeeklyResult } from '@/ui/WeeklyScreen';
+import { WEEKLY, WEEKLY_DIFF_MAP, ensureWeeklyWeek, recordWeeklyWin, weeklyAffixMods, weeklyPick, type WeeklyDiff } from '@/systems/WeeklyBoss';
+import { rollMythic } from '@/systems/GemShop';
+import { addItem, itemName } from '@/systems/Inventory';
 import { MAX_TIER } from '@/data/gear';
 import type { EnemyDef } from '@/data/types';
 import { DIVINITY, addDivExp, divinityOpen } from '@/systems/Divinity';
@@ -140,6 +144,10 @@ export class Game {
   /** 進行中的試煉塔（null = 沒在挑戰） */
   private towerRun: { floor: number; start: number; level: number; boss: boolean; timer: number; between: number; best: number; gems: number; kills: number; prevBest: number; plan?: FloorPlan; regen: number; reinforce: number; affixText: string; wave: { id: string; elite: boolean }[]; waveT: number; haste: number; notes: string[]; notesT: number } | null = null;
   private towerResultPending: import('@/ui/TowerScreen').TowerResult | null = null;
+  /** v1.78 每週首領挑戰 */
+  private weeklyRun: { diff: WeeklyDiff; boss: Enemy; name: string; timer: number; regen: number; affixText: string } | null = null;
+  private weeklyScreen!: WeeklyScreen;
+  private weeklyResultPending: WeeklyResult | null = null;
   private offlinePending: OfflineReward | null = null;
   private lastDay = localDate();
   /** 破關畫面（v1.34）：首領戰紀錄 → 慢動作特寫 → 結算畫面 */
@@ -246,7 +254,7 @@ export class Game {
       this.state,
       this.player,
       this.effects,
-      () => (this.towerRun ? tierForLevel(this.towerRun.level) : this.mythicFloorNow ? MAX_TIER : this.zones.current ? rollZoneTier(this.zones.current.def.id) : 1),
+      () => (this.towerRun ? tierForLevel(this.towerRun.level) : this.mythicFloorNow || this.weeklyRun ? MAX_TIER : this.zones.current ? rollZoneTier(this.zones.current.def.id) : 1),
       () => this.onInventoryChanged(),
       (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
       () => (this.mythicFloorNow ? MYTHIC.bossExtraDrops : 0),
@@ -374,6 +382,11 @@ export class Game {
       toTown: () => void this.changeZone('town'),
     });
     bus.on('tower:start', ({ floor }) => void this.startTower(floor));
+    this.weeklyScreen = new WeeklyScreen(uiRoot, {
+      retry: (d) => void this.startWeekly(d),
+      toTown: () => void this.changeZone('town'),
+    });
+    bus.on('weekly:start', ({ diff }) => void this.startWeekly(diff));
     this.welcome = new WelcomeScreen(uiRoot, {
       claimOffline: (double) => this.claimOffline(double),
       claimLogin: () => this.doLogin(),
@@ -807,7 +820,7 @@ export class Game {
     this.enemies.update(dt, this.rig.camera, this.aiCtx);
     // 首領戰紀錄：開戰時開始計時；首領脫戰回家就作廢（擊敗時在 onBossDefeated 結算）
     const eb = this.enemies.engagedBoss();
-    if (eb && !this.bossFight && !this.towerRun) {
+    if (eb && !this.bossFight && !this.towerRun && !this.weeklyRun) {
       this.bossFight = { zoneId: this.state.zoneId, start: this.state.stats.playTime, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
       // 神話難度的首領不自動調整強度（跟試煉塔一樣）
       if (!this.mythicFloorNow) this.scaleBoss(eb);
@@ -824,6 +837,7 @@ export class Game {
     this.companionCd = Math.max(0, this.companionCd - dt);
     this.updateCompanionSkills(dt);
     this.updateTower(dt);
+    this.updateWeekly(dt);
     this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
@@ -1051,6 +1065,96 @@ export class Game {
   /* ======================= 無盡試煉塔（v1.70） ======================= */
 
   /** 開始挑戰（地圖頁、結算畫面）：進塔、從第 floor 層開始 */
+  /** 每週首領挑戰（v1.78）：到試煉塔競技場單挑本週首領 */
+  async startWeekly(diff: WeeklyDiff) {
+    const s = this.state;
+    if (!mythicOpen(s.bossesDefeated)) {
+      bus.emit('toast', { text: '打倒最終首領後開放每週首領挑戰' });
+      return;
+    }
+    ensureWeeklyWeek(s.weekly);
+    this.weeklyScreen.hide();
+    this.towerScreen.hide();
+    this.menu.close();
+    if (this.towerRun) this.endTower('leave');
+    this.weeklyRun = null;
+    await this.changeZone('trial_tower', ZONES.trial_tower.spawn, true);
+    if (s.zoneId !== 'trial_tower') return;
+    const pick = weeklyPick(s.weekly.week);
+    const d = WEEKLY_DIFF_MAP[diff];
+    const m = mythicMods(pick.boss, d.floor);
+    const am = weeklyAffixMods(pick.affixes);
+    this.enemies.clear();
+    const e = this.enemies.spawnOne(pick.boss.id, 0, -6, { hpMul: m.hpMul * am.hp * d.hp, atkMul: m.atkMul * am.atk, def: Math.round(m.defense * am.def), tag: `${d.icon}${d.name}・Lv.${m.level}` });
+    if (!e) return;
+    e.level = m.level;
+    e.baseHpMul = m.hpMul * am.hp * d.hp;
+    e.baseAtkMul = m.atkMul * am.atk;
+    e.expMul = m.expMul;
+    e.goldMul = m.goldMul;
+    e.hasteMul = am.haste;
+    e.hunter = true;
+    e.provoked = true;
+    const affixes = pick.affixes.map((a) => TOWER_AFFIXES[a]);
+    this.weeklyRun = { diff, boss: e, name: pick.boss.name, timer: WEEKLY.time, regen: am.regen, affixText: affixes.map((a) => `${a.icon}${a.name}`).join(' ') };
+    this.player.hp = this.player.stats.maxHp;
+    if (!this.usesRage) this.player.mp = this.player.stats.maxMp;
+    bus.emit('banner', { text: `👑 每週首領・${pick.boss.name}` });
+    bus.emit('toast', { text: `${d.icon} ${d.name}難度 Lv.${m.level}：${affixes.map((a) => `${a.icon}${a.name}`).join('、')}，限時 ${Math.round(WEEKLY.time / 60)} 分鐘`, duration: 3.5 });
+  }
+
+  private updateWeekly(dt: number) {
+    const run = this.weeklyRun;
+    if (!run) return;
+    if (!run.boss.alive) {
+      this.weeklyScreen.show(this.endWeekly('win'));
+      return;
+    }
+    run.timer -= dt;
+    if (run.regen > 0) run.boss.hp = Math.min(run.boss.maxHp, run.boss.hp + run.boss.maxHp * run.regen * dt);
+    const t = Math.max(0, run.timer);
+    const d = WEEKLY_DIFF_MAP[run.diff];
+    this.hud.setTower(`👑 ${d.name}・${run.name}　⏱ ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}　${run.affixText}`, t < 30);
+    if (run.timer <= 0) this.weeklyScreen.show(this.endWeekly('timeout'));
+  }
+
+  /** 結束每週挑戰：打倒的話記錄時間、發本週第一次獎勵 */
+  private endWeekly(reason: WeeklyResult['reason']): WeeklyResult {
+    const run = this.weeklyRun!;
+    this.weeklyRun = null;
+    this.hud.setTower(null);
+    const s = this.state;
+    const secs = Math.max(1, Math.round(WEEKLY.time - Math.max(0, run.timer)));
+    const win = reason === 'win';
+    let newBest = false;
+    const rewards: string[] = [];
+    if (win) {
+      const r = recordWeeklyWin(s.weekly, run.diff, secs);
+      newBest = r.newBest;
+      if (r.first) {
+        const d = WEEKLY_DIFF_MAP[run.diff];
+        s.gems += d.gems;
+        rewards.push(`💎 ${d.gems}`);
+        for (let i = 0; i < d.gear; i++) {
+          const id = rollMythic(s, Math.random);
+          const it = id ? addItem(s, id, d.rarity) : null;
+          if (it) rewards.push(`★${itemName(it)}`);
+          else {
+            s.gems += 15;
+            rewards.push('💎 15（背包滿了，改給鑽石）');
+          }
+        }
+        this.onInventoryChanged();
+      }
+      bus.emit('banner', { text: `打倒每週首領・${run.name}！` });
+    } else {
+      // 沒打倒：首領移除（失敗不給獎勵；倒下、離開的話換地圖也會清掉）
+      this.enemies.clear();
+    }
+    this.persist();
+    return { win, reason, diff: run.diff, bossName: run.name, secs, best: s.weekly.best[run.diff], newBest, rewards };
+  }
+
   async startTower(floor: number) {
     const s = this.state;
     if (!s.bossesDefeated.includes(TOWER.unlockAfter)) {
@@ -1060,7 +1164,9 @@ export class Game {
     ensureWeek(s.tower);
     if (!startFloors(s.tower.best).includes(floor)) floor = 1;
     this.towerScreen.hide();
+    this.weeklyScreen.hide();
     this.menu.close();
+    if (this.weeklyRun) this.endWeekly('leave');
     this.towerRun = null;
     await this.changeZone('trial_tower', ZONES.trial_tower.spawn, true);
     if (this.state.zoneId !== 'trial_tower') return;
@@ -1595,7 +1701,7 @@ export class Game {
     // 試煉塔的首領：不跳破關畫面、不給首領鑽石（塔有自己的每週鑽石）
     const gems = tower ? 0 : k.gems;
     if (tower) this.towerRun!.kills++;
-    if (k.boss && !tower) this.onBossDefeated(k.name, exp, gold, k.gems);
+    if (k.boss && !tower && !this.weeklyRun) this.onBossDefeated(k.name, exp, gold, k.gems);
     if (exp <= 0 && gold <= 0) return;
     s.gold += gold;
     s.stats.goldEarned += gold;
@@ -1773,8 +1879,9 @@ export class Game {
     this.counterTimer = 0;
     this.targets.clear();
     this.deathTimer = 1.6;
-    this.deathGoldLost = this.towerRun ? 0 : Math.floor(this.state.gold * DEATH_GOLD_PENALTY);
+    this.deathGoldLost = this.towerRun || this.weeklyRun ? 0 : Math.floor(this.state.gold * DEATH_GOLD_PENALTY);
     if (this.towerRun) this.towerResultPending = this.endTower('dead');
+    if (this.weeklyRun) this.weeklyResultPending = this.endWeekly('dead');
     this.state.gold -= this.deathGoldLost;
     bus.emit('banner', { text: '你被擊敗了…' });
   }
@@ -1786,6 +1893,10 @@ export class Game {
     this.skills.reset();
     this.persist();
     bus.emit('toast', { text: lost > 0 ? `在主城復活，損失 ${lost} 金幣` : '在主城復活', duration: 2.6 });
+    if (this.weeklyResultPending) {
+      this.weeklyScreen.show(this.weeklyResultPending);
+      this.weeklyResultPending = null;
+    }
     if (this.towerResultPending) {
       this.towerScreen.show(this.towerResultPending);
       this.towerResultPending = null;
@@ -1834,6 +1945,7 @@ export class Game {
 
   private enterZone(id: ZoneId, at: { x: number; z: number }) {
     this.bossFight = null;
+    if (this.weeklyRun) this.endWeekly('leave');
     if (this.towerRun && id !== 'trial_tower') {
       const r = this.endTower('leave');
       if (r.cleared) bus.emit('toast', { text: `🗼 試煉塔結算：打到第 ${r.cleared} 層${r.gems ? `，獲得 ${r.gems} 鑽石` : ''}`, duration: 3, kind: 'reward' });
