@@ -8,6 +8,8 @@ import { CharacterRig } from './CharacterRig';
 import { CLASSES, type HeroAnimSet } from '@/data/classes';
 import { smoothByCrease } from './smoothShade';
 import { BossLook } from './enemyShapes/bossLook';
+import { DivineAura } from './DivineAura';
+import type { DivineForm, OrnamentKind } from '@/data/divineForm';
 
 /** 平滑後的模型幾何（同一職業模型共用，依 模型:網格序號）*/
 const SMOOTH_CACHE = new Map<string, THREE.BufferGeometry>();
@@ -57,6 +59,11 @@ export class Player {
   /** 平滑著色職業的材質效果（高光、地面遮蔽、輪廓光） */
   private look: BossLook | null = null;
   private anims: HeroAnimSet;
+  /** 模型的材質（v1.99 神裝形態換色用）與原本的貼圖、光暈 */
+  private modelMats: THREE.MeshLambertMaterial[] = [];
+  private baseLook = new Map<THREE.MeshLambertMaterial, { map: THREE.Texture | null; emissive: THREE.Color }>();
+  private divineKey = '';
+  private aura: DivineAura | null = null;
 
   constructor(anims: HeroAnimSet = MAGE_ANIMS) {
     this.anims = anims;
@@ -112,6 +119,8 @@ export class Player {
         m.needsUpdate = true;
       }
     }
+    this.modelMats = inst.materials as THREE.MeshLambertMaterial[];
+    for (const m of this.modelMats) this.baseLook.set(m, { map: m.map, emissive: m.emissive.clone() });
     // 平滑著色（v1.50 訓獸師、v1.51 全職業）：依摺角重算法線，圓弧處不再一格一格、稜角保持銳利
     const crease = this.anims.smooth ?? 60;
     if (crease > 0) {
@@ -399,6 +408,45 @@ export class Player {
     this.object.position.set(x, this.groundY, z);
   }
 
+  /**
+   * v1.99 神裝形態（全身★神話裝，見 data/divineForm.ts）：衣服換成套裝配色、輪廓光、腳下法陣、職業飾物。
+   * 傳 null 回到原本外觀。同樣的形態不會重建。回傳是否「剛變成」神裝形態（給 Game 放特效）。
+   */
+  setDivineForm(form: DivineForm | null, ornament: OrnamentKind): boolean {
+    const key = form ? `${form.key}:${ornament}` : '';
+    if (key === this.divineKey) return false;
+    const wasOn = this.divineKey !== '';
+    this.divineKey = key;
+    // 先回到原本外觀
+    for (const [m, b] of this.baseLook) {
+      m.map = b.map;
+      m.emissive.copy(b.emissive);
+      m.needsUpdate = true;
+    }
+    this.look?.setRim(new THREE.Color(0xf0d8a0).lerp(new THREE.Color(0xfff4e0), 0.5).getHex(), 0.3);
+    if (this.aura) {
+      this.object.remove(this.aura.group);
+      this.aura.dispose();
+      this.aura = null;
+    }
+    if (!form) return false;
+    const pal = form.palette;
+    for (const [m, b] of this.baseLook) {
+      if (b.map) {
+        const k = `${b.map.uuid}:${form.tier}`;
+        let tex = DIVINE_TEX.get(k);
+        if (!tex) DIVINE_TEX.set(k, (tex = divineTexture(b.map, pal)));
+        m.map = tex;
+      }
+      m.emissive.set(pal.glow).multiplyScalar(0.04);
+      m.needsUpdate = true;
+    }
+    this.look?.setRim(pal.glow, 0.55);
+    this.aura = new DivineAura(ornament, pal, form.full);
+    this.object.add(this.aura.group);
+    return !wasOn;
+  }
+
   /** 施法：面向指定方向一小段時間並播放揮杖動畫 */
   cast(dirX: number, dirZ: number) {
     this.lockFacing = Math.atan2(dirX, dirZ);
@@ -424,6 +472,7 @@ export class Player {
     this.sinceHurt += dt;
     this.rig?.update(dt);
     this.look?.update(this.object.position.y, HERO_HEIGHT);
+    this.aura?.update(dt, this.moveAmount > 0.3);
     if (!this.alive) {
       this.updateClones(dt, this.anims.idle, 0.22, 1);
       if (this.rig) return; // 模型播死亡動畫
@@ -555,6 +604,54 @@ function buildWhip(): THREE.Object3D {
     g.add(m);
   }
   return g;
+}
+
+/** v1.99 神裝形態的貼圖（依貼圖＋階級快取） */
+const DIVINE_TEX = new Map<string, THREE.Texture>();
+
+/**
+ * 神裝形態換色：有顏色的布料換成套裝色相（保留明暗），灰色的金屬往點綴色鍍一層，
+ * 皮膚、皮革、頭髮（橘棕色系）與很暗的地方（眼睛、陰影）不動。
+ */
+function divineTexture(src: THREE.Texture, pal: { hue: number; sat: number; light: number; accent: number }): THREE.Texture {
+  const img = src.image as CanvasImageSource & { width: number; height: number };
+  if (!img || !img.width) return src;
+  const cv = document.createElement('canvas');
+  cv.width = img.width;
+  cv.height = img.height;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return src;
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = data.data;
+  const c = new THREE.Color();
+  const acc = new THREE.Color(pal.accent);
+  const hsl = { h: 0, s: 0, l: 0 };
+  for (let i = 0; i < d.length; i += 4) {
+    c.setRGB(d[i] / 255, d[i + 1] / 255, d[i + 2] / 255);
+    c.getHSL(hsl);
+    const deg = hsl.h * 360;
+    if (hsl.l < 0.1) continue;
+    // 皮膚、皮革、頭髮（橘棕色系）保留——KayKit 貼圖裡皮膚和皮帶顏色很接近，分不開，就一起保留
+    if (deg >= 8 && deg <= 45) continue;
+    if (hsl.s < 0.15) {
+      // 金屬、白布：鍍上一層點綴色
+      if (hsl.l > 0.35) c.lerp(acc, 0.35);
+    } else c.setHSL(pal.hue / 360, Math.min(1, hsl.s * pal.sat + 0.12), Math.min(0.92, hsl.l * pal.light));
+    d[i] = c.r * 255;
+    d[i + 1] = c.g * 255;
+    d[i + 2] = c.b * 255;
+  }
+  ctx.putImageData(data, 0, 0);
+  const t = new THREE.CanvasTexture(cv);
+  t.flipY = src.flipY;
+  t.colorSpace = src.colorSpace;
+  t.wrapS = src.wrapS;
+  t.wrapT = src.wrapT;
+  t.magFilter = src.magFilter;
+  t.minFilter = src.minFilter;
+  t.generateMipmaps = src.generateMipmaps;
+  return t;
 }
 
 /** 貼圖換色：把指定色相範圍的像素轉成新色相（保留明暗與飽和度），回傳新的 CanvasTexture */

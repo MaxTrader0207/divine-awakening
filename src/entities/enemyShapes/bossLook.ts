@@ -13,11 +13,19 @@ export class BossLook {
     uBaseY: { value: 0 },
     uHeight: { value: 2 },
     uRim: { value: new THREE.Color(0xffffff) },
+    /** 輪廓光強度（預設 0.3；v1.99 神裝形態調高） */
+    uRimK: { value: 0.3 },
   };
 
   constructor(rimColor: number) {
     // 邊緣光：首領亮色往白色靠一點，強度在 shader 裡調
     this.uniforms.uRim.value.set(rimColor).lerp(new THREE.Color(0xfff4e0), 0.5);
+  }
+
+  /** v1.99 換輪廓光顏色與強度（神裝形態） */
+  setRim(color: number, k: number) {
+    this.uniforms.uRim.value.set(color);
+    this.uniforms.uRimK.value = k;
   }
 
   /** 每幀更新腳底高度與身高（高台、跳躍時 AO 跟著走） */
@@ -45,18 +53,19 @@ export class BossLook {
       sh.uniforms.uBaseY = u.uBaseY;
       sh.uniforms.uHeight = u.uHeight;
       sh.uniforms.uRim = u.uRim;
+      sh.uniforms.uRimK = u.uRimK;
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vBossWorld;')
         .replace('#include <project_vertex>', '#include <project_vertex>\nvBossWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;');
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vBossWorld;\nuniform float uBaseY;\nuniform float uHeight;\nuniform vec3 uRim;')
+        .replace('#include <common>', '#include <common>\nvarying vec3 vBossWorld;\nuniform float uBaseY;\nuniform float uHeight;\nuniform vec3 uRim;\nuniform float uRimK;')
         .replace(
           '#include <opaque_fragment>',
           `{
             float hB = clamp((vBossWorld.y - uBaseY) / uHeight, 0.0, 1.0);
             outgoingLight *= mix(0.6, 1.0, smoothstep(0.0, 0.5, hB));
             float fr = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
-            outgoingLight += uRim * pow(fr, 3.0) * 0.3 * (0.5 + 0.5 * hB);
+            outgoingLight += uRim * pow(fr, 3.0) * uRimK * (0.5 + 0.5 * hB);
           }
           #include <opaque_fragment>`,
         );

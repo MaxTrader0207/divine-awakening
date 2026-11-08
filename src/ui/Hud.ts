@@ -1,3 +1,4 @@
+import { divineFormOf } from '@/data/divineForm';
 import { LANDSCAPE, onLandscapeChange } from './landscape';
 import { ELEMENTS, type Element as Elem } from '@/data/elements';
 import { CONSUMABLE_MAP } from '@/data/consumables';
@@ -656,6 +657,13 @@ export class Hud {
     const div = divinityOpen(s.level);
     const expR = div ? Math.min(1, s.divinity.exp / divExpToNext(s.divinity.lv)) : Math.min(1, s.exp / expToNext(s.level));
     this.root.classList.toggle('divine', div);
+    // v1.99 神裝形態：狀態框、頭像、技能鈕換成套裝配色
+    const df = divineFormOf(s.equipment);
+    this.root.classList.toggle('mythic-form', !!df);
+    if (df) {
+      this.root.style.setProperty('--dv', `#${df.palette.glow.toString(16).padStart(6, '0')}`);
+      this.root.style.setProperty('--dv2', `#${df.palette.accent.toString(16).padStart(6, '0')}`);
+    }
     this.els.expTag.textContent = div ? '神格' : 'EXP';
     this.els.avatar.style.setProperty('--exp', String(expR));
     this.els.expText.textContent = div ? `Lv.${s.divinity.lv}・${Math.floor(expR * 100)}%` : `${Math.floor(expR * 100)}%`;

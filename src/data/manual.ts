@@ -1,6 +1,7 @@
+import { DIVINE_ORNAMENTS, DIVINE_PALETTES } from './divineForm';
 import { AUTO_CHEST_RANGE } from '@/systems/AutoBattle';
 import type { HeroClass } from './classes';
-import { CLASSES } from './classes';
+import { CLASSES, CLASS_LIST } from './classes';
 import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, BEAST_ORDER, bossOf, zoneLabel } from './zones';
 import { beastFirstGems } from '@/systems/BeastHunt';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, ENHANCE_GEM_COST, ENHANCE_MAX, POTION_PRICE, RARITY, RARITY_ORDER } from './items';
@@ -173,6 +174,7 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         '裝備共 8 階，越後面的副本掉落越高階（阿卡迪亞 → 波賽頓 → 赫菲斯托斯 → 奧林帕斯 → 泰坦 → 卡俄斯 → 堤豐 → 神格）：第一～三層是 1~3 階，第四～六層 4 階、第七～九層 5 階、第十～十二層 6 階、第十三～十七層 7 階、第十八～三十層 8 階。',
         '**★神話裝**：每個職業、每個欄位各有 20 件以神話人物命名的專屬裝備，只會從怪物身上掉落（首領機率更高）。比同階標準裝略強，並偏重某種能力，例如爆擊、穿透、防禦、生命或移速。',
         `**套裝效果**：同一個編號的★神話裝 6 個欄位是同一套（例如法師的「烏拉諾斯」系列），同時穿著 2 件觸發這套的專長加成（例如爆擊率 +4%、穿透 +5%），4 件 ${SET_4.text}，6 件再 ${SET_6.text}。點★神話裝可以看它屬於哪一套、穿了幾件；「選單 → 裝備」上方顯示目前生效的套裝。`,
+        `**神裝形態**：全身 6 格都穿★神話裝時，角色換成神裝形態——衣服換成套裝配色（依階級：${Object.values(DIVINE_PALETTES).map((p) => p.name).join('、')}）、全身輪廓光、腳下旋轉的神紋法陣、往上飄的光點，背後還有職業專屬飾物（${CLASS_LIST.map((c) => `${CLASSES[c].name}「${DIVINE_ORNAMENTS[c].title}」`).join('、')}）；6 件同一套時法陣多一圈外環。只改外觀，不影響屬性。`,
         '爆擊率、爆擊傷害只會吃到一部分稀有度與強化加成（攻擊、防禦、生命則全部吃到），所以後期主要靠攻擊力與穿透變強。',
       ],
     },

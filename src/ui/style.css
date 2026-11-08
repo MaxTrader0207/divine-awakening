@@ -1260,3 +1260,27 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
 .junk-row .seg { flex: 0 0 auto; }
 .junk-row .go { flex: 1 1 auto; min-width: 0; }
 .junk-row small { flex-basis: 100%; opacity: .7; }
+
+/* v1.99 神裝形態（全身★神話裝）：狀態框金邊發光、頭像外圈、技能鈕輪廓、畫面四角淡淡的光暈 */
+.hud.mythic-form .status-card {
+  border-color: color-mix(in srgb, var(--dv, #ffd86a) 75%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dv2, #fff0b0) 35%, transparent), 0 0 14px color-mix(in srgb, var(--dv, #ffd86a) 45%, transparent), 0 4px 14px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--dv, #ffd86a) 16%, rgba(16, 20, 32, 0.82)), rgba(16, 20, 32, 0.82) 60%);
+}
+.hud.mythic-form .avatar { box-shadow: 0 0 10px var(--dv, #ffd86a), 0 0 0 2px var(--dv2, #fff0b0); }
+.hud.mythic-form .status-title { color: var(--dv2, #fff0b0); text-shadow: 0 0 8px color-mix(in srgb, var(--dv, #ffd86a) 70%, transparent); }
+.hud.mythic-form .status-title::before { content: '✦ '; color: var(--dv, #ffd86a); }
+.hud.mythic-form .skills .skill, .hud.mythic-form .skills .attack { box-shadow: 0 0 0 2px color-mix(in srgb, var(--dv, #ffd86a) 55%, transparent), 0 0 10px color-mix(in srgb, var(--dv, #ffd86a) 35%, transparent); }
+.hud.mythic-form::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at 50% 120%, color-mix(in srgb, var(--dv, #ffd86a) 14%, transparent), transparent 55%);
+  animation: dv-breathe 4s ease-in-out infinite;
+}
+@keyframes dv-breathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+/* 裝備頁的神裝形態卡片 */
+.divine-card .dv-row { display: flex; align-items: center; gap: 10px; }
+.divine-card .dv-pips { display: flex; gap: 4px; }
+.divine-card .dv-pips i { width: 14px; height: 14px; border-radius: 4px; background: rgba(255, 255, 255, .12); }
+.divine-card .dv-pips i.on { background: var(--dv, #ffd86a); box-shadow: 0 0 6px var(--dv, #ffd86a); }
+.divine-card.on { border-color: color-mix(in srgb, var(--dv, #ffd86a) 70%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--dv, #ffd86a) 30%, transparent); }

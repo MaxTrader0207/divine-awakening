@@ -1,3 +1,4 @@
+import { DIVINE_ORNAMENTS, divineFormOf, mythicPieces, setLabel } from '@/data/divineForm';
 import type { GameState } from '@/core/GameState';
 import type { EquipSlot, Stats } from '@/data/types';
 import {
@@ -212,6 +213,24 @@ let selectedUid: number | null = null;
 let invView: 'gear' | 'items' | 'companions' = 'gear';
 /** 背包篩選 */
 let invFilter: 'all' | 'named' | EquipSlot = 'all';
+/** v1.99 神裝形態：全身★神話裝時換外觀（卡片顯示 n/6 與說明） */
+function divineCard(s: InvContext['state']): HTMLElement {
+  const n = mythicPieces(s.equipment);
+  const form = divineFormOf(s.equipment);
+  const orn = DIVINE_ORNAMENTS[s.heroClass];
+  const style = form ? `--dv:#${form.palette.glow.toString(16).padStart(6, '0')}` : '';
+  return h('div', { class: `card divine-card${form ? ' on' : ''}`, style }, [
+    h('h4', {}, form ? `✨ 神裝形態・${form.palette.name}` : '✨ 神裝形態'),
+    h('div', { class: 'dv-row' }, [
+      h('div', { class: 'dv-pips' }, Array.from({ length: 6 }, (_, i) => h('i', { class: i < n ? 'on' : '' }))),
+      h('b', {}, `★神話裝 ${n}/6`),
+    ]),
+    h('p', { class: 'dim' }, form
+      ? `衣服換成${form.palette.name}配色、腳下神紋法陣、背後「${orn.title}」${form.full ? `；${setLabel(form.setName)} 6 件，法陣多一圈外環` : '（6 件同一套時法陣多一圈外環）'}。配色依主要套裝的階級。`
+      : `全身 6 格都穿★神話裝，角色會換成神裝形態：套裝配色、輪廓光、腳下法陣，背後出現「${orn.title}」。只改外觀，不影響屬性。`),
+  ]);
+}
+
 /** v1.98 一鍵賣出的稀有度上限（只在這次開遊戲期間記住；預設跟「撿到時自動賣出」一樣，關閉時用普通） */
 let junkLevel: 'common' | 'fine' | 'rare' | null = null;
 
@@ -364,6 +383,7 @@ function renderEquipInner(ctx: InvContext): HTMLElement[] {
   // v1.83 轉生：可以轉生或轉生過才顯示
   if (!rebirthBlocked(s) || s.rebirth?.count) out.push(rebirthCard(ctx));
   out.push(slots);
+  out.push(divineCard(s));
   const sets = equippedSets(s.equipment);
   if (sets.length) out.push(h('div', { class: 'card set-card' }, [h('h4', {}, '🧩 套裝效果'), ...sets.map((a) => setBlock(a.set, a.count))]));
   const sel = selectedUid !== null ? findItem(s, selectedUid) : undefined;

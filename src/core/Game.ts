@@ -35,6 +35,7 @@ import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
 import { openCompanionView, openItemsView } from '@/ui/InventoryTabs';
+import { DIVINE_ORNAMENTS, divineFormOf, setLabel } from '@/data/divineForm';
 import { AutoBattle, AUTO_CHEST_GIVEUP, AUTO_CHEST_RANGE, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
@@ -1536,7 +1537,26 @@ export class Game {
     if (cb.critDmg) p.stats.critDmg = Math.min(CRIT_DMG_MAX, p.stats.critDmg + cb.critDmg.v);
     p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
     p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));
+    this.updateDivineForm();
     bus.emit('player:changed');
+  }
+
+  /** v1.99 神裝形態：全身★神話裝時換外觀；剛變身時放特效＋提示（讀檔進遊戲時不放） */
+  private divineShown = false;
+  private updateDivineForm() {
+    const form = divineFormOf(this.state.equipment);
+    const orn = DIVINE_ORNAMENTS[this.state.heroClass];
+    const fresh = this.player.setDivineForm(form, orn.kind);
+    if (fresh && form && this.divineShown) {
+      const { x, z } = this.player.pos;
+      this.effects.pillar(x, z, 1.3, form.palette.glow, 1.0);
+      this.effects.ring(x, z, 0.4, 3.4, form.palette.accent, 0.7);
+      this.effects.ring(x, z, 0.2, 2.2, form.palette.glow, 0.5);
+      this.audio.play('enhance');
+      bus.emit('camera:shake', { power: 0.15 });
+      bus.emit('toast', { text: `✨ 神裝覺醒：${form.palette.name}・${orn.title}${form.full ? `（${setLabel(form.setName)} 6/6）` : ''}`, duration: 3.5, kind: 'reward' });
+    }
+    this.divineShown = true;
   }
 
   private devPen: number | null = null;
