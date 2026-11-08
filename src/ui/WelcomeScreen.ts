@@ -1,5 +1,7 @@
 import { h } from './dom';
-import { LOGIN_DAYS, OFFLINE, formatAway, loginRewardDef, type OfflineReward } from '@/systems/Welcome';
+import { LOGIN_DAYS, OFFLINE, formatAway, loginRewardDef, type OfflineClaim, type OfflineReward } from '@/systems/Welcome';
+import { ITEM_BASES, RARITY } from '@/data/items';
+import { divinityOpen } from '@/systems/Divinity';
 
 /**
  * 「歡迎回來」畫面（v1.65）：離線收益＋每日簽到。
@@ -7,8 +9,10 @@ import { LOGIN_DAYS, OFFLINE, formatAway, loginRewardDef, type OfflineReward } f
  * 簽到沒領的話之後也可以在選單「任務」領。
  */
 export interface WelcomeActions {
-  /** 領離線收益；double = 花鑽石領 2 倍。回傳是否成功 */
-  claimOffline(double: boolean): boolean;
+  /** 領離線收益；double = 花鑽石領 2 倍。回傳實際拿到的東西，失敗 null */
+  claimOffline(double: boolean): OfflineClaim | null;
+  /** 帶著的夥伴圖示（沒有就空字串） */
+  companions(): string;
   /** 簽到；回傳獲得的東西 */
   claimLogin(): string[] | null;
   gems(): number;
@@ -21,6 +25,7 @@ export class WelcomeScreen {
   private box: HTMLElement;
   private offline: OfflineReward | null = null;
   private offlineDone = false;
+  private claimed: OfflineClaim | null = null;
   private login: { day: number; total: number } | null = null;
   private loginGot: string[] | null = null;
   visible = false;
@@ -35,6 +40,7 @@ export class WelcomeScreen {
   show(offline: OfflineReward | null, login: { day: number; total: number } | null) {
     this.offline = offline;
     this.offlineDone = false;
+    this.claimed = null;
     this.login = login;
     this.loginGot = null;
     if (!offline && !login) return;
@@ -58,14 +64,36 @@ export class WelcomeScreen {
     const o = this.offline;
     if (o) {
       const capped = o.away > o.minutes;
+      const c = this.claimed;
+      const divine = divinityOpen(this.actions.level());
+      const pct = Math.min(100, (o.minutes / (OFFLINE.capHours * 60)) * 100);
+      const comps = this.actions.companions();
+      const drops = c ? c.kept : o.drops;
+      const gains = [
+        h('span', {}, [h('small', {}, divine ? '神格經驗' : '經驗'), h('b', {}, `+${(c?.exp ?? o.exp).toLocaleString()}`)]),
+        h('span', {}, [h('small', {}, '金幣'), h('b', {}, `+${(c ? c.gold + c.soldGold : o.gold).toLocaleString()}`)]),
+      ];
+      if (o.potions) gains.push(h('span', {}, [h('small', {}, '紅藍藥水'), h('b', {}, `各 +${c?.potions ?? o.potions}`)]));
+      if (comps) gains.push(h('span', {}, [h('small', {}, `夥伴 ${comps}`), h('b', {}, `+${c?.compExp ?? o.compExp} 經驗`)]));
       parts.push(
         h('div', { class: 'wb-sec' }, [
           h('b', { class: 'wb-title' }, '⏳ 離線收益'),
           h('p', { class: 'wb-text' }, `你離開了 ${formatAway(o.away)}，赫拉斯的英靈替你打倒了 ${o.kills} 隻怪物${capped ? `（最多計算 ${OFFLINE.capHours} 小時）` : ''}。`),
-          h('div', { class: 'wb-gain' }, [
-            h('span', {}, [h('small', {}, '經驗'), h('b', {}, `+${o.exp.toLocaleString()}`)]),
-            h('span', {}, [h('small', {}, '金幣'), h('b', {}, `+${o.gold.toLocaleString()}`)]),
-          ]),
+          h('div', { class: 'wb-cap' }, [h('i', { style: `width:${pct.toFixed(1)}%` }), h('small', {}, `已累積 ${formatAway(o.minutes)} / ${OFFLINE.capHours} 小時`)]),
+          h('div', { class: 'wb-gain' }, gains),
+          drops.length || c?.soldCount
+            ? h('div', { class: 'wb-drops' }, [
+                ...drops.map((d) => {
+                  const b = ITEM_BASES[d.base];
+                  return h('span', { class: 'wb-drop', style: `--rc:${RARITY[d.rarity].color}`, title: `${RARITY[d.rarity].name}・${b?.name ?? d.base}` }, [
+                    h('i', {}, b?.icon ?? '🎁'),
+                    b?.named ? h('em', {}, '★') : null,
+                  ].filter((x): x is HTMLElement => !!x));
+                }),
+                c?.soldCount ? h('small', { class: 'wb-sold' }, `另 ${c.soldCount} 件換成 ${c.soldGold.toLocaleString()} 金幣`) : null,
+              ].filter((x): x is HTMLElement => !!x))
+            : null,
+          !c && o.drops.length ? h('p', { class: 'ps-hint' }, `撿到 ${o.drops.length} 件裝備（領 2 倍再多 ${o.bonusDrops.length} 件）；比身上差的低稀有度裝備會照「自動賣出」設定換成金幣`) : null,
           this.offlineDone
             ? h('p', { class: 'wb-done' }, '✓ 已領取')
             : h('div', { class: 'ps-row' }, [
@@ -76,7 +104,7 @@ export class WelcomeScreen {
                   onclick: () => this.takeOffline(true),
                 }, `${OFFLINE.doubleCost}💎 領 2 倍`),
               ]),
-        ]),
+        ].filter((x): x is HTMLElement => !!x)),
       );
     }
     const lg = this.login;
@@ -108,9 +136,10 @@ export class WelcomeScreen {
 
   private takeOffline(double: boolean) {
     if (this.offlineDone) return;
-    if (!this.actions.claimOffline(double)) return;
+    const got = this.actions.claimOffline(double);
+    if (!got) return;
     this.offlineDone = true;
-    if (double && this.offline) this.offline = { ...this.offline, exp: this.offline.exp * 2, gold: this.offline.gold * 2 };
+    this.claimed = got;
     this.render();
   }
 

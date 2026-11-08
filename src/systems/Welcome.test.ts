@@ -39,7 +39,7 @@ describe('每日簽到', () => {
 });
 
 describe('離線收益', () => {
-  it('不到 10 分鐘沒有收益；超過 8 小時只算 8 小時', () => {
+  it('不到 10 分鐘沒有收益；超過上限（12 小時）只算上限', () => {
     expect(offlineReward(20, 5 * 60000)).toBeNull();
     const a = offlineReward(20, 60 * 60000)!;
     expect(a.minutes).toBe(60);
@@ -57,6 +57,25 @@ describe('離線收益', () => {
       expect(levels, `Lv.${lv}`).toBeLessThan(3.5);
       expect(r.gold).toBeGreaterThan(0);
     }
+  });
+
+  it('v1.85：裝備、藥水、夥伴經驗，轉生加成經驗', () => {
+    let seed = 1;
+    const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const r = offlineReward(40, 12 * 3600000, { cls: 'knight', rng })!;
+    expect(r.drops.length).toBe(Math.min(OFFLINE.dropMax, Math.floor(r.kills / OFFLINE.dropEvery)));
+    expect(r.bonusDrops.length).toBe(r.drops.length);
+    expect(r.drops.every((d) => !!ITEM_BASES[d.base])).toBe(true);
+    expect(r.potions).toBe(OFFLINE.capHours / OFFLINE.potionHours);
+    expect(r.compExp).toBe(r.kills);
+    // 短時間：沒有裝備與藥水
+    const short = offlineReward(40, 30 * 60000)!;
+    expect(short.drops.length).toBe(0);
+    expect(short.potions).toBe(0);
+    // 轉生 2 次：經驗 ×1.4
+    const reb = offlineReward(40, 3 * 3600000, { rebirth: 2 })!;
+    const base = offlineReward(40, 3 * 3600000)!;
+    expect(reb.exp / base.exp).toBeCloseTo(1.4, 1);
   });
 
   it('參考小怪接近玩家等級', () => {

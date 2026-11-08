@@ -4,6 +4,7 @@ import { DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, WORLD_FIELDS, ZONES, bossOf, lo
 import { COMPANION_LIST, pityLeft } from '@/data/companions';
 import { ELEMENTS } from '@/data/elements';
 import type { ZoneId } from '@/data/types';
+import { offlineStatus } from './offline';
 import { h } from './dom';
 import { renderEnhance, renderEquip, renderShop, type InvContext } from './InventoryTabs';
 import { BONUS_GEMS, canClaim, ensureToday, questText } from '@/systems/DailyQuests';
@@ -473,6 +474,7 @@ export class Menu {
         h('p', {}, '撿到這個稀有度以下、而且比身上同部位差的裝備時，直接換成金幣，不佔背包。★神話裝與比身上好的裝備一定會留著。'),
       ]),
       renderCloudCard(this.cloudCtx()),
+      this.renderOffline(),
       this.renderQuality(),
       vol('music', '音樂音量', s.musicVolume),
       h('p', { class: 'version now-playing' }, `♪ 正在播放：${this.actions.getNowPlaying()}`),
@@ -490,6 +492,25 @@ export class Menu {
       this.renderReset(),
       h('p', { class: 'version' }, `神格覺醒 v${__APP_VERSION__}・Wei Studio`),
     ];
+  }
+
+  /** v1.85 離線遊玩：已下載幾個遊戲檔案 */
+  private renderOffline(): HTMLElement {
+    const line = h('b', {}, '檢查中…');
+    const tip = h('p', {}, '');
+    void offlineStatus().then((st) => {
+      if (!st.supported) {
+        line.textContent = '這個版本不需要（單一檔案）或不支援';
+        tip.textContent = '用遊戲網址開啟一次、加到手機主畫面後，沒網路也能從主畫面開啟遊玩。離線版 HTML 本身就能離線玩。';
+        return;
+      }
+      const ok = st.total > 0 && st.cached >= st.total;
+      line.textContent = st.total ? `${ok ? '✓ ' : ''}${st.cached} / ${st.total} 個檔案` : '下載中…';
+      tip.textContent = ok
+        ? '整個遊戲已經存在這台裝置，沒網路也能開啟遊玩；進度存在本機，連上網路後自動同步雲端。'
+        : '還在下載遊戲檔案，保持連線一下子就好（下次開啟會補齊）。';
+    });
+    return h('div', { class: 'card' }, [h('div', { class: 'set-row' }, [h('span', {}, '📦 離線遊玩'), line]), tip]);
   }
 
   private cloudCtx(): CloudContext {

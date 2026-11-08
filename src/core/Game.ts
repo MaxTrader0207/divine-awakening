@@ -37,13 +37,13 @@ import { computeStats } from '@/systems/Inventory';
 import { codexEntry, recordKill } from '@/data/codex';
 import { newlyDone } from '@/systems/Achievements';
 import { COMPANION_SKILLS, DUO, GROWTH, addBond, addCompExp, bondLevel, compCooldown, compDuration, compStatMul, growthOf, skillInterval, skillUnlocked, teamOf } from '@/data/companionGrowth';
-import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineReward } from '@/systems/Welcome';
+import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineClaim, type OfflineReward } from '@/systems/Welcome';
 import { WelcomeScreen } from '@/ui/WelcomeScreen';
 import { TowerScreen } from '@/ui/TowerScreen';
 import { TOWER, TOWER_AFFIXES, affixBonusGold, ensureWeek, floorPlan, recordFloor, reinforceMobs, startFloors, towerRng, type FloorPlan } from '@/systems/TrialTower';
 import { tierForLevel } from '@/data/items';
 import { localDate } from '@/systems/DailyQuests';
-import { ITEM_BASES } from '@/data/items';
+import { ITEM_BASES, sellPrice } from '@/data/items';
 import { LootSystem } from '@/systems/LootSystem';
 import { Telegraphs } from '@/systems/Telegraphs';
 import { BossController } from '@/systems/BossController';
@@ -66,7 +66,7 @@ import { setOrientationPref } from '@/ui/landscape';
 import { WeeklyScreen, type WeeklyResult } from '@/ui/WeeklyScreen';
 import { WEEKLY, WEEKLY_DIFF_MAP, ensureWeeklyWeek, recordWeeklyWin, weeklyAffixMods, weeklyPick, type WeeklyDiff } from '@/systems/WeeklyBoss';
 import { rollMythic } from '@/systems/GemShop';
-import { addItem, itemName } from '@/systems/Inventory';
+import { addItem, autoSellPrice, itemName } from '@/systems/Inventory';
 import { MAX_TIER } from '@/data/gear';
 import type { EnemyDef } from '@/data/types';
 import { DIVINITY, addDivExp, divinityOpen } from '@/systems/Divinity';
@@ -182,7 +182,7 @@ export class Game {
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement, initialClass: HeroClass = 'mage') {
     this.state = this.save.load() ?? newGameState(initialClass);
     // 離線收益：一定要在第一次存檔（會改 updatedAt）之前算
-    this.offlinePending = offlineReward(this.state.level, Date.now() - (this.state.updatedAt || Date.now()));
+    this.offlinePending = offlineReward(this.state.level, Date.now() - (this.state.updatedAt || Date.now()), { cls: this.state.heroClass, rebirth: this.state.rebirth?.count ?? 0 });
     const cls = CLASSES[this.state.heroClass] ?? CLASSES.mage;
     applyClassGear(CLASSES[this.state.heroClass] ? this.state.heroClass : 'mage'); // 裝備名稱、圖示、欄位名稱依職業改寫
     this.player = new Player(cls.anims);
@@ -286,6 +286,7 @@ export class Game {
       level: () => this.state.level,
     });
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
+    this.watchNetwork(uiRoot);
     // v1.79 設定「畫面方向」（HUD 建好之後套用，切換時 HUD 會跟著搬元件）
     setOrientationPref(this.state.settings.orientation ?? 'auto');
     this.menu = new Menu(uiRoot, this.state, {
@@ -413,6 +414,7 @@ export class Game {
     bus.on('weekly:start', ({ diff }) => void this.startWeekly(diff));
     this.welcome = new WelcomeScreen(uiRoot, {
       claimOffline: (double) => this.claimOffline(double),
+      companions: () => teamOf(this.state.companions).map((id) => COMPANIONS[id]?.icon ?? '').join(''),
       claimLogin: () => this.doLogin(),
       gems: () => this.state.gems,
       level: () => this.state.level,
@@ -554,23 +556,44 @@ export class Game {
     else this.offlinePending = null;
   }
 
-  /** 領離線收益（歡迎回來畫面）；double = 花鑽石領 2 倍 */
-  private claimOffline(double: boolean): boolean {
+  /** 領離線收益（歡迎回來畫面）；double = 花鑽石領 2 倍。回傳實際拿到的東西（給畫面顯示），失敗 null */
+  private claimOffline(double: boolean): OfflineClaim | null {
     const o = this.offlinePending;
-    if (!o) return false;
+    if (!o) return null;
     const s = this.state;
     if (double) {
-      if (s.gems < OFFLINE.doubleCost) return false;
+      if (s.gems < OFFLINE.doubleCost) return null;
       s.gems -= OFFLINE.doubleCost;
     }
     const k = double ? 2 : 1;
     this.offlinePending = null;
-    s.gold += o.gold * k;
-    this.gainExp(o.exp * k);
-    bus.emit('toast', { text: `⏳ 離線收益：+${(o.exp * k).toLocaleString()} 經驗、+${(o.gold * k).toLocaleString()} 金幣`, kind: 'reward' });
+    const got: OfflineClaim = { exp: o.exp * k, gold: o.gold * k, potions: o.potions * k, compExp: o.compExp * k, kept: [], soldCount: 0, soldGold: 0, divine: divinityOpen(s.level) };
+    s.gold += got.gold;
+    // 裝備：會自動賣的直接換金幣；背包滿了也換成金幣（離線收益不會不見）
+    for (const d of double ? [...o.drops, ...o.bonusDrops] : o.drops) {
+      const auto = autoSellPrice(s, d.base, d.rarity, s.settings.autoSell ?? 'off');
+      const it = auto > 0 ? null : addItem(s, d.base, d.rarity);
+      if (it) got.kept.push({ base: d.base, rarity: d.rarity });
+      else {
+        const price = auto || sellPrice(ITEM_BASES[d.base]?.tier ?? 1, d.rarity, 0);
+        got.soldCount++;
+        got.soldGold += price;
+        s.gold += price;
+      }
+    }
+    s.potions.hp += got.potions;
+    s.potions.mp += got.potions;
+    const c = s.companions;
+    for (const id of teamOf(c)) addCompExp(growthOf(c, id), got.compExp);
+    this.gainExp(got.exp);
+    const bits = [`+${got.exp.toLocaleString()} ${got.divine ? '神格經驗' : '經驗'}`, `+${(got.gold + got.soldGold).toLocaleString()} 金幣`];
+    if (got.kept.length) bits.push(`${got.kept.length} 件裝備`);
+    if (got.potions) bits.push(`紅藍藥水各 ${got.potions}`);
+    bus.emit('toast', { text: `⏳ 離線收益：${bits.join('、')}`, kind: 'reward' });
     bus.emit('player:changed');
+    this.onInventoryChanged();
     this.persist();
-    return true;
+    return got;
   }
 
   /** 每日簽到（歡迎回來畫面、選單「任務」） */
@@ -1381,7 +1404,9 @@ export class Game {
     }
     this.persist();
     // 登入雲端的話順便更新排行（本週試煉塔層數），失敗不影響遊戲
-    if (this.cloud.loggedIn && run.best >= run.start) void this.cloud.submitScore(this.state).catch(() => undefined);
+    if (this.cloud.loggedIn && run.best >= run.start) void this.cloud.submitScore(this.state).catch(() => {
+      this.cloudPending = true; // 離線：連上網路時補傳
+    });
     return {
       cleared: run.best >= run.start ? run.best : 0,
       startFloor: run.start,
@@ -1500,12 +1525,41 @@ export class Game {
   }
 
   private devPen: number | null = null;
+  /** 離線期間該上傳但沒上傳（連上網路時補傳） */
+  private cloudPending = false;
+
+  /** v1.85 離線遊玩：畫面上方的「離線中」標籤、斷線 / 連線提示、連線後補傳雲端存檔與成績 */
+  private watchNetwork(uiRoot: HTMLElement) {
+    // 標籤掛在金幣 / 鑽石那一列最後面（直式、橫式都跟著走，不會蓋到其他元件）
+    const chip = document.createElement('span');
+    chip.className = 'net-off';
+    chip.textContent = '📴 離線';
+    chip.title = '沒有網路：進度存在這台裝置，連上網路後自動同步雲端';
+    chip.hidden = navigator.onLine !== false;
+    (uiRoot.querySelector('.wallet') ?? uiRoot).appendChild(chip);
+    window.addEventListener('offline', () => {
+      chip.hidden = false;
+      bus.emit('toast', { text: '📴 沒有網路：可以繼續玩，進度存在這台裝置；連上後會自動同步雲端', duration: 3.5 });
+    });
+    window.addEventListener('online', () => {
+      chip.hidden = true;
+      const pending = this.cloudPending;
+      bus.emit('toast', { text: pending ? '📶 已連上網路，正在同步雲端存檔' : '📶 已連上網路', duration: 2.5 });
+      if (pending) this.cloudAutoUpload();
+    });
+  }
 
   /** 自動上傳（已登入且開啟自動）；失敗靜默，衝突時提示到設定頁處理 */
   private cloudAutoUpload() {
     const acc = this.cloud.account;
     if (!acc || acc.auto === false) return;
     this.persist();
+    // v1.85 離線：先記著，連上網路時（online 事件）再上傳
+    if (navigator.onLine === false) {
+      this.cloudPending = true;
+      return;
+    }
+    this.cloudPending = false;
     this.cloud
       .upload(this.state)
       .then(() => this.cloud.submitScore(this.state))

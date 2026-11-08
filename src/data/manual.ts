@@ -239,7 +239,8 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         '完成後到「選單 → 任務」領獎，三個都領完還有一個獎勵寶箱。',
         '右上「選單」按鈕出現紅點代表有獎勵可以領。',
         `**每日簽到**：每天第一次進遊戲可以簽到一次，${LOGIN_DAYS} 天一輪，漏掉的天數不會重來，第 ${LOGIN_DAYS} 天必得**★神話裝**。進遊戲沒簽到的話，也可以在「選單 → 任務」最上面簽。`,
-        `**離線收益**：離開 ${OFFLINE.minMinutes} 分鐘以上，回來時會拿到經驗與金幣（最多算 ${OFFLINE.capHours} 小時），可以花 ${OFFLINE.doubleCost} 顆鑽石領 2 倍。`,
+        `**離線收益**：離開 ${OFFLINE.minMinutes} 分鐘以上，回來時會拿到經驗與金幣（最多算 ${OFFLINE.capHours} 小時；滿級時是神格經驗，轉生的經驗加成也算），每打倒 ${OFFLINE.dropEvery} 隻撿到一件裝備（最多 ${OFFLINE.dropMax} 件），每 ${OFFLINE.potionHours} 小時紅藍藥水各 1 瓶，帶著的夥伴也有經驗。可以花 ${OFFLINE.doubleCost} 顆鑽石領 2 倍。`,
+        `**沒網路也能玩**：用遊戲網址開啟一次後，整個遊戲會下載到這台裝置（「設定 → 📦 離線遊玩」看進度），之後沒網路也能開啟遊玩，建議加到手機主畫面。離線時畫面右上角顯示「📴 離線」，進度存在本機，連上網路後自動同步雲端存檔與排行。`,
       ],
     },
     {

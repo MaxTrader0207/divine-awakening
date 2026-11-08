@@ -6,12 +6,17 @@ import { addConsumable } from './Consumables';
 import { addItem, itemName } from './Inventory';
 import { localDate } from './DailyQuests';
 import { expForKill } from './Progression';
+import { rollDrop } from './LootTable';
+import { rebirthExpMul } from './Rebirth';
+import type { HeroClass } from '@/data/classes';
+import type { Rarity } from '@/data/types';
 
 /**
  * 每日簽到與離線收益（v1.65，純邏輯，可單元測試）
  * ------------------------------------------------------------
  * 簽到：7 天一輪，每天第一次進遊戲可以領一次；漏掉的天數不會重置進度（第 7 天一定拿得到）。
- * 離線收益：離開 10 分鐘以上，回來時依「離開時間 × 目前等級的標準小怪」給經驗與金幣，最多算 8 小時。
+ * 離線收益：離開 10 分鐘以上，回來時依「離開時間 × 目前等級的標準小怪」給經驗與金幣，最多算 12 小時。
+ * v1.85 起另有：裝備（每 dropEvery 隻一件）、紅藍藥水、帶著的夥伴經驗；轉生的經驗加成也算。
  */
 
 /* ======================= 每日簽到 ======================= */
@@ -128,8 +133,13 @@ export function claimLogin(s: GameState, today = localDate(), rng: () => number 
 export const OFFLINE = {
   /** 離開幾分鐘以上才算 */
   minMinutes: 10,
-  /** 最多算幾小時 */
-  capHours: 8,
+  /** 最多算幾小時（v1.85：8 → 12） */
+  capHours: 12,
+  /** 每打倒幾隻掉一件裝備（目前等級的掉落階級），最多 dropMax 件 */
+  dropEvery: 20,
+  dropMax: 8,
+  /** 每幾小時各得 1 瓶紅藍藥水 */
+  potionHours: 2,
   /** 每分鐘相當於打倒幾隻同等級小怪（實際練功約每分鐘 6 隻，離線大約 1/30） */
   killsPerMin: 0.2,
   /** 花幾顆鑽石領 2 倍 */
@@ -144,6 +154,13 @@ export interface OfflineReward {
   kills: number;
   exp: number;
   gold: number;
+  /** v1.85：撿到的裝備（領 2 倍時再加 bonusDrops） */
+  drops: { base: string; rarity: Rarity }[];
+  bonusDrops: { base: string; rarity: Rarity }[];
+  /** 紅藍藥水各幾瓶 */
+  potions: number;
+  /** 帶著的夥伴各得的經驗 */
+  compExp: number;
 }
 
 /** 目前等級的「標準小怪」：等級差 3 以內、會攻擊的小怪，經驗與金幣取中位數 */
@@ -163,19 +180,55 @@ export function refMob(level: number): { level: number; exp: number; gold: numbe
 }
 
 /** 離開 awayMs 毫秒的收益；不到門檻回傳 null */
-export function offlineReward(level: number, awayMs: number): OfflineReward | null {
+export function offlineReward(
+  level: number,
+  awayMs: number,
+  opts: { cls?: HeroClass; rebirth?: number; rng?: () => number } = {},
+): OfflineReward | null {
   const away = Math.floor(awayMs / 60000);
   if (!(away >= OFFLINE.minMinutes)) return null;
   const minutes = Math.min(away, OFFLINE.capHours * 60);
   const kills = Math.max(1, Math.round(minutes * OFFLINE.killsPerMin));
   const m = refMob(level);
+  const rng = opts.rng ?? Math.random;
+  const nDrops = Math.min(OFFLINE.dropMax, Math.floor(kills / OFFLINE.dropEvery));
+  const roll = () => {
+    const out: { base: string; rarity: Rarity }[] = [];
+    for (let i = 0, tries = 0; i < nDrops && tries < nDrops * 40; tries++) {
+      const d = rollDrop(tierForLevel(level), false, rng, opts.cls);
+      if (d) {
+        out.push(d);
+        i++;
+      }
+    }
+    return out;
+  };
   return {
     away,
     minutes,
     kills,
-    exp: Math.round(kills * expForKill(m.exp, level, m.level)),
+    exp: Math.round(kills * expForKill(m.exp, level, m.level) * rebirthExpMul(opts.rebirth ?? 0)),
     gold: Math.round(kills * m.gold),
+    drops: roll(),
+    bonusDrops: roll(),
+    potions: Math.floor(minutes / 60 / OFFLINE.potionHours),
+    compExp: kills,
   };
+}
+
+/** 領取後實際拿到的東西（畫面顯示用） */
+export interface OfflineClaim {
+  exp: number;
+  gold: number;
+  potions: number;
+  compExp: number;
+  /** 收進背包的裝備 */
+  kept: { base: string; rarity: Rarity }[];
+  /** 自動賣出或背包滿換成金幣 */
+  soldCount: number;
+  soldGold: number;
+  /** 滿級：經驗變成神格經驗 */
+  divine: boolean;
 }
 
 /** 「3 小時 12 分」 */
