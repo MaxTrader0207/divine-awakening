@@ -56,6 +56,8 @@ export interface MenuActions {
   onUseConsumable(id: string): void;
   /** 每日簽到 */
   onLogin(): void;
+  /** v1.83 轉生（存檔後重新載入） */
+  onRebirth(cls: import('@/data/classes').HeroClass): void;
   onVolume(kind: 'music' | 'sfx', v: number): void;
   /** 回傳目前實際畫質（高 / 中 / 低） */
   onQuality(q: 'auto' | 'high' | 'medium' | 'low'): string;
@@ -179,6 +181,7 @@ export class Menu {
       goTab: (t) => this.show(t),
       celebrate: () => this.actions.onCelebrate(),
       useConsumable: (id) => this.actions.onUseConsumable(id),
+      rebirth: (cls) => this.actions.onRebirth(cls),
     };
     if (tab === 'equip') return renderEquip(ctx);
     if (tab === 'enhance') return renderEnhance(ctx);

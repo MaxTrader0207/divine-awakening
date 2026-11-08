@@ -90,6 +90,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'mythicAll', cat: 'story', icon: '🌋', name: '神話的終結者', desc: `神話難度打倒全部 ${DUNGEON_ORDER.length} 層首領`, gems: 80, progress: (s) => [mythicBest(s.mythic), DUNGEON_ORDER.length] },
   { id: 'weekly1', cat: 'story', icon: '👑', name: '本週的勝者', desc: '打倒一次每週首領', gems: 10, progress: (s) => [Math.min(s.weekly.wins, 1), 1] },
   { id: 'weekly20', cat: 'story', icon: '🏆', name: '週週登頂', desc: '打倒每週首領 20 次', gems: 40, progress: (s) => [Math.min(s.weekly.wins, 20), 20] },
+  { id: 'rebirth1', cat: 'story', icon: '♻', name: '浴火重生', desc: '第一次轉生', gems: 30, progress: (s) => [Math.min(s.rebirth.count, 1), 1] },
+  { id: 'rebirth5', cat: 'story', icon: '🌀', name: '輪迴的英雄', desc: '轉生 5 次', gems: 80, progress: (s) => [Math.min(s.rebirth.count, 5), 5] },
   { id: 'elites', cat: 'story', icon: '🗺', name: '野外霸主', desc: `打倒全部 ${ELITE_FIELDS.length} 張野外的菁英首領`, gems: 15, progress: (s) => [ELITE_FIELDS.filter((z) => (s.clears[z]?.count ?? 0) > 0).length, ELITE_FIELDS.length] },
 
   // ---- 收集 ----

@@ -15,7 +15,8 @@ import { equippedSets, setOf, setTiers } from '@/data/gearSets';
 import { GEM_SHOP, buyGemItem } from '@/systems/GemShop';
 import { CONSUMABLES, MAX_STACK, consumablesFor, type ConsumableDef } from '@/data/consumables';
 import { setQuickSlot } from '@/systems/Consumables';
-import { CLASSES } from '@/data/classes';
+import { CLASSES, type HeroClass } from '@/data/classes';
+import { REBIRTH, equipBlock, rebirthBlocked, rebirthExpMul, rebirthStatMul } from '@/systems/Rebirth';
 import { addConsumable } from '@/systems/Consumables';
 import { bus } from '@/core/EventBus';
 import { isZoneUnlocked } from '@/core/GameState';
@@ -39,6 +40,8 @@ export interface InvContext {
   celebrate(): void;
   /** 使用道具 */
   useConsumable(id: string): void;
+  /** v1.83 轉生 */
+  rebirth(cls: HeroClass): void;
 }
 
 /** 道具區：職業專屬 / 通用兩組，每列：圖示、名稱、數量（上限 99）、效果、使用 */
@@ -210,6 +213,48 @@ const STAT_KEYS: (keyof Stats)[] = ['atk', 'def', 'maxHp', 'maxMp', 'pen', 'crit
 
 /* ======================= 裝備 ======================= */
 
+/** 轉生卡（v1.83）：目前加成、選職業、按兩次確認 */
+let rebirthPick: HeroClass | null = null;
+let rebirthArmed = false;
+function rebirthCard(ctx: InvContext): HTMLElement {
+  const s = ctx.state;
+  const n = s.rebirth?.count ?? 0;
+  const why = rebirthBlocked(s);
+  const pct = (v: number) => `${Math.round((v - 1) * 100)}%`;
+  const parts: (HTMLElement | null)[] = [
+    h('h4', {}, ['♻ 轉生', h('small', {}, n ? `已轉生 ${n} 次・攻擊 / 生命 / 防禦 +${pct(rebirthStatMul(n))}・打怪經驗 +${pct(rebirthExpMul(n))}` : '還沒轉生過')]),
+  ];
+  if (why) {
+    parts.push(h('p', { class: 'div-locked' }, n >= REBIRTH.maxCount ? why : `下一次轉生：${why}。`));
+    return h('div', { class: 'card rebirth-card' }, parts.filter((x): x is HTMLElement => !!x));
+  }
+  const next = n + 1;
+  parts.push(
+    h('p', { class: 'div-locked' }, `回到 Lv.1 重新冒險，可以換職業。轉生後永久：攻擊 / 生命 / 防禦 +${pct(rebirthStatMul(next))}、打怪經驗 +${pct(rebirthExpMul(next))}，並獲得 ${REBIRTH.gems}💎。`),
+    h('p', { class: 'div-locked' }, '保留：裝備（全部收進背包，高階裝備要練回等級才能穿）、金幣、鑽石、道具、夥伴、圖鑑、成就、神格。重來：等級、打倒的首領與破關紀錄、神話難度紀錄。'),
+    h('div', { class: 'rebirth-classes' }, (Object.keys(CLASSES) as HeroClass[]).map((c) =>
+      h('button', { class: `rb-cls${rebirthPick === c ? ' on' : ''}${c === s.heroClass ? ' cur' : ''}`, onclick: () => { rebirthPick = c; rebirthArmed = false; ctx.rerender(); } }, [h('span', {}, CLASSES[c].icon), h('small', {}, CLASSES[c].name)]),
+    )),
+    h('button', {
+      class: `go ${rebirthArmed ? 'danger' : ''} rb-go`,
+      disabled: !rebirthPick,
+      onclick: () => {
+        if (!rebirthPick) return;
+        if (!rebirthArmed) {
+          rebirthArmed = true;
+          ctx.rerender();
+          return;
+        }
+        const c = rebirthPick;
+        rebirthPick = null;
+        rebirthArmed = false;
+        ctx.rebirth(c);
+      },
+    }, !rebirthPick ? '先選轉生後的職業' : rebirthArmed ? `再按一次確定：轉生成 Lv.1 ${CLASSES[rebirthPick].name}` : `轉生成${CLASSES[rebirthPick].name}（第 ${next} 轉）`),
+  );
+  return h('div', { class: 'card rebirth-card' }, parts.filter((x): x is HTMLElement => !!x));
+}
+
 /** 神格等級卡（v1.76）：進度、5 種屬性投點、重新分配 */
 function divinityCard(ctx: InvContext): HTMLElement {
   const s = ctx.state;
@@ -310,6 +355,8 @@ function renderEquipInner(ctx: InvContext): HTMLElement[] {
   ];
   // v1.76 神格等級：滿級後顯示（有點數沒分配時排在裝備格前面）
   if (divinityOpen(s.level)) out.push(divinityCard(ctx));
+  // v1.83 轉生：可以轉生或轉生過才顯示
+  if (!rebirthBlocked(s) || s.rebirth?.count) out.push(rebirthCard(ctx));
   out.push(slots);
   const sets = equippedSets(s.equipment);
   if (sets.length) out.push(h('div', { class: 'card set-card' }, [h('h4', {}, '🧩 套裝效果'), ...sets.map((a) => setBlock(a.set, a.count))]));
@@ -386,7 +433,7 @@ function detailCard(ctx: InvContext, it: ItemInstance): HTMLElement {
         h('button', { class: 'go', onclick: () => ctx.goTab('enhance') }, '強化'),
       ]
     : [
-        h('button', { class: 'go', onclick: () => { if (equip(s, it.uid)) bus.emit('item:equipped'); ctx.changed(); ctx.rerender(); } }, '裝備'),
+        h('button', { class: 'go', disabled: !!equipBlock(s, it), onclick: () => { if (equip(s, it.uid)) bus.emit('item:equipped'); ctx.changed(); ctx.rerender(); } }, '裝備'),
         h('button', { class: 'go ghost', onclick: () => ctx.goTab('enhance') }, '強化'),
         h('button', { class: 'go danger', onclick: () => { const g = sell(s, it.uid); selectedUid = null; ctx.toast(`賣出，獲得 ${g} 金幣`); ctx.changed(); ctx.rerender(); } }, `賣出 ${price}`),
       ];
@@ -395,6 +442,7 @@ function detailCard(ctx: InvContext, it: ItemInstance): HTMLElement {
     h('div', { class: 'lines' }, lines),
     setOf(it.base) ? setBlock(setOf(it.base)!, equippedSets(s.equipment).find((a) => a.set.id === setOf(it.base)!.id)?.count ?? 0) : null,
     cur && !equipped ? h('p', { class: 'cmp-note' }, `與目前的「${itemName(cur)}」比較`) : null,
+    !equipped && equipBlock(s, it) ? h('p', { class: 'cmp-note warn' }, `🔒 ${equipBlock(s, it)}`) : null,
     h('div', { class: 'card-row' }, buttons),
   ]);
 }
@@ -570,6 +618,7 @@ function shortName(it: ItemInstance): string {
 }
 
 function isUpgrade(s: GameState, it: ItemInstance): boolean {
+  if (equipBlock(s, it)) return false; // 轉生後還不能穿的不標 ▲
   const slot: EquipSlot = ITEM_BASES[it.base].slot;
   const cur = s.equipment[slot];
   return !cur || itemScore(it) > itemScore(cur);

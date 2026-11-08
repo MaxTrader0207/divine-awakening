@@ -1,4 +1,5 @@
 import { applyDivinity } from './Divinity';
+import { equipBlock, rebirthStatMul } from './Rebirth';
 import type { EquipSlot, Rarity, Stats } from '@/data/types';
 import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore , CRIT_KEYS, CRIT_RARITY_DAMP, CRIT_RATE_MAX, CRIT_DMG_MAX } from '@/data/items';
 import { statsForLevel } from '@/data/player';
@@ -30,6 +31,8 @@ export interface InventoryState {
   codex?: Record<string, number>;
   /** v1.76 神格等級：點數分配的永久加成 */
   divinity?: import('./Divinity').DivinityState;
+  /** v1.83 轉生：永久加成、裝備階級限制 */
+  rebirth?: import('./Rebirth').RebirthState;
 }
 
 /** 背包格數（v1.28 從 40 擴充到 100） */
@@ -69,6 +72,13 @@ export function computeStats(s: InventoryState): Stats {
   }
   // v1.76 神格等級（滿級後的點數分配）
   applyDivinity(st, s.divinity);
+  // v1.83 轉生：攻擊 / 生命 / 防禦永久加成
+  if (s.rebirth?.count) {
+    const k = rebirthStatMul(s.rebirth.count);
+    st.atk *= k;
+    st.maxHp *= k;
+    st.def *= k;
+  }
   st.maxHp = Math.round(st.maxHp);
   st.maxMp = Math.round(st.maxMp);
   // 怒氣職業：上限固定 100（裝備的 MP 不加怒氣）
@@ -100,6 +110,7 @@ export function equip(s: InventoryState, uid: number): boolean {
   const it = s.inventory[idx];
   const slot = ITEM_BASES[it.base]?.slot;
   if (!slot) return false;
+  if (equipBlock(s, it)) return false; // v1.83 轉生後的階級限制
   s.inventory.splice(idx, 1);
   const prev = s.equipment[slot];
   s.equipment[slot] = it;

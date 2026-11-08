@@ -60,6 +60,7 @@ import { CLASS_CLEAR } from '@/data/stageClear';
 import { EndingScreen, type EndingInfo } from '@/ui/EndingScreen';
 import { DeathScreen } from '@/ui/DeathScreen';
 import { REVIVE, payRevive, reviveCost } from '@/systems/Revive';
+import { applyRebirth, rebirthBlocked, rebirthExpMul } from '@/systems/Rebirth';
 import { setOrientationPref } from '@/ui/landscape';
 import { WeeklyScreen, type WeeklyResult } from '@/ui/WeeklyScreen';
 import { WEEKLY, WEEKLY_DIFF_MAP, ensureWeeklyWeek, recordWeeklyWin, weeklyAffixMods, weeklyPick, type WeeklyDiff } from '@/systems/WeeklyBoss';
@@ -308,6 +309,17 @@ export class Game {
       },
       onInventoryChanged: () => this.onInventoryChanged(),
       onUseConsumable: (id) => this.useConsumable(id),
+      onRebirth: (cls) => {
+        if (rebirthBlocked(this.state)) return;
+        if (this.towerRun) this.endTower('leave');
+        if (this.weeklyRun) this.endWeekly('leave');
+        applyRebirth(this.state, cls);
+        this.state.updatedAt = Date.now();
+        this.resetting = true; // 不要讓離開頁面時把舊位置存回去
+        this.save.save(this.state);
+        skipTitleOnce();
+        location.reload();
+      },
       onLogin: () => void this.doLogin(),
       onCelebrate: () => {
         this.audio.play('enhance');
@@ -1712,7 +1724,8 @@ export class Game {
     const s = this.state;
     s.stats.kills++;
     // 道具加成：謬思蜂蜜（經驗）、堤喀幸運金幣（金幣）
-    const exp = Math.round(expForKill(k.exp, s.level, k.level) * (s.boosts.exp > 0 ? 1.3 : 1));
+    // v1.83 轉生：打怪經驗加成
+    const exp = Math.round(expForKill(k.exp, s.level, k.level) * (s.boosts.exp > 0 ? 1.3 : 1) * rebirthExpMul(s.rebirth?.count ?? 0));
     const gold = Math.round(rollGold(k.gold) * (s.boosts.gold > 0 ? 1.5 : 1));
     const tower = !!this.towerRun;
     // 試煉塔的首領：不跳破關畫面、不給首領鑽石（塔有自己的每週鑽石）

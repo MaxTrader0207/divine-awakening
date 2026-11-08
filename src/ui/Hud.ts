@@ -6,6 +6,7 @@ import type { GameState } from '@/core/GameState';
 import type { ZoneDef } from '@/data/types';
 import { expToNext } from '@/data/player';
 import { divExpToNext, divinityOpen, freePoints } from '@/systems/Divinity';
+import { rebirthLabel } from '@/systems/Rebirth';
 import type { Player } from '@/entities/Player';
 import { IS_DESKTOP, KEY_LABELS, type InputManager, type ActionKey } from '@/input/InputManager';
 import type { SkillSlot } from '@/data/types';
@@ -644,7 +645,7 @@ export class Hud {
     const s = this.state;
     const zone = this.currentZone;
     this.els.lv.textContent = `Lv.${s.level}`;
-    this.els.title.textContent = s.playerName;
+    this.els.title.textContent = s.rebirth?.count ? `${s.playerName}・${rebirthLabel(s.rebirth.count)}` : s.playerName;
     this.els.zoneName.textContent = zone ? (this.mythic ? `🔥神話・${zone.name}` : zone.kind === 'dungeon' ? zone.name : zone.subtitle.split('・')[0]) : '';
     this.root.classList.toggle('mythic', this.mythic > 0);
     this.refreshBars();

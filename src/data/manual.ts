@@ -14,6 +14,7 @@ import { GEM_SHOP } from '@/systems/GemShop';
 import { DIVINITY, DIV_STATS, divBonusText } from '@/systems/Divinity';
 import { MYTHIC } from '@/systems/Mythic';
 import { REVIVE } from '@/systems/Revive';
+import { REBIRTH } from '@/systems/Rebirth';
 import { WEEKLY, WEEKLY_DIFFS } from '@/systems/WeeklyBoss';
 import { MAX_TIER } from './gear';
 import { MAX_LEVEL } from '@/systems/Progression';
@@ -220,13 +221,14 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
     },
     {
       icon: '✨',
-      title: '破關後：結局、神格、神話難度、每週首領',
+      title: '破關後：結局、神格、神話難度、每週首領、轉生',
       lines: [
         `打倒最終首領**${ZONES[DUNGEON_ORDER[DUNGEON_ORDER.length - 1]].name}**的首領之後會播結局與製作名單，之後可以在「選單 → 收藏」重看。`,
         `等級到 Lv.${MAX_LEVEL} 之後，打怪的經驗會累積成**神格等級**（左上經驗條變成紫色的「神格」）。每升一級得到 1 點神格點數和 ${DIVINITY.gems}💎，第 1 級要 ${DIVINITY.base.toLocaleString()} 經驗，之後每級多 ${DIVINITY.growth * 100}%。`,
         `到「選單 → 裝備」的「✨ 神格等級」卡分配點數：${DIV_STATS.map((d) => `${d.icon}${d.name} 每點 ${divBonusText(d.id, 1)}（上限 ${d.cap} 點）`).join('、')}。投錯了可以花 ${DIVINITY.resetCost}💎 全部退回重配。爆擊率、爆擊傷害仍然有上限（${Math.round(CRIT_RATE_MAX * 100)}%、×${CRIT_DMG_MAX}）。`,
         `**神話難度**：打倒最終首領後，在「選單 → 地圖」切到 🔥 神話。第 N 層的敵人變成 Lv.${MYTHIC.levelBase}＋N（屬性換算到同等級，越高層每 2 級再強 ${Math.round((TOWER.overflow - 1) * 100)}%），首領**不會自動調整強度**。掉落一律第 ${MAX_TIER} 階、首領多掉 ${MYTHIC.bossExtraDrops} 件，經驗金幣也跟著變多。要依序挑戰，第一次打倒神話第 N 層首領 +(10＋2N)💎；神話的破關評價另外記錄。`,
         `**每週首領挑戰**：打倒最終首領後在「選單 → 地圖」。每週一換一隻主線首領＋${WEEKLY.affixes} 個強化詞綴（大家都一樣），在試煉塔競技場單挑、限時 ${Math.round(WEEKLY.time / 60)} 分鐘，不會自動調整強度。${WEEKLY_DIFFS.map((d) => `${d.icon}${d.name} Lv.${MYTHIC.levelBase + d.floor}：本週第一次打倒 ${d.gems}💎＋★神話裝 ${d.gear} 件`).join('；')}。挑戰中倒下不掉金幣，可以一直重打刷最快時間。`,
+        `**轉生**：Lv.${MAX_LEVEL} 而且打倒過最終首領後，可以在「選單 → 裝備」的 ♻ 轉生卡回到 Lv.1 重新冒險（可以換職業，最多 ${REBIRTH.maxCount} 次）。每轉生一次：攻擊 / 生命 / 防禦永久 +${REBIRTH.bonusPerRebirth * 100}%、打怪經驗 +${REBIRTH.expPerRebirth * 100}%、送 ${REBIRTH.gems}💎。裝備、金幣、鑽石、道具、夥伴、圖鑑、成就、神格都保留；等級、主線進度、神話紀錄重來。轉生過的角色要練回等級才能穿高階裝備。`,
       ],
     },
     {

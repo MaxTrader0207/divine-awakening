@@ -1202,3 +1202,16 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
 .death-box .ps-btn.main small { color: #5a3d0a; }
 .death-box .ps-btn:disabled { opacity: 0.45; }
 .death-auto { color: #ffd36b; opacity: 1; }
+
+/* ---- v1.83 轉生 ---- */
+.rebirth-card { border-color: rgba(120, 220, 200, 0.5); background: linear-gradient(135deg, rgba(30, 110, 100, 0.22), var(--panel-2)); display: grid; gap: 8px; }
+.rebirth-card h4 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.rebirth-card h4 small { font-size: 11.5px; color: #9ff0de; font-weight: 700; }
+.rebirth-classes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.rb-cls { display: grid; justify-items: center; gap: 2px; padding: 6px 0; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); }
+.rb-cls span { font-size: 20px; }
+.rb-cls small { font-size: 10.5px; }
+.rb-cls.cur { border-style: dashed; }
+.rb-cls.on { border-color: #7fe0c8; background: rgba(60, 170, 150, 0.3); box-shadow: 0 0 0 1px #7fe0c8; }
+.rb-go:disabled { opacity: 0.45; }
+.cmp-note.warn { color: #ffb08a; }
