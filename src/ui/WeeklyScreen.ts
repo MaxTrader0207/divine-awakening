@@ -36,10 +36,14 @@ export class WeeklyScreen {
   show(r: WeeklyResult) {
     const d = WEEKLY_DIFF_MAP[r.diff];
     const why = r.reason === 'dead' ? '你在挑戰中倒下了' : r.reason === 'timeout' ? '時間到了' : '';
+    this.box.classList.add('split');
     this.box.replaceChildren(
+      h('div', { class: 'col-a' }, [
       h('div', { class: 'ps-icon' }, r.win ? '👑' : '⏳'),
       h('h2', {}, r.win ? (r.newBest ? '新紀錄！' : '挑戰成功！') : '挑戰失敗'),
       h('p', { class: 'ps-info' }, `${d.icon} ${d.name}難度・${r.bossName}${why ? `——${why}` : ''}`),
+      ]),
+      h('div', { class: 'col-b' }, [
       h('div', { class: 'wb-gain' }, [
         h('span', {}, [h('small', {}, r.win ? '這次時間' : '撐了'), h('b', {}, fmtSecs(r.secs))]),
         h('span', {}, [h('small', {}, '本週最快'), h('b', {}, r.best !== undefined ? fmtSecs(r.best) : '—')]),
@@ -48,6 +52,7 @@ export class WeeklyScreen {
       h('div', { class: 'ps-row' }, [
         h('button', { class: 'ps-btn gold', onclick: () => this.pick(() => this.actions.retry(r.diff)) }, '再挑戰'),
         h('button', { class: 'ps-btn', onclick: () => this.pick(() => this.actions.toTown()) }, '回到主城'),
+      ]),
       ]),
     );
     this.visible = true;

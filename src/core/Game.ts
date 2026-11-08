@@ -58,6 +58,7 @@ import { StageClearScreen, type ClearInfo } from '@/ui/StageClearScreen';
 import { finishClear, type BossFight } from '@/systems/StageClear';
 import { CLASS_CLEAR } from '@/data/stageClear';
 import { EndingScreen, type EndingInfo } from '@/ui/EndingScreen';
+import { setOrientationPref } from '@/ui/landscape';
 import { WeeklyScreen, type WeeklyResult } from '@/ui/WeeklyScreen';
 import { WEEKLY, WEEKLY_DIFF_MAP, ensureWeeklyWeek, recordWeeklyWin, weeklyAffixMods, weeklyPick, type WeeklyDiff } from '@/systems/WeeklyBoss';
 import { rollMythic } from '@/systems/GemShop';
@@ -275,6 +276,8 @@ export class Game {
       level: () => this.state.level,
     });
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
+    // v1.79 設定「畫面方向」（HUD 建好之後套用，切換時 HUD 會跟著搬元件）
+    setOrientationPref(this.state.settings.orientation ?? 'auto');
     this.menu = new Menu(uiRoot, this.state, {
       onResetSave: () => {
         this.resetting = true; // 避免 pagehide 時又把舊進度存回去

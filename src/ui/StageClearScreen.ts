@@ -90,7 +90,9 @@ export class StageClearScreen {
     this.root.className = `clear-screen cls-${cls} rank-${r.rank}`;
     this.root.replaceChildren(
       h('div', { class: 'cs-bg' }, [h('div', { class: 'cs-rays' }), ...petals]),
-      h('div', { class: 'cs-card' }, [
+      h('div', { class: 'cs-card split' }, [
+        // 兩欄容器（v1.79）：直式 display: contents 不影響排版，橫式左右兩欄
+        h('div', { class: 'col-a' }, [
         h('div', { class: 'cs-place' }, info.mythic ? `🔥 神話・${place}` : place),
         h('h2', { class: 'cs-title' }, info.mythic ? '神話破關！' : info.allDone ? '全副本制霸！' : '破關！'),
         h('div', { class: 'cs-epi' }, [h('span', {}, epi.emblem), ` ${epi.title}`]),
@@ -101,6 +103,8 @@ export class StageClearScreen {
         ]),
         h('blockquote', { class: 'cs-quote' }, `「${quote}」`),
         epi.myth ? h('p', { class: 'cs-myth' }, epi.myth) : null,
+        ]),
+        h('div', { class: 'col-b' }, [
         h('div', { class: 'cs-stats' }, [
           stat('時間', fmtSecs(r.secs), timeTag),
           stat('被招式打中', `${r.skillHits} 次`),
@@ -119,6 +123,7 @@ export class StageClearScreen {
         info.capture ? captureLine(info.capture) : null,
         ...btns,
         autoEl,
+        ]),
       ]),
     );
     this.open = true;

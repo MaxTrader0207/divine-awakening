@@ -69,12 +69,10 @@ export class PauseScreen {
     this.titleBtn = h('button', { class: 'ps-btn ghost', onclick: () => this.confirmTitle() }, '回到開頭畫面');
     this.hintEl = h('p', { class: 'ps-hint' }, '電腦：按 Esc 暫停 / 繼續');
     this.root = h('div', { class: 'pause-screen', 'aria-hidden': 'true' }, [
-      h('div', { class: 'ps-box' }, [
-        this.iconEl,
-        this.titleEl,
-        this.infoEl,
-        this.statusEl,
-        this.itemsEl,
+      h('div', { class: 'ps-box split' }, [
+        // 兩欄容器（v1.79）：直式 display: contents，橫式左右兩欄
+        h('div', { class: 'col-a' }, [this.iconEl, this.titleEl, this.infoEl, this.statusEl, this.itemsEl]),
+        h('div', { class: 'col-b' }, [
         this.mainBtn,
         h('div', { class: 'ps-row' }, [
           h('button', { class: 'ps-btn', onclick: () => actions.openMenu('equip') }, '🎒 裝備・道具'),
@@ -90,6 +88,7 @@ export class PauseScreen {
         ]),
         this.titleBtn,
         this.hintEl,
+        ]),
       ]),
     ]);
     uiRoot.appendChild(this.root);

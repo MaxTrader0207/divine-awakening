@@ -17,6 +17,7 @@ import { CLASSES } from '@/data/classes';
 import { renderGuide } from './GuideTab';
 import { renderCollect } from './CollectTab';
 import { TOWER, TOWER_AFFIXES, bossGems, ensureWeek, startFloors, towerLevel } from '@/systems/TrialTower';
+import { setOrientationPref } from './landscape';
 import { MYTHIC, mythicBest, mythicFirstGems, mythicLevel, mythicOpen, mythicUnlocked } from '@/systems/Mythic';
 import { WEEKLY, WEEKLY_DIFFS, ensureWeeklyWeek, hoursToReset, weeklyPick } from '@/systems/WeeklyBoss';
 import { fmtSecs } from '@/systems/StageClear';
@@ -362,6 +363,24 @@ export class Menu {
       bus.emit('settings:changed');
       bus.emit('save:request');
     });
+    // 畫面方向（v1.79）
+    const orientRow = h(
+      'div',
+      { class: 'seg seg3' },
+      ([['auto', '自動'], ['portrait', '直式'], ['landscape', '橫式']] as const).map(([v, label]) =>
+        h('button', {
+          class: `seg-btn${(s.orientation ?? 'auto') === v ? ' on' : ''}`,
+          onclick: () => {
+            s.orientation = v;
+            setOrientationPref(v);
+            bus.emit('save:request');
+            const top = this.body.scrollTop;
+            this.show('settings');
+            this.body.scrollTop = top;
+          },
+        }, label),
+      ),
+    );
     const vib = h('input', { type: 'checkbox' });
     vib.checked = s.vibration !== false;
     vib.addEventListener('change', () => {
@@ -413,6 +432,9 @@ export class Menu {
         h('p', {}, '遊戲中也可以用兩根手指開合（電腦：滑鼠滾輪）調整遠近。'),
       ]),
       h('div', { class: 'card' }, [
+        h('div', { class: 'set-row' }, [h('span', {}, '畫面方向')]),
+        orientRow,
+        h('p', {}, '自動＝手機、平板橫著拿就換成橫式版面（左上小地圖、下方角色面板）；橫式＝電腦等寬螢幕也用橫式；直式＝一律用直式畫面。'),
         h('label', { class: 'set-row' }, [h('span', {}, '左手模式'), lefty]),
         h('p', {}, '搖桿換到右邊、技能換到左邊。'),
         h('div', { class: 'set-row' }, [h('span', {}, '介面大小')]),

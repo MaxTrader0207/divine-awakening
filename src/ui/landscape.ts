@@ -6,6 +6,7 @@
  * - 手機 / 平板（觸控為主）橫著拿 → 橫式；轉回直的 → 直式（不用重新整理）。
  * - 網址帶 ?landscape 強制橫式（電腦測試用）、?portrait 強制直式。
  * - 電腦預設維持直式畫框。
+ * - 設定「畫面方向」（v1.79）：自動（手機 / 平板橫拿）、橫式（寬螢幕都用，含電腦）、直式（一律直式畫框）；網址參數優先。
  */
 const params = (() => {
   try {
@@ -16,8 +17,13 @@ const params = (() => {
 })();
 const forced: boolean | null = params.has('landscape') ? true : params.has('portrait') ? false : null;
 
+let pref: 'auto' | 'portrait' | 'landscape' = 'auto';
+
 function want(): boolean {
   if (forced !== null) return forced;
+  if (pref === 'portrait') return false;
+  // 「橫式」：螢幕是寬的就用（電腦、平板也算）；畫面是直的時候橫式版面沒辦法用，所以還是直式
+  if (pref === 'landscape') return window.innerWidth > window.innerHeight;
   const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
   return touch && window.innerWidth > window.innerHeight;
 }
@@ -43,6 +49,15 @@ function check() {
   apply();
   for (const cb of listeners) cb(on);
 }
+/** 設定「畫面方向」（Game 讀檔後、設定頁切換時呼叫） */
+export function setOrientationPref(p: 'auto' | 'portrait' | 'landscape') {
+  pref = p;
+  const before = LANDSCAPE;
+  check();
+  // 寬度變了，讓 Game 重新量畫面
+  if (before !== LANDSCAPE) window.dispatchEvent(new Event('resize'));
+}
+
 // 這個模組比 Game 先載入，所以 resize 時會先切好 #app 寬度，Game 的 resize 再量尺寸
 window.addEventListener('resize', check);
 window.addEventListener('orientationchange', () => {

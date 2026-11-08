@@ -296,6 +296,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.mythic = normalizeMythic(data.mythic);
   // v20 → v21：每週首領挑戰
   merged.weekly = normalizeWeekly(data.weekly);
-  // 未來版本：if ((data.version ?? 0) < 22) { ... }
+  // v21 → v22：設定新增 orientation（settings 合併時補預設值 'auto'）
+  if (!['auto', 'portrait', 'landscape'].includes(merged.settings.orientation)) merged.settings.orientation = 'auto';
+  // 未來版本：if ((data.version ?? 0) < 23) { ... }
   return merged;
 }

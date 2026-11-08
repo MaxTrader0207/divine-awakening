@@ -68,12 +68,33 @@ export class CameraRig {
     // 直式畫面視野較窄，稍微拉大 FOV
     this.camera.fov = aspect < 0.75 ? 50 : aspect > 1.4 ? 46 : 42;
     // 橫式（v1.74）：下方中央有角色面板，畫面往上推 6%，角色站低一點、前方看得比較遠
-    if (aspect > 1.4) this.camera.setViewOffset(1000 * aspect, 1000, 0, -60, 1000 * aspect, 1000);
-    else this.camera.clearViewOffset();
+    this.landOffset(true);
     this.camera.updateProjectionMatrix();
   }
 
+  private lastOffset = '';
+  /**
+   * 橫式的畫面偏移：平常上推 6%（下方有角色面板）；破關特寫時往左移 20%、往下移 20%（v1.79：破關卡片在右邊，角色站在左邊、整個人入鏡）。
+   * 直式不偏移。
+   */
+  private landOffset(force = false) {
+    const aspect = this.camera.aspect;
+    if (aspect <= 1.4) {
+      if (this.lastOffset !== 'none' || force) this.camera.clearViewOffset();
+      this.lastOffset = 'none';
+      return;
+    }
+    const k = Math.round(this.cine * 100) / 100;
+    const key = `${aspect.toFixed(3)}:${k}`;
+    if (key === this.lastOffset && !force) return;
+    this.lastOffset = key;
+    const w = 1000 * aspect;
+    this.camera.setViewOffset(w, 1000, w * 0.2 * k, -60 * (1 - k) - 200 * k, w, 1000);
+    if (!force) this.camera.updateProjectionMatrix();
+  }
+
   private apply() {
+    this.landOffset();
     const off = this.offset.clone().multiplyScalar(1 / this.zoom);
     this.camera.position.copy(this.current).add(off);
     if (this.cine > 0) {
