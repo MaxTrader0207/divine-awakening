@@ -946,7 +946,13 @@ export class SkillSystem {
         t: NINJA.cloneDelay,
         run: () => {
           if (!p.alive) return;
-          fx.arc(p.pos.x, p.pos.z, facing - (step % 2 === 0 ? 0.3 : -0.3), 0.8, range, 0x8a6aff, 0.16, 1.0 + p.groundY);
+          // 兩個影子各自在身旁砍出一道紫色刀光（站位與 Player 的影分身模型一致）
+          const f = p.facing;
+          for (const side of [-1, 1]) {
+            const cx = p.pos.x + side * 1.3 * Math.cos(f) - 0.55 * Math.sin(f);
+            const cz = p.pos.z - side * 1.3 * Math.sin(f) - 0.55 * Math.cos(f);
+            fx.arc(cx, cz, facing - side * 0.3, finisher ? 0.4 : 0.75, range, 0x8a6aff, 0.16, 1.0 + p.groundY);
+          }
           damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, range, arc, this.ninjaStats(), power * NINJA.cloneMul);
         },
       });

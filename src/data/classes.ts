@@ -27,6 +27,8 @@ export interface HeroAnimSet {
   /** 手上的道具：length 全長（公尺）、thin 橫向粗細倍率（預設 1）、grip 握點離底端的比例（預設 0.35）；id 'whip' = 程式鞭子（訓獸師） */
   prop?: { id: string; length: number; hand: 'r' | 'l'; thin?: number; grip?: number };
   /** 遮住口鼻的面罩（忍者，v1.88）：顏色、相對頭骨的高度 / 半徑 / 前移（公尺，世界尺度） */
+  /** 影分身外觀（忍者，v1.89）：本體出手時左右兩個影子跟著晚一拍出刀 */
+  shadowClone?: { color: number; glow: number; rim: number };
   mask?: { color: number; y: number; r: number; h: number; z?: number };
   /** 平滑著色的摺角（度）：夾角小於此值的相鄰面法線平均（預設 60，0＝維持原本的平面著色） */
   smooth?: number;
@@ -187,7 +189,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'smoke_bomb', name: '煙玉・爆遁', slot: 'E', mpCost: 26, cooldown: 10, power: 1.4, range: 0, shape: 'circle', radius: 4.2, waves: 2, icon: '💨', color: 0xb0a8c8, auto: 'self-aoe', anim: 'Dodge_Backward' },
       { id: 'shadow_clone', name: '影分身之術', slot: 'R', mpCost: 25, cooldown: 28, power: 0, range: 0, shape: 'circle', duration: 8, icon: '👥', color: 0x8a6aff, auto: 'burst', anim: '2H_Melee_Attack_Spinning' },
     ],
-    anims: { model: 'ninja', idle: 'Idle', run: 'Running_A', cast: 'Dualwield_Melee_Attack_Slice', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 250, light: 0.42, sat: 0.35 }, mask: { color: 0x1a1824, y: 0.17, r: 0.72, h: 0.34, z: 0.01 } },
+    anims: { model: 'ninja', idle: 'Idle', run: 'Running_A', cast: 'Dualwield_Melee_Attack_Slice', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 250, light: 0.42, sat: 0.35 }, mask: { color: 0x1a1824, y: 0.17, r: 0.72, h: 0.34, z: 0.01 }, shadowClone: { color: 0x4a3a78, glow: 0x150c30, rim: 0xb090ff } },
   },
 };
 

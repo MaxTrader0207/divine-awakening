@@ -235,6 +235,7 @@ export class Player {
   /** 播指定動畫（近戰技能用）；動畫不存在時改播 cast */
   act(anim: string | undefined, timeScale = 1.6) {
     this.rig?.playOnce(anim ?? this.anims.cast, { timeScale });
+    this.echo(anim ?? this.anims.cast, timeScale);
   }
 
   /** 守護剩餘秒數：期間受到的傷害降低 GUARD_REDUCTION */
@@ -252,10 +253,99 @@ export class Player {
 
   castBig() {
     this.rig?.playOnce(this.anims.castBig, { timeScale: 1.6 });
+    this.echo(this.anims.castBig, 1.6);
   }
 
   dodge() {
     this.rig?.playOnce(this.anims.dodge, { timeScale: 1.4, layer: false });
+    this.echo(this.anims.dodge, 1.4, false);
+  }
+
+  /* ---------- 忍者影分身（v1.89）：左右兩個半透明的紫色影子，跟著本體晚一拍出刀 ---------- */
+  private clones: ShadowClone[] | null = null;
+  private cloneFade = 0;
+  private cloneT = 0;
+
+  /** 本體出手 → 影子延遲一拍跟著做（左右兩個錯開一點，連段時換成另一個方向的斬擊） */
+  private echo(anim: string, timeScale: number, layer = true) {
+    if (!this.clones || this.ninjaCloneT <= 0) return;
+    const swap: Record<string, string> = { Dualwield_Melee_Attack_Slice: 'Dualwield_Melee_Attack_Chop', Dualwield_Melee_Attack_Chop: 'Dualwield_Melee_Attack_Slice' };
+    for (const c of this.clones) {
+      const a = c.side > 0 && swap[anim] ? swap[anim] : anim;
+      c.queue.push({ t: CLONE_DELAY + (c.side > 0 ? 0.05 : 0), anim: a, timeScale, layer });
+    }
+  }
+
+  /** 第一次開影分身時才建模型（之後重複使用） */
+  private buildClones(): ShadowClone[] | null {
+    const sc = this.anims.shadowClone;
+    if (!sc) return null;
+    const list: ShadowClone[] = [];
+    for (const side of [-1, 1]) {
+      const inst = Assets.cloneRig(this.anims.model);
+      if (!inst) return null;
+      inst.root.scale.setScalar(HERO_HEIGHT / Assets.height(this.anims.model));
+      const mat = new THREE.MeshLambertMaterial({ color: sc.color, emissive: sc.glow, transparent: true, opacity: 0 });
+      let i = 0;
+      inst.root.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        const g = SMOOTH_CACHE.get(`${this.anims.model}:${i++}`);
+        if (g) m.geometry = g;
+        m.material = mat;
+        m.castShadow = false;
+        m.receiveShadow = false;
+      });
+      const holder = new THREE.Group();
+      holder.add(inst.root);
+      holder.visible = false;
+      this.object.add(holder);
+      // 紫色輪廓光，讓深色影子看得出身形
+      const look = new BossLook(sc.rim);
+      look.apply(mat);
+      const rig = new CharacterRig(inst);
+      rig.setLoop(this.anims.idle, 0);
+      list.push({ holder, rig, mat, look, side, queue: [] });
+    }
+    return list;
+  }
+
+  private updateClones(dt: number, loop: string, loopFade: number, loopSpeed: number) {
+    const on = this.ninjaCloneT > 0 && this.alive;
+    if (on && !this.clones) this.clones = this.buildClones();
+    if (!this.clones) return;
+    const before = this.cloneFade;
+    this.cloneFade = on ? Math.min(1, this.cloneFade + dt / 0.25) : Math.max(0, this.cloneFade - dt / 0.4);
+    const f = this.cloneFade;
+    if (f <= 0) {
+      if (before > 0) for (const c of this.clones) (c.holder.visible = false), (c.queue.length = 0);
+      return;
+    }
+    this.cloneT += dt;
+    // 完全出現後是不透明的影子（半透明會看到模型內部的眼睛、腰帶），只有淡入淡出時才半透明
+    const solid = f >= 1;
+    for (const c of this.clones) {
+      c.holder.visible = true;
+      if (c.mat.transparent === solid) {
+        c.mat.transparent = !solid;
+        c.mat.needsUpdate = true;
+      }
+      c.mat.opacity = solid ? 1 : f * 0.8;
+      // 從本體身上滑出來：出現時從中間往兩側散開，平常輕輕飄動
+      const spread = 0.3 + 0.7 * easeOut(f);
+      c.holder.position.set(c.side * CLONE_SIDE * spread, 0.05 + Math.sin(this.cloneT * 2.4 + c.side) * 0.05, CLONE_BACK * spread + Math.sin(this.cloneT * 1.7 + c.side * 2) * 0.08);
+      c.holder.scale.setScalar(0.92 + 0.08 * f);
+      for (let k = c.queue.length - 1; k >= 0; k--) {
+        const q = c.queue[k];
+        q.t -= dt;
+        if (q.t > 0) continue;
+        c.rig.playOnce(q.anim, { timeScale: q.timeScale, layer: q.layer });
+        c.queue.splice(k, 1);
+      }
+      c.rig.setLoop(loop, loopFade, loopSpeed);
+      c.rig.update(dt);
+      c.look.update(this.object.position.y, HERO_HEIGHT);
+    }
   }
 
   cheer() {
@@ -335,6 +425,7 @@ export class Player {
     this.rig?.update(dt);
     this.look?.update(this.object.position.y, HERO_HEIGHT);
     if (!this.alive) {
+      this.updateClones(dt, this.anims.idle, 0.22, 1);
       if (this.rig) return; // 模型播死亡動畫
       // 倒地動畫
       this.body.rotation.z += (Math.PI / 2 - this.body.rotation.z) * Math.min(1, dt * 8);
@@ -373,8 +464,11 @@ export class Player {
       // 有模型：跑步動畫速度跟著「目前」速度（加速中腳步也跟得上，不會滑步）
       const full = 0.8 + 0.4 * Math.min(1.5, this.stats.moveSpeed / 6.5);
       const ratio = Math.min(1, speedNow / Math.max(0.1, this.stats.moveSpeed));
-      if (this.moveAmount > 0.3 && speedNow > 0.4) this.rig.setLoop(this.anims.run, 0.18, full * (0.55 + 0.45 * ratio));
+      const running = this.moveAmount > 0.3 && speedNow > 0.4;
+      const speed = full * (0.55 + 0.45 * ratio);
+      if (running) this.rig.setLoop(this.anims.run, 0.18, speed);
       else this.rig.setLoop(this.anims.idle, 0.22);
+      this.updateClones(dt, running ? this.anims.run : this.anims.idle, running ? 0.18 : 0.22, running ? speed : 1);
       return;
     }
     // 走路：上下彈跳＋前傾；待機：呼吸
@@ -391,6 +485,24 @@ export class Player {
     this.body.rotation.z = Math.sin(this.hurtT * 40) * 0.12 * (this.hurtT / 0.3);
     this.object.visible = this.invulnerable > 0.05 ? Math.floor(this.invulnerable * 12) % 2 === 0 : true;
   }
+}
+
+/** 影分身：延遲秒數（與 SkillSystem 的 NINJA.cloneDelay 對齊）、站位（本體左右、略後方） */
+const CLONE_DELAY = 0.12;
+const CLONE_SIDE = 1.3;
+const CLONE_BACK = -0.55;
+
+interface ShadowClone {
+  holder: THREE.Group;
+  rig: CharacterRig;
+  mat: THREE.MeshLambertMaterial;
+  look: BossLook;
+  side: number;
+  queue: { t: number; anim: string; timeScale: number; layer: boolean }[];
+}
+
+function easeOut(x: number) {
+  return 1 - (1 - x) * (1 - x);
 }
 
 function lerpAngle(a: number, b: number, t: number): number {
