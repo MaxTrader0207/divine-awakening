@@ -23,7 +23,14 @@ const zone: ZoneDef = {
   skyColor: 0xe8c88a,
   fogColor: 0xe0c898,
   fogRange: [34, 80],
-  patches: [{ x: 0, z: 0, w: 4, d: 40, color: 0xd8c08a }],
+  theme: 'desert', // v1.92 樣板
+  patches: [
+    { x: 0, z: 0, w: 4, d: 40, color: 0xd8c08a },
+    // v1.92：西側綠洲（水＋草地），東側碎石地
+    { x: -15, z: 16, w: 12, d: 10, color: 0xa8b060 },
+    { x: -15, z: 16, w: 7, d: 5, color: 0x4a9ac8, water: true },
+    { x: 14, z: -2, w: 9, d: 12, color: 0xb89a6a },
+  ],
   props: [
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
@@ -34,6 +41,17 @@ const zone: ZoneDef = {
     { kind: 'column', x: -10, z: -20 },
     { kind: 'column', x: 10, z: -20 },
     { kind: 'amphora', x: 14, z: 2 },
+    // v1.92：綠洲的棕櫚與灌木、半埋在沙裡的神殿廢墟（可以躲毒沙雨的掩體）、兩側沙岩
+    { kind: 'palm', x: -19, z: 19 },
+    { kind: 'palm', x: -11, z: 20 },
+    { kind: 'bush', x: -18, z: 12, color: 0x8a9a4a },
+    { kind: 'wall', x: 13, z: 8, w: 5, d: 1, h: 1.6, color: 0xd8ccb0 },
+    { kind: 'column', x: 16, z: 6, h: 2.2 },
+    { kind: 'wall', x: -13, z: -2, w: 1, d: 5, h: 1.4, color: 0xd8ccb0 },
+    { kind: 'column', x: -13, z: 2, h: 1.6 },
+    { kind: 'rock', x: -18, z: -20, w: 3.2, d: 3.2, h: 2.2, color: 0xb89a6a },
+    { kind: 'rock', x: 18, z: -22, w: 3.6, d: 3.6, h: 2.6, color: 0xa88a5a },
+    { kind: 'rock', x: 7, z: 17, w: 2, d: 2, color: 0xb89a6a },
   ],
   portals: [{ x: 0, z: 26, radius: 2.4, to: 'town', arrive: { x: 0, z: 4 }, label: '回到主城', style: 'edge' }],
   spawn: { x: 0, z: 21 },

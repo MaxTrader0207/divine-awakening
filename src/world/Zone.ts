@@ -7,6 +7,9 @@ import { buildProp, mat } from './Props';
 import { buildZoneCollision, RAMP } from './zoneCollision';
 import { makeLabelSprite } from './Label';
 import { Critters } from './Critters';
+import { Dressing } from './Dressing';
+import { Treasures } from './Treasures';
+import { themeFor } from '@/data/mapThemes';
 
 /**
  * Zone：一個已載入的區域（場景物件 + 碰撞 + 傳送點）。
@@ -24,6 +27,9 @@ export class Zone {
   private animated: { obj: THREE.Object3D; kind: 'spin' | 'pulse'; phase: number }[] = [];
   /** 城裡的小動物（ZoneDef.critters） */
   critters: Critters | null = null;
+  /** 地圖景觀（v1.92，有主題的地圖才有）與寶箱 */
+  dressing: Dressing | null = null;
+  treasures: Treasures | null = null;
   private critterEnv = { collision: this.collision, heightAt: (x: number, z: number) => this.heightAt(x, z), bounds: this.collision.bounds };
   private t = 0;
 
@@ -37,22 +43,31 @@ export class Zone {
     const { w, d } = def.size;
     buildZoneCollision(def, this.collision); // 碰撞與畫面分開建（world/zoneCollision.ts）
 
-    // 地面：比可走範圍大一圈，避免鏡頭看到邊界外的虛空
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(w + 60, d + 60), mat(darken(def.groundColor, 0.88)));
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.02;
-    ground.receiveShadow = true;
-    this.group.add(ground);
+    // v1.92 地圖景觀：有主題的地圖由 Dressing 畫地面（道路色塊畫進地面頂點色、外圍緩坡）
+    // TODO(v1.92 樣板期)：先只套用有寫 theme 的關卡，確認風格後改成預設全部套用（主城除外）
+    const themed = def.theme !== undefined && def.theme !== false;
+    if (themed) {
+      this.dressing = new Dressing(def, themeFor(def), this.collision, (x, z) => this.heightAt(x, z));
+      this.group.add(this.dressing.buildGround());
+    } else {
+      // 地面：比可走範圍大一圈，避免鏡頭看到邊界外的虛空
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(w + 60, d + 60), mat(darken(def.groundColor, 0.88)));
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.02;
+      ground.receiveShadow = true;
+      this.group.add(ground);
 
-    const playable = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat(def.groundColor));
-    playable.rotation.x = -Math.PI / 2;
-    playable.receiveShadow = true;
-    this.group.add(playable);
+      const playable = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat(def.groundColor));
+      playable.rotation.x = -Math.PI / 2;
+      playable.receiveShadow = true;
+      this.group.add(playable);
+    }
 
-    // 色塊：道路、沙地、水
+    // 色塊：道路、沙地、水（有主題時只畫水，道路已經畫進地面）
     def.patches.forEach((p, i) => {
+      if (themed && !p.water) return;
       const m = new THREE.Mesh(
-        new THREE.PlaneGeometry(p.w, p.d),
+        themed && p.water ? roundedRect(p.w, p.d, Math.min(p.w, p.d) * 0.35) : new THREE.PlaneGeometry(p.w, p.d),
         p.water ? new THREE.MeshLambertMaterial({ color: p.color, transparent: true, opacity: 0.92 }) : mat(p.color),
       );
       m.rotation.x = -Math.PI / 2;
@@ -72,7 +87,17 @@ export class Zone {
     }
 
     for (const portal of def.portals) this.group.add(this.buildPortal(portal));
+    if (this.dressing) {
+      this.dressing.buildBorder(this.group);
+      this.dressing.buildScatter(this.group);
+    }
     this.mergeStatic();
+    if (this.dressing) {
+      this.dressing.buildParticles();
+      this.group.add(this.dressing.dynamic);
+      this.treasures = new Treasures(def.id, this.dressing.pickTreasures(), (x, z) => this.heightAt(x, z));
+      this.group.add(this.treasures.group);
+    }
     if (def.critters?.length) {
       this.critterEnv.bounds = this.collision.bounds;
       this.critters = new Critters(def.critters, this.critterEnv);
@@ -282,6 +307,7 @@ export class Zone {
   update(dt: number, px = 0, pz = 0) {
     this.t += dt;
     this.critters?.update(dt, px, pz, this.critterEnv);
+    this.dressing?.update(dt, px, pz);
     const hw = this.def.size.w / 2 + 7;
     for (const m of this.mist) {
       m.position.x += m.userData.speed * dt;
@@ -312,6 +338,23 @@ export class Zone {
     });
     this.group.removeFromParent();
   }
+}
+
+/** 圓角矩形（有主題地圖的水面：不再是硬邊方塊；碰撞仍是原本的矩形） */
+function roundedRect(w: number, d: number, r: number): THREE.BufferGeometry {
+  const s = new THREE.Shape();
+  const x = -w / 2;
+  const y = -d / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + d - r);
+  s.quadraticCurveTo(x + w, y + d, x + w - r, y + d);
+  s.lineTo(x + r, y + d);
+  s.quadraticCurveTo(x, y + d, x, y + d - r);
+  s.lineTo(x, y + r);
+  s.quadraticCurveTo(x, y, x + r, y);
+  return new THREE.ShapeGeometry(s, 6);
 }
 
 function darkenHex(hex: number, f: number): number {

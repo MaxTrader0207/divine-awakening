@@ -233,6 +233,10 @@ export interface ZoneDef {
   fogRange?: [number, number];
   /** 飄動的霧氣 */
   mist?: boolean;
+  /** 地圖主題（v1.92，data/mapThemes.ts）：沒填時依音樂 / 地面顏色自動判斷；false＝不加景觀（主城） */
+  theme?: import('./mapThemes').ThemeOverride | false;
+  /** 寶箱位置（v1.92）；沒填時自動挑離道路遠、走得到的角落 */
+  treasures?: Vec2[];
   /** 隨機走動的小動物 */
   critters?: CritterDef[];
   /**

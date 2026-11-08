@@ -16,6 +16,7 @@ const zone: ZoneDef = {
   safe: false,
   size: { w: 70, d: 60 },
   groundColor: 0x86c24f,
+  theme: 'meadow', // v1.92 樣板
   skyColor: 0xbfe3f2,
   fogColor: 0xd2ebd2,
   patches: [

@@ -23,6 +23,8 @@ const zone: ZoneDef = {
   skyColor: 0xe8c890,
   fogColor: 0xd8b880,
   fogRange: [36, 84],
+  // v1.92 樣板：金黃山谷＝山岳主題，岩壁換成山谷的岩色、飄金色光點
+  theme: { base: 'mountain', border: { colors: [0x8a7a5a, 0x9a8a66, 0x7a6a4c] }, ground: { blotch: 0xb89858, blotchAmt: 0.35 }, light: { sun: 0xffe8b8, sunI: 2.35 } },
   patches: [
     { x: 0, z: 8, w: 6, d: 30, color: 0xb89858 }, // 山谷小路
     { x: -12, z: 14, w: 9, d: 7, color: 0xa8b060 }, // 草地

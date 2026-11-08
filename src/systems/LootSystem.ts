@@ -66,6 +66,15 @@ export class LootSystem {
     });
   }
 
+  /** v1.92 寶箱：一件裝備（照小怪掉落表抽，抽不到就保底一件普通裝）＋紅藥水，extra 時多一個道具 */
+  treasure(x: number, z: number, extra: boolean) {
+    const tier = this.zoneTier();
+    const d = rollDrop(tier, false, Math.random, this.state.heroClass) ?? rollDrop(tier, true, Math.random, this.state.heroClass);
+    if (d) this.spawn({ type: 'item', ...d }, x, z);
+    this.spawn({ type: 'potion', potion: 'hp', count: 2 }, x, z);
+    if (extra) this.spawn({ type: 'consumable', id: rollConsumable(Math.random, this.state.heroClass) }, x, z);
+  }
+
   spawn(kind: DropKind, x: number, z: number) {
     const a = Math.random() * Math.PI * 2;
     const r = 0.6 + Math.random() * 0.9;

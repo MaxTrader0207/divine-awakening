@@ -134,6 +134,7 @@ export class Game {
 
   private save = new LocalSave();
   private sun: THREE.DirectionalLight;
+  private hemi!: THREE.HemisphereLight;
   private timer = new THREE.Timer();
   private saveTimer = 0;
   private transitioning = false;
@@ -197,7 +198,8 @@ export class Game {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     // ---- Lights ----
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a6a, 1.6));
+    this.hemi = new THREE.HemisphereLight(0xffffff, 0x8a9a6a, 1.6);
+    this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xfff4e0, 2.2);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(1024, 1024);
@@ -872,6 +874,7 @@ export class Game {
       this.player.update(dt, move, collision, pushOut);
       this.zones.checkPortals(this.player.pos.x, this.player.pos.z);
       this.zones.checkTriggers(this.player.pos.x, this.player.pos.z);
+      this.updateTreasures(dt);
     } else {
       this.player.update(dt, { x: 0, z: 0 }, collision, pushOut);
     }
@@ -1811,6 +1814,29 @@ export class Game {
     this.gainExp(exp);
   }
 
+  /**
+   * v1.92 寶箱探索點：走近就打開——金幣（約 5 隻同等級小怪）＋一件裝備＋紅藥水，
+   * 30% 再多一個道具（試煉塔 / 每週挑戰沒有寶箱，它們的地圖沒有主題）。
+   */
+  private updateTreasures(dt: number) {
+    const tr = this.zones.current?.treasures;
+    if (!tr) return;
+    for (const at of tr.update(dt, this.player.pos.x, this.player.pos.z, this.player.alive)) {
+      const s = this.state;
+      const gold = Math.round((20 + s.level * 6) * (s.boosts.gold > 0 ? 1.5 : 1));
+      s.gold += gold;
+      s.stats.goldEarned += gold;
+      this.quest({ type: 'gold', amount: gold });
+      this.loot.treasure(at.x, at.z, Math.random() < 0.3);
+      bus.emit('float:text', { x: at.x, y: 1.8, z: at.z, text: `+${gold} 金幣`, kind: 'gold' });
+      bus.emit('toast', { text: `🎁 打開寶箱！（這張地圖還有 ${tr.count} 個）`, kind: 'reward' });
+      this.effects.pillar(at.x, at.z, 0.7, 0xffd36b, 0.9);
+      this.effects.ring(at.x, at.z, 0.5, 3.2, 0xffe9a0, 0.6);
+      this.audio?.play('rare');
+      this.persist();
+    }
+  }
+
   /** 加經驗，處理升級（回滿血、特效、升級事件） */
   private gainExp(exp: number) {
     const s = this.state;
@@ -2157,6 +2183,13 @@ export class Game {
     this.counterTimer = 0;
     this.counterTarget = null;
     const zone = this.zones.load(id);
+    // v1.92 地圖主題的光線（沒有主題的地圖用原本的預設值）
+    const L = zone.dressing?.theme.light ?? { sky: 0xffffff, ground: 0x8a9a6a, hemi: 1.6, sun: 0xfff4e0, sunI: 2.2 };
+    this.hemi.color.setHex(L.sky);
+    this.hemi.groundColor.setHex(L.ground);
+    this.hemi.intensity = L.hemi;
+    this.sun.color.setHex(L.sun);
+    this.sun.intensity = L.sunI;
     const h = (x: number, z: number) => zone.heightAt(x, z);
     this.enemies.heightAt = h;
     this.effects.heightAt = h;

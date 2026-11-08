@@ -84,3 +84,42 @@ export function reachable(col: CollisionWorld, from: { x: number; z: number }, t
   }
   return false;
 }
+
+/**
+ * 從 from 出發走得到的範圍（step 公尺格子的洪水填充），回傳查詢函式。
+ * 景觀（v1.92）挑寶箱位置用：一次填完，之後每個候選點 O(1) 查詢。
+ */
+export function reachMap(col: CollisionWorld, from: { x: number; z: number }, radius = 0.55, step = 1): (x: number, z: number) => boolean {
+  const b = col.bounds;
+  const nx = Math.ceil((b.maxX - b.minX) / step);
+  const nz = Math.ceil((b.maxZ - b.minZ) / step);
+  const free = (i: number, j: number) => {
+    const p = { x: b.minX + (i + 0.5) * step, z: b.minZ + (j + 0.5) * step };
+    const q = { ...p };
+    col.resolve(q, radius);
+    return Math.hypot(q.x - p.x, q.z - p.z) < 0.01;
+  };
+  const seen = new Uint8Array(nx * nz);
+  const si = Math.min(nx - 1, Math.max(0, Math.floor((from.x - b.minX) / step)));
+  const sj = Math.min(nz - 1, Math.max(0, Math.floor((from.z - b.minZ) / step)));
+  const queue: number[] = [si, sj];
+  seen[sj * nx + si] = 2;
+  while (queue.length) {
+    const j = queue.pop()!;
+    const i = queue.pop()!;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const a = i + di;
+      const c = j + dj;
+      if (a < 0 || c < 0 || a >= nx || c >= nz || seen[c * nx + a]) continue;
+      if (free(a, c)) {
+        seen[c * nx + a] = 2;
+        queue.push(a, c);
+      } else seen[c * nx + a] = 1;
+    }
+  }
+  return (x, z) => {
+    const i = Math.floor((x - b.minX) / step);
+    const j = Math.floor((z - b.minZ) / step);
+    return i >= 0 && j >= 0 && i < nx && j < nz && seen[j * nx + i] === 2;
+  };
+}
