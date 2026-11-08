@@ -68,6 +68,8 @@ export class Hud {
   /** v1.77 神話難度第幾層（0 = 普通） */
   mythic = 0;
   readonly minimap: Minimap;
+  /** v1.95 目前地圖還沒打開的寶箱（Game 設定） */
+  treasureSpots?: () => { x: number; z: number }[];
   private tips: string[] = [];
   private tipIndex = 0;
   private tipTimer = 0;
@@ -673,6 +675,7 @@ export class Hud {
 
   update(dt: number) {
     this.minimap.target = this.currentZone ? targetFor(this.state.tutorial, this.currentZone.id) : null;
+    this.minimap.chests = this.treasureSpots?.() ?? [];
     this.minimap.draw(this.player.pos.x, this.player.pos.z, this.player.facing);
     this.updateCooldowns();
     this.updateNotes(dt);

@@ -49,7 +49,7 @@ const zone: ZoneDef = {
     { x: -33, z: 4, radius: 2.4, to: 'delphi_path', arrive: { x: 24, z: 20 }, label: '德爾斐山徑 Lv.8', style: 'edge' },
   ],
   spawn: { x: 0, z: -24 },
-  tips: ['斯巴達訓練木樁在草原東側，可以測試不同防禦下的傷害', '敵人防禦越高越需要穿透', '按住普攻鍵可以連續攻擊'],
+  tips: ['地圖角落藏著寶箱，小地圖上閃爍的金色方塊就是', '斯巴達訓練木樁在草原東側，可以測試不同防禦下的傷害', '敵人防禦越高越需要穿透', '按住普攻鍵可以連續攻擊'],
   spawns: [
     { enemy: 'training_dummy', x: 6, z: -16, def: 0, tag: '防禦 0' },
     { enemy: 'training_dummy', x: 11, z: -16, def: 18, tag: '防禦 18' },

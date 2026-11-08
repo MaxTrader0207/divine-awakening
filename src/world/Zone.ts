@@ -20,6 +20,12 @@ export const SHADOW_ONLY_LAYER = 1;
 const SHADOW_PROXY_MAT = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
 SHADOW_PROXY_MAT.userData.shared = true;
 
+/** v1.95 寶箱開啟紀錄（Game 啟動時指向存檔的 state.treasures） */
+let treasureLog: Record<string, number> = {};
+export function setTreasureLog(log: Record<string, number>) {
+  treasureLog = log;
+}
+
 export class Zone {
   readonly def: ZoneDef;
   readonly group = new THREE.Group();
@@ -95,7 +101,7 @@ export class Zone {
     if (this.dressing) {
       this.dressing.buildParticles();
       this.group.add(this.dressing.dynamic);
-      this.treasures = new Treasures(def.id, this.dressing.pickTreasures(), (x, z) => this.heightAt(x, z));
+      this.treasures = new Treasures(def.id, this.dressing.pickTreasures(), (x, z) => this.heightAt(x, z), treasureLog);
       this.group.add(this.treasures.group);
     }
     if (def.critters?.length) {

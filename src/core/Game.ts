@@ -1,4 +1,6 @@
 import { BossScaler, bossAtkMul, bossInitialHpMul } from '@/systems/BossScaling';
+import { setDressingDetail } from '@/world/Dressing';
+import { setTreasureLog } from '@/world/Zone';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
 import { bus } from './EventBus';
@@ -291,6 +293,7 @@ export class Game {
       level: () => this.state.level,
     });
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
+    this.hud.treasureSpots = () => this.zones.current?.treasures?.remaining() ?? [];
     this.watchNetwork(uiRoot);
     // v1.79 設定「畫面方向」（HUD 建好之後套用，切換時 HUD 會跟著搬元件）
     setOrientationPref(this.state.settings.orientation ?? 'auto');
@@ -2182,6 +2185,9 @@ export class Game {
     this.targets.clear();
     this.counterTimer = 0;
     this.counterTarget = null;
+    // v1.95 景觀依目前畫質減量、寶箱開啟紀錄指向存檔
+    setDressingDetail(this.quality.current);
+    setTreasureLog(this.state.treasures);
     const zone = this.zones.load(id);
     // v1.92 地圖主題的光線（沒有主題的地圖用原本的預設值）
     const L = zone.dressing?.theme.light ?? { sky: 0xffffff, ground: 0x8a9a6a, hemi: 1.6, sun: 0xfff4e0, sunI: 2.2 };

@@ -71,7 +71,19 @@ function rectSd(p: PatchDef, x: number, z: number): number {
 /* ---------------- 地面 ---------------- */
 
 const GROUND_PAD = 30;
-const GROUND_STEP = 1.0;
+/**
+ * v1.95 依畫質減量（換地圖時套用）：地面格子大小、散佈裝飾與邊界的數量倍率、粒子數倍率。
+ * 低畫質的三角形數約是高畫質的 4 成，粒子關掉。
+ */
+export const DETAIL = {
+  high: { step: 1.0, scatter: 1, border: 1, particles: 1 },
+  medium: { step: 1.25, scatter: 0.7, border: 0.85, particles: 0.6 },
+  low: { step: 1.7, scatter: 0.4, border: 0.65, particles: 0 },
+} as const;
+let detail: (typeof DETAIL)[keyof typeof DETAIL] = DETAIL.high;
+export function setDressingDetail(level: keyof typeof DETAIL) {
+  detail = DETAIL[level];
+}
 /** 散佈裝飾整體放大（鏡頭很高，原尺寸幾乎看不到） */
 const SCATTER_SCALE = 1.7;
 
@@ -122,7 +134,7 @@ export class Dressing {
     const { w, d } = def.size;
     const W = w + GROUND_PAD * 2;
     const D = d + GROUND_PAD * 2;
-    const geo = new THREE.PlaneGeometry(W, D, Math.ceil(W / GROUND_STEP), Math.ceil(D / GROUND_STEP));
+    const geo = new THREE.PlaneGeometry(W, D, Math.ceil(W / detail.step), Math.ceil(D / detail.step));
     geo.rotateX(-Math.PI / 2);
     const pos = geo.getAttribute('position') as THREE.BufferAttribute;
     const colors = new Float32Array(pos.count * 3);
@@ -194,7 +206,7 @@ export class Dressing {
       { len: w + 16, at: (u, o) => [u - (w + 16) / 2, d / 2 + o], south: true },
     ];
     for (const side of sides) {
-      const n = Math.round(side.len * b.density * (side.south ? 0.5 : 1));
+      const n = Math.round(side.len * b.density * detail.border * (side.south ? 0.5 : 1));
       for (let k = 0; k < n; k++) {
         // 兩排：靠近邊界的矮一點、外面的高一點
         const row = rng() < 0.55 ? 0 : 1;
@@ -240,7 +252,7 @@ export class Dressing {
     };
     for (const sd of theme.scatter) {
       const area = w * d;
-      const total = Math.round((sd.density * area) / 100);
+      const total = Math.round((sd.density * area * detail.scatter) / 100);
       const clustered = sd.kind === 'grass' || sd.kind === 'flower' || sd.kind === 'reed';
       const pts: { x: number; z: number; s: number; r: number; c: number }[] = [];
       let guard = total * 6;
@@ -341,7 +353,8 @@ export class Dressing {
   buildParticles() {
     const pd = this.theme.particles;
     if (!pd || pd.count <= 0) return;
-    const n = pd.count;
+    const n = Math.round(pd.count * detail.particles);
+    if (n <= 0) return;
     const rng = seededRng(this.def.id + ':particles');
     const pos = new Float32Array(n * 3);
     const col = new Float32Array(n * 3);

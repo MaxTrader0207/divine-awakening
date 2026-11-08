@@ -1,6 +1,7 @@
 import type { ZoneDef } from '@/data/types';
 import { PROP_DEFAULTS } from '@/world/Props';
 import { ENEMIES } from '@/data/enemies';
+import { SHOPS } from '@/data/shops';
 
 /**
  * 小地圖：整張區域縮放進方框。
@@ -79,9 +80,25 @@ export class Minimap {
       g.stroke();
     };
     const u = this.size * 0.035;
-    for (const t of def.triggers ?? []) dot(t.x, t.z, u, t.tab === 'enhance' ? '#c38bff' : '#f4c64e');
+    // v1.95 商店：白底圓圈＋店的圖示（強化屋 🔨）
+    for (const t of def.triggers ?? []) {
+      const icon = t.shop ? SHOPS[t.shop].icon : t.tab === 'enhance' ? '🔨' : '';
+      if (!icon) {
+        dot(t.x, t.z, u, '#f4c64e');
+        continue;
+      }
+      const r = this.size * 0.055;
+      dot(t.x, t.z - 1.6, r, 'rgba(255, 248, 230, 0.92)', t.tab === 'enhance' ? '#c38bff' : '#f4c64e');
+      g.font = `${Math.round(r * 1.35)}px sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(icon, ox + t.x * s, oz + (t.z - 1.6) * s + r * 0.08);
+    }
     for (const sp of def.spawns ?? []) if (ENEMIES[sp.enemy]?.boss) dot(sp.x, sp.z, u * 1.5, '#e5533d', '#fff2c4');
   }
+
+  /** v1.95 還沒打開的寶箱（金色方塊，會閃），由 Hud 每幀設定 */
+  chests: { x: number; z: number }[] = [];
 
   /** 新手指引目標（金色脈動圈），由 Hud 每幀設定 */
   target: { x: number; z: number } | null = null;
@@ -93,8 +110,21 @@ export class Minimap {
     const ctx = this.ctx;
     ctx.drawImage(this.staticLayer, 0, 0);
     const s = this.size / Math.max(def.size.w, def.size.d);
+    this.t += 1 / 60;
+    if (this.chests.length) {
+      const b = this.size * 0.04;
+      const a = 0.7 + Math.sin(this.t * 5) * 0.3;
+      ctx.lineWidth = Math.max(1, this.size * 0.012);
+      for (const c of this.chests) {
+        const cx = this.size / 2 + c.x * s;
+        const cy = this.size / 2 + c.z * s;
+        ctx.fillStyle = `rgba(255, 196, 64, ${a})`;
+        ctx.strokeStyle = '#5a3a10';
+        ctx.fillRect(cx - b, cy - b * 0.75, b * 2, b * 1.5);
+        ctx.strokeRect(cx - b, cy - b * 0.75, b * 2, b * 1.5);
+      }
+    }
     if (this.target) {
-      this.t += 1 / 60;
       const k = (this.t * 0.9) % 1;
       const tx = this.size / 2 + this.target.x * s;
       const ty = this.size / 2 + this.target.z * s;

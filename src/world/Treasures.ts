@@ -3,7 +3,7 @@ import { buildProp } from './Props';
 
 /**
  * 寶箱探索點（v1.92）：Dressing.pickTreasures() 挑位置（離道路遠、走得到的角落），玩家走近就打開。
- * 打開的寶箱在同一張地圖 RESPAWN_MS 後才會再出現（只記在記憶體，不存檔；重新進入地圖也不會馬上重生）。
+ * 打開的寶箱在 TREASURE.respawnMs 後才會再出現；開啟時間記在存檔 GameState.treasures（v1.95，以前只在記憶體，重新整理網頁就能再刷）。
  * 獎勵由 Game.updateTreasures() 發（金幣＋一件裝備＋藥水 / 道具）。
  */
 export const TREASURE = {
@@ -13,7 +13,6 @@ export const TREASURE = {
   respawnMs: 10 * 60 * 1000,
 };
 
-const OPENED = new Map<string, number>();
 
 interface Chest {
   key: string;
@@ -31,11 +30,13 @@ export class Treasures {
   private chests: Chest[] = [];
   private time = 0;
 
-  constructor(zoneId: string, spots: { x: number; z: number }[], heightAt: (x: number, z: number) => number) {
+  constructor(zoneId: string, spots: { x: number; z: number }[], heightAt: (x: number, z: number) => number, private opened: Record<string, number>) {
     const now = Date.now();
+    // 過期的紀錄順便清掉，存檔不會越長越大
+    for (const [k, at] of Object.entries(opened)) if (now - at >= TREASURE.respawnMs || at > now + 60_000) delete opened[k];
     spots.forEach((s, i) => {
       const key = `${zoneId}:${i}`;
-      const at = OPENED.get(key);
+      const at = opened[key];
       if (at !== undefined && now - at < TREASURE.respawnMs) return;
       const obj = buildProp({ kind: 'decor', x: s.x, z: s.z, h: 1.1, model: 'chest_gold', solid: false, rot: Math.atan2(-s.x, -s.z) });
       obj.position.y = heightAt(s.x, s.z);
@@ -72,7 +73,7 @@ export class Treasures {
         c.glow.scale.setScalar(1 + Math.sin(this.time * 3 + c.x) * 0.06);
         if (alive && Math.hypot(px - c.x, pz - c.z) < TREASURE.openRange) {
           c.opened = true;
-          OPENED.set(c.key, Date.now());
+          this.opened[c.key] = Date.now();
           out.push({ x: c.x, z: c.z });
         }
         continue;
