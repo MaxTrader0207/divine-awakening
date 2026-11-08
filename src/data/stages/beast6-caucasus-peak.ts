@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_6',
   kind: 'field',
   music: 'wild',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '高加索懸崖',
   subtitle: '高加索懸崖・神獸討伐',
   region: '高加索山',

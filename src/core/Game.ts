@@ -13,6 +13,7 @@ import { MinionManager } from '@/systems/MinionManager';
 import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
+import { ambienceFor } from '@/audio/Ambience';
 import { ZONES, DUNGEON_ORDER, SIDE_ORDER, BEAST_ORDER, lootTierOf, rollZoneTier, floorLabel } from '@/data/zones';
 import { beastBonus, beastsDone } from '@/systems/BeastHunt';
 import { Player } from '@/entities/Player';
@@ -224,6 +225,7 @@ export class Game {
     this.effects = new Effects(this.scene);
     this.telegraphs = new Telegraphs(this.scene);
     this.audio = new AudioSystem(this.state.settings);
+    this.audio.setListener(() => this.player.pos);
     this.bosses = new BossController({
       player: this.player,
       telegraphs: this.telegraphs,
@@ -461,7 +463,7 @@ export class Game {
     bus.on('player:hurt', ({ amount }) => amount >= this.player.stats.maxHp * 0.08 && this.haptic(25));
     bus.on('boss:cast', () => this.haptic([30, 50, 30]));
     bus.on('boss:roar', () => {
-      this.audio.play('roar');
+      // 怒吼音效由 AudioSystem 自己監聽 boss:roar 播（v1.87）
       this.rig.shake(0.6);
       this.haptic([60, 40, 60]);
     });
@@ -919,6 +921,7 @@ export class Game {
       this.audio.setMusic(zoneNow.def.bossMusic ?? 'boss');
       this.audio.setBossIntensity(boss.hp < boss.maxHp * 0.5 ? 1 : 0);
     } else this.audio.setMusic(zoneNow.def.music ?? ({ town: 'town', field: 'grassland', dungeon: 'dungeon' } as const)[zoneNow.def.kind]);
+    this.audio.setAmbience(ambienceFor(zoneNow.def));
     if (this.state.settings.showFps) this.hud.debugInfo = `${this.renderer.info.render.calls} DC・畫質${this.quality.label}`;
     this.hud.setBuffs(this.buffList());
     this.refreshCompanionHud();

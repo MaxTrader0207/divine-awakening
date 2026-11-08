@@ -24,7 +24,7 @@ describe('背景音樂曲譜', () => {
 
   it('探險曲輕快、魔王曲比較快且有二階段聲部', () => {
     for (const id of ['town', 'grassland', 'forest', 'dungeon', 'sea', 'inferno', 'wild'] as const) expect(SONGS[id].bpm).toBeGreaterThanOrEqual(90);
-    for (const id of ['boss', 'titan', 'final'] as const) {
+    for (const id of ['boss', 'titan', 'final', 'hunt'] as const) {
       expect(SONGS[id].bossFight, id).toBe(true);
       expect(SONGS[id].bpm, id).toBeGreaterThan(Math.max(SONGS.grassland.bpm, SONGS.dungeon.bpm, SONGS.wild.bpm));
       expect(SONGS[id].phase2Drums, id).toBeTruthy();

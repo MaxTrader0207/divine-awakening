@@ -700,7 +700,7 @@ export async function renderTrack(id: TrackId, seconds: number, intensity = 0, g
   return toWav(buf);
 }
 
-function toWav(buf: AudioBuffer): ArrayBuffer {
+export function toWav(buf: AudioBuffer): ArrayBuffer {
   const ch = buf.numberOfChannels;
   const n = buf.length;
   const out = new ArrayBuffer(44 + n * ch * 2);

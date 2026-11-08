@@ -90,4 +90,5 @@ if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __assets: typeof Assets }).__assets = Assets;
   // 離線輸出背景音樂（試聽、音量檢查）：await __renderMusic('boss', 30, 1)
   (window as unknown as { __renderMusic: typeof renderTrack }).__renderMusic = renderTrack;
+  (window as unknown as { __renderSfx: unknown }).__renderSfx = (ids: string[], gap?: number, amb?: string, secs?: number) => game['audio'].renderSfx(ids as never, gap, amb as never, secs);
 }

@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_9',
   kind: 'field',
   music: 'inferno',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '佛勒格拉戰場',
   subtitle: '佛勒格拉戰場・神獸討伐',
   region: '佛勒格拉平原',

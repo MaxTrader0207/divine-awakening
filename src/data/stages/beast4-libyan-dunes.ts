@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_4',
   kind: 'field',
   music: 'wild',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '利比亞毒沙丘',
   subtitle: '利比亞毒沙丘・神獸討伐',
   region: '利比亞沙漠',

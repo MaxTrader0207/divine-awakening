@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_8',
   kind: 'field',
   music: 'wild',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '大地母神角鬥場',
   subtitle: '大地母神角鬥場・神獸討伐',
   region: '利比亞',

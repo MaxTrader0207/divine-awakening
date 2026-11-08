@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_1',
   kind: 'field',
   music: 'wild',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '厄律提亞牧犬巢',
   subtitle: '厄律提亞牧犬巢・神獸討伐',
   region: '厄律提亞',

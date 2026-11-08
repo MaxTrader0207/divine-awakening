@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_7',
   kind: 'field',
   music: 'forest',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '金羊毛聖樹',
   subtitle: '金羊毛聖樹・神獸討伐',
   region: '科爾基斯',

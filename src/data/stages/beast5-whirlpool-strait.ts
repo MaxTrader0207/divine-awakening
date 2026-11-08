@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_5',
   kind: 'field',
   music: 'sea',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '墨西拿漩渦',
   subtitle: '墨西拿漩渦・神獸討伐',
   region: '墨西拿海峽',

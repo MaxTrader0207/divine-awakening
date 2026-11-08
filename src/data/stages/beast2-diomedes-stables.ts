@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_2',
   kind: 'field',
   music: 'wild',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '色雷斯食人馬廄',
   subtitle: '色雷斯食人馬廄・神獸討伐',
   region: '色雷斯',

@@ -562,6 +562,65 @@ const final: TrackDef = {
   order: ['A', 'B'],
 };
 
+/* ======================= 神獸討伐：神獸狩獵（v1.87） ======================= */
+// D 小調、阿夫洛斯管主奏＋太鼓：古希臘的狩獵號角感；二階段加入顫音弦樂與滾奏
+const hunt: TrackDef = {
+  id: 'hunt',
+  name: '神獸狩獵（魔王戰）',
+  bpm: 156,
+  level: 0.95,
+  lead: { inst: 'aulos', vol: 0.15, double: 'brass' },
+  bossFight: true,
+  pad: { inst: 'strings', vol: 0.05, octave: 2 },
+  pad2: { inst: 'choir', vol: 0.025, octave: 4 },
+  reverb: 1.2,
+  bass: { inst: 'bassSaw', vol: 0.15, pattern: 'R..RR.5.R..RO.5.', octave: 2 },
+  arps: [
+    { inst: 'lyre', vol: 0.04, pattern: [0, 2, 1, 2], grid: 2, octave: 4 },
+    { inst: 'tremolo', vol: 0.045, pattern: [0, 1, 2, 1], grid: 1, octave: 4, phase2: true },
+  ],
+  stabs: [
+    { inst: 'brass', vol: 0.06, pattern: 'X.....x...X.....', octave: 4 },
+    { inst: 'brass', vol: 0.05, pattern: '...x.....x....x.', octave: 4, phase2: true },
+  ],
+  drums: { k: 'X...x.x.X...x...', s: '....x.......x...', t: 'x..x..x.x..x.x..', sh: '..x...x...x...x.' },
+  drumVol: 0.85,
+  phase2Drums: { h: 'x.xxx.xxx.xxx.xx', T: '..............xx' },
+  sections: {
+    A: {
+      chords: 'Dm | Bb | C | A | Dm | Gm | Bb A | Dm',
+      melody: [
+        'D5 - A4 - F5 - E5 D5',
+        'D5 - - - F5 - Bb5 -',
+        'E5 - G5 - C6 - - .',
+        'C#6 - - - A5 - E5 -',
+        'F5 - E5 D5 A5 - - -',
+        'G5 - Bb5 - D6 - C6 Bb5',
+        'Bb5 - A5 - A5 - G5 -',
+        'D5 - - - - - . .',
+      ].join(' | '),
+      first: { c: 'x...............' },
+      fill: { k: 'X...x.x.X.......', s: '........x.x.xxxx', t: 'x.x.x.x.xxxx....' },
+    },
+    B: {
+      chords: 'Gm | Dm | Bb | C | Gm | A | Dm | A',
+      melody: [
+        'Bb5 - A5 G5 D5 - G5 -',
+        'A5 - - - F5 - D5 -',
+        'F5 - G5 - Bb5 - D6 -',
+        'E6 - D6 C6 G5 - - .',
+        'D6 - C6 Bb5 G5 - Bb5 -',
+        'C#6 - - - E6 - C#6 A5',
+        'D6 - A5 - F5 - A5 -',
+        'E5 - - - A4 - . .',
+      ].join(' | '),
+      first: { c: 'x...............' },
+      fill: { k: 'X...x.x.X.......', s: '....x...xxxxxxxx', t: 'x...x...x.x.x.x.' },
+    },
+  },
+  order: ['A', 'B'],
+};
+
 /* ======================= 勝利短曲 ======================= */
 const victory: TrackDef = {
   id: 'victory',
@@ -587,4 +646,4 @@ const victory: TrackDef = {
   order: ['A'],
 };
 
-export const SONGS = { town, grassland, forest, dungeon, sea, inferno, wild, boss, titan, final, victory } satisfies Record<string, TrackDef>;
+export const SONGS = { town, grassland, forest, dungeon, sea, inferno, wild, boss, titan, final, hunt, victory } satisfies Record<string, TrackDef>;

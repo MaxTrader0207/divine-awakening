@@ -11,7 +11,7 @@ const zone: ZoneDef = {
   id: 'beast_3',
   kind: 'field',
   music: 'inferno',
-  bossMusic: 'boss',
+  bossMusic: 'hunt',
   name: '阿文提諾火窟',
   subtitle: '阿文提諾火窟・神獸討伐',
   region: '阿文提諾山',
