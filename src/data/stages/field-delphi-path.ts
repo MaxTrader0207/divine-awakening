@@ -117,7 +117,7 @@ export const delphiPath: StageDef = {
       exp: 200, gold: [37, 53],
     },
     oracle_bat: {
-      id: 'oracle_bat', name: '神諭洞蝠', level: 10, aggro: 'aggressive', shape: 'bat',
+      id: 'oracle_bat', name: '神諭洞蝠', level: 10, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a4a6a,
       stats: { maxHp: 460, atk: 76, def: 21, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

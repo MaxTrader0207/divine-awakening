@@ -48,7 +48,31 @@ export const DAILY = {
   discount: 0.7,
   /** 藥水福袋：紅藍各 10 瓶的價格倍率（相對單價 × 20） */
   bundleMul: 0.75,
+  /** v1.96 每天限購：每樣特價道具幾個、藥水福袋幾袋 */
+  limit: 5,
+  bundleLimit: 1,
 };
+
+/** 旅行商人的購買紀錄（存在 GameState.merchant） */
+export interface MerchantLog {
+  day: string;
+  bought: Record<string, number>;
+}
+
+/** 今天這樣東西還能買幾個（換日自動歸零） */
+export function merchantLeft(log: MerchantLog, day: string, id: string): number {
+  const limit = id === 'bundle' ? DAILY.bundleLimit : DAILY.limit;
+  return log.day === day ? Math.max(0, limit - (log.bought[id] ?? 0)) : limit;
+}
+
+/** 記一次購買（換日時先清空舊紀錄） */
+export function recordMerchant(log: MerchantLog, day: string, id: string) {
+  if (log.day !== day) {
+    log.day = day;
+    log.bought = {};
+  }
+  log.bought[id] = (log.bought[id] ?? 0) + 1;
+}
 
 /** 本地日期（每天換貨） */
 export function dayKey(d = new Date()): string {

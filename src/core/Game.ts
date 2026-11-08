@@ -35,7 +35,7 @@ import { calcDamage } from '@/systems/Combat';
 import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
 import { openCompanionView, openItemsView } from '@/ui/InventoryTabs';
-import { AutoBattle, AUTO_HP_POTION } from '@/systems/AutoBattle';
+import { AutoBattle, AUTO_CHEST_RANGE, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
 import { codexEntry, recordKill } from '@/data/codex';
@@ -283,7 +283,8 @@ export class Game {
       enemies: this.enemies,
       targets: this.targets,
       skills: this.skills,
-      nearestLoot: () => this.loot.nearest(),
+      // v1.96：沒有掉落物時，順路去開附近（AUTO_CHEST_RANGE 公尺內）還沒打開的寶箱
+      nearestLoot: () => this.loot.nearest() ?? this.nearestChest(),
       dangerEscape: () => {
         // 首領戰：閃招時盡量往首領出生點（場地中央）閃，不會把戰鬥拖出場地（v1.61）
         const b = this.enemies.engagedBoss();
@@ -1838,6 +1839,21 @@ export class Game {
       this.audio?.play('rare');
       this.persist();
     }
+  }
+
+  /** v1.96 AUTO 用：最近一個還沒打開、在 AUTO_CHEST_RANGE 公尺內的寶箱 */
+  private nearestChest(): { x: number; z: number } | null {
+    const spots = this.zones.current?.treasures?.remaining() ?? [];
+    let best: { x: number; z: number } | null = null;
+    let bd = AUTO_CHEST_RANGE;
+    for (const c of spots) {
+      const d = Math.hypot(c.x - this.player.pos.x, c.z - this.player.pos.z);
+      if (d < bd) {
+        bd = d;
+        best = c;
+      }
+    }
+    return best;
   }
 
   /** 加經驗，處理升級（回滿血、特效、升級事件） */

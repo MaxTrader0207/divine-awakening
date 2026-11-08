@@ -108,6 +108,8 @@ export class Enemy {
   private animT = Math.random() * 10;
   /** 骨架動畫（骷髏） */
   rig: CharacterRig | null = null;
+  /** v1.96 飛行模型的根節點（上下飄） */
+  private rigRoot: THREE.Object3D | null = null;
   private wasWinding = false;
   private wasStriking = false;
   private anims: RigAnims = DEFAULT_RIG;
@@ -257,6 +259,11 @@ export class Enemy {
         const role = anims.recolor[m.name];
         if (role === 'body') m.color.copy(body);
         else if (role === 'belly') m.color.copy(body).lerp(new THREE.Color(0xfff2c4), 0.55);
+        // 有貼圖的模型：貼圖顏色 × 淡化的怪物色，保留貼圖的明暗與花紋
+        else if (role === 'tint') {
+          m.map = m.map && neutralTexture(m.map);
+          m.color.copy(body).lerp(new THREE.Color(0xffffff), 0.15).multiplyScalar(1.3);
+        }
       }
     }
     // 首領（堤豐巨蛙）：平面著色的模型重算平滑法線，並套用首領材質
@@ -271,6 +278,10 @@ export class Enemy {
       }
     }
     this.body.add(inst.root);
+    if (anims.hover) {
+      this.rigRoot = inst.root;
+      inst.root.position.y = anims.hover;
+    }
     this.rig = new CharacterRig(inst);
     this.materials.push(...inst.materials);
     this.rig.setLoop(anims.idle, 0);
@@ -293,6 +304,11 @@ export class Enemy {
   update(dt: number, camera: THREE.Camera) {
     this.animT += dt;
     this.rig?.update(dt);
+    // v1.96 飛行模型（蝙蝠）：上下飄，倒下時落地
+    if (this.rigRoot && this.anims.hover) {
+      const fly = this.state === 'dying' ? Math.max(0, this.stateTimer - 0.3) / 0.8 : 1;
+      this.rigRoot.position.y = (this.anims.hover + Math.sin(this.animT * 3 + this.spawn.x) * 0.12) * Math.min(1, fly);
+    }
     if (this.state === 'dying') {
       this.stateTimer -= dt;
       if (this.rig) {
@@ -746,4 +762,39 @@ export class Enemy {
     });
     this.object.removeFromParent();
   }
+}
+
+/** v1.96 有貼圖的怪物模型換色：把貼圖裡飽和的主色（蝙蝠的棕毛）轉成明亮的灰，材質顏色再乘上怪物色（同一張貼圖共用） */
+const NEUTRAL_CACHE = new WeakMap<THREE.Texture, THREE.Texture>();
+function neutralTexture(src: THREE.Texture): THREE.Texture {
+  const hit = NEUTRAL_CACHE.get(src);
+  if (hit) return hit;
+  const img = src.image as CanvasImageSource & { width: number; height: number };
+  const cv = img?.width ? document.createElement('canvas') : null;
+  const ctx = cv?.getContext('2d', { willReadFrequently: true });
+  if (!cv || !ctx) return src;
+  cv.width = img.width;
+  cv.height = img.height;
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = data.data;
+  const c = new THREE.Color();
+  const hsl = { h: 0, s: 0, l: 0 };
+  for (let i = 0; i < d.length; i += 4) {
+    c.setRGB(d[i] / 255, d[i + 1] / 255, d[i + 2] / 255);
+    c.getHSL(hsl);
+    if (hsl.s < 0.3) continue;
+    const v = Math.min(1, 0.25 + hsl.l * 1.4);
+    d[i] = d[i + 1] = d[i + 2] = v * 255;
+  }
+  ctx.putImageData(data, 0, 0);
+  const t = new THREE.CanvasTexture(cv);
+  t.flipY = src.flipY;
+  t.colorSpace = src.colorSpace;
+  t.wrapS = src.wrapS;
+  t.wrapT = src.wrapT;
+  t.magFilter = src.magFilter;
+  t.minFilter = src.minFilter;
+  NEUTRAL_CACHE.set(src, t);
+  return t;
 }

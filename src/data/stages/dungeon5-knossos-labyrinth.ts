@@ -107,7 +107,7 @@ export const knossosLabyrinth: StageDef = {
       bossSkills: ['labrys_sweep', 'bull_rush', 'labyrinth_quake'],
     },
     maze_bat: {
-      id: 'maze_bat', name: '迷宮蝙蝠', level: 21, aggro: 'aggressive', shape: 'bat',
+      id: 'maze_bat', name: '迷宮蝙蝠', level: 21, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a4a5a,
       stats: { maxHp: 1100, atk: 142, def: 75, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

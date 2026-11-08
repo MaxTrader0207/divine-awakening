@@ -69,7 +69,7 @@ export const sirenGrotto: StageDef = {
       exp: 42, gold: [10, 16],
     },
     cave_bat: {
-      id: 'cave_bat', name: '斯廷法利斯蝠鳥', level: 7, aggro: 'aggressive', shape: 'bat',
+      id: 'cave_bat', name: '斯廷法利斯蝠鳥', level: 7, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 1, color: 0x5a4a7a,
       stats: { maxHp: 380, atk: 62, def: 18, moveSpeed: 4 },
       attack: melee(1.1, 0.35, 1.3),

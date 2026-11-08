@@ -114,7 +114,7 @@ export const gorgonIsle: StageDef = {
       bossSkills: ['gorgon_gaze', 'snake_hair', 'gorgon_arrows'],
     },
     gorgon_bat: {
-      id: 'gorgon_bat', name: '戈爾貢夜蝠', level: 36, aggro: 'aggressive', shape: 'bat',
+      id: 'gorgon_bat', name: '戈爾貢夜蝠', level: 36, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x4a5a4a,
       stats: { maxHp: 2300, atk: 251, def: 135, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

@@ -104,7 +104,7 @@ export const cyclopsCave: StageDef = {
       bossSkills: ['club_sweep', 'boulder_toss', 'cyclops_stomp'],
     },
     cave_bat_swarm: {
-      id: 'cave_bat_swarm', name: '洞窟蝙蝠群', level: 41, aggro: 'aggressive', shape: 'bat',
+      id: 'cave_bat_swarm', name: '洞窟蝙蝠群', level: 41, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a4a3a,
       stats: { maxHp: 2650, atk: 272, def: 155, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

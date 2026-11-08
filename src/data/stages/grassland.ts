@@ -95,7 +95,7 @@ export const grassland: StageDef = {
       exp: 26, gold: [7, 10],
     },
     pan_bat: {
-      id: 'pan_bat', name: '牧神蝙蝠', level: 6, aggro: 'aggressive', shape: 'bat',
+      id: 'pan_bat', name: '牧神蝙蝠', level: 6, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x6a5a7a,
       stats: { maxHp: 160, atk: 27, def: 1, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

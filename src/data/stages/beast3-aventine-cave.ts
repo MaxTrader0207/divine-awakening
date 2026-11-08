@@ -23,8 +23,20 @@ const zone: ZoneDef = {
   skyColor: 0x3a1a14,
   fogColor: 0x6a3a2a,
   fogRange: [34, 80],
-  patches: [{ x: -15, z: -16, w: 5, d: 4, color: 0xff5a1a, water: true }, { x: 16, z: -16, w: 4, d: 4, color: 0xff5a1a, water: true }],
+  patches: [
+    // v1.96：火窟裡的熔岩池（碰到會被擋住，可以拿來繞柱閃招）
+    { x: -16, z: -20, w: 8, d: 7, color: 0xff6a1a, water: true },
+    { x: 16, z: 8, w: 7, d: 9, color: 0xff6a1a, water: true },
+    { x: -15, z: 14, w: 6, d: 5, color: 0xff7a2a, water: true },{ x: -15, z: -16, w: 5, d: 4, color: 0xff5a1a, water: true }, { x: 16, z: -16, w: 4, d: 4, color: 0xff5a1a, water: true }],
   props: [
+    // v1.96：岩柱、紅水晶、火把
+    { kind: 'rock', x: -16, z: 2, w: 3, d: 3, h: 4.5, color: 0x4a2a24 },
+    { kind: 'rock', x: 16, z: -20, w: 3.4, d: 3, h: 5, color: 0x4a2a24 },
+    { kind: 'rock', x: 9, z: 18, w: 2.4, d: 2.4, h: 3, color: 0x5a3a2a },
+    { kind: 'crystal', x: -18, z: -12, color: 0xff6a3a },
+    { kind: 'crystal', x: 19, z: -4, color: 0xff6a3a },
+    { kind: 'decor', x: -4, z: 18, h: 1.8, model: 'torch', solid: false },
+    { kind: 'decor', x: 4, z: 18, h: 1.8, model: 'torch', solid: false },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'rock', x: -15, z: -8, color: 0x3a2a24 },

@@ -110,7 +110,7 @@ export const ceryneianMountain: StageDef = {
       exp: 4850, gold: [340, 486],
     },
     moon_bat: {
-      id: 'moon_bat', name: '月夜蝙蝠', level: 76, aggro: 'aggressive', shape: 'bat',
+      id: 'moon_bat', name: '月夜蝙蝠', level: 76, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x8a8ab8,
       stats: { maxHp: 5500, atk: 538, def: 295, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

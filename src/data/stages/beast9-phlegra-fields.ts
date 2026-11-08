@@ -23,8 +23,22 @@ const zone: ZoneDef = {
   skyColor: 0x4a3a3a,
   fogColor: 0x7a5a50,
   fogRange: [34, 80],
-  patches: [],
+  patches: [
+    // v1.96：焦土與地裂熔岩
+    { x: -14, z: -2, w: 12, d: 30, color: 0x4a3a2a },
+    { x: 14, z: 6, w: 12, d: 24, color: 0x4a3a2a },
+    { x: -17, z: 16, w: 5, d: 3, color: 0xff6a1a, water: true },
+    { x: 17, z: -20, w: 4, d: 6, color: 0xff6a1a, water: true },
+  ],
   props: [
+    // v1.96：眾神與巨人大戰的遺跡：斷柱、巨石、碎石、武器架
+    { kind: 'column', x: -16, z: -16, h: 2.2 },
+    { kind: 'column', x: -12, z: 4, h: 1.4 },
+    { kind: 'column', x: 15, z: 14, h: 2.6 },
+    { kind: 'rock', x: 15, z: -6, w: 4, d: 4, h: 3.2, color: 0x6a5a48 },
+    { kind: 'rock', x: -15, z: 10, w: 3.4, d: 3.4, h: 2.6, color: 0x6a5a48 },
+    { kind: 'decor', x: 10, z: 20, h: 1.0, model: 'rubble' },
+    { kind: 'decor', x: -10, z: -24, h: 1.4, model: 'weaponrack' },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'decor', x: -14, z: -10, h: 1.2, model: 'banner_red' },

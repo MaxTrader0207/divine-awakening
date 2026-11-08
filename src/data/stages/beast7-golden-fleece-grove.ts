@@ -23,8 +23,22 @@ const zone: ZoneDef = {
   skyColor: 0x6a8a5a,
   fogColor: 0x8aa878,
   fogRange: [34, 80],
-  patches: [{ x: 0, z: -12, w: 3, d: 18, color: 0x8a7a5a }],
+  patches: [
+    // v1.96：聖林草地、東側小溪
+    { x: 0, z: 0, w: 44, d: 56, color: 0x4a7a48 },
+    { x: 0, z: 8, w: 5, d: 30, color: 0x8a7a58 },
+    { x: 17, z: 4, w: 4, d: 40, color: 0x4a9ac8, water: true },{ x: 0, z: -12, w: 3, d: 18, color: 0x8a7a5a }],
   props: [
+    // v1.96：北邊掛著金羊毛的聖樹（金色水晶）、兩側樹林與花叢、溪邊灌木
+    { kind: 'olive', x: 0, z: -25, h: 6 },
+    { kind: 'crystal', x: -2, z: -23, color: 0xffd36b },
+    { kind: 'crystal', x: 2, z: -23, color: 0xffd36b },
+    { kind: 'cypress', x: -18, z: -18 },
+    { kind: 'cypress', x: -18, z: 4 },
+    { kind: 'olive', x: -15, z: 14 },
+    { kind: 'flowers', x: -11, z: 18, w: 3, d: 1 },
+    { kind: 'bush', x: 13, z: 14, color: 0x3a6a34 },
+    { kind: 'bush', x: 13, z: -18, color: 0x3a6a34 },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'olive', x: 0, z: -22 },

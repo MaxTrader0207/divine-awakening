@@ -23,8 +23,20 @@ const zone: ZoneDef = {
   skyColor: 0x1a0a1a,
   fogColor: 0x3a1a2a,
   fogRange: [34, 80],
-  patches: [{ x: -16, z: -16, w: 5, d: 5, color: 0xff4a1a, water: true }, { x: 16, z: -15, w: 5, d: 5, color: 0x8a4aff, water: true }],
+  patches: [
+    // v1.96：深淵的裂谷與紫色瘴氣池
+    { x: -17, z: -14, w: 8, d: 14, color: 0x5a2a7a, water: true },
+    { x: 17, z: 6, w: 8, d: 16, color: 0x5a2a7a, water: true },
+    { x: 0, z: 8, w: 6, d: 30, color: 0x3a3048 },{ x: -16, z: -16, w: 5, d: 5, color: 0xff4a1a, water: true }, { x: 16, z: -15, w: 5, d: 5, color: 0x8a4aff, water: true }],
   props: [
+    // v1.96：尖聳的岩柱、紫水晶群、碎石
+    { kind: 'rock', x: -15, z: 6, w: 2.4, d: 2.4, h: 6, color: 0x3a3048 },
+    { kind: 'rock', x: 14, z: -18, w: 2.6, d: 2.6, h: 7, color: 0x3a3048 },
+    { kind: 'rock', x: 8, z: 18, w: 2, d: 2, h: 4, color: 0x4a3a58 },
+    { kind: 'crystal', x: -12, z: -24, color: 0xb48cff },
+    { kind: 'crystal', x: 12, z: -24, color: 0xb48cff },
+    { kind: 'crystal', x: -18, z: 16, color: 0x8a6aff },
+    { kind: 'decor', x: -9, z: 16, h: 1.0, model: 'rubble' },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'crystal', x: -12, z: -20, color: 0xb48cff },

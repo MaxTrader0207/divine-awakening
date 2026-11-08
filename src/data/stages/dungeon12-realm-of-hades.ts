@@ -125,7 +125,7 @@ export const realmOfHades: StageDef = {
       exp: 2200, gold: [171, 244],
     },
     styx_bat: {
-      id: 'styx_bat', name: '冥河蝙蝠', level: 56, aggro: 'aggressive', shape: 'bat',
+      id: 'styx_bat', name: '冥河蝙蝠', level: 56, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x3a2a4a,
       stats: { maxHp: 5300, atk: 387, def: 215, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

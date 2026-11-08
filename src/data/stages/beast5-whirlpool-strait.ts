@@ -23,8 +23,19 @@ const zone: ZoneDef = {
   skyColor: 0x3a5a7a,
   fogColor: 0x5a8aa8,
   fogRange: [34, 80],
-  patches: [{ x: -17, z: -16, w: 6, d: 8, color: 0x2a6aa8, water: true }, { x: 17, z: -16, w: 6, d: 8, color: 0x2a6aa8, water: true }],
+  patches: [
+    // v1.96：兩側是海，中間是礁岩平台
+    { x: -19, z: 0, w: 8, d: 56, color: 0x2a6a9a, water: true },
+    { x: 19, z: 0, w: 8, d: 56, color: 0x2a6a9a, water: true },
+    { x: 0, z: 8, w: 8, d: 30, color: 0xb8a878 },{ x: -17, z: -16, w: 6, d: 8, color: 0x2a6aa8, water: true }, { x: 17, z: -16, w: 6, d: 8, color: 0x2a6aa8, water: true }],
   props: [
+    // v1.96：礁岩、船骸（木箱、木桶、斷柱）
+    { kind: 'rock', x: -12, z: 10, w: 2.6, d: 2.6, h: 1.8, color: 0x6a7a7a },
+    { kind: 'rock', x: 12, z: -22, w: 3, d: 2.6, h: 2.2, color: 0x6a7a7a },
+    { kind: 'decor', x: 11, z: 12, h: 1.1, model: 'crate' },
+    { kind: 'decor', x: 12.5, z: 14, h: 1.0, model: 'barrel' },
+    { kind: 'column', x: -12, z: -22, h: 1.8 },
+    { kind: 'wall', x: -12, z: 17, w: 4, d: 0.6, h: 1, color: 0x6a4a2e, rot: 0.5 },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'rock', x: -16, z: -4, color: 0x5a6a70 },

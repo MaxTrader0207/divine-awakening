@@ -105,7 +105,7 @@ export const thracianPeak: StageDef = {
       exp: 3340, gold: [262, 374],
     },
     ice_cave_bat: {
-      id: 'ice_cave_bat', name: '冰窟蝙蝠', level: 62, aggro: 'aggressive', shape: 'bat',
+      id: 'ice_cave_bat', name: '冰窟蝙蝠', level: 62, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x8ab8d8,
       stats: { maxHp: 4900, atk: 431, def: 176, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

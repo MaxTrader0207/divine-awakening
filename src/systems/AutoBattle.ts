@@ -22,6 +22,8 @@ import { MINIONS, type MinionId } from '@/data/minions';
  *   guard 類技能（騎士守護）在被 3 隻以上圍住、血量低於 60% 有敵人貼身、或首領出招時開。
  */
 export const AUTO_SEARCH_RANGE = 32;
+/** v1.96 AUTO 順路開寶箱：寶箱在這個距離內、附近沒有戰鬥時才去開 */
+export const AUTO_CHEST_RANGE = 22;
 export const AUTO_HP_POTION = 0.4;
 export const AUTO_MP_POTION = 0.2;
 
@@ -80,7 +82,7 @@ export class AutoBattle {
       return;
     }
 
-    // 3. 撿東西（附近沒有戰鬥時）
+    // 3. 撿東西、開寶箱（附近沒有戰鬥時；寶箱由 ctx.nearestLoot 一併回傳）
     const loot = this.ctx.nearestLoot();
     const fighting = enemies.enemies.some((e) => e.alive && (e.ai === 'chase' || e.ai === 'attack') && dist(e, p) < 8);
     if (loot && !fighting) {

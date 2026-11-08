@@ -112,7 +112,7 @@ export const echidnaLair: StageDef = {
       exp: 5950, gold: [409, 584],
     },
     lair_bat: {
-      id: 'lair_bat', name: '巢穴蝙蝠', level: 101, aggro: 'aggressive', shape: 'bat',
+      id: 'lair_bat', name: '巢穴蝙蝠', level: 101, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x3a2a3a,
       stats: { maxHp: 9400, atk: 694, def: 395, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

@@ -89,7 +89,7 @@ export const tartarusAbyss: StageDef = {
       exp: 560, gold: [62, 92],
     },
     keres: {
-      id: 'keres', name: '刻爾死靈', level: 27, aggro: 'aggressive', shape: 'bat',
+      id: 'keres', name: '刻爾死靈', level: 27, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 1.2, color: 0x7a1a2a,
       stats: { maxHp: 2500, atk: 230, def: 95, moveSpeed: 4.8 },
       attack: melee(1.2, 0.35, 1.2),

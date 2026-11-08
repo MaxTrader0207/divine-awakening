@@ -73,7 +73,53 @@ const CHARACTERS = [
   ['skeleton_rogue', 'Skeleton_Rogue.glb', SKEL_ANIMS, []],
   ['skeleton_mage', 'Skeleton_Mage.glb', SKEL_MAGE_ANIMS, []],
   ['frog', 'Frog_Quaternius.glb', ['Frog_Idle', 'Frog_Jump', 'Frog_Attack', 'Frog_Death'], []],
+  // v1.96 Gobkit 動物包（CC0，gobkit-free-assets/animal）：原檔只有一條 24fps 動畫，SPLIT 依幀數切成具名動畫
+  ['bat', 'Bat.glb', ['Bat_Idle', 'Bat_Attack', 'Bat_Death', 'Bat_Fly'], []],
 ];
+
+/** 單一動畫軌切成具名動畫：輸出名 → [名稱, 起始幀, 結束幀]（Gobkit：idle 0–29、attack 30–59、dead 60–89、walk 90–119，24fps） */
+const SPLIT = {
+  bat: [['Bat_Idle', 0, 29], ['Bat_Attack', 30, 59], ['Bat_Death', 60, 89], ['Bat_Fly', 90, 119]],
+};
+const SPLIT_FPS = 24;
+
+/** 把唯一一條動畫依幀數切開（每段時間從 0 起算，原動畫刪掉） */
+function splitClip(doc, segs) {
+  const root = doc.getRoot();
+  const src = root.listAnimations()[0];
+  if (!src) return;
+  const buf = root.listBuffers()[0];
+  for (const [name, from, to] of segs) {
+    const t0 = from / SPLIT_FPS - 1e-4;
+    const t1 = to / SPLIT_FPS + 1e-4;
+    const anim = doc.createAnimation(name);
+    for (const ch of src.listChannels()) {
+      const s = ch.getSampler();
+      const inp = s.getInput().getArray();
+      const out = s.getOutput();
+      const k = out.getElementSize();
+      const oa = out.getArray();
+      const keep = [];
+      for (let i = 0; i < inp.length; i++) if (inp[i] >= t0 && inp[i] <= t1) keep.push(i);
+      if (!keep.length) {
+        // 這段沒有關鍵幀：取段落開頭前最近的一格當靜止姿勢
+        let j = 0;
+        while (j + 1 < inp.length && inp[j + 1] <= t0) j++;
+        keep.push(j);
+      }
+      const ni = new Float32Array(keep.map((i) => Math.max(0, inp[i] - from / SPLIT_FPS)));
+      const no = new Float32Array(keep.length * k);
+      keep.forEach((i, n) => no.set(oa.slice(i * k, i * k + k), n * k));
+      const ia = doc.createAccessor().setType('SCALAR').setArray(ni).setBuffer(buf);
+      const oacc = doc.createAccessor().setType(out.getType()).setArray(no).setBuffer(buf);
+      const ns = doc.createAnimationSampler().setInput(ia).setOutput(oacc).setInterpolation(s.getInterpolation());
+      anim.addSampler(ns).addChannel(doc.createAnimationChannel().setTargetNode(ch.getTargetNode()).setTargetPath(ch.getTargetPath()).setSampler(ns));
+    }
+  }
+  src.listChannels().forEach((c) => c.dispose());
+  src.listSamplers().forEach((s) => s.dispose());
+  src.dispose();
+}
 
 /** 靜態物件：[輸出名, 原始檔名] */
 const PROPS = [
@@ -124,6 +170,7 @@ async function run(outName, file, keepAnims, dropNodes) {
   const doc = await io.read(path);
   const root = doc.getRoot();
   for (const n of root.listNodes()) if (dropNodes?.includes(n.getName())) n.dispose();
+  if (SPLIT[outName]) splitClip(doc, SPLIT[outName]);
   // 動畫名稱去掉骨架前綴（FBX 轉出的「FrogArmature|Frog_Idle」→「Frog_Idle」）
   for (const a of root.listAnimations()) a.setName(a.getName().split('|').pop());
   // 動畫要連同 sampler / channel 一起丟掉，prune 才會清掉沒人用的 accessor（否則檔案不會變小）

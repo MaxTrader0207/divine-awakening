@@ -23,8 +23,21 @@ const zone: ZoneDef = {
   skyColor: 0x9ab8d8,
   fogColor: 0xc0d0e0,
   fogRange: [34, 80],
-  patches: [],
+  patches: [
+    // v1.96：山頂積雪與裸岩
+    { x: -15, z: 0, w: 12, d: 50, color: 0xe8eef4 },
+    { x: 15, z: 4, w: 12, d: 40, color: 0xdde6ee },
+    { x: 0, z: 8, w: 6, d: 30, color: 0x8a8070 },
+  ],
   props: [
+    // v1.96：北邊被鎖在懸崖上的普羅米修斯雕像、兩側冰岩與岩壁
+    { kind: 'rock', x: -5, z: -25, w: 4, d: 3, h: 5, color: 0x6a5a4a },
+    { kind: 'rock', x: 5, z: -25, w: 4, d: 3, h: 5, color: 0x6a5a4a },
+    { kind: 'statue', x: 0, z: -25.5, w: 1.5, d: 1.5, h: 3.4 },
+    { kind: 'crystal', x: -17, z: -14, color: 0xa8e0ff },
+    { kind: 'crystal', x: 17, z: 0, color: 0xa8e0ff },
+    { kind: 'rock', x: -16, z: 10, w: 3, d: 3, h: 3, color: 0x7a6a5a },
+    { kind: 'rock', x: 15, z: 16, w: 2.6, d: 2.6, h: 2.4, color: 0x7a6a5a },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'rock', x: -16, z: -12, color: 0x8a8478 },

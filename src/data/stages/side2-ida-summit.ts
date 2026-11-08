@@ -118,7 +118,7 @@ export const idaSummit: StageDef = {
       exp: 680, gold: [85, 122],
     },
     crag_bat: {
-      id: 'crag_bat', name: '岩洞蝙蝠', level: 22, aggro: 'aggressive', shape: 'bat',
+      id: 'crag_bat', name: '岩洞蝙蝠', level: 22, aggro: 'aggressive', shape: 'bat', model: 'bat',
       radius: 0.5, respawn: 12, scale: 0.96, color: 0x5a5a5a,
       stats: { maxHp: 1300, atk: 148, def: 48, moveSpeed: 4.4 },
       attack: melee(1.2, 0.35, 1.1),

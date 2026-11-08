@@ -21,7 +21,7 @@ import { newRebirthState, type RebirthState } from '@/systems/Rebirth';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -100,6 +100,8 @@ export interface GameState {
   revive: ReviveState;
   /** v1.95 寶箱開啟時間（`區域:編號` → Date.now()），TREASURE.respawnMs 內不會重生；重新整理網頁也一樣 */
   treasures: Record<string, number>;
+  /** v1.96 旅行商人當天已買的數量（日期不同就重算，data/shops.ts 的 merchantLeft / recordMerchant） */
+  merchant: { day: string; bought: Record<string, number> };
   /** v25：轉生次數與紀錄 */
   rebirth: RebirthState;
   /** 統計（結算畫面、平衡、成就用；v14 新增 bossKills 以後的欄位，舊存檔從 0 開始） */
@@ -156,6 +158,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     weekly: newWeeklyState(),
     revive: newReviveState(),
     treasures: {},
+    merchant: { day: '', bought: {} },
     rebirth: newRebirthState(),
     stats: { kills: 0, deaths: 0, playTime: 0, bossKills: 0, enhanceOk: 0, itemsUsed: 0, questsDone: 0, mythics: 0, goldEarned: 0 },
     settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7, orientation: 'auto', autoSell: 'off' },

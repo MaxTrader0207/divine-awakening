@@ -24,8 +24,23 @@ const zone: ZoneDef = {
   skyColor: 0x6a7a9a,
   fogColor: 0x8a8aa0,
   fogRange: [34, 80],
-  patches: [],
+  patches: [
+    // v1.96：馬廄前的泥地與乾草地
+    { x: 0, z: 8, w: 6, d: 30, color: 0x6a5a48 },
+    { x: -16, z: 6, w: 10, d: 22, color: 0x8a7a50 },
+    { x: 16, z: 8, w: 10, d: 16, color: 0xa89a60 },
+  ],
   props: [
+    // v1.96：西側一排馬廄隔間（木牆）、東側乾草堆與食槽、散落的貨物
+    ...[-2, 5, 12].map((z) => ({ kind: 'wall' as const, x: -16, z, w: 8, d: 0.6, h: 2.2, color: 0x7a5a3a })),
+    { kind: 'wall', x: -20.2, z: 5, w: 0.6, d: 16, h: 2.6, color: 0x6a4a2e },
+    { kind: 'decor', x: -13, z: 1.5, h: 0.9, model: 'sack', solid: false },
+    { kind: 'decor', x: -13.5, z: 8.5, h: 1.0, model: 'barrel' },
+    { kind: 'wall', x: 16, z: 2, w: 6, d: 1, h: 0.8, color: 0x6a4a2e },
+    { kind: 'decor', x: 14, z: 10, h: 1.3, model: 'crates_stacked' },
+    { kind: 'decor', x: 18, z: 12.5, h: 0.9, model: 'sack', solid: false },
+    { kind: 'decor', x: 17.5, z: 14, h: 0.9, model: 'sack', solid: false },
+    { kind: 'fence', x: 15, z: 18, w: 8, d: 0.4 },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'fence', x: -14, z: -4, w: 0.4, d: 10 },

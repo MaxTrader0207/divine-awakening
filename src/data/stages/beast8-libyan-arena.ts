@@ -24,8 +24,22 @@ const zone: ZoneDef = {
   skyColor: 0xd8b88a,
   fogColor: 0xd8c0a0,
   fogRange: [34, 80],
-  patches: [],
+  patches: [
+    // v1.96：角鬥場沙地
+    { x: 0, z: -2, w: 34, d: 40, color: 0xd8c08a },
+  ],
   props: [
+    // v1.96：角鬥場圍牆（四段）、看台柱子、旗幟與武器架
+    { kind: 'wall', x: -19, z: -8, w: 1, d: 22, h: 2.8, color: 0xc8b088 },
+    { kind: 'wall', x: 19, z: -8, w: 1, d: 22, h: 2.8, color: 0xc8b088 },
+    { kind: 'wall', x: -11, z: -24, w: 14, d: 1, h: 2.8, color: 0xc8b088 },
+    { kind: 'wall', x: 11, z: -24, w: 14, d: 1, h: 2.8, color: 0xc8b088 },
+    ...[-15, -1].map((z) => ({ kind: 'column' as const, x: -17, z })),
+    ...[-15, -1].map((z) => ({ kind: 'column' as const, x: 17, z })),
+    { kind: 'decor', x: -4, z: -23, h: 2.4, model: 'banner_red', solid: false },
+    { kind: 'decor', x: 4, z: -23, h: 2.4, model: 'banner_red', solid: false },
+    { kind: 'decor', x: -16, z: 12, h: 1.4, model: 'weaponrack' },
+    { kind: 'decor', x: 16, z: 12, h: 1.4, model: 'weaponrack' },
     { kind: 'stonering', x: 0, z: -8, w: 18, d: 18, color: 0xd8d0c0 },
     ...pillarRing(0, -8, 11, 10, 0xe8e4d8),
     { kind: 'column', x: -15, z: -12 },

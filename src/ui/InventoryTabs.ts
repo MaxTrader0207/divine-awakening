@@ -13,7 +13,7 @@ import { DIVINITY, DIV_MAX_POINTS, DIV_STATS, allocPoint, divBonusText, divExpTo
 import { PROFILE_LABEL } from '@/data/gear';
 import { equippedSets, setOf, setTiers } from '@/data/gearSets';
 import { GEM_SHOP, buyGemItem } from '@/systems/GemShop';
-import { DAILY, SHOPS, dailyDeals, dayKey, isHealing, shopName, type ShopId, type ShopSection } from '@/data/shops';
+import { DAILY, SHOPS, dailyDeals, dayKey, isHealing, merchantLeft, recordMerchant, shopName, type ShopId, type ShopSection } from '@/data/shops';
 import { CONSUMABLES, MAX_STACK, consumablesFor, type ConsumableDef } from '@/data/consumables';
 import { setQuickSlot } from '@/systems/Consumables';
 import { CLASSES, type HeroClass } from '@/data/classes';
@@ -626,27 +626,46 @@ export function renderShop(ctx: InvContext): HTMLElement[] {
           ]),
         ];
       case 'daily': {
-        const deals = dailyDeals(dayKey(), s.heroClass);
+        const day = dayKey();
+        const deals = dailyDeals(day, s.heroClass);
         const bundle = Math.round((POTION_PRICE.hp + POTION_PRICE.mp) * 10 * DAILY.bundleMul);
+        // v1.96 每天限購：買完那一列的按鈕變灰
+        const limited = (id: string, price: number, give: () => boolean, name: string) => {
+          const left = merchantLeft(s.merchant, day, id);
+          return h('button', {
+            class: 'go small',
+            disabled: left <= 0,
+            onclick: () => {
+              if (merchantLeft(s.merchant, day, id) <= 0) return ctx.toast('今天已經賣完了，明天再來');
+              if (s.gold < price) return ctx.toast('金幣不足');
+              buy(price, () => {
+                if (!give()) return false;
+                recordMerchant(s.merchant, day, id);
+                return true;
+              }, name);
+            },
+          }, left > 0 ? String(price) : '售完');
+        };
+        const leftTag = (id: string) => h('em', { class: 'deal-left' }, `今日剩 ${merchantLeft(s.merchant, day, id)}`);
         return [
-          h('div', { class: 'section-title' }, `🐫 旅行商人・今日特價（每天換貨，全部 ${Math.round(DAILY.discount * 10)} 折）`),
+          h('div', { class: 'section-title' }, `🐫 旅行商人・今日特價（每天換貨，全部 ${Math.round(DAILY.discount * 10)} 折，每樣限購 ${DAILY.limit} 個）`),
           h('div', { class: 'card daily-deals' }, [
             h('div', { class: 'shop-row' }, [
               h('span', { class: 'shop-ico' }, '🎁'),
-              h('div', { class: 'shop-main' }, [h('b', {}, '藥水福袋'), h('small', {}, `紅藥水 ×10＋藍藥水 ×10（原價 ${(POTION_PRICE.hp + POTION_PRICE.mp) * 10}）`)]),
-              h('button', { class: 'go small', onclick: () => buy(bundle, () => ((s.potions.hp += 10), (s.potions.mp += 10), true), '藥水福袋') }, String(bundle)),
+              h('div', { class: 'shop-main' }, [h('b', {}, ['藥水福袋 ', leftTag('bundle')]), h('small', {}, `紅藥水 ×10＋藍藥水 ×10（原價 ${(POTION_PRICE.hp + POTION_PRICE.mp) * 10}）`)]),
+              limited('bundle', bundle, () => ((s.potions.hp += 10), (s.potions.mp += 10), true), '藥水福袋'),
             ]),
             ...deals.map(({ item: c, price }) =>
               h('div', { class: 'shop-row' }, [
                 h('span', { class: 'shop-ico' }, c.icon),
-                h('div', { class: 'shop-main' }, [h('b', {}, `${c.name}${s.consumables[c.id] ? `（持有 ${s.consumables[c.id]}/${MAX_STACK}）` : ''}`), h('small', {}, [h('s', {}, String(c.price)), ` ${c.desc}`])]),
-                h('button', {
-                  class: 'go small',
-                  onclick: () => {
-                    if ((s.consumables[c.id] ?? 0) >= MAX_STACK) return ctx.toast(`${c.name}最多 ${MAX_STACK} 個`);
-                    buy(price, () => addConsumable(s, c.id), c.name);
-                  },
-                }, String(price)),
+                h('div', { class: 'shop-main' }, [h('b', {}, [`${c.name}${s.consumables[c.id] ? `（持有 ${s.consumables[c.id]}/${MAX_STACK}）` : ''} `, leftTag(c.id)]), h('small', {}, [h('s', {}, String(c.price)), ` ${c.desc}`])]),
+                limited(c.id, price, () => {
+                  if ((s.consumables[c.id] ?? 0) >= MAX_STACK) {
+                    ctx.toast(`${c.name}最多 ${MAX_STACK} 個`);
+                    return false;
+                  }
+                  return addConsumable(s, c.id);
+                }, c.name),
               ]),
             ),
           ]),

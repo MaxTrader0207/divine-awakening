@@ -1,3 +1,4 @@
+import { AUTO_CHEST_RANGE } from '@/systems/AutoBattle';
 import type { HeroClass } from './classes';
 import { CLASSES } from './classes';
 import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, BEAST_ORDER, bossOf, zoneLabel } from './zones';
@@ -194,7 +195,7 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
       lines: [
         '每間店只賣自己的東西，走進門口的金色光圈就會打開那間店；店面最下面的「查看全部商品」或選單的「商城」可以看到全部商品。小地圖上有每間店的圖示。',
         '**大街**（城中央東西向）：⚔️武器店（武器）、🛡️防具店（頭盔、衣服、手套、鞋子）、🎒道具店（藥水、增益 / 回城 / 加成道具）、🔨強化屋。',
-        `**西市集**（大街往西走）：${SHOPS.apothecary.icon}${SHOPS.apothecary.name}（藥水與所有回血 / 回魔 / 護盾道具）、${SHOPS.guild.icon}職業行會（你的職業專屬道具）、${SHOPS.merchant.icon}旅行商人（每天換貨：${DAILY.count} 樣道具 ${Math.round(DAILY.discount * 10)} 折，還有紅藍藥水各 10 瓶的藥水福袋）。`,
+        `**西市集**（大街往西走）：${SHOPS.apothecary.icon}${SHOPS.apothecary.name}（藥水與所有回血 / 回魔 / 護盾道具）、${SHOPS.guild.icon}職業行會（你的職業專屬道具）、${SHOPS.merchant.icon}旅行商人（每天換貨：${DAILY.count} 樣道具 ${Math.round(DAILY.discount * 10)} 折，還有紅藍藥水各 10 瓶的藥水福袋；每樣每天限購 ${DAILY.limit} 個、福袋 ${DAILY.bundleLimit} 袋）。`,
         `**東區**（大街往東走）：${SHOPS.jeweler.icon}${SHOPS.jeweler.name}（戒指）、${SHOPS.oracle.icon}${SHOPS.oracle.name}（鑽石商店、鑽石換金幣）。`,
       ],
     },
@@ -204,7 +205,7 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
       lines: [
         '副本、野外、支線和神獸討伐的地圖都藏著 2～3 個寶箱，通常在離道路比較遠的角落，地上有一圈金光。小地圖上會用閃爍的金色方塊標出還沒打開的寶箱。',
         '走到寶箱旁邊就會自動打開：金幣（大約 5 隻同等級小怪）、一件裝備、2 瓶紅藥水，有機會再多一個道具。',
-        `打開後同一個寶箱要 ${TREASURE.respawnMs / 60000} 分鐘才會再出現（重新整理網頁或重新登入也一樣）。主城沒有寶箱。`,
+        `打開後同一個寶箱要 ${TREASURE.respawnMs / 60000} 分鐘才會再出現（重新整理網頁或重新登入也一樣）。主城沒有寶箱。AUTO 戰鬥時，附近沒有敵人和掉落物就會順路去開 ${AUTO_CHEST_RANGE} 公尺內的寶箱。`,
       ],
     },
     {
