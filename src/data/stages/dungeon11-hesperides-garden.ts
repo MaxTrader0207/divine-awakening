@@ -19,6 +19,7 @@ const zone: ZoneDef = {
   safe: false,
   size: { w: 52, d: 62 },
   groundColor: 0x6a9a4a,
+  theme: 'meadow', // v1.93
   skyColor: 0xf0907a,
   fogColor: 0xd88a7a,
   fogRange: [34, 82],

@@ -20,6 +20,7 @@ const zone: ZoneDef = {
   safe: false,
   size: { w: 56, d: 64 },
   groundColor: 0xb8a888,
+  theme: { base: 'mountain', border: { kind: 'ruins', colors: [0xb8a888, 0xa89878, 0xc8b898] }, particles: { kind: 'mote', colors: [0xfff0c0], count: 30 } }, // v1.93
   skyColor: 0x4a3e34,
   fogColor: 0x6a5a48,
   fogRange: [34, 80],

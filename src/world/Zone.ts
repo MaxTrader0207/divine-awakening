@@ -44,8 +44,8 @@ export class Zone {
     buildZoneCollision(def, this.collision); // 碰撞與畫面分開建（world/zoneCollision.ts）
 
     // v1.92 地圖景觀：有主題的地圖由 Dressing 畫地面（道路色塊畫進地面頂點色、外圍緩坡）
-    // TODO(v1.92 樣板期)：先只套用有寫 theme 的關卡，確認風格後改成預設全部套用（主城除外）
-    const themed = def.theme !== undefined && def.theme !== false;
+    // v1.93 起所有關卡預設套用（主城、試煉塔競技場除外；關卡檔寫 theme: false 可以關掉）
+    const themed = def.theme !== false && (def.theme !== undefined || (def.kind !== 'town' && !def.tower));
     if (themed) {
       this.dressing = new Dressing(def, themeFor(def), this.collision, (x, z) => this.heightAt(x, z));
       this.group.add(this.dressing.buildGround());

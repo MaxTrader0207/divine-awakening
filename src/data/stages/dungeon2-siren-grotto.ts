@@ -16,6 +16,7 @@ const zone: ZoneDef = {
   safe: false,
   size: { w: 48, d: 60 },
   groundColor: 0x6f97a6,
+  theme: { base: 'cave', particles: { kind: 'spray', colors: [0xe8f8ff, 0xc8eaff], count: 50 }, scatter: [{ kind: 'shell', density: 1.2, colors: [0xffe0d0, 0xf8c8a0], onPath: true }, { kind: 'pebble', density: 1.6, colors: [0x5a7a88, 0x6a8a94], onPath: true }, { kind: 'shard', density: 0.5, colors: [0x6fe3ff] }] }, // v1.93
   skyColor: 0x24323f,
   fogColor: 0x2f4654,
   patches: [

@@ -106,10 +106,15 @@ export class Dressing {
     const dzS = Math.max(0, z - d / 2);
     const dist = Math.max(dx, dzN, dzS * 1.0);
     if (dist <= 0) return 0;
+    // 海、湖延伸到地圖外：水面附近不長山坡（不然會蓋住海面）
+    let wet = 99;
+    for (const p of this.def.patches) if (p.water) wet = Math.min(wet, rectSd(p, x, z));
+    const dry = smooth(1, 9, wet);
+    if (dry <= 0) return 0;
     // 南邊（鏡頭那側）坡度減半，免得擋住角色
     const south = dzS > Math.max(dx, dzN) ? 0.4 : 1;
     const n = 0.55 + 0.45 * fbm(x * 0.08, z * 0.08, this.seed + 3);
-    return this.theme.ground.hills * south * smooth(1.5, 16, dist) * n;
+    return this.theme.ground.hills * south * smooth(1.5, 16, dist) * n * dry;
   }
 
   buildGround(): THREE.Mesh {
@@ -195,6 +200,7 @@ export class Dressing {
         const row = rng() < 0.55 ? 0 : 1;
         const out = (row === 0 ? 1.6 : 4.5) + rng() * 3;
         const [x, z] = side.at((k + rng()) * (side.len / n), out);
+        if (this.def.patches.some((p) => p.water && rectSd(p, x, z) < 2.5)) continue;
         const hRange = b.height[1] - b.height[0];
         let h = b.height[0] + rng() * hRange * (row === 0 ? 0.6 : 1);
         if (side.south) h *= 0.45;

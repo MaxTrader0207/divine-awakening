@@ -70,9 +70,9 @@ export const THEMES: Record<ThemeId, MapTheme> = {
   },
   forest: {
     ground: { noise: 0.18, blotch: 0x4a7a3a, blotchAmt: 0.4, edge: 1.2, hills: 6, shore: 0x7a8a5a },
-    border: { kind: 'trees', colors: [0x2f6a3a, 0x3a7a40, 0x2a5a34], density: 0.7, height: [5, 8] },
+    border: { kind: 'trees', colors: [0x2f6a3a, 0x3a7a40, 0x2a5a34], density: 0.55, height: [5, 8] },
     scatter: [
-      { kind: 'grass', density: 7, colors: [0x3f7a34, 0x4a8a3a, 0x355f2c] },
+      { kind: 'grass', density: 5, colors: [0x3f7a34, 0x4a8a3a, 0x355f2c] },
       { kind: 'mushroom', density: 0.9, colors: [0xd04a3a, 0xe8d0a0, 0xb07040] },
       { kind: 'twig', density: 1.2, colors: [0x6a4a2a, 0x7a5a34], onPath: true },
       { kind: 'flower', density: 0.6, colors: [0xffffff, 0xc0a0ff] },

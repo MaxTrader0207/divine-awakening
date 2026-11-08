@@ -23,6 +23,7 @@ const zone: ZoneDef = {
   safe: false,
   size: { w: 54, d: 64 },
   groundColor: 0x4a4652,
+  theme: 'underworld', // v1.93
   skyColor: 0x14101a,
   fogColor: 0x2a2234,
   fogRange: [28, 72],
