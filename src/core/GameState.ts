@@ -19,7 +19,7 @@ import { newWeeklyState, type WeeklyState } from '@/systems/WeeklyBoss';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -38,6 +38,8 @@ export interface Settings {
   autoPotionAt: number;
   /** v22：畫面方向（auto＝手機橫拿就切橫式、portrait 固定直式、landscape 固定橫式） */
   orientation: 'auto' | 'portrait' | 'landscape';
+  /** v23：撿到時自動賣出這個稀有度以下、比身上差的裝備（off＝關閉；★神話裝永遠不賣） */
+  autoSell: 'off' | 'common' | 'fine' | 'rare';
 }
 
 export interface GameState {
@@ -145,7 +147,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     mythic: newMythicState(),
     weekly: newWeeklyState(),
     stats: { kills: 0, deaths: 0, playTime: 0, bossKills: 0, enhanceOk: 0, itemsUsed: 0, questsDone: 0, mythics: 0, goldEarned: 0 },
-    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7, orientation: 'auto' },
+    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7, orientation: 'auto', autoSell: 'off' },
   };
 }
 

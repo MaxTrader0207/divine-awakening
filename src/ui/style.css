@@ -1186,3 +1186,10 @@ html.landscape .split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); co
 html.landscape .split > .col-a, html.landscape .split > .col-b { display: grid; gap: inherit; align-content: start; min-width: 0; }
 html.landscape .ps-box.split { max-width: 660px; padding: 16px 18px 12px; }
 html.landscape .ps-box.split > .col-a { align-self: center; }
+
+/* ---- v1.80 橫式裝備頁兩欄（直式不影響） ---- */
+.equip-split, .equip-split > .col-a, .equip-split > .col-b { display: contents; }
+html.landscape .equip-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+html.landscape .equip-split > .col-a, html.landscape .equip-split > .col-b { display: grid; gap: 10px; align-content: start; min-width: 0; }
+html.landscape .equip-split > .col-a { position: sticky; top: 0; max-height: calc(100dvh - 110px); overflow-y: auto; overscroll-behavior: contain; }
+html.landscape .equip-split > .col-a > .item-detail { order: -1; }

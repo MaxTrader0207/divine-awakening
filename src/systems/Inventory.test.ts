@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addItem, computeStats, enhance, equip, itemName, itemStats, sell, sellJunk, unequip, INVENTORY_SIZE, type InventoryState } from './Inventory';
+import { addItem, autoSellPrice, computeStats, enhance, equip, itemName, itemStats, sell, sellJunk, unequip, INVENTORY_SIZE, type InventoryState } from './Inventory';
 import { rollDrop } from './LootTable';
 import { statsForLevel } from '@/data/player';
 
@@ -107,5 +107,23 @@ describe('狂戰士怒氣上限', () => {
     const s: InventoryState = { inventory: [], equipment: { hat: { uid: 1, base: 'hat_t3', rarity: 'epic', plus: 5 } }, nextUid: 2, gold: 0, gems: 0, level: 20, heroClass: 'berserker' };
     expect(computeStats(s).maxMp).toBe(100);
     expect(computeStats({ ...s, heroClass: 'mage' }).maxMp).toBeGreaterThan(100);
+  });
+});
+
+describe('撿到時自動賣出（v1.80）', () => {
+  it('只賣稀有度以下、比身上差的；身上沒裝備、比較好、★神話裝都不賣', () => {
+    const s = fresh();
+    s.heroClass = 'mage';
+    // 身上沒武器：不賣
+    expect(autoSellPrice(s, 'weapon_t3', 'common', 'fine')).toBe(0);
+    s.equipment.weapon = { uid: 99, base: 'weapon_t5', rarity: 'rare', plus: 0 };
+    expect(autoSellPrice(s, 'weapon_t3', 'common', 'fine')).toBeGreaterThan(0);
+    expect(autoSellPrice(s, 'weapon_t3', 'common', 'off')).toBe(0);
+    // 稀有度超過設定：不賣
+    expect(autoSellPrice(s, 'weapon_t3', 'rare', 'fine')).toBe(0);
+    // 比身上好：不賣
+    expect(autoSellPrice(s, 'weapon_t8', 'fine', 'fine')).toBe(0);
+    // ★神話裝：不賣
+    expect(autoSellPrice(s, 'mage_weapon_01', 'common', 'rare')).toBe(0);
   });
 });

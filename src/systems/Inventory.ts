@@ -141,6 +141,21 @@ export function sellJunk(s: InventoryState, maxRarity: Rarity): { count: number;
   return { count, gold };
 }
 
+/**
+ * 撿到時自動賣出（v1.80，設定 autoSell）：稀有度在 maxRarity 以下、不是★神話裝、
+ * 而且不比同欄位身上的好 → 回傳賣價；不賣回傳 0。（強化過的裝備不會從地上撿到，不用判斷）
+ */
+export function autoSellPrice(s: InventoryState, base: string, rarity: Rarity, maxRarity: Rarity | 'off'): number {
+  if (maxRarity === 'off') return 0;
+  const b = ITEM_BASES[base];
+  if (!b || b.named) return 0;
+  if (RARITY_ORDER.indexOf(rarity) > RARITY_ORDER.indexOf(maxRarity)) return 0;
+  const cur = s.equipment[b.slot];
+  const it: ItemInstance = { uid: -1, base, rarity, plus: 0 };
+  if (!cur || itemScore(cur) < itemScore(it)) return 0;
+  return sellPrice(b.tier ?? 1, rarity, 0);
+}
+
 export function findItem(s: InventoryState, uid: number): ItemInstance | undefined {
   return s.inventory.find((i) => i.uid === uid) ?? Object.values(s.equipment).find((i) => i?.uid === uid);
 }

@@ -421,6 +421,25 @@ export class Menu {
         }, label),
       ),
     );
+    // 自動賣出（v1.80）：撿到時把比身上差的低稀有度裝備換成金幣
+    const sellOpts: [GameState['settings']['autoSell'], string][] = [['off', '關閉'], ['common', '普通'], ['fine', '精良以下'], ['rare', '稀有以下']];
+    const autoSell = s.autoSell ?? 'off';
+    const sellRow = h(
+      'div',
+      { class: 'seg' },
+      sellOpts.map(([v, label]) =>
+        h('button', {
+          class: `seg-btn${autoSell === v ? ' on' : ''}`,
+          onclick: () => {
+            s.autoSell = v;
+            bus.emit('save:request');
+            const top = this.body.scrollTop;
+            this.show('settings');
+            this.body.scrollTop = top;
+          },
+        }, label),
+      ),
+    );
     const fps = h('input', { type: 'checkbox' });
     fps.checked = s.showFps;
     fps.addEventListener('change', () => this.actions.onToggleFps(fps.checked));
@@ -446,6 +465,9 @@ export class Menu {
         h('div', { class: 'set-row' }, [h('span', {}, '自動補血'), h('b', {}, potionAt > 0 ? `HP < ${Math.round(potionAt * 100)}%` : '關閉')]),
         potionRow,
         h('p', {}, 'HP 低於設定比例時自動喝紅藥水（冷卻 2 秒、在主城不會喝）。每喝一瓶破關評價扣 2 分。'),
+        h('div', { class: 'set-row' }, [h('span', {}, '撿到時自動賣出'), h('b', {}, sellOpts.find(([v]) => v === autoSell)?.[1] ?? '關閉')]),
+        sellRow,
+        h('p', {}, '撿到這個稀有度以下、而且比身上同部位差的裝備時，直接換成金幣，不佔背包。★神話裝與比身上好的裝備一定會留著。'),
       ]),
       renderCloudCard(this.cloudCtx()),
       this.renderQuality(),

@@ -5,7 +5,7 @@ import type { Rarity } from '@/data/types';
 import { RARITY } from '@/data/items';
 import type { Player } from '@/entities/Player';
 import { makeLabelSprite } from '@/world/Label';
-import { addItem, itemName } from './Inventory';
+import { addItem, autoSellPrice, itemName } from './Inventory';
 import { POTION_DROP_CHANCE, rollDrop } from './LootTable';
 import { CONSUMABLE_DROP_CHANCE, CONSUMABLE_MAP, rollConsumable } from '@/data/consumables';
 import { addConsumable } from './Consumables';
@@ -113,7 +113,8 @@ export class LootSystem {
     let best: Drop | null = null;
     let bd = maxRange;
     for (const d of this.drops) {
-      if (full && d.kind.type === 'item') continue; // 道具、藥水不佔背包格
+      // 道具、藥水不佔背包格；會自動賣掉的裝備也照撿
+      if (full && d.kind.type === 'item' && !autoSellPrice(this.state, d.kind.base, d.kind.rarity, this.state.settings.autoSell ?? 'off')) continue;
       const dist = Math.hypot(d.x - p.x, d.z - p.z);
       if (dist < bd) {
         bd = dist;
@@ -154,6 +155,14 @@ export class LootSystem {
       this.state.potions[k.potion] += k.count;
       bus.emit('float:text', { x: d.x, y: 1.4, z: d.z, text: `+${k.count} ${k.potion === 'hp' ? '紅藥水' : '藍藥水'}`, kind: 'info' });
       bus.emit('player:changed');
+      return true;
+    }
+    // v1.80 自動賣出：比身上差的低稀有度裝備直接換成金幣（背包滿了也能撿）
+    const auto = autoSellPrice(this.state, k.base, k.rarity, this.state.settings.autoSell ?? 'off');
+    if (auto > 0) {
+      this.state.gold += auto;
+      bus.emit('float:text', { x: d.x, y: 1.4, z: d.z, text: `+${auto} 金幣（自動賣出）`, kind: 'info' });
+      bus.emit('wallet:changed');
       return true;
     }
     const it = addItem(this.state, k.base, k.rarity);

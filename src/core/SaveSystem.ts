@@ -298,6 +298,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.weekly = normalizeWeekly(data.weekly);
   // v21 → v22：設定新增 orientation（settings 合併時補預設值 'auto'）
   if (!['auto', 'portrait', 'landscape'].includes(merged.settings.orientation)) merged.settings.orientation = 'auto';
-  // 未來版本：if ((data.version ?? 0) < 23) { ... }
+  // v22 → v23：設定新增 autoSell（預設關閉）
+  if (!['off', 'common', 'fine', 'rare'].includes(merged.settings.autoSell)) merged.settings.autoSell = 'off';
+  // 未來版本：if ((data.version ?? 0) < 24) { ... }
   return merged;
 }

@@ -254,7 +254,21 @@ function divinityCard(ctx: InvContext): HTMLElement {
   ]);
 }
 
+/**
+ * 裝備頁。v1.80：用 .equip-split 包成兩欄（直式 display: contents 不影響排版；
+ * 橫式左欄＝屬性、裝備格、物品詳情，右欄＝裝備 / 道具 / 夥伴切換與背包，左欄固定不跟著捲）
+ */
 export function renderEquip(ctx: InvContext): HTMLElement[] {
+  const out = renderEquipInner(ctx);
+  const i = out.findIndex((e) => e.classList.contains('inv-switch'));
+  if (i < 0) return out;
+  const colA = h('div', { class: 'col-a' }, out.slice(0, i));
+  // 橫式：物品詳情排在左欄最上面（CSS order），重畫時左欄捲回頂端
+  requestAnimationFrame(() => (colA.scrollTop = 0));
+  return [h('div', { class: 'equip-split' }, [colA, h('div', { class: 'col-b' }, out.slice(i))])];
+}
+
+function renderEquipInner(ctx: InvContext): HTMLElement[] {
   const s = ctx.state;
   const st = computeStats(s);
   const statsGrid = h('div', { class: 'stat-grid' }, STAT_KEYS.map((k) => h('div', { class: 'stat' }, [h('span', {}, STAT_LABELS[k]), h('b', {}, formatStat(k, st[k]))])));
