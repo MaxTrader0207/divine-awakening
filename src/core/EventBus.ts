@@ -20,7 +20,7 @@ export interface GameEvents {
   'ending:replay': void;
   /** v1.78 每週首領挑戰（選單「地圖」） */
   'weekly:start': { diff: import('@/systems/WeeklyBoss').WeeklyDiff };
-  'menu:open': { tab?: MenuTab };
+  'menu:open': { tab?: MenuTab; /** v1.94 從店門口打開：只顯示這間店 */ shop?: import('@/data/shops').ShopId };
   /** HUD 暫停鈕 */
   'pause:toggle': void;
   'camera:zoom': { delta: number };

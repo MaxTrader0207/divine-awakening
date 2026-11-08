@@ -61,7 +61,7 @@ export class ZoneManager {
       }
       if (!this.triggerArmed.has(t)) continue;
       this.triggerArmed.delete(t);
-      bus.emit('menu:open', { tab: t.tab });
+      bus.emit('menu:open', { tab: t.tab, shop: t.shop });
     }
   }
 

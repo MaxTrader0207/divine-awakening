@@ -219,7 +219,7 @@ export interface ZoneDef {
   /** 敵人出生點（第 2 週起） */
   spawns?: SpawnDef[];
   /** 走進去會開啟選單分頁（主城商店門口） */
-  triggers?: { x: number; z: number; radius: number; tab: 'shop' | 'enhance'; label: string }[];
+  triggers?: { x: number; z: number; radius: number; tab: 'shop' | 'enhance'; label: string; /** v1.94 店面（data/shops.ts） */ shop?: import('./shops').ShopId }[];
   /** 進入需要的等級（未達到時傳送點與地圖會擋下） */
   minLevel?: number;
   /** 掉落裝備的階級（預設：副本層數，野外 1） */

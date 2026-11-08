@@ -59,7 +59,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     hint: '跟著腳邊的金色箭頭，走進城南的光圈。雅典城是安全區，不會有怪物；出城後才會遇到怪物。',
     goal: { type: 'zone', zone: 'grassland' },
     reward: { gold: 30 },
-    targets: { town: { x: 0, z: 30 } },
+    targets: { town: { x: 0, z: 40.5 } },
   },
   {
     id: 'kill',

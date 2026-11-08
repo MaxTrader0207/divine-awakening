@@ -1244,3 +1244,12 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
 .beast-info .beast-sub { color: #ffd9a8; }
 .beast-row.done .beast-sub { color: #9fe58a; }
 .beast-row .go, .beast-row .pill { white-space: nowrap; }
+
+/* ---- v1.94 商店店面 ---- */
+.shop-front { display: grid; gap: 6px; background: linear-gradient(180deg, rgba(255, 211, 107, 0.16), rgba(255, 255, 255, 0.04)); border: 1px solid rgba(255, 211, 107, 0.35); }
+.shop-sign { display: flex; align-items: center; gap: 8px; font-size: 18px; }
+.shop-sign-ico { font-size: 26px; }
+.shop-greet { font-size: 13px; color: var(--text); line-height: 1.5; }
+.shop-greet small { display: block; color: var(--muted); font-size: 11px; }
+.go.wide { width: 100%; padding: 10px; }
+.daily-deals s { color: var(--muted); margin-right: 2px; }

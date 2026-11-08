@@ -1,4 +1,5 @@
 import { bus, type MenuTab } from '@/core/EventBus';
+import type { ShopId } from '@/data/shops';
 import { isZoneUnlocked, type GameState } from '@/core/GameState';
 import { BEAST_ORDER, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, WORLD_FIELDS, ZONES, bossOf, lootTierOf, zoneLabel, zoneName } from '@/data/zones';
 import { COMPANION_LIST, pityLeft } from '@/data/companions';
@@ -95,7 +96,7 @@ export class Menu {
     this.body = h('div', { class: 'menu-body' });
     const tabs = h('div', { class: 'menu-tabs' });
     for (const t of TABS) {
-      const el = h('button', { class: 'menu-tab', onclick: () => this.show(t.id) }, t.label);
+      const el = h('button', { class: 'menu-tab', onclick: () => ((this.shopFront = null), this.show(t.id)) }, t.label);
       this.tabEls.set(t.id, el);
       tabs.appendChild(el);
     }
@@ -106,11 +107,15 @@ export class Menu {
     });
     uiRoot.appendChild(this.root);
 
-    bus.on('menu:open', ({ tab }) => this.open(tab));
+    bus.on('menu:open', ({ tab, shop }) => this.open(tab, shop));
     bus.on('tutorial:changed', () => this.isOpen && this.tab === 'guide' && this.show('guide'));
   }
 
-  open(tab?: MenuTab) {
+  /** v1.94 店面：從店門口打開時只顯示這間店（切換分頁或按「查看全部商品」就清掉） */
+  private shopFront: ShopId | null = null;
+
+  open(tab?: MenuTab, shop?: ShopId) {
+    this.shopFront = shop ?? null;
     this.isOpen = true;
     this.root.classList.add('open');
     this.show(tab ?? this.tab);
@@ -127,6 +132,7 @@ export class Menu {
   }
 
   private show(tab: MenuTab) {
+    if (tab !== 'shop') this.shopFront = null;
     this.tab = tab;
     this.tabEls.forEach((el, id) => el.classList.toggle('active', id === tab));
     this.body.replaceChildren(...this.render(tab));
@@ -184,6 +190,12 @@ export class Menu {
       celebrate: () => this.actions.onCelebrate(),
       useConsumable: (id) => this.actions.onUseConsumable(id),
       rebirth: (cls) => this.actions.onRebirth(cls),
+      shop: this.shopFront,
+      showAllShops: () => {
+        this.shopFront = null;
+        this.show('shop');
+        this.body.scrollTop = 0;
+      },
     };
     if (tab === 'equip') return renderEquip(ctx);
     if (tab === 'enhance') return renderEnhance(ctx);

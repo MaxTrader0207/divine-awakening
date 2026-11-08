@@ -13,6 +13,7 @@ import { DIVINITY, DIV_MAX_POINTS, DIV_STATS, allocPoint, divBonusText, divExpTo
 import { PROFILE_LABEL } from '@/data/gear';
 import { equippedSets, setOf, setTiers } from '@/data/gearSets';
 import { GEM_SHOP, buyGemItem } from '@/systems/GemShop';
+import { DAILY, SHOPS, dailyDeals, dayKey, isHealing, shopName, type ShopId, type ShopSection } from '@/data/shops';
 import { CONSUMABLES, MAX_STACK, consumablesFor, type ConsumableDef } from '@/data/consumables';
 import { setQuickSlot } from '@/systems/Consumables';
 import { CLASSES, type HeroClass } from '@/data/classes';
@@ -42,6 +43,9 @@ export interface InvContext {
   useConsumable(id: string): void;
   /** v1.83 轉生 */
   rebirth(cls: HeroClass): void;
+  /** v1.94 從店門口打開的店面（null＝完整商城）與切回完整商城 */
+  shop?: ShopId | null;
+  showAllShops?(): void;
 }
 
 /** 道具區：職業專屬 / 通用兩組，每列：圖示、名稱、數量（上限 99）、效果、使用 */
@@ -541,74 +545,133 @@ export function renderShop(ctx: InvContext): HTMLElement[] {
       h('button', { class: 'go small', onclick: () => buy(POTION_PRICE[kind] * 9, () => ((s.potions[kind] += 10), true), `${kind === 'hp' ? '紅藥水' : '藍藥水'} ×10`) }, `×10 ${POTION_PRICE[kind] * 9}`),
     ]);
 
-  const out: HTMLElement[] = [
-    h('div', { class: 'card' }, [
-      h('div', { class: 'wallet-line' }, [h('span', { class: 'coin' }), h('b', {}, String(s.gold)), h('span', { class: 'gem' }), h('b', {}, String(s.gems))]),
-    ]),
-    h('div', { class: 'section-title' }, '💎 鑽石商店'),
-    h('div', { class: 'card' }, GEM_SHOP.map((g) => {
-      const why = s.gems < g.price ? null : g.blocked(s);
-      return h('div', { class: 'shop-row' }, [
-        h('span', { class: 'shop-ico' }, g.icon),
-        h('div', { class: 'shop-main' }, [h('b', {}, g.name), h('small', {}, why ? `${g.desc(s)}（${why}）` : g.desc(s))]),
-        h('button', {
-          class: 'go small gem-btn',
-          disabled: s.gems < g.price || !!why,
-          onclick: () => {
-            const r = buyGemItem(s, g.id);
-            if (!r.ok) return ctx.toast(r.why);
-            ctx.toast(`${g.icon} ${g.name}：獲得 ${r.got.join('、')}`);
-            bus.emit('shop:bought');
-            ctx.changed();
-            ctx.rerender();
-          },
-        }, `${g.price}💎`),
-      ]);
-    })),
-    h('div', { class: 'section-title' }, '道具店'),
-    h('div', { class: 'card' }, [potionRow('hp'), potionRow('mp')]),
-    h('div', { class: 'section-title' }, `${CLASSES[s.heroClass].icon} ${CLASSES[s.heroClass].name}專屬道具`),
-    h('div', { class: 'card' }, consumablesFor(s.heroClass).filter((c) => c.cls).map(shopItemRow)),
-    h('div', { class: 'section-title' }, '通用道具'),
-    h('div', { class: 'card' }, CONSUMABLES.map(shopItemRow)),
-    h('div', { class: 'section-title' }, `武器店・防具店（標準裝，擊敗首領解鎖更高階；目前到第 ${maxTier} 階。★神話裝只會從怪物身上掉落）`),
-  ];
-  const gear = h('div', { class: 'card' });
-  for (let tier = 1; tier <= maxTier; tier++) {
-    for (const slot of SLOT_ORDER) {
-      const base = ITEM_BASES[`${slot}_t${tier}`];
-      const stats = Object.entries(base.stats).map(([k, v]) => `${STAT_LABELS[k as keyof Stats]} +${formatStat(k as keyof Stats, v as number)}`).join('　');
-      gear.appendChild(
-        h('div', { class: 'shop-row' }, [
-          h('span', { class: 'shop-ico' }, base.icon),
-          h('div', { class: 'shop-main' }, [h('b', {}, `${base.name}（第 ${tier} 階）`), h('small', {}, stats)]),
-          h('button', { class: 'go small', onclick: () => buy(shopPrice(tier), () => !!addItem(s, base.id, 'common'), base.name) }, String(shopPrice(tier))),
-        ]),
-      );
+  const gearRows = (slots: EquipSlot[]) => {
+    const card = h('div', { class: 'card' });
+    for (let tier = 1; tier <= maxTier; tier++) {
+      for (const slot of slots) {
+        const base = ITEM_BASES[`${slot}_t${tier}`];
+        const stats = Object.entries(base.stats).map(([k, v]) => `${STAT_LABELS[k as keyof Stats]} +${formatStat(k as keyof Stats, v as number)}`).join('　');
+        card.appendChild(
+          h('div', { class: 'shop-row' }, [
+            h('span', { class: 'shop-ico' }, base.icon),
+            h('div', { class: 'shop-main' }, [h('b', {}, `${base.name}（第 ${tier} 階）`), h('small', {}, stats)]),
+            h('button', { class: 'go small', onclick: () => buy(shopPrice(tier), () => !!addItem(s, base.id, 'common'), base.name) }, String(shopPrice(tier))),
+          ]),
+        );
+      }
     }
-  }
-  out.push(gear);
-  out.push(
-    h('div', { class: 'section-title' }, '鑽石兌換'),
-    h('div', { class: 'card' }, [
-      h('div', { class: 'shop-row' }, [
-        h('span', { class: 'shop-ico' }, '💎'),
-        h('div', { class: 'shop-main' }, [h('b', {}, '10 鑽石 → 1000 金幣'), h('small', {}, '鑽石主要來源：擊敗首領')]),
-        h('button', {
-          class: 'go small',
-          onclick: () => {
-            if (s.gems < 10) return ctx.toast('鑽石不足');
-            s.gems -= 10;
-            s.gold += 1000;
-            ctx.toast('兌換 1000 金幣');
-            ctx.changed();
-            ctx.rerender();
-          },
-        }, '兌換'),
+    return card;
+  };
+  const tierNote = `標準裝，擊敗首領解鎖更高階；目前到第 ${maxTier} 階。★神話裝只會從怪物身上掉落`;
+  const clsDef = CLASSES[s.heroClass];
+  // 每個區塊：標題＋內容（店面與完整商城共用）
+  const section = (id: ShopSection): HTMLElement[] => {
+    switch (id) {
+      case 'potions':
+        return [h('div', { class: 'section-title' }, '🧪 藥水'), h('div', { class: 'card' }, [potionRow('hp'), potionRow('mp')])];
+      case 'healing':
+        return [h('div', { class: 'section-title' }, '⚕️ 回復・護盾'), h('div', { class: 'card' }, consumablesFor(s.heroClass).filter(isHealing).map(shopItemRow))];
+      case 'goods':
+        return [h('div', { class: 'section-title' }, '🎒 通用道具'), h('div', { class: 'card' }, CONSUMABLES.filter((c) => !isHealing(c)).map(shopItemRow))];
+      case 'class':
+        return [h('div', { class: 'section-title' }, `${clsDef.icon} ${clsDef.name}專屬道具`), h('div', { class: 'card' }, consumablesFor(s.heroClass).filter((c) => c.cls).map(shopItemRow))];
+      case 'weapons':
+        return [h('div', { class: 'section-title' }, `⚔️ 武器（${tierNote}）`), gearRows(['weapon'])];
+      case 'armor':
+        return [h('div', { class: 'section-title' }, `🛡️ 防具（${tierNote}）`), gearRows(SLOT_ORDER.filter((x) => x !== 'weapon' && x !== 'ring'))];
+      case 'rings':
+        return [h('div', { class: 'section-title' }, `💍 飾品（${tierNote}）`), gearRows(['ring'])];
+      case 'gems':
+        return [
+          h('div', { class: 'section-title' }, '💎 鑽石商店'),
+          h('div', { class: 'card' }, GEM_SHOP.map((g) => {
+            const why = s.gems < g.price ? null : g.blocked(s);
+            return h('div', { class: 'shop-row' }, [
+              h('span', { class: 'shop-ico' }, g.icon),
+              h('div', { class: 'shop-main' }, [h('b', {}, g.name), h('small', {}, why ? `${g.desc(s)}（${why}）` : g.desc(s))]),
+              h('button', {
+                class: 'go small gem-btn',
+                disabled: s.gems < g.price || !!why,
+                onclick: () => {
+                  const r = buyGemItem(s, g.id);
+                  if (!r.ok) return ctx.toast(r.why);
+                  ctx.toast(`${g.icon} ${g.name}：獲得 ${r.got.join('、')}`);
+                  bus.emit('shop:bought');
+                  ctx.changed();
+                  ctx.rerender();
+                },
+              }, `${g.price}💎`),
+            ]);
+          })),
+        ];
+      case 'exchange':
+        return [
+          h('div', { class: 'section-title' }, '鑽石兌換'),
+          h('div', { class: 'card' }, [
+            h('div', { class: 'shop-row' }, [
+              h('span', { class: 'shop-ico' }, '💎'),
+              h('div', { class: 'shop-main' }, [h('b', {}, '10 鑽石 → 1000 金幣'), h('small', {}, '鑽石主要來源：擊敗首領')]),
+              h('button', {
+                class: 'go small',
+                onclick: () => {
+                  if (s.gems < 10) return ctx.toast('鑽石不足');
+                  s.gems -= 10;
+                  s.gold += 1000;
+                  ctx.toast('兌換 1000 金幣');
+                  ctx.changed();
+                  ctx.rerender();
+                },
+              }, '兌換'),
+            ]),
+          ]),
+        ];
+      case 'daily': {
+        const deals = dailyDeals(dayKey(), s.heroClass);
+        const bundle = Math.round((POTION_PRICE.hp + POTION_PRICE.mp) * 10 * DAILY.bundleMul);
+        return [
+          h('div', { class: 'section-title' }, `🐫 旅行商人・今日特價（每天換貨，全部 ${Math.round(DAILY.discount * 10)} 折）`),
+          h('div', { class: 'card daily-deals' }, [
+            h('div', { class: 'shop-row' }, [
+              h('span', { class: 'shop-ico' }, '🎁'),
+              h('div', { class: 'shop-main' }, [h('b', {}, '藥水福袋'), h('small', {}, `紅藥水 ×10＋藍藥水 ×10（原價 ${(POTION_PRICE.hp + POTION_PRICE.mp) * 10}）`)]),
+              h('button', { class: 'go small', onclick: () => buy(bundle, () => ((s.potions.hp += 10), (s.potions.mp += 10), true), '藥水福袋') }, String(bundle)),
+            ]),
+            ...deals.map(({ item: c, price }) =>
+              h('div', { class: 'shop-row' }, [
+                h('span', { class: 'shop-ico' }, c.icon),
+                h('div', { class: 'shop-main' }, [h('b', {}, `${c.name}${s.consumables[c.id] ? `（持有 ${s.consumables[c.id]}/${MAX_STACK}）` : ''}`), h('small', {}, [h('s', {}, String(c.price)), ` ${c.desc}`])]),
+                h('button', {
+                  class: 'go small',
+                  onclick: () => {
+                    if ((s.consumables[c.id] ?? 0) >= MAX_STACK) return ctx.toast(`${c.name}最多 ${MAX_STACK} 個`);
+                    buy(price, () => addConsumable(s, c.id), c.name);
+                  },
+                }, String(price)),
+              ]),
+            ),
+          ]),
+        ];
+      }
+    }
+  };
+  const wallet = h('div', { class: 'card' }, [
+    h('div', { class: 'wallet-line' }, [h('span', { class: 'coin' }), h('b', {}, String(s.gold)), h('span', { class: 'gem' }), h('b', {}, String(s.gems))]),
+  ]);
+  // 店面：從店門口進來只顯示這間店的東西
+  if (ctx.shop) {
+    const def = SHOPS[ctx.shop];
+    const greet = def.greet[new Date().getMinutes() % def.greet.length];
+    return [
+      h('div', { class: 'card shop-front' }, [
+        h('div', { class: 'shop-sign' }, [h('span', { class: 'shop-sign-ico' }, def.icon), h('b', {}, shopName(ctx.shop, clsDef.name))]),
+        h('div', { class: 'shop-greet' }, [h('small', {}, def.keeper), `「${greet}」`]),
+        h('div', { class: 'wallet-line' }, [h('span', { class: 'coin' }), h('b', {}, String(s.gold)), h('span', { class: 'gem' }), h('b', {}, String(s.gems))]),
       ]),
-    ]),
-  );
-  return out;
+      ...def.sections.flatMap(section),
+      h('button', { class: 'go wide ghost', onclick: () => ctx.showAllShops?.() }, '🛒 查看全部商品'),
+    ];
+  }
+  return [wallet, ...(['daily', 'gems', 'potions', 'healing', 'goods', 'class', 'weapons', 'armor', 'rings', 'exchange'] as ShopSection[]).flatMap(section)];
 }
 
 /* ---------------- 工具 ---------------- */
