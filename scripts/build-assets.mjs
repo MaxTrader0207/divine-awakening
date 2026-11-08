@@ -51,6 +51,7 @@ const BARB_ANIMS = ['2H_Melee_Idle', 'Running_A', '2H_Melee_Attack_Slice', '2H_M
 const SUMMONER_ANIMS = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Spellcast_Raise', 'Spellcast_Long', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
 const SWORDSMAN_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Stab', '2H_Melee_Attack_Spinning', 'Dodge_Forward', 'Jump_Full_Short', 'Hit_A', 'Death_A', 'Cheer'];
 const TAMER_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Diagonal', 'Spellcast_Raise', 'Spellcast_Long', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
+const NINJA_ANIMS = ['Idle', 'Running_A', 'Dualwield_Melee_Attack_Slice', 'Dualwield_Melee_Attack_Chop', 'Dualwield_Melee_Attack_Stab', 'Throw', '2H_Melee_Attack_Spinning', 'Dodge_Forward', 'Dodge_Backward', 'Hit_A', 'Death_A', 'Cheer'];
 const SKEL_ANIMS = ['Idle', 'Walking_D_Skeletons', '1H_Melee_Attack_Chop', 'Hit_A', 'Death_C_Skeletons'];
 const SKEL_MAGE_ANIMS = [...SKEL_ANIMS, 'Spellcast_Shoot'];
 
@@ -65,6 +66,8 @@ const CHARACTERS = [
   ['swordsman', 'Rogue.glb', SWORDSMAN_ANIMS, ['Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Knife', 'Throwable']],
   // 訓獸師：蠻族模型（角盔、披風）拿掉斧頭、盾、酒杯，手上另外掛程式鞭子
   ['tamer', 'Barbarian.glb', TAMER_ANIMS, ['1H_Axe_Offhand', 'Barbarian_Round_Shield', '1H_Axe', '2H_Axe', 'Mug']],
+  // 忍者（v1.88）：連帽盜賊模型留著雙手的匕首（Knife、Knife_Offhand），拿掉弩與投擲物
+  ['ninja', 'Rogue_Hooded.glb', NINJA_ANIMS, ['1H_Crossbow', '2H_Crossbow', 'Throwable']],
   ['skeleton_minion', 'Skeleton_Minion.glb', SKEL_ANIMS, []],
   ['skeleton_warrior', 'Skeleton_Warrior.glb', SKEL_ANIMS, []],
   ['skeleton_rogue', 'Skeleton_Rogue.glb', SKEL_ANIMS, []],

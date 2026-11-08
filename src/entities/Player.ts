@@ -190,6 +190,37 @@ export class Player {
         bone.add(w);
       }
     }
+    // 忍者面罩：頭骨上掛一圈遮住口鼻的布（待機姿勢下讓它在世界座標保持水平）
+    const mask = this.anims.mask;
+    const head = mask ? inst.root.getObjectByName('head') : null;
+    if (mask && head) {
+      const poseRig = this.rig ?? new CharacterRig(inst);
+      poseRig.setLoop(this.anims.idle, 0);
+      poseRig.update(0.5);
+      this.rig = poseRig;
+      inst.root.updateMatrixWorld(true);
+      const ws = new THREE.Vector3();
+      head.getWorldScale(ws);
+      const g = new THREE.CylinderGeometry(mask.r, mask.r * 0.92, mask.h, 20, 1, true, -Math.PI * 0.62, Math.PI * 1.24);
+      const mat = new THREE.MeshLambertMaterial({ color: mask.color, side: THREE.DoubleSide });
+      this.look?.apply(mat);
+      const m = new THREE.Mesh(g, mat);
+      const holder = new THREE.Group();
+      const bq = new THREE.Quaternion();
+      head.getWorldQuaternion(bq);
+      holder.quaternion.copy(bq.invert());
+      holder.scale.setScalar(1 / ws.x);
+      m.position.set(0, mask.y, mask.z ?? 0);
+      // 結：後腦勺兩條布尾
+      for (const sx of [-1, 1]) {
+        const tail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 0.03), mat);
+        tail.position.set(sx * 0.08, mask.y - 0.12, -(mask.r + 0.02));
+        tail.rotation.z = sx * 0.35;
+        holder.add(tail);
+      }
+      holder.add(m);
+      head.add(holder);
+    }
     this.body.add(inst.root);
     // 法杖頂端改成隱形的定位點（投射物出生點、施法光效）
     this.staffTip.visible = false;
@@ -216,6 +247,8 @@ export class Player {
   swordIntentT = 0;
   /** 訓獸師「野性咆哮」剩餘秒數（腳下橘色光圈、AUTO 判斷用；野獸本身的增益在 Minion.roarT） */
   wildRoarT = 0;
+  /** 忍者「影分身之術」剩餘秒數（v1.88） */
+  ninjaCloneT = 0;
 
   castBig() {
     this.rig?.playOnce(this.anims.castBig, { timeScale: 1.6 });
@@ -251,6 +284,7 @@ export class Player {
     this.berserkT = 0;
     this.swordIntentT = 0;
     this.wildRoarT = 0;
+    this.ninjaCloneT = 0;
     this.hp = this.stats.maxHp;
     this.mp = this.stats.maxMp;
     this.invulnerable = 2;
@@ -296,6 +330,7 @@ export class Player {
     if (this.berserkT > 0) this.berserkT = Math.max(0, this.berserkT - dt);
     if (this.swordIntentT > 0) this.swordIntentT = Math.max(0, this.swordIntentT - dt);
     if (this.wildRoarT > 0) this.wildRoarT = Math.max(0, this.wildRoarT - dt);
+    if (this.ninjaCloneT > 0) this.ninjaCloneT = Math.max(0, this.ninjaCloneT - dt);
     this.sinceHurt += dt;
     this.rig?.update(dt);
     this.look?.update(this.object.position.y, HERO_HEIGHT);
@@ -411,7 +446,7 @@ function buildWhip(): THREE.Object3D {
 }
 
 /** 貼圖換色：把指定色相範圍的像素轉成新色相（保留明暗與飽和度），回傳新的 CanvasTexture */
-function recolorTexture(src: THREE.Texture, rc: { from: number; to: number; hue: number; light?: number; maxL?: number }): THREE.Texture {
+function recolorTexture(src: THREE.Texture, rc: { from: number; to: number; hue: number; light?: number; maxL?: number; sat?: number }): THREE.Texture {
   const img = src.image as CanvasImageSource & { width: number; height: number };
   if (!img || !img.width) return src;
   const cv = document.createElement('canvas');
@@ -430,7 +465,7 @@ function recolorTexture(src: THREE.Texture, rc: { from: number; to: number; hue:
     const deg = hsl.h * 360;
     // maxL：太亮的不換（訓獸師：紅布換綠，但同色相、比較亮的皮膚不動）
     if (hsl.s < 0.18 || deg < rc.from || deg > rc.to || hsl.l > (rc.maxL ?? 1)) continue;
-    c.setHSL(rc.hue / 360, Math.min(1, hsl.s * 0.9), hsl.l * (rc.light ?? 1));
+    c.setHSL(rc.hue / 360, Math.min(1, hsl.s * (rc.sat ?? 0.9)), hsl.l * (rc.light ?? 1));
     d[i] = c.r * 255;
     d[i + 1] = c.g * 255;
     d[i + 2] = c.b * 255;

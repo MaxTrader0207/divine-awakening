@@ -6,7 +6,7 @@ import type { SkillDef, Stats } from './types';
  * 新增職業：在 CLASSES 加一筆（屬性、技能、模型動畫、武器名稱），
  * 技能效果寫在 systems/SkillSystem.ts 的 cast()（依 skill.id 分派）。
  */
-export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker' | 'summoner' | 'swordsman' | 'tamer';
+export type HeroClass = 'mage' | 'archer' | 'knight' | 'berserker' | 'summoner' | 'swordsman' | 'tamer' | 'ninja';
 
 /** 模型動畫名稱對應（KayKit 動畫名） */
 export interface HeroAnimSet {
@@ -22,10 +22,12 @@ export interface HeroAnimSet {
   /** 模型自發光顏色（職業靈光） */
   tint?: number;
   /** 貼圖換色：色相落在 [from, to]（度）的像素轉成 hue 度（召喚師：綠色布料 → 深紫） */
-  recolor?: { from: number; to: number; hue: number; light?: number; maxL?: number };
+  recolor?: { from: number; to: number; hue: number; light?: number; maxL?: number; sat?: number };
   /** 手上額外拿的道具（assets/models 的靜態模型 id、長度公尺、右手 r / 左手 l） */
   /** 手上的道具：length 全長（公尺）、thin 橫向粗細倍率（預設 1）、grip 握點離底端的比例（預設 0.35）；id 'whip' = 程式鞭子（訓獸師） */
   prop?: { id: string; length: number; hand: 'r' | 'l'; thin?: number; grip?: number };
+  /** 遮住口鼻的面罩（忍者，v1.88）：顏色、相對頭骨的高度 / 半徑 / 前移（公尺，世界尺度） */
+  mask?: { color: number; y: number; r: number; h: number; z?: number };
   /** 平滑著色的摺角（度）：夾角小於此值的相鄰面法線平均（預設 60，0＝維持原本的平面著色） */
   smooth?: number;
 }
@@ -171,6 +173,22 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
     ],
     anims: { model: 'tamer', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 5, to: 20.5, hue: 118, light: 0.85, maxL: 0.56 }, prop: { id: 'whip', length: 1.6, hand: 'r' } },
   },
+  ninja: {
+    id: 'ninja',
+    name: '忍者',
+    desc: '從東方渡海而來的影之刺客：雙刃連斬、手裏劍、瞬身繞背，影分身讓每一刀都斬兩次',
+    icon: '🥷',
+    base: { maxHp: 230, maxMp: 105, atk: 24, def: 6.5, pen: 0.05, moveSpeed: 7.1, critRate: 0.14, critDmg: 1.75 },
+    perLevel: { maxHp: 45, maxMp: 10, atk: 3.9, def: 1.5 },
+    skills: [
+      { id: 'kunai_slash', name: '雙刃連斬', slot: 'basic', mpCost: 0, cooldown: 0.38, power: 0.8, range: 2.5, shape: 'cone', arc: 1.9, icon: '⚔', color: 0xc8b8ff, auto: 'single', anim: 'Dualwield_Melee_Attack_Slice' },
+      { id: 'shuriken', name: '手裏劍', slot: 'Q', mpCost: 11, cooldown: 3.5, power: 1.0, range: 11, shape: 'projectile', count: 3, icon: '✴', color: 0xd8d0ff, auto: 'single', anim: 'Throw' },
+      { id: 'shadow_step', name: '瞬身斬', slot: 'W', mpCost: 14, cooldown: 6, power: 2.0, range: 9, shape: 'dash', icon: '🌒', color: 0x9a7aff, auto: 'gap', anim: 'Dualwield_Melee_Attack_Stab' },
+      { id: 'smoke_bomb', name: '煙玉・爆遁', slot: 'E', mpCost: 26, cooldown: 10, power: 1.4, range: 0, shape: 'circle', radius: 4.2, waves: 2, icon: '💨', color: 0xb0a8c8, auto: 'self-aoe', anim: 'Dodge_Backward' },
+      { id: 'shadow_clone', name: '影分身之術', slot: 'R', mpCost: 25, cooldown: 28, power: 0, range: 0, shape: 'circle', duration: 8, icon: '👥', color: 0x8a6aff, auto: 'burst', anim: '2H_Melee_Attack_Spinning' },
+    ],
+    anims: { model: 'ninja', idle: 'Idle', run: 'Running_A', cast: 'Dualwield_Melee_Attack_Slice', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 250, light: 0.42, sat: 0.35 }, mask: { color: 0x1a1824, y: 0.17, r: 0.72, h: 0.34, z: 0.01 } },
+  },
 };
 
-export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker', 'summoner', 'swordsman', 'tamer'];
+export const CLASS_LIST: HeroClass[] = ['mage', 'archer', 'knight', 'berserker', 'summoner', 'swordsman', 'tamer', 'ninja'];

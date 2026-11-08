@@ -10,7 +10,7 @@ import { Ambience, type AmbienceId } from './Ambience';
  * ------------------------------------------------------------
  * - 瀏覽器規定要使用者互動後才能出聲：第一次觸控 / 按鍵時 unlock()。
  * - 音效：短促的合成音（振盪器 + 包絡 + 濾波）。v1.87：
- *   · 7 個職業各有自己的技能音效（SKILL_SFX，依技能 id）；
+ *   · 8 個職業各有自己的技能音效（SKILL_SFX，依技能 id）；
  *   · 打擊類音效每次音高 / 音量微變化（不會聽膩），帶世界座標的音效依左右位置分聲道、越遠越小聲；
  *   · 主輸出加限幅器（DynamicsCompressor），一次打很多隻也不會爆音；同時發聲數有上限；
  *   · 首領怒吼、重擊、倒下、稀有掉落等事件音效；大事件時音樂短暫壓低（duck）。
@@ -26,6 +26,7 @@ export type SfxId =
   | 'arrow' | 'volley' | 'pierce' | 'arrowRain' | 'backstep'
   | 'sword' | 'swordQi' | 'swiftStep' | 'swordRain' | 'intent'
   | 'whip' | 'howl' | 'screech' | 'growl' | 'wildRoar'
+  | 'kunai' | 'shuriken' | 'shadowStep' | 'smoke' | 'clone'
   | 'bossRoar' | 'impact' | 'death' | 'rare' | 'mythic';
 
 /** 技能 id → 音效（v1.87：每個職業都有自己的聲音；沒列到的依欄位用 SLOT_SFX） */
@@ -44,12 +45,14 @@ export const SKILL_SFX: Record<string, SfxId> = {
   sword_strike: 'sword', sword_qi: 'swordQi', swift_step: 'swiftStep', sword_rain: 'swordRain', sword_intent: 'intent',
   // 訓獸師
   beast_whip: 'whip', call_hounds: 'howl', call_eagle: 'screech', call_bear: 'growl', wild_roar: 'wildRoar',
+  // 忍者（v1.88）
+  kunai_slash: 'kunai', shuriken: 'shuriken', shadow_step: 'shadowStep', smoke_bomb: 'smoke', shadow_clone: 'clone',
 };
 const SLOT_SFX: Record<string, SfxId> = { basic: 'bolt', Q: 'fireball', W: 'frost', E: 'flame', R: 'blink', potion: 'potion' };
 
 /** 每次音高隨機變化的幅度（打擊類多一點，介面音不變） */
 const JITTER: Partial<Record<SfxId, number>> = {
-  hit: 0.14, crit: 0.08, hurt: 0.1, kill: 0.12, coin: 0.06, pickup: 0.04, arrow: 0.08, sword: 0.1, slash: 0.1, cleave: 0.08, whip: 0.1,
+  kunai: 0.12, shuriken: 0.06, hit: 0.14, crit: 0.08, hurt: 0.1, kill: 0.12, coin: 0.06, pickup: 0.04, arrow: 0.08, sword: 0.1, slash: 0.1, cleave: 0.08, whip: 0.1,
   bolt: 0.06, shadow: 0.06, impact: 0.08,
 };
 /** 太吵時先丟掉的音效（同時發聲超過上限時） */
@@ -341,6 +344,13 @@ export class AudioSystem {
       case 'screech': this.glide('sawtooth', 1600, 2700, 1300, t, 0.45, 0.06); this.noise(t, 0.3, 3200, 0.15, 'bandpass'); this.sweep(t + 0.1, 0.3, 400, 1800, 0.25); break;
       case 'growl': this.tone('sawtooth', 85, 70, t, 0.6, 0.18); this.noise(t, 0.55, 350, 0.5); this.tone('square', 130, 100, t, 0.45, 0.05); break;
       case 'wildRoar': this.tone('sawtooth', 120, 80, t, 0.7, 0.2); this.noise(t, 0.6, 700, 0.45); this.glide('triangle', 300, 520, 380, t + 0.1, 0.6, 0.06); break;
+
+      /* ---- 忍者 ---- */
+      case 'kunai': this.noise(t, 0.06, 6200, 0.26, 'highpass'); this.noise(t + 0.07, 0.06, 5400, 0.22, 'highpass'); this.tone('sine', 3100, 2800, t + 0.01, 0.08, 0.035); break;
+      case 'shuriken': for (let i = 0; i < 3; i++) { this.noise(t + i * 0.03, 0.22, 3800 + i * 400, 0.12, 'bandpass'); this.tone('triangle', 1900 + i * 120, 1500, t + i * 0.03, 0.2, 0.03); } break;
+      case 'shadowStep': this.noise(t, 0.12, 900, 0.35); this.sweep(t + 0.02, 0.2, 3600, 700, 0.3); this.tone('sine', 220, 660, t, 0.15, 0.06); break;
+      case 'smoke': this.tone('sine', 160, 60, t, 0.18, 0.35); this.noise(t, 0.08, 2600, 0.35); this.noise(t + 0.05, 1.1, 1400, 0.22, 'bandpass'); break;
+      case 'clone': [0, 3, 7, 10].forEach((n, i) => this.tone('triangle', midi(62 + n), midi(62 + n), t + i * 0.06, 0.55, 0.08)); this.sweep(t, 0.5, 400, 2400, 0.2); this.noise(t + 0.3, 0.3, 900, 0.18); break;
 
       /* ---- 事件 ---- */
       case 'bossRoar':

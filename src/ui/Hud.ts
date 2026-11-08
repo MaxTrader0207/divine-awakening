@@ -31,6 +31,7 @@ const CLASS_TINT: Record<HeroClass, [string, string]> = {
   summoner: ['#c38bff', '#4a1f6a'],
   swordsman: ['#7fe0ff', '#1f5a7a'],
   tamer: ['#f0c070', '#6a4218'],
+  ninja: ['#b8a8ff', '#2a1f4a'],
 };
 
 /**

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CLASS_LIST } from './classes';
 import { GEAR_SETS, equippedSets, setBonusTotal, setOf, setTiers } from './gearSets';
 import { ITEM_BASES, SLOT_ORDER } from './items';
 import { newGameState } from '@/core/GameState';
@@ -7,7 +8,7 @@ import { GEM_SHOP, buyGemItem, goldBag, setToComplete } from '@/systems/GemShop'
 
 describe('套裝效果', () => {
   it('每個職業 20 套，每套 6 件都存在、同一階', () => {
-    expect(GEAR_SETS.size).toBe(7 * 20);
+    expect(GEAR_SETS.size).toBe(CLASS_LIST.length * 20);
     for (const set of GEAR_SETS.values()) {
       for (const slot of SLOT_ORDER) {
         const b = ITEM_BASES[set.pieces[slot]];

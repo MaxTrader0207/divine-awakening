@@ -42,6 +42,12 @@ import { MINIONS, type MinionId } from '@/data/minions';
  *  W     嗜血       6 秒內造成傷害的 18% 回血
  *  E     斬殺       前方重擊，目標血量低於 35% 時傷害 ×2
  *  R     狂暴       8 秒攻擊力 +25%、普攻冷卻 ×0.6、怒氣獲得 ×1.5
+ * 忍者（v1.88，數值在 NINJA）
+ *  普攻  雙刃連斬   前方扇形 2.5m，四下一輪，第四下雙刃突刺 ×1.6
+ *  Q     手裏劍     扇形 3 枚、貫穿
+ *  W     瞬身斬     瞬移到目標背後斬擊（必定爆擊），短暫無敵；沒目標往前瞬身
+ *  E     煙玉・爆遁 自身周圍 r4.2 兩段傷害＋緩速，自己 1 秒無敵
+ *  R     影分身之術 8 秒：普攻與手裏劍被影子追擊一次（50%），爆擊率 +15%
  * 召喚師（召喚物 AI 在 MinionManager）
  *  普攻  冥河暗箭     追蹤單體（傷害較低，主力是召喚物）
  *  Q     斯巴達亡靈     召喚 2 隻近戰骷髏（上限 4，存在 20 秒）
@@ -62,6 +68,8 @@ export const BERSERK = { atk: 1.25, basicCd: 0.6, rage: 1.5 };
 /** 斬殺：低血量門檻與倍率 */
 export const EXECUTE = { threshold: 0.35, mul: 2 };
 /** 劍俠：快劍第三下突刺（倍率、距離）；人劍合一（普攻冷卻、爆擊率、爆擊傷害、附帶劍氣倍率） */
+/** 忍者（v1.88）：連斬第四下倍率；影分身（追擊倍率、追擊延遲、爆擊率加成）；煙玉（緩速秒數、無敵秒數）；瞬身斬（背後距離、無敵） */
+export const NINJA = { finisherMul: 1.6, cloneMul: 0.5, cloneDelay: 0.12, cloneCrit: 0.15, smokeSlow: 3, smokeInvuln: 1, behind: 1.1, stepInvuln: 0.4 };
 export const SWORD = { thrustMul: 1.5, thrustRange: 3.6, intentCd: 0.75, intentCrit: 0.2, intentCritDmg: 0.2, intentQi: 0.3 };
 
 export interface SkillContext {
@@ -132,11 +140,11 @@ export class SkillSystem {
     this.potionCd = Math.max(0, this.potionCd - dt);
     // 守護（藍）/ 嗜血（紅）/ 狂暴（橘）：腳下持續出現光圈
     const p = this.ctx.player;
-    if (p.guardT > 0 || p.bloodlustT > 0 || p.berserkT > 0 || p.swordIntentT > 0 || p.wildRoarT > 0) {
+    if (p.guardT > 0 || p.bloodlustT > 0 || p.berserkT > 0 || p.swordIntentT > 0 || p.wildRoarT > 0 || p.ninjaCloneT > 0) {
       this.guardFx -= dt;
       if (this.guardFx <= 0) {
         this.guardFx = 0.35;
-        const color = p.guardT > 0 ? 0x8fd4ff : p.berserkT > 0 ? 0xff6a2a : p.swordIntentT > 0 ? 0x8fe8ff : p.wildRoarT > 0 ? 0xff9a3c : 0xff4a5a;
+        const color = p.guardT > 0 ? 0x8fd4ff : p.berserkT > 0 ? 0xff6a2a : p.swordIntentT > 0 ? 0x8fe8ff : p.wildRoarT > 0 ? 0xff9a3c : p.ninjaCloneT > 0 ? 0x8a6aff : 0xff4a5a;
         this.ctx.effects.ring(p.pos.x, p.pos.z, 1.5, 1.1, color, 0.35);
       }
     }
@@ -261,6 +269,21 @@ export class SkillSystem {
         break;
       case 'wild_roar':
         ok = this.castWildRoar(sk);
+        break;
+      case 'kunai_slash':
+        ok = this.castKunai(sk);
+        break;
+      case 'shuriken':
+        ok = this.castShuriken(sk);
+        break;
+      case 'shadow_step':
+        ok = this.castShadowStep(sk);
+        break;
+      case 'smoke_bomb':
+        ok = this.castSmokeBomb(sk);
+        break;
+      case 'shadow_clone':
+        ok = this.castShadowClone(sk);
         break;
     }
     if (!ok) return false;
@@ -877,6 +900,164 @@ export class SkillSystem {
     fx.pillar(p.pos.x, p.pos.z, 0.9, 0x8fe8ff, 0.6);
     fx.ring(p.pos.x, p.pos.z, 0.5, 3.5, sk.color, 0.5);
     bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '人劍合一', kind: 'info' });
+    return true;
+  }
+
+  /* ---------------- 忍者（v1.88） ---------------- */
+
+  private kunaiCombo = 0;
+  private kunaiComboT = 0;
+
+  /** 影分身中：爆擊率提高 */
+  private ninjaStats() {
+    const p = this.ctx.player;
+    return p.ninjaCloneT > 0 ? { ...p.stats, critRate: p.stats.critRate + NINJA.cloneCrit } : p.stats;
+  }
+
+  /** 影分身在旁邊現身（左右各一個紫色殘影） */
+  private cloneFx(dx: number, dz: number) {
+    const p = this.ctx.player;
+    const fx = this.ctx.effects;
+    for (const side of [-1, 1]) fx.pillar(p.pos.x + dz * side * 1.1 - dx * 0.4, p.pos.z - dx * side * 1.1 - dz * 0.4, 0.35, 0x8a6aff, 0.25);
+  }
+
+  private castKunai(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const now = performance.now() / 1000;
+    if (now - this.kunaiComboT > 1.1) this.kunaiCombo = 0;
+    this.kunaiComboT = now;
+    const step = this.kunaiCombo % 4;
+    this.kunaiCombo++;
+    const finisher = step === 3;
+    const range = finisher ? sk.range + 0.6 : sk.range;
+    const { dx, dz } = this.meleeAim(range);
+    p.cast(dx, dz);
+    p.act(finisher ? 'Dualwield_Melee_Attack_Stab' : step % 2 === 0 ? 'Dualwield_Melee_Attack_Slice' : 'Dualwield_Melee_Attack_Chop', p.ninjaCloneT > 0 ? 3 : 2.6);
+    const facing = Math.atan2(dx, dz);
+    const fx = this.ctx.effects;
+    fx.arc(p.pos.x, p.pos.z, facing + (step % 2 === 0 ? 0.3 : -0.3), finisher ? 0.35 : 0.8, range, sk.color, 0.16, 1.0 + p.groundY);
+    if (finisher) fx.arc(p.pos.x, p.pos.z, facing, 0.25, range, 0xffffff, 0.2, 1.0 + p.groundY);
+    const power = sk.power * (finisher ? NINJA.finisherMul : 1);
+    const arc = finisher ? 1.1 : sk.arc ?? 1.9;
+    damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, range, arc, this.ninjaStats(), power);
+    // 影分身：影子緊接著再斬一次
+    if (p.ninjaCloneT > 0) {
+      this.delayed.push({
+        t: NINJA.cloneDelay,
+        run: () => {
+          if (!p.alive) return;
+          fx.arc(p.pos.x, p.pos.z, facing - (step % 2 === 0 ? 0.3 : -0.3), 0.8, range, 0x8a6aff, 0.16, 1.0 + p.groundY);
+          damageCone(this.ctx.enemies.enemies, p.pos.x, p.pos.z, dx, dz, range, arc, this.ninjaStats(), power * NINJA.cloneMul);
+        },
+      });
+    }
+    return true;
+  }
+
+  private throwStars(dx: number, dz: number, sk: SkillDef, power: number, color: number) {
+    const n = sk.count ?? 3;
+    const spread = 0.42;
+    const base = Math.atan2(dx, dz);
+    for (let i = 0; i < n; i++) {
+      const a = base - spread / 2 + (spread * i) / Math.max(1, n - 1);
+      const ax = Math.sin(a);
+      const az = Math.cos(a);
+      this.ctx.projectiles.fire({ from: this.fireFrom(ax, az), dirX: ax, dirZ: az, target: null, attacker: this.ninjaStats(), power, range: sk.range, color, speed: 26, size: 0.8, pierce: true });
+    }
+  }
+
+  private castShuriken(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const { dx, dz } = this.aim(sk.range);
+    p.cast(dx, dz);
+    p.act(sk.anim, 2.4);
+    this.throwStars(dx, dz, sk, sk.power, sk.color);
+    if (p.ninjaCloneT > 0) {
+      this.cloneFx(dx, dz);
+      this.delayed.push({ t: NINJA.cloneDelay, run: () => p.alive && this.throwStars(dx, dz, sk, sk.power * NINJA.cloneMul, 0x8a6aff) });
+    }
+    return true;
+  }
+
+  private castShadowStep(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const fx = this.ctx.effects;
+    const target = this.ctx.targets.acquire(p.pos.x, p.pos.z, sk.range);
+    fx.pillar(p.pos.x, p.pos.z, 0.5, sk.color, 0.3);
+    fx.disc(p.pos.x, p.pos.z, 1.2, 0x3a2a5a, 0.4, 0.4);
+    const col = this.ctx.collision();
+    if (target) {
+      // 繞到目標背後（從玩家看過去的另一側）
+      let dx = target.pos.x - p.pos.x;
+      let dz = target.pos.z - p.pos.z;
+      const l = Math.hypot(dx, dz) || 1;
+      dx /= l;
+      dz /= l;
+      const back = target.radius + NINJA.behind;
+      p.pos.x = target.pos.x + dx * back;
+      p.pos.z = target.pos.z + dz * back;
+      col.resolve(p.pos, p.radius);
+      // 轉身面向目標的背
+      const fx2 = target.pos.x - p.pos.x;
+      const fz2 = target.pos.z - p.pos.z;
+      p.facing = Math.atan2(fx2, fz2);
+      p.act(sk.anim, 2.6);
+      // 背刺：必定爆擊
+      damageEnemy(target, { ...this.ninjaStats(), critRate: 1 }, sk.power);
+      fx.arc(target.pos.x, target.pos.z, p.facing + Math.PI, 0.6, 1.8, 0xffffff, 0.22, 1 + target.groundY);
+      fx.ring(target.pos.x, target.pos.z, 0.3, 1.4, sk.color, 0.3);
+    } else {
+      const mv = this.ctx.moveInput();
+      const ml = Math.hypot(mv.x, mv.z);
+      const dx = ml > 0.1 ? mv.x / ml : Math.sin(p.facing);
+      const dz = ml > 0.1 ? mv.z / ml : Math.cos(p.facing);
+      p.dodge();
+      const steps = 20;
+      for (let i = 0; i < steps; i++) {
+        p.pos.x += (dx * 6) / steps;
+        p.pos.z += (dz * 6) / steps;
+        col.resolve(p.pos, p.radius);
+      }
+      p.facing = Math.atan2(dx, dz);
+    }
+    p.invulnerable = Math.max(p.invulnerable, NINJA.stepInvuln);
+    fx.pillar(p.pos.x, p.pos.z, 0.5, sk.color, 0.3);
+    return true;
+  }
+
+  private castSmokeBomb(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    const r = sk.radius ?? 4.2;
+    p.act(sk.anim, 1.8);
+    const fx = this.ctx.effects;
+    const x = p.pos.x;
+    const z = p.pos.z;
+    fx.disc(x, z, r, 0x6a6080, 0.55, 1.2);
+    fx.ring(x, z, 0.4, r * 1.1, sk.color, 0.5);
+    p.invulnerable = Math.max(p.invulnerable, NINJA.smokeInvuln);
+    const stats = this.ninjaStats();
+    const waves = sk.waves ?? 2;
+    for (let w = 0; w < waves; w++) {
+      this.delayed.push({
+        t: 0.05 + w * 0.45,
+        run: () => {
+          fx.disc(x, z, r * (0.8 + w * 0.15), 0x8a80a8, 0.35, 0.8);
+          damageArea(this.ctx.enemies.enemies, x, z, r, stats, sk.power, (e) => e.applySlow(NINJA.smokeSlow, 0.5));
+        },
+      });
+    }
+    return true;
+  }
+
+  private castShadowClone(sk: SkillDef): boolean {
+    const p = this.ctx.player;
+    p.ninjaCloneT = sk.duration ?? 8;
+    p.act(sk.anim, 1.8);
+    const fx = this.ctx.effects;
+    this.cloneFx(Math.sin(p.facing), Math.cos(p.facing));
+    fx.ring(p.pos.x, p.pos.z, 0.5, 3.2, sk.color, 0.5);
+    fx.disc(p.pos.x, p.pos.z, 2.2, 0x3a2a5a, 0.4, 0.6);
+    bus.emit('float:text', { x: p.pos.x, y: 2.6 + p.groundY, z: p.pos.z, text: '影分身之術', kind: 'info' });
     return true;
   }
 

@@ -421,6 +421,27 @@ export const CLASS_CONSUMABLES: ConsumableDef[] = [
   c('tamer', 'potnia_crown', '萬獸女主之冠', '👑', '45 秒內造成傷害的 12% 回血', '古老的「萬獸女主」，野獸都向她低頭', 360, { type: 'buff', stat: 'leech', value: 0.12, duration: 45 }, 3),
   c('tamer', 'helios_reins', '赫利俄斯日車韁繩', '☀️', '30 秒內技能冷卻快 50%', '駕著四匹火馬拉的日車橫越天空的韁繩', 400, { type: 'buff', stat: 'cdr', value: 0.5, duration: 30 }, 2),
   c('tamer', 'beast_mother', '厄喀德那獸母之血', '🩸', '立即野性咆哮 15 秒：附近野獸回血、攻擊與攻速大增', '萬怪之母的血，讓所有野獸都把你當成了牠們的母親', 450, { type: 'roar', duration: 15 }, 2),
+  // ---- 忍者（v1.88）：夜、睡、死、詭計——希臘神話裡屬於黑夜的神祇 ----
+  c('ninja', 'nyx_dew', '倪克斯夜露', '💧', '立即回復 50% HP', '夜之女神披上黑紗時落下的露水', 45, { type: 'heal', hp: 0.5 }, 12),
+  c('ninja', 'lethe_water', '勒忒忘川水', '🫗', '立即回復 50% MP', '喝一口就忘了疲憊的冥府之水', 40, { type: 'heal', mp: 0.5 }, 12),
+  c('ninja', 'hypnos_poppy', '許普諾斯罌粟', '🌺', '20 秒內持續回復共 80% HP', '睡神枕邊的罌粟，讓傷口在夢裡癒合', 110, { type: 'regen', total: 0.8, duration: 20 }, 8),
+  c('ninja', 'hermes_sandal', '赫密士夜行草鞋', '🩴', '40 秒內移動速度 +40%', '盜賊之神偷走阿波羅牛群那晚穿的草鞋', 100, { type: 'buff', stat: 'speed', value: 0.4, duration: 40 }, 6),
+  c('ninja', 'autolycus_pick', '奧托呂科斯開鎖針', '🪡', '60 秒內爆擊率 +20%', '赫密士之子、盜賊之王最得意的小工具', 150, { type: 'buff', stat: 'crit', value: 0.2, duration: 60 }, 4),
+  c('ninja', 'medea_venom', '美狄亞毒刃油', '🧪', '60 秒內攻擊力 +25%', '科爾基斯女巫調出來塗在刀刃上的毒', 160, { type: 'buff', stat: 'atk', value: 0.25, duration: 60 }, 4),
+  c('ninja', 'sisyphus_wit', '西西弗斯詭計', '🎲', '30 秒內技能冷卻快 30%', '騙過死神兩次的國王留下的小聰明', 150, { type: 'buff', stat: 'cdr', value: 0.3, duration: 30 }, 4),
+  c('ninja', 'thanatos_feather', '塔納托斯死神黑羽', '🪶', '60 秒內爆擊傷害 +50%', '死神翅膀上掉下的一根黑羽', 170, { type: 'buff', stat: 'critDmg', value: 0.5, duration: 60 }, 4),
+  c('ninja', 'erebus_smoke', '厄瑞玻斯黑煙', '🌫️', '對周圍 7 公尺造成 3 倍傷害並緩速', '幽冥之神吐出的一口黑煙', 130, { type: 'nova', power: 3, radius: 7, color: 0x8a7ab8, slow: 3 }, 5),
+  c('ninja', 'morpheus_dream', '墨菲斯夢境', '💭', '所有技能冷卻立即轉好', '夢神讓時間在夢裡倒流', 200, { type: 'cdReset' }, 3),
+  c('ninja', 'hades_helm', '黑帝斯隱身盔', '🪖', '3 秒內無敵', '冥王借給珀耳修斯的隱身頭盔', 160, { type: 'invuln', duration: 3 }, 3),
+  c('ninja', 'nemesis_blood', '涅墨西斯之血', '🩸', '45 秒內造成傷害的 12% 回血', '復仇女神從不讓仇人全身而退', 180, { type: 'buff', stat: 'leech', value: 0.12, duration: 45 }, 3),
+  c('ninja', 'nyx_veil', '倪克斯夜幕', '🌌', '獲得最大 HP 45% 的護盾（30 秒）', '夜之女神的面紗，連宙斯都不敢掀開', 210, { type: 'shield', ratio: 0.45, duration: 30 }, 3),
+  c('ninja', 'hecate_torch', '赫卡忒火炬', '🔥', '立即回復 100% HP 與 MP', '十字路口女神為迷路者點亮的火炬', 250, { type: 'heal', hp: 1, mp: 1 }, 2),
+  c('ninja', 'thanatos_scythe', '塔納托斯冥鐮', '🌘', '對周圍 7 公尺造成 5 倍攻擊力的傷害', '死神親手收割靈魂的鐮刀', 260, { type: 'nova', power: 5, radius: 7, color: 0x9a7aff }, 2),
+  c('ninja', 'odysseus_horse', '奧德修斯木馬', '🐴', '60 秒內爆擊傷害 +70%', '藏著伏兵、騙開特洛伊城門的木馬', 380, { type: 'buff', stat: 'critDmg', value: 0.7, duration: 60 }, 3),
+  c('ninja', 'eris_apple', '厄里斯紛爭金蘋果', '🍎', '60 秒內爆擊率 +25%', '一顆蘋果，就點燃了整場特洛伊戰爭', 360, { type: 'buff', stat: 'crit', value: 0.25, duration: 60 }, 3),
+  c('ninja', 'styx_oath', '斯堤克斯之誓', '🌊', '60 秒內攻擊力 +35%', '連眾神都不敢違背的冥河誓約', 360, { type: 'buff', stat: 'atk', value: 0.35, duration: 60 }, 3),
+  c('ninja', 'chaos_shadow', '卡俄斯原初之影', '🕳️', '4 秒內無敵', '萬物誕生之前就存在的黑暗', 400, { type: 'invuln', duration: 4 }, 2),
+  c('ninja', 'tartarus_gale', '塔爾塔洛斯陰風', '🌪️', '對周圍 9 公尺造成 5.5 倍傷害並緩速', '從無底深淵吹上來的陰風', 440, { type: 'nova', power: 5.5, radius: 9, color: 0x7a5ad8, slow: 3 }, 2),
 ];
 
 /** 某職業看得到的所有道具（共用＋專屬） */

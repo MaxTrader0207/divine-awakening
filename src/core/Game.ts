@@ -1677,6 +1677,7 @@ export class Game {
     if (p.berserkT > 0) out.push({ icon: '🔥', label: '狂暴', t: p.berserkT });
     if (p.swordIntentT > 0) out.push({ icon: '☯', label: '人劍合一', t: p.swordIntentT });
     if (p.wildRoarT > 0) out.push({ icon: '🦁', label: '野性咆哮', t: p.wildRoarT });
+    if (p.ninjaCloneT > 0) out.push({ icon: '👥', label: '影分身', t: p.ninjaCloneT });
     if (p.invulnerable > 0.4) out.push({ icon: '✨', label: '無敵', t: p.invulnerable });
     const BUFF_ICON: Record<BuffStat, [string, string]> = {
       atk: ['⚔️', '攻擊'], def: ['🫒', '減傷'], speed: ['💨', '移速'], crit: ['🎯', '爆擊'],

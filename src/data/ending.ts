@@ -42,4 +42,5 @@ export const ENDING_QUOTE: Partial<Record<HeroClass, string>> = {
   summoner: '冥府的門開著，我的軍團還會更大。',
   swordsman: '劍意已成，接下來是問劍於天。',
   tamer: '萬獸之後，連神獸都會追隨我的鞭聲。',
+  ninja: '影子從不留下名字，但這片土地會記得有人守過它的夜晚。',
 };
