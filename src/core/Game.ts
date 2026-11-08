@@ -449,6 +449,10 @@ export class Game {
       collision: this.zones.current?.collision as never,
       hitPlayer: (e, power) => this.hitPlayer(e, power),
       rangedAttack: (e, windup, x, z) => {
+        // v1.91：真的有一發法球從怪物身上飛過去，落地時間＝預警結束（以前預警時間到就直接在腳下爆開）
+        const d = Math.hypot(x - e.pos.x, z - e.pos.z);
+        const flight = Math.min(windup * 0.8, Math.max(0.3, d / 14));
+        this.effects.lob(e.pos.x, e.aimY - this.effects.heightAt(e.pos.x, e.pos.z), e.pos.z, x, z, windup - flight, flight, 0xb48cff, 0.28, 1 + d * 0.08);
         this.telegraphs.add({ kind: 'circle', x, z, r: 1.6 }, windup, (inside) => {
           this.effects.pillar(x, z, 0.7, 0xb48cff, 0.45);
           this.effects.disc(x, z, 1.6, 0x8a5aff, 0.35, 0.6);

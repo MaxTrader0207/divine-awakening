@@ -38,6 +38,8 @@ const LEAP_AIR_PER_M = 0.035;
 const LEAP_AIR_MAX = 0.95;
 /** 飛撲起跳前至少蹲多久（秒），玩家看得出要跳了 */
 const LEAP_CROUCH = 0.3;
+/** 落雨招：落石從高空落下的時間（秒） */
+const RAIN_FALL = 0.35;
 /** 能打到遠處的招式（風箏時優先） */
 const REACHING = new Set<BossSkillDef['pattern']>(['leap', 'dash', 'rain', 'line', 'multiLine']);
 
@@ -58,6 +60,9 @@ interface Motion {
   hitW?: number;
   hitDone?: boolean;
   onHit?: () => void;
+  /** 衝撞：招式威力、已撞過的召喚物 */
+  power?: number;
+  hitMinions?: Set<Minion>;
   /** 飛撲：已經起跳（揚塵只放一次）；衝撞：上次留下煙塵的位置 */
   launched?: boolean;
   trail?: number;
@@ -282,6 +287,18 @@ export class BossController {
           m.hitDone = true;
           m.onHit();
         }
+        // 召喚物：路徑經過才算，每隻一次
+        if (m.onHit && m.power) {
+          const r = (m.hitW ?? 1) + e.radius * 0.3;
+          for (const mn of this.ctx.minions?.() ?? []) {
+            if (!mn.alive || m.hitMinions?.has(mn)) continue;
+            if (Math.hypot(mn.pos.x - e.pos.x, mn.pos.z - e.pos.z) > r + mn.radius) continue;
+            (m.hitMinions ??= new Set()).add(mn);
+            const mx = mn.pos.x;
+            const mz = mn.pos.z;
+            this.ctx.hitMinionsInside?.(e, m.power, (x, z) => x === mx && z === mz);
+          }
+        }
         // 撞牆：停下
         if (Math.hypot(e.pos.x - bx, e.pos.z - bz) < seg * 0.3) {
           m.t = m.dur;
@@ -367,14 +384,14 @@ export class BossController {
         const sx = e.pos.x;
         const sz = e.pos.z;
         const dur = Math.max(DASH_TIME, sk.length / DASH_SPEED);
-        tg.add({ kind: 'rect', x: sx, z: sz, dir, length: sk.length, width: sk.width }, t, (inside) => {
+        tg.add({ kind: 'rect', x: sx, z: sz, dir, length: sk.length, width: sk.width }, t, () => {
           release();
           if (!e.alive) return;
-          // 召喚物照預警範圍判定；玩家要真的被首領撞到才算（見 move()）
-          this.ctx.hitMinionsInside?.(e, sk.power, inside);
+          // 玩家與召喚物都要真的被首領撞到才算（見 move()）
           st.motion = {
             kind: 'dash', t: 0, dur, sx: e.pos.x, sz: e.pos.z, dir, len: sk.length, tx: 0, tz: 0, height: 0,
             hitW: sk.width / 2,
+            power: sk.power,
             onHit: () => {
               st.lastHit = true;
               this.ctx.hitPlayer(e, sk.power);
@@ -402,7 +419,11 @@ export class BossController {
           const d = i === 0 ? 0 : 2 + Math.random() * sk.spread;
           const x = p.pos.x + Math.cos(a) * d;
           const z = p.pos.z + Math.sin(a) * d;
-          tg.add({ kind: 'circle', x, z, r: sk.radius }, t + i * sk.stagger, (inside) => {
+          // v1.91：天上真的有東西砸下來，落地＝結算（最後 RAIN_FALL 秒從高空落下）
+          const at = t + i * sk.stagger;
+          const fall = Math.min(RAIN_FALL, at * 0.6);
+          fx.lob(x, 10, z, x, z, at - fall, fall, sk.pillarColor ?? sk.color, 0.35 + sk.radius * 0.15, 0);
+          tg.add({ kind: 'circle', x, z, r: sk.radius }, at, (inside) => {
             hit(inside);
             fx.disc(x, z, sk.radius, sk.color, 0.4, 0.6);
             fx.pillar(x, z, 0.8, sk.pillarColor ?? sk.color, 0.4);
