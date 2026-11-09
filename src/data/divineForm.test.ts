@@ -36,3 +36,23 @@ describe('神裝形態（v1.99）', () => {
     expect(setLabel('烏拉諾斯')).toBe('烏拉諾斯套裝');
   });
 });
+
+describe('每個職業 × 每一套整套（v1.102 檢查）', () => {
+  it('25 套（20 套★神話＋5 套神域）都能變成完整神裝形態，配色與飾物都存在', () => {
+    for (const cls of CLASS_LIST) {
+      expect(DIVINE_ORNAMENTS[cls]).toBeTruthy();
+      const keys = new Set<string>();
+      for (let n = 1; n <= 25; n++) {
+        const nn = String(n).padStart(2, '0');
+        const f = divineFormOf(full(cls, nn));
+        expect(f, `${cls}_${nn}`).not.toBeNull();
+        expect(f!.full, `${cls}_${nn}`).toBe(true);
+        expect(f!.palette, `${cls}_${nn}`).toBeTruthy();
+        expect(f!.setId).toBe(`${cls}_${nn}`);
+        keys.add(f!.key);
+      }
+      // 8 個階級配色＋5 個神域配色
+      expect(keys.size).toBe(13);
+    }
+  });
+});

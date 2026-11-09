@@ -1373,3 +1373,45 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
 }
 @keyframes setRing { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .hud.set-full .avatar::after { animation: none; } }
+
+/* ---- v1.102 整套：整個畫面四周的職業花紋外框（只在邊緣，中央保持乾淨）---- */
+.hud.set-full::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: var(--edge, none);
+  box-shadow: inset 0 0 90px color-mix(in srgb, var(--dv, #ffd86a) 50%, transparent), inset 0 0 0 3px color-mix(in srgb, var(--dv2, #fff0b0) 45%, transparent);
+  background-color: rgba(10, 8, 24, 0.22);
+  -webkit-mask: radial-gradient(ellipse 72% 66% at 50% 50%, transparent 42%, #000 88%);
+  mask: radial-gradient(ellipse 72% 66% at 50% 50%, transparent 42%, #000 88%);
+  animation: setEdge 5s ease-in-out infinite;
+}
+.hud.set-full[data-set-cls='mage'] { --edge: repeating-radial-gradient(circle at 50% 50%, transparent 0 34px, color-mix(in srgb, var(--dv2) 51%, transparent) 34px 36px, transparent 36px 52px, color-mix(in srgb, var(--dv) 37%, transparent) 52px 55px); }
+.hud.set-full[data-set-cls='archer'] { --edge: repeating-linear-gradient(118deg, transparent 0 46px, color-mix(in srgb, var(--dv2) 51%, transparent) 46px 48px, transparent 48px 62px, color-mix(in srgb, var(--dv) 34%, transparent) 62px 63px); }
+.hud.set-full[data-set-cls='knight'] { --edge:
+  linear-gradient(45deg, color-mix(in srgb, var(--dv) 22%, transparent) 25%, transparent 25% 75%, color-mix(in srgb, var(--dv) 22%, transparent) 75%) 0 0 / 44px 44px,
+  linear-gradient(-45deg, color-mix(in srgb, var(--dv2) 16%, transparent) 25%, transparent 25% 75%, color-mix(in srgb, var(--dv2) 16%, transparent) 75%) 0 0 / 44px 44px; }
+.hud.set-full[data-set-cls='berserker'] { --edge:
+  radial-gradient(ellipse 90px 260px at 6% 104%, color-mix(in srgb, var(--dv) 90%, transparent), transparent 70%),
+  radial-gradient(ellipse 100px 300px at 30% 106%, color-mix(in srgb, var(--dv2) 76%, transparent), transparent 70%),
+  radial-gradient(ellipse 90px 240px at 70% 104%, color-mix(in srgb, var(--dv) 90%, transparent), transparent 70%),
+  radial-gradient(ellipse 100px 290px at 94% 106%, color-mix(in srgb, var(--dv2) 76%, transparent), transparent 70%),
+  linear-gradient(0deg, color-mix(in srgb, var(--dv) 51%, transparent), transparent 35%); }
+.hud.set-full[data-set-cls='summoner'] { --edge:
+  radial-gradient(circle, color-mix(in srgb, var(--dv2) 95%, transparent) 0 3px, transparent 5px) 0 0 / 71px 83px,
+  radial-gradient(circle, color-mix(in srgb, var(--dv) 95%, transparent) 0 7px, transparent 13px) 30px 40px / 113px 97px,
+  linear-gradient(0deg, color-mix(in srgb, var(--dv) 44%, transparent), transparent 40%); }
+.hud.set-full[data-set-cls='swordsman'] { --edge:
+  repeating-linear-gradient(-62deg, transparent 0 70px, color-mix(in srgb, var(--dv2) 58%, transparent) 70px 72px, transparent 72px 110px),
+  repeating-linear-gradient(28deg, transparent 0 150px, color-mix(in srgb, var(--dv) 44%, transparent) 150px 153px, transparent 153px 230px); }
+.hud.set-full[data-set-cls='tamer'] { --edge:
+  linear-gradient(68deg, transparent 80%, color-mix(in srgb, var(--dv2) 68%, transparent) 81% 82%, transparent 83%),
+  linear-gradient(68deg, transparent 85%, color-mix(in srgb, var(--dv2) 68%, transparent) 86% 87%, transparent 88%),
+  linear-gradient(68deg, transparent 90%, color-mix(in srgb, var(--dv2) 68%, transparent) 91% 92%, transparent 93%),
+  linear-gradient(248deg, transparent 80%, color-mix(in srgb, var(--dv) 65%, transparent) 81% 82%, transparent 83%),
+  linear-gradient(248deg, transparent 85%, color-mix(in srgb, var(--dv) 65%, transparent) 86% 87%, transparent 88%),
+  linear-gradient(248deg, transparent 90%, color-mix(in srgb, var(--dv) 65%, transparent) 91% 92%, transparent 93%); }
+.hud.set-full[data-set-cls='ninja'] { --edge:
+  radial-gradient(circle, color-mix(in srgb, var(--dv2) 90%, transparent) 0 1.2px, transparent 2px) 0 0 / 37px 31px,
+  radial-gradient(circle, color-mix(in srgb, var(--dv) 90%, transparent) 0 1.5px, transparent 2.5px) 11px 17px / 53px 47px,
+  linear-gradient(180deg, rgba(8, 4, 20, 0.45), rgba(8, 4, 20, 0.2)); }
+@media (prefers-reduced-motion: reduce) { .hud.set-full::before { animation: none; } }
+@keyframes setEdge { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }

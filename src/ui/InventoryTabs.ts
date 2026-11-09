@@ -227,7 +227,7 @@ function divineCard(s: InvContext['state']): HTMLElement {
       h('b', {}, `★神話裝 ${n}/6`),
     ]),
     h('p', { class: 'dim' }, form
-      ? `衣服換成${form.palette.name}配色、腳下神紋法陣、背後「${orn.title}」${form.full ? `；${setLabel(form.setName)} 6 件，法陣多一圈外環、等級狀態框換成職業專屬花紋` : '（6 件同一套時法陣多一圈外環、等級狀態框換成職業專屬花紋）'}。配色依主要套裝的階級。`
+      ? `衣服換成${form.palette.name}配色、腳下神紋法陣、背後「${orn.title}」${form.full ? `；${setLabel(form.setName)} 6 件，法陣多一圈外環、等級狀態框與畫面四周換成職業專屬花紋` : '（6 件同一套時法陣多一圈外環、等級狀態框與畫面四周換成職業專屬花紋）'}。配色依主要套裝的階級。`
       : `全身 6 格都穿★神話裝，角色會換成神裝形態：套裝配色、輪廓光、腳下法陣，背後出現「${orn.title}」。只改外觀，不影響屬性。`),
   ]);
 }
