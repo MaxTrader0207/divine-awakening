@@ -5,7 +5,7 @@ import { CRIT_DMG_MAX, CRIT_RATE_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
 import { bus } from './EventBus';
 import { isZoneUnlocked, newGameState, type GameState } from './GameState';
-import { elementMul } from '@/data/elements';
+import { ELEMENTS, elementMul } from '@/data/elements';
 import { COMPANIONS, companionOfGuardian, pityLeft, tryCapture } from '@/data/companions';
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
@@ -17,6 +17,7 @@ import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
 import { ambienceFor } from '@/audio/Ambience';
 import { ZONES, DUNGEON_ORDER, SIDE_ORDER, BEAST_ORDER, SANCTUM_ORDER, lootTierOf, rollZoneTier, floorLabel } from '@/data/zones';
+import { ENEMIES } from '@/data/stages';
 import { beastBonus, beastsDone } from '@/systems/BeastHunt';
 import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
@@ -48,7 +49,7 @@ import { COMPANION_SKILLS, DUO, GROWTH, addBond, addCompExp, bondLevel, compCool
 import { OFFLINE, canClaimLogin, claimLogin, offlineReward, type OfflineClaim, type OfflineReward } from '@/systems/Welcome';
 import { WelcomeScreen } from '@/ui/WelcomeScreen';
 import { TowerScreen } from '@/ui/TowerScreen';
-import { TOWER, TOWER_AFFIXES, affixBonusGold, ensureWeek, floorPlan, recordFloor, reinforceMobs, startFloors, towerRng, type FloorPlan } from '@/systems/TrialTower';
+import { TOWER, TOWER_AFFIXES, affixBonusGold, allyAtkShare, allyHpShare, bossAllyPlan, ensureWeek, floorPlan, recordFloor, reinforceMobs, startFloors, towerRng, type AllyCall, type FloorPlan } from '@/systems/TrialTower';
 import { tierForLevel } from '@/data/items';
 import { localDate } from '@/systems/DailyQuests';
 import { ITEM_BASES, sellPrice } from '@/data/items';
@@ -156,7 +157,7 @@ export class Game {
   private welcome!: WelcomeScreen;
   private towerScreen!: TowerScreen;
   /** 進行中的試煉塔（null = 沒在挑戰） */
-  private towerRun: { floor: number; start: number; level: number; boss: boolean; timer: number; between: number; best: number; gems: number; kills: number; prevBest: number; plan?: FloorPlan; regen: number; reinforce: number; affixText: string; wave: { id: string; elite: boolean }[]; waveT: number; haste: number; notes: string[]; notesT: number } | null = null;
+  private towerRun: { floor: number; start: number; level: number; boss: boolean; timer: number; between: number; best: number; gems: number; kills: number; prevBest: number; plan?: FloorPlan; regen: number; reinforce: number; affixText: string; wave: { id: string; elite: boolean }[]; waveT: number; haste: number; notes: string[]; notesT: number; allies: AllyCall[]; mainBoss: Enemy | null; allyUnits: Enemy[] } | null = null;
   private towerResultPending: import('@/ui/TowerScreen').TowerResult | null = null;
   /** v1.78 每週首領挑戰 */
   private weeklyRun: { diff: WeeklyDiff; boss: Enemy; name: string; timer: number; regen: number; affixText: string } | null = null;
@@ -1248,7 +1249,7 @@ export class Game {
     await this.changeZone('trial_tower', ZONES.trial_tower.spawn, true);
     if (this.state.zoneId !== 'trial_tower') return;
     s.tower.runs++;
-    this.towerRun = { floor, start: floor, level: 0, boss: false, timer: 0, between: 0, best: floor - 1, gems: 0, kills: 0, prevBest: s.tower.best, regen: 0, reinforce: 0, affixText: '', wave: [], waveT: 0, haste: 1, notes: [], notesT: 0 };
+    this.towerRun = { floor, start: floor, level: 0, boss: false, timer: 0, between: 0, best: floor - 1, gems: 0, kills: 0, prevBest: s.tower.best, regen: 0, reinforce: 0, affixText: '', wave: [], waveT: 0, haste: 1, notes: [], notesT: 0, allies: [], mainBoss: null, allyUnits: [] };
     this.player.hp = this.player.stats.maxHp;
     if (!this.usesRage) this.player.mp = this.player.stats.maxMp;
     this.spawnTowerFloor();
@@ -1278,6 +1279,10 @@ export class Game {
     run.wave = list.slice(first);
     run.waveT = TOWER.secondWaveAt;
     this.spawnTowerMobs(list.slice(0, first), plan.boss ? 'boss' : 'front');
+    // v1.104 高層首領會召喚守護者助陣（同一週同一層固定）
+    run.mainBoss = plan.boss ? this.enemies.enemies.find((e) => e.alive && e.def.boss) ?? null : null;
+    run.allyUnits = [];
+    run.allies = run.mainBoss ? bossAllyPlan(run.floor, run.mainBoss.def.id, towerRng(`${this.state.tower.week}+ally`, run.floor)) : [];
     // 詞綴「神眷」：你這層攻擊提高
     const bless = affixes.reduce((v, a) => Math.max(v, a.blessAtk ?? 0), 0);
     if (bless) {
@@ -1288,6 +1293,7 @@ export class Game {
     bus.emit('banner', { text: run.affixText ? `${title}　${run.affixText}` : title });
     // 詞綴說明等開場橫幅消失後再提示，避免和橫幅疊在一起
     run.notes = affixes.map((a) => `${a.icon} ${a.name}：${a.desc}`);
+    if (run.allies.length) run.notes.push(`🪽 守護神助陣：首領生命降低時會召喚 ${run.allies.length} 隻守護者`);
     run.notesT = 1.8;
     if (plan.boss) bus.emit('camera:shake', { power: 0.2 });
   }
@@ -1365,6 +1371,50 @@ export class Game {
     }
   }
 
+  /** v1.104 首領召喚守護者助陣：生命掉到門檻時召喚；首領倒下時助陣者一起消散 */
+  private towerAllyTick() {
+    const run = this.towerRun!;
+    const boss = run.mainBoss;
+    if (!boss) return;
+    if (!boss.alive) {
+      for (const a of run.allyUnits) if (a.alive) {
+        this.effects.pillar(a.pos.x, a.pos.z, 1.4, 0xd8ecff, 0.8);
+        a.takeDamage(a.hp + 1);
+      }
+      run.allyUnits = [];
+      run.allies = [];
+      run.mainBoss = null;
+      return;
+    }
+    const call = run.allies[0];
+    if (!call || boss.hp / boss.maxHp > call.at) return;
+    run.allies.shift();
+    const ed = ENEMIES[call.id];
+    const comp = COMPANIONS[call.companion];
+    if (!ed || !comp) return;
+    // 站在首領和玩家之間偏一側，第一眼就看得到
+    const p = this.player.pos;
+    const ang = Math.atan2(p.x - boss.pos.x, p.z - boss.pos.z) + (run.allyUnits.length % 2 ? -1 : 1) * 0.9;
+    const x = boss.pos.x + Math.sin(ang) * 4;
+    const z = boss.pos.z + Math.cos(ang) * 4;
+    const floor = run.floor;
+    const hpMul = (boss.maxHp * allyHpShare(floor)) / ed.stats.maxHp;
+    const atkMul = (boss.atkMul * (boss.def.stats.atk / Math.max(1, ed.stats.atk))) * allyAtkShare(floor);
+    const e = this.enemies.spawnOne(call.id, x, z, { hpMul, atkMul, def: run.plan!.defense, tag: `🪽助陣・Lv.${run.level}` });
+    if (!e) return;
+    e.provoked = true;
+    e.hunter = true;
+    e.hasteMul = run.haste;
+    run.allyUnits.push(e);
+    const col = parseInt((ELEMENTS[comp.element]?.color ?? '#ffe9a0').slice(1), 16);
+    this.effects.pillar(x, z, 1.8, col, 1.1);
+    this.effects.ring(x, z, 0.5, 5, col, 0.7);
+    this.effects.ring(boss.pos.x, boss.pos.z, 1, 7, col, 0.6);
+    boss.strike(0.6);
+    bus.emit('boss:roar', { name: boss.def.name });
+    bus.emit('toast', { text: `${comp.icon} ${boss.def.name}召喚了${comp.name}助陣！`, duration: 2.4 });
+  }
+
   private updateTower(dt: number) {
     const run = this.towerRun;
     if (!run) {
@@ -1384,6 +1434,7 @@ export class Game {
     if (!this.player.alive) return;
     run.timer -= dt;
     this.towerAffixTick(dt);
+    this.towerAllyTick();
     const left = alive + run.wave.length;
     this.hud.setTower(`🗼 第 ${run.floor} 層${run.boss ? '・首領' : ''}${run.affixText ? ` ${run.affixText}` : ''}　⏱ ${Math.max(0, Math.ceil(run.timer))} 秒　剩 ${left} 隻`, run.timer < 10);
     if (left === 0) {

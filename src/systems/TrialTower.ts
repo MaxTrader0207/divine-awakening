@@ -1,6 +1,7 @@
 import { ENEMIES } from '@/data/stages';
 import type { EnemyDef } from '@/data/types';
 import { BOSS_PACE } from './BossScaling';
+import { COMPANIONS } from '@/data/companions';
 
 /**
  * 無盡試煉塔（v1.70，純邏輯，可單元測試；Game 負責生成敵人與結算）
@@ -271,4 +272,67 @@ export function recordFloor(t: TowerState, floor: number, now = new Date()): num
   }
   if (floor > t.best) t.best = floor;
   return gems;
+}
+
+/* ======================= 首領召喚守護者助陣（v1.104） ======================= */
+
+/**
+ * 越高層的首領，越可能在戰鬥中召喚「守護者」（支線地圖的 10 隻神獸）來助陣：
+ * - 第 fromFloor 層起才會發生；每一層最多召喚幾隻看 countAt（第 20 層 1 隻、第 40 層 2 隻、第 70 層 3 隻）。
+ * - 首領生命掉到 at[i] 時召喚第 i 隻；每一次是否發生看 chance(層)（越高層越必定），第 guaranteeFrom 層起第一隻必定出現。
+ * - 助陣守護者的生命 = 首領最大生命 × hpShare(層)、攻擊 = 首領攻擊 × atkShare（越高層越強）。
+ * - 首領倒下時，還在場的助陣守護者會一起消散（不用另外清場）。
+ * 同一週同一層大家遇到的都一樣（用 towerRng 固定種子）。
+ */
+export const BOSS_ALLY = {
+  fromFloor: 20,
+  countAt: [20, 40, 70],
+  at: [0.7, 0.45, 0.22],
+  chanceBase: 0.45,
+  chancePerFloor: 0.015,
+  guaranteeFrom: 40,
+  hpBase: 0.22,
+  hpPerFloor: 0.004,
+  hpMax: 0.4,
+  atkBase: 0.55,
+  atkPerFloor: 0.004,
+  atkMax: 0.8,
+};
+
+export interface AllyCall {
+  /** 首領生命比例掉到多少時召喚 */
+  at: number;
+  /** 守護者的敵人 id */
+  id: string;
+  /** 對應的夥伴（顯示名稱、圖示用） */
+  companion: string;
+}
+
+export function allyChance(floor: number): number {
+  if (floor < BOSS_ALLY.fromFloor) return 0;
+  return Math.min(1, BOSS_ALLY.chanceBase + BOSS_ALLY.chancePerFloor * (floor - BOSS_ALLY.fromFloor));
+}
+
+export function allyHpShare(floor: number): number {
+  return Math.min(BOSS_ALLY.hpMax, BOSS_ALLY.hpBase + BOSS_ALLY.hpPerFloor * Math.max(0, floor - BOSS_ALLY.fromFloor));
+}
+
+export function allyAtkShare(floor: number): number {
+  return Math.min(BOSS_ALLY.atkMax, BOSS_ALLY.atkBase + BOSS_ALLY.atkPerFloor * Math.max(0, floor - BOSS_ALLY.fromFloor));
+}
+
+/** 這一層首領會在什麼時候叫哪些守護者（可能是空的） */
+export function bossAllyPlan(floor: number, bossId: string, rng: () => number): AllyCall[] {
+  if (!isBossFloor(floor) || floor < BOSS_ALLY.fromFloor) return [];
+  const n = BOSS_ALLY.countAt.filter((f) => floor >= f).length;
+  const pool = Object.values(COMPANIONS).filter((c) => ENEMIES[c.guardian] && c.guardian !== bossId);
+  const out: AllyCall[] = [];
+  for (let i = 0; i < n && pool.length; i++) {
+    const sure = i === 0 && floor >= BOSS_ALLY.guaranteeFrom;
+    if (!sure && rng() >= allyChance(floor)) continue;
+    const k = Math.floor(rng() * pool.length);
+    const c = pool.splice(k, 1)[0];
+    out.push({ at: BOSS_ALLY.at[i], id: c.guardian, companion: c.id });
+  }
+  return out;
 }

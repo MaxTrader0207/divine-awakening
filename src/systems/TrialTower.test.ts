@@ -119,3 +119,26 @@ describe('試煉塔詞綴（v1.73）', () => {
     expect(t.timeLimit).toBeGreaterThan(0);
   });
 });
+
+describe('首領召喚守護者助陣（v1.104）', () => {
+  it('第 20 層前不召喚、越高層越多越強', async () => {
+    const { bossAllyPlan, allyChance, allyHpShare, allyAtkShare, BOSS_ALLY } = await import('./TrialTower');
+    expect(bossAllyPlan(15, 'x', towerRng('w', 15))).toEqual([]);
+    expect(bossAllyPlan(21, 'x', towerRng('w', 21))).toEqual([]); // 不是首領層
+    expect(allyChance(19)).toBe(0);
+    expect(allyChance(100)).toBe(1);
+    expect(allyHpShare(100)).toBeLessThanOrEqual(BOSS_ALLY.hpMax);
+    expect(allyAtkShare(60)).toBeGreaterThan(allyAtkShare(20));
+    for (let f = 40; f <= 120; f += 5) {
+      const plan = bossAllyPlan(f, 'x', towerRng('2026-11-09', f));
+      expect(plan.length).toBeGreaterThanOrEqual(1); // 第 40 層起第一隻必定出現
+      expect(plan.length).toBeLessThanOrEqual(BOSS_ALLY.countAt.filter((c) => f >= c).length);
+      expect(new Set(plan.map((a) => a.id)).size).toBe(plan.length); // 不重複
+      for (let i = 1; i < plan.length; i++) expect(plan[i].at).toBeLessThan(plan[i - 1].at);
+    }
+    // 同一週同一層固定
+    expect(bossAllyPlan(70, 'x', towerRng('w1', 70))).toEqual(bossAllyPlan(70, 'x', towerRng('w1', 70)));
+    // 不會召喚和首領同一隻
+    expect(bossAllyPlan(80, 'guardian_pegasus', towerRng('w1', 80)).some((a) => a.id === 'guardian_pegasus')).toBe(false);
+  });
+});

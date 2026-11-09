@@ -21,6 +21,7 @@ import { CLASSES } from '@/data/classes';
 import { renderGuide } from './GuideTab';
 import { renderCollect } from './CollectTab';
 import { TOWER, TOWER_AFFIXES, bossGems, ensureWeek, startFloors, towerLevel } from '@/systems/TrialTower';
+import { BOSS_ALLY } from '@/systems/TrialTower';
 import { setOrientationPref } from './landscape';
 import { MYTHIC, mythicBest, mythicFirstGems, mythicLevel, mythicOpen, mythicUnlocked } from '@/systems/Mythic';
 import { WEEKLY, WEEKLY_DIFFS, ensureWeeklyWeek, hoursToReset, weeklyPick } from '@/systems/WeeklyBoss';
@@ -402,7 +403,7 @@ export class Menu {
     const nextBoss = Math.ceil((t.weekBest + 1) / 5) * 5;
     return h('div', { class: `card tower-card${open ? '' : ' locked'}` }, [
       h('h4', {}, '🗼 無盡試煉塔'),
-      h('p', {}, `每層打倒全部敵人就上樓，每 5 層有首領，越往上越強（第 N 層約 Lv.4＋2N，Lv.110 之後繼續變強）。時間到或倒下結算，塔裡倒下不掉金幣。`),
+      h('p', {}, `每層打倒全部敵人就上樓，每 5 層有首領，越往上越強（第 N 層約 Lv.4＋2N，Lv.110 之後繼續變強）；第 ${BOSS_ALLY.fromFloor} 層起首領會召喚守護者助陣，越高層越多。時間到或倒下結算，塔裡倒下不掉金幣。`),
       h('p', {}, open ? `歷史最高 ${t.best} 層・本週最高 ${t.weekBest} 層・本週下一個首領層第 ${nextBoss} 層（首次打過 +${bossGems(nextBoss)}💎）` : `🔒 擊敗${zoneLabel(TOWER.unlockAfter)}後開放`),
       open
         ? h('div', { class: 'card-row' }, startFloors(t.best).map((f) => h('button', { class: f === 1 ? 'go' : 'go alt-tower', onclick: () => { this.close(); bus.emit('tower:start', { floor: f }); } }, f === 1 ? '從第 1 層挑戰' : `從第 ${f} 層（敵人 Lv.${towerLevel(f)}）`)))
