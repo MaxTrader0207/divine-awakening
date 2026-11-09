@@ -1,7 +1,8 @@
+import { SANCTUMS, sanctumPieces } from './sanctum';
 import { mythicBest } from '@/systems/Mythic';
 import type { GameState } from '@/core/GameState';
 import type { ZoneId } from './types';
-import { BEAST_ORDER, DUNGEON_ORDER, FIELD_ORDER, ZONES, bossOf } from './stages';
+import { BEAST_ORDER, SANCTUM_ORDER, DUNGEON_ORDER, FIELD_ORDER, ZONES, bossOf } from './stages';
 import { CODEX_ENTRIES, CODEX_MAX_POINTS, codexFound, codexPoints } from './codex';
 import { COMPANION_LIST } from './companions';
 import { GROWTH, bondLevel, teamOf } from './companionGrowth';
@@ -95,6 +96,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'weekly20', cat: 'story', icon: '🏆', name: '週週登頂', desc: '打倒每週首領 20 次', gems: 40, progress: (s) => [Math.min(s.weekly.wins, 20), 20] },
   { id: 'beast1', cat: 'story', icon: '⚔', name: '神獸獵人', desc: '第一次完成神獸討伐', gems: 20, progress: (s) => [Math.min(BEAST_ORDER.filter((id) => s.bossesDefeated.includes(id)).length, 1), 1] },
   { id: 'beast10', cat: 'story', icon: '🐲', name: '萬怪終結者', desc: `討伐全部 ${BEAST_ORDER.length} 隻神獸`, gems: 100, progress: (s) => [BEAST_ORDER.filter((id) => s.bossesDefeated.includes(id)).length, BEAST_ORDER.length] },
+  { id: 'sanctum1', cat: 'story', icon: '✦', name: '踏入神域', desc: '第一次制霸神域副本', gems: 30, progress: (s) => [Math.min(SANCTUM_ORDER.filter((id) => s.bossesDefeated.includes(id)).length, 1), 1] },
+  { id: 'sanctumAll', cat: 'story', icon: '⚡', name: '眾神的試煉', desc: `制霸全部 ${SANCTUM_ORDER.length} 個神域副本`, gems: 150, progress: (s) => [SANCTUM_ORDER.filter((id) => s.bossesDefeated.includes(id)).length, SANCTUM_ORDER.length] },
+  { id: 'sanctumSet', cat: 'story', icon: '🛡', name: '神域的祝福', desc: '身上穿滿一整套（6 件）神域套裝', gems: 50, progress: (s) => [Math.max(...SANCTUMS.map((sc) => sanctumPieces(s.heroClass, sc.order, s.equipment))), 6] },
   { id: 'rebirth1', cat: 'story', icon: '♻', name: '浴火重生', desc: '第一次轉生', gems: 30, progress: (s) => [Math.min(s.rebirth.count, 1), 1] },
   { id: 'rebirth5', cat: 'story', icon: '🌀', name: '輪迴的英雄', desc: '轉生 5 次', gems: 80, progress: (s) => [Math.min(s.rebirth.count, 5), 5] },
   { id: 'elites', cat: 'story', icon: '🗺', name: '野外霸主', desc: `打倒全部 ${ELITE_FIELDS.length} 張野外的菁英首領`, gems: 15, progress: (s) => [ELITE_FIELDS.filter((z) => (s.clears[z]?.count ?? 0) > 0).length, ELITE_FIELDS.length] },

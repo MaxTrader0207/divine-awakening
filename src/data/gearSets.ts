@@ -1,3 +1,4 @@
+import { SANCTUM_GEAR, SANCTUMS, sanctumIndex } from './sanctum';
 import type { EquipSlot, Stats } from './types';
 import type { HeroClass } from './classes';
 import { CLASSES } from './classes';
@@ -26,6 +27,8 @@ export interface GearSetDef {
   profile: GearProfile;
   /** 每個欄位這套的裝備 id */
   pieces: Record<EquipSlot, string>;
+  /** v1.101 神域套裝：第幾個神域 */
+  sanctum?: number;
 }
 
 /** 百分比加成（atk 0.05 = +5%）；critRate / pen / critDmg 是直接加 */
@@ -73,6 +76,23 @@ function buildSets(): Map<string, GearSetDef> {
         tier: NAMED_TIERS[i],
         profile: g.profiles[i],
         pieces: Object.fromEntries(SLOTS.map((s) => [s, `${cls}_${s}_${nn}`])) as Record<EquipSlot, string>,
+      });
+    }
+  }
+  // v1.101 神域套裝（編號 21～25）
+  for (const [cls, sg] of Object.entries(SANCTUM_GEAR) as [HeroClass, (typeof SANCTUM_GEAR)[HeroClass]][]) {
+    for (const sc of SANCTUMS) {
+      const nn = String(sanctumIndex(sc.order));
+      const id = `${cls}_${nn}`;
+      out.set(id, {
+        id,
+        cls,
+        index: sanctumIndex(sc.order) - 1,
+        name: `${sg.prefixes[sc.order - 1]}套裝`,
+        tier: 8,
+        profile: sg.profiles[sc.order - 1],
+        pieces: Object.fromEntries(SLOTS.map((s) => [s, `${cls}_${s}_${nn}`])) as Record<EquipSlot, string>,
+        sanctum: sc.order,
       });
     }
   }

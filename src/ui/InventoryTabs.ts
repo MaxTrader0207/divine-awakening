@@ -1,3 +1,4 @@
+import { BLESSING, SANCTUMS } from '@/data/sanctum';
 import { DIVINE_ORNAMENTS, divineFormOf, mythicPieces, setLabel } from '@/data/divineForm';
 import type { GameState } from '@/core/GameState';
 import type { EquipSlot, Stats } from '@/data/types';
@@ -493,6 +494,7 @@ function setBlock(set: NonNullable<ReturnType<typeof setOf>>, count: number): HT
   return h('div', { class: 'set-block' }, [
     h('div', { class: 'set-head' }, [h('b', {}, `${set.name}`), h('small', {}, `第 ${set.tier} 階・穿著 ${count}/6`)]),
     ...setTiers(set).map((t) => h('div', { class: `set-tier${count >= t.need ? ' on' : ''}` }, [h('span', {}, `${t.need} 件`), h('span', {}, t.text)])),
+    set.sanctum ? h('div', { class: `set-tier sanctum-tip${count >= 6 ? ' on' : ''}` }, [h('span', {}, SANCTUMS[set.sanctum - 1].icon), h('span', {}, `在「${SANCTUMS[set.sanctum - 1].name}」每件減輕 1/6 詛咒，6 件變成祝福（造成 +${Math.round(BLESSING.dealt * 100)}%、受到 −${Math.round(BLESSING.taken * 100)}%）`)]) : null,
   ]);
 }
 

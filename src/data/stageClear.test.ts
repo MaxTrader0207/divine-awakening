@@ -10,7 +10,7 @@ const bossStages = STAGES.filter((s) => (s.zone.spawns ?? []).some((sp) => ENEMI
 
 describe('破關畫面', () => {
   it('每個有首領的關卡都有結局文字，每個職業 × 關卡都有自己的台詞（新增關卡要補 data/stageClear.ts）', () => {
-    expect(bossStages.length).toBe(54);
+    expect(bossStages.length).toBe(59);
     const quotes = new Set<string>();
     for (const id of bossStages) {
       expect(STAGE_EPILOGUE[id]?.title, `${id} 缺少 STAGE_EPILOGUE`).toBeTruthy();

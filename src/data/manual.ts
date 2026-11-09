@@ -2,7 +2,9 @@ import { DIVINE_ORNAMENTS, DIVINE_PALETTES } from './divineForm';
 import { AUTO_CHEST_RANGE } from '@/systems/AutoBattle';
 import type { HeroClass } from './classes';
 import { CLASSES, CLASS_LIST } from './classes';
-import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, BEAST_ORDER, bossOf, zoneLabel } from './zones';
+import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, BEAST_ORDER, SANCTUM_ORDER, bossOf, zoneLabel } from './zones';
+import { BLESSING, SANCTUMS, SANCTUM_DROP } from './sanctum';
+import { mythicLevel } from '@/systems/Mythic';
 import { beastFirstGems } from '@/systems/BeastHunt';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, ENHANCE_GEM_COST, ENHANCE_MAX, POTION_PRICE, RARITY, RARITY_ORDER } from './items';
 import { BOSS_PACE } from '@/systems/BossScaling';
@@ -221,6 +223,17 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         ...SIDE_ORDER.map((id) => `**支線・${ZONES[id].name}**：擊敗${zoneLabel(ZONES[id].side!.unlockAfter)}後開放，守護者是${bossOf(id)?.name ?? '？'}。`),
         `**⚔ 神獸討伐**（地圖頁）：${BEAST_ORDER.length} 座只有一隻魔王的競技場，隨主線開放；每次打倒都掉首領裝備，第一次打倒另外送 ${beastFirstGems(1)}～${beastFirstGems(BEAST_ORDER.length)}💎。`,
         ...BEAST_ORDER.map((id) => `**神獸討伐・${ZONES[id].name}**：擊敗${zoneLabel(ZONES[id].beast!.unlockAfter)}後開放，魔王是${bossOf(id)?.name ?? '？'}（Lv.${bossOf(id)?.level ?? '?'}）。`),
+      ],
+    },
+    {
+      icon: '✦',
+      title: '神域副本與神域套裝',
+      lines: [
+        `打倒第 ${DUNGEON_ORDER.length} 層的最終首領後，地圖頁會出現「✦ 神域副本」：${SANCTUM_ORDER.length} 個眾神的領域，要依序制霸。敵人是固定強度（Lv.${mythicLevel(SANCTUMS[0].floor)}～${mythicLevel(SANCTUMS[SANCTUMS.length - 1].floor)}），首領不會依你的實力調整。`,
+        `**專屬掉落**：每個神域只掉自己的「神域套裝」（每個職業 ${SANCTUMS.length} 套、每套 6 件），其他地方都不會掉。首領每次必掉 ${SANCTUM_DROP.boss} 件、小怪 ${Math.round(SANCTUM_DROP.mob * 100)}%、寶箱 ${Math.round(SANCTUM_DROP.chest * 100)}%，會優先掉你還沒有的部位。神域裝是第 8 階，屬性比一般★神話裝高，越後面的神域越強。`,
+        `**神域詛咒**：在神域裡，你和召喚物造成的傷害會變少、受到的傷害會變多。身上每穿 1 件「這個神域的套裝」，詛咒減輕 1/6；6 件全滿時詛咒變成祝福（造成傷害 +${Math.round(BLESSING.dealt * 100)}%、受到傷害 −${Math.round(BLESSING.taken * 100)}%）。所以要先在前一個神域把套裝湊齊，才有本事挑戰下一個。`,
+        ...SANCTUMS.map((s) => `**${s.icon} ${s.name}**（Lv.${mythicLevel(s.floor)}）：詛咒「${s.curse.name}」——${s.curse.desc}，造成傷害 −${Math.round(s.curse.dealt * 100)}%、受到傷害 +${Math.round(s.curse.taken * 100)}%；首領${bossOf(s.zone)?.name ?? '？'}；第一次制霸 +${s.firstGems}💎。`),
+        '全身穿同一套神域裝會變成這個神域專屬配色的神裝形態。',
       ],
     },
     {

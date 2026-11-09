@@ -59,6 +59,15 @@ v1.29 起，遊戲內容依「關卡」組織：**一個關卡一個檔案**，�
 4. `data/stageClear.ts`：`STAGE_EPILOGUE` ＋ 7 個職業的 `CLEAR_QUOTES`（`stageClear.test.ts` 的關卡數要加）。
 5. 首殺鑽石在 `systems/BeastHunt.ts`（`BEAST`），進度就是 `bossesDefeated`。
 
+## 新增神域副本（v1.101）
+
+`ZoneDef.sanctum = { order, unlockAfter, icon }`、`kind: 'field'`，依 `SANCTUM_ORDER` 排在地圖頁「✦ 神域副本」卡。
+
+1. `data/sanctum.ts` 的 `SANCTUMS` 加一筆（`floor` 決定敵人強度、`curse`、`budget`、`firstGems`），`SANCTUM_GEAR` 每個職業加一個前綴與 profile，`divineForm.ts` 的 `DIVINE_PALETTES` 加 `8 + 編號` 的配色。
+2. `data/stages/sanctumN-*.ts`（scratchpad `gen/gen_sanctum.py`）：`levelRange` = [150 + floor] 、`lootTier: 8`、5 種小怪＋首領（4 招 `sanctN_*`）。
+3. `stages/index.ts` 的 `STAGES`、`types.ts` 的 `ZoneId`、`data/stageClear.ts` 的結局與 8 職業台詞（`stageClear.test.ts` 的關卡數要加）。
+4. 神域裝 id 編號 = 20 + 神域編號，會自動建立物品與套裝；不要加進 `NAMED_INDEX`。
+
 ## 新增小怪
 
 在關卡檔的 `enemies` 加一筆 `EnemyDef`：

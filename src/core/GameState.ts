@@ -168,7 +168,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
 /** 副本 / 支線地圖是否已解鎖 */
 export function isZoneUnlocked(state: GameState, id: ZoneId): boolean {
   const z = ZONES[id];
-  const after = z.dungeon?.unlockAfter ?? z.side?.unlockAfter ?? z.beast?.unlockAfter;
+  const after = z.dungeon?.unlockAfter ?? z.side?.unlockAfter ?? z.beast?.unlockAfter ?? z.sanctum?.unlockAfter;
   if (!after) return true;
   return state.bossesDefeated.includes(after);
 }

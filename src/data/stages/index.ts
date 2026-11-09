@@ -36,6 +36,11 @@ import { styxSource } from './dungeon27-styx-source';
 import { stymphalianLake } from './dungeon28-stymphalian-lake';
 import { mountOssa } from './dungeon29-mount-ossa';
 import { olympusSummit } from './dungeon30-olympus-summit';
+import { sanctumForge } from './sanctum1-hephaestus-forge';
+import { sanctumSea } from './sanctum2-poseidon-temple';
+import { sanctumMoon } from './sanctum3-artemis-grove';
+import { sanctumThrone } from './sanctum4-hades-throne';
+import { sanctumThunder } from './sanctum5-zeus-temple';
 import { heliconSpring } from './side1-helicon-spring';
 import { idaSummit } from './side2-ida-summit';
 import { colchisGrove } from './side3-colchis-grove';
@@ -68,6 +73,7 @@ import { trialTower } from './trial-tower';
 export const STAGES: StageDef[] = [town, grassland, poseidonCoast, sirenGrotto, hephaestusForge, dodonaGrove, delphiPath, marathonField, troyBeach, lernaSwamp, knossosLabyrinth, tartarusAbyss, nemeanValley, gorgonIsle, cyclopsCave, thebesWastes, hesperidesGarden, realmOfHades,
   calydonForest, messinaStrait, hyperboreanSnowfield, ceryneianMountain, argosPasture, erytheiaIsle, aethiopianCoast, pelionMountain, echidnaLair, othrysBattlefield,
   libyanSerpentCave, fieldOfAres, teumessosMountain, hecateCrossroads, styxSource, stymphalianLake, mountOssa, olympusSummit,
+  sanctumForge, sanctumSea, sanctumMoon, sanctumThrone, sanctumThunder,
   heliconSpring, idaSummit, colchisGrove, aegaePalace,
   rhodesSunTemple, thracianPeak, etnaFoothills, chiosHuntingGround, spartaPhobosShrine, areopagus,
   orthrusDen, diomedesStables, aventineCave, libyanDunes, whirlpoolStrait, caucasusPeak, goldenFleeceGrove, libyanArena, phlegraFields, typhonAbyss, trialTower];
@@ -88,7 +94,7 @@ export const DUNGEON_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.dungeon)
   .map((s) => s.zone.id);
 
 /** 城鎮與野外（世界地圖上可以直接前往的地方），依登記順序 */
-export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon' && !s.zone.side && !s.zone.beast && !s.zone.tower).map((s) => s.zone.id);
+export const FIELD_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.kind !== 'dungeon' && !s.zone.side && !s.zone.beast && !s.zone.sanctum && !s.zone.tower).map((s) => s.zone.id);
 
 /** 支線地圖（守護者的家，v1.58），依登記順序 */
 export const SIDE_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.side).map((s) => s.zone.id);
@@ -96,6 +102,11 @@ export const SIDE_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.side).map((s) =>
 /** 神獸討伐（v1.86），依關數排序 */
 export const BEAST_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.beast)
   .sort((a, b) => a.zone.beast!.order - b.zone.beast!.order)
+  .map((s) => s.zone.id);
+
+/** 神域副本（v1.101），依順序 */
+export const SANCTUM_ORDER: ZoneId[] = STAGES.filter((s) => s.zone.sanctum)
+  .sort((a, b) => a.zone.sanctum!.order - b.zone.sanctum!.order)
   .map((s) => s.zone.id);
 
 /** 還沒做的地區（只在地圖頁列出名稱） */
@@ -115,7 +126,7 @@ export const WORLD_FIELDS: { name: string; range: string; zone?: ZoneId }[] = [
 export function zoneName(id: ZoneId | string | undefined): string {
   const def = id ? ZONES[id as ZoneId] : undefined;
   if (!def) return '雅典城';
-  return def.kind === 'dungeon' ? def.name : def.subtitle.split('・')[0];
+  return def.kind === 'dungeon' || def.sanctum ? def.name : def.subtitle.split('・')[0];
 }
 
 /** 層數的中文：一、二…十、十一…二十、二十一…（最多 99） */
@@ -176,7 +187,7 @@ export function zonesForLevel(level: number, bossesDefeated: ZoneId[]): ZoneId[]
   const out: ZoneId[] = [];
   for (const st of STAGES) {
     const z = st.zone;
-    if (z.safe || !z.levelRange || z.beast) continue; // 神獸討伐只有魔王，不出「擊倒 N 隻」任務
+    if (z.safe || !z.levelRange || z.beast || z.sanctum) continue; // 神獸討伐只有魔王，不出「擊倒 N 隻」任務
     if (z.minLevel && level < z.minLevel) continue;
     const after = z.dungeon?.unlockAfter ?? z.side?.unlockAfter;
     if (after && !bossesDefeated.includes(after)) continue;

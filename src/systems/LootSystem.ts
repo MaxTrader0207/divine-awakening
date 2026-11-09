@@ -49,6 +49,8 @@ export class LootSystem {
     private heightAt: (x: number, z: number) => number = () => 0,
     /** v1.77 首領額外掉落件數（神話難度） */
     private extraBossDrops: () => number = () => 0,
+    /** v1.101 神域專屬套裝的掉落（不在神域時回傳 null） */
+    private sanctumDrop: (kind: 'mob' | 'boss' | 'chest') => { base: string; rarity: Rarity } | null = () => null,
   ) {
     bus.on('enemy:killed', (k) => {
       const n = k.boss ? 2 + this.extraBossDrops() : 1;
@@ -57,6 +59,8 @@ export class LootSystem {
         const d = rollDrop(this.zoneTier(), k.boss, Math.random, this.state.heroClass);
         if (d) this.spawn({ type: 'item', ...d }, k.x, k.z);
       }
+      const sp = this.sanctumDrop(k.boss ? 'boss' : 'mob');
+      if (sp) this.spawn({ type: 'item', ...sp }, k.x, k.z);
       if (!k.boss && k.gold[1] > 0 && Math.random() < POTION_DROP_CHANCE) {
         this.spawn({ type: 'potion', potion: Math.random() < 0.6 ? 'hp' : 'mp', count: 1 }, k.x, k.z);
       }
@@ -71,6 +75,8 @@ export class LootSystem {
     const tier = this.zoneTier();
     const d = rollDrop(tier, false, Math.random, this.state.heroClass) ?? rollDrop(tier, true, Math.random, this.state.heroClass);
     if (d) this.spawn({ type: 'item', ...d }, x, z);
+    const sp = this.sanctumDrop('chest');
+    if (sp) this.spawn({ type: 'item', ...sp }, x, z);
     this.spawn({ type: 'potion', potion: 'hp', count: 2 }, x, z);
     if (extra) this.spawn({ type: 'consumable', id: rollConsumable(Math.random, this.state.heroClass) }, x, z);
   }

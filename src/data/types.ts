@@ -65,6 +65,11 @@ export type ZoneId =
   | 'beast_8'
   | 'beast_9'
   | 'beast_10'
+  | 'sanctum_1'
+  | 'sanctum_2'
+  | 'sanctum_3'
+  | 'sanctum_4'
+  | 'sanctum_5'
   | 'trial_tower';
 
 export type ZoneKind = 'town' | 'field' | 'dungeon';
@@ -261,6 +266,17 @@ export interface ZoneDef {
    * 神獸討伐（v1.86）：只有一隻魔王的競技場。kind 是 'field'，不列在野外清單，
    * 地圖頁另外一張「⚔ 神獸討伐」卡；第一次打倒有額外鑽石（systems/BeastHunt.ts）。
    */
+  /**
+   * v1.101 神域副本：打倒第 30 層後依序開放的 5 個高難度副本（資料與詛咒在 data/sanctum.ts）。
+   * 敵人借用神話難度換算（固定強度、首領不自動調整），只掉這個神域的專屬套裝。
+   */
+  sanctum?: {
+    /** 第幾個神域（1～5） */
+    order: number;
+    /** 擊敗哪一關的首領後開放 */
+    unlockAfter: ZoneId;
+    icon: string;
+  };
   beast?: {
     /** 第幾關（1～10） */
     order: number;

@@ -62,7 +62,7 @@ export class StageClearScreen {
     const epi = STAGE_EPILOGUE[r.zoneId] ?? { title: '首領倒下', myth: '', emblem: '⚔️' };
     const cc = CLASS_CLEAR[cls];
     const quote = CLEAR_QUOTES[cls][r.zoneId] ?? '勝利屬於我們！';
-    const place = zone.dungeon ? `${floorLabel(zone.dungeon.floor)}・${zone.name}` : zone.subtitle.split('・')[0];
+    const place = zone.dungeon ? `${floorLabel(zone.dungeon.floor)}・${zone.name}` : zone.sanctum ? zone.name : zone.subtitle.split('・')[0];
     const sky = hex(zone.skyColor ?? 0x223044);
     const ground = hex(zone.groundColor ?? 0x334);
     this.root.style.setProperty('--cs-sky', sky);
@@ -119,7 +119,7 @@ export class StageClearScreen {
         h('p', { class: 'cs-loot' }, '首領的寶物掉在地上，記得撿起來'),
         info.unlocked ? h('div', { class: 'cs-unlock' }, `🔓 ${info.mythic ? '開放神話' : '解鎖'} ${floorLabel(ZONES[info.unlocked].dungeon!.floor)}・${ZONES[info.unlocked].name}`) : null,
         info.allDone ? h('div', { class: 'cs-unlock' }, '🏆 你完成了赫拉斯大陸的全部副本') : null,
-        ...(info.sideUnlocked ?? []).map((id) => h('div', { class: 'cs-unlock side' }, ZONES[id].beast ? `⚔ 開放神獸討伐・${ZONES[id].name}（魔王：${bossOf(id)?.name ?? '？'}）` : `🗺 開放支線・${ZONES[id].name}（守護者：${bossOf(id)?.name ?? '？'}）`)),
+        ...(info.sideUnlocked ?? []).map((id) => h('div', { class: 'cs-unlock side' }, ZONES[id].sanctum ? `${ZONES[id].sanctum!.icon} 開放神域副本・${ZONES[id].name}（掉落專屬神域套裝）` : ZONES[id].beast ? `⚔ 開放神獸討伐・${ZONES[id].name}（魔王：${bossOf(id)?.name ?? '？'}）` : `🗺 開放支線・${ZONES[id].name}（守護者：${bossOf(id)?.name ?? '？'}）`)),
         info.capture ? captureLine(info.capture) : null,
         ...btns,
         autoEl,

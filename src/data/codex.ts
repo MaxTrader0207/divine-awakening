@@ -1,5 +1,5 @@
 import type { ZoneId } from './types';
-import { BEAST_ORDER, DUNGEON_ORDER, ENEMIES, FIELD_ORDER, SIDE_ORDER, ZONES, zoneLabel } from './stages';
+import { BEAST_ORDER, SANCTUM_ORDER, DUNGEON_ORDER, ENEMIES, FIELD_ORDER, SIDE_ORDER, ZONES, zoneLabel } from './stages';
 
 /**
  * 怪物圖鑑（v1.64）
@@ -36,7 +36,7 @@ export interface CodexGroup {
 
 /** 依地圖分組（野外 → 主線 → 支線），組內依等級、首領排最後 */
 function buildGroups(): CodexGroup[] {
-  const order: ZoneId[] = [...FIELD_ORDER, ...DUNGEON_ORDER, ...SIDE_ORDER, ...BEAST_ORDER];
+  const order: ZoneId[] = [...FIELD_ORDER, ...DUNGEON_ORDER, ...SIDE_ORDER, ...BEAST_ORDER, ...SANCTUM_ORDER];
   const out: CodexGroup[] = [];
   for (const zoneId of order) {
     const ids = new Set((ZONES[zoneId].spawns ?? []).map((s) => s.enemy));

@@ -1,3 +1,4 @@
+import { SANCTUMS } from './sanctum';
 import { describe, expect, it } from 'vitest';
 import { CLASS_GEAR } from './gear';
 import { ITEM_BASES, MP_TO_HP, NAMED_BUDGET, SLOT_ORDER, applyClassGear, namedGearIds, statScore } from './items';
@@ -26,7 +27,10 @@ describe('職業裝備', () => {
       const std = statScore(ITEM_BASES[`${b.slot}_t${b.tier}`].stats);
       const s = statScore(b.stats);
       expect(s).toBeGreaterThan(std * 0.92);
-      expect(s).toBeLessThan(std * NAMED_BUDGET * 1.15);
+      // v1.101 神域裝的預算比一般神話裝高（data/sanctum.ts 的 budget）
+      const budget = b.sanctum ? SANCTUMS[b.sanctum - 1].budget : NAMED_BUDGET;
+      expect(s).toBeLessThan(std * budget * 1.15);
+      if (b.sanctum) expect(s).toBeGreaterThan(std * (budget - 0.06));
       if (b.tier < 8) expect(s).toBeLessThan(statScore(ITEM_BASES[`${b.slot}_t${b.tier + 1}`].stats));
     }
   });

@@ -1,7 +1,8 @@
+import { SANCTUMS, SANCTUM_GEAR, curseFor, sanctumIndex, sanctumPieces } from '@/data/sanctum';
 import { bus, type MenuTab } from '@/core/EventBus';
 import type { ShopId } from '@/data/shops';
 import { isZoneUnlocked, type GameState } from '@/core/GameState';
-import { BEAST_ORDER, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, WORLD_FIELDS, ZONES, bossOf, lootTierOf, zoneLabel, zoneName } from '@/data/zones';
+import { BEAST_ORDER, SANCTUM_ORDER, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, WORLD_FIELDS, ZONES, bossOf, lootTierOf, zoneLabel, zoneName } from '@/data/zones';
 import { COMPANION_LIST, pityLeft } from '@/data/companions';
 import { ELEMENTS } from '@/data/elements';
 import type { ZoneId } from '@/data/types';
@@ -236,6 +237,7 @@ export class Menu {
     out.push(this.mythicCard());
     out.push(this.weeklyCard());
     out.push(this.beastCard());
+    out.push(this.sanctumCard());
     const myth = s.mythic.on && mythicOpen(s.bossesDefeated);
     DUNGEON_ORDER.forEach((id, i) => {
       const z = ZONES[id];
@@ -264,6 +266,45 @@ export class Menu {
       if (!myth) for (const sid of SIDE_ORDER.filter((x) => ZONES[x].side!.unlockAfter === id)) out.push(this.sideCard(sid));
     });
     return out;
+  }
+
+  /** 神域副本卡片（v1.101）：5 個高難度副本，打倒第 30 層後依序開放；每關只掉自己的專屬套裝、有詛咒 */
+  private sanctumCard(): HTMLElement {
+    const s = this.state;
+    const done = SANCTUM_ORDER.filter((id) => s.bossesDefeated.includes(id)).length;
+    const rows = SANCTUM_ORDER.map((id) => {
+      const z = ZONES[id];
+      const sc = SANCTUMS[z.sanctum!.order - 1];
+      const open = isZoneUnlocked(s, id);
+      const cleared = s.bossesDefeated.includes(id);
+      const pieces = sanctumPieces(s.heroClass, sc.order, s.equipment);
+      const owned = new Set([...s.inventory.map((i) => i.base), ...Object.values(s.equipment).map((i) => i!.base)]);
+      const have = (['weapon', 'hat', 'robe', 'gloves', 'boots', 'ring'] as const).filter((sl) => owned.has(`${s.heroClass}_${sl}_${sanctumIndex(sc.order)}`)).length;
+      const c = curseFor(sc.order, pieces);
+      const pct = (v: number) => `${v > 1 ? '+' : '−'}${Math.round(Math.abs(v - 1) * 100)}%`;
+      let action: HTMLElement;
+      if (s.zoneId === id) action = h('span', { class: 'pill' }, '這裡');
+      else if (!open) action = h('span', { class: 'pill locked' }, '🔒');
+      else action = h('button', { class: 'go', onclick: () => this.travel(id) }, cleared ? '再戰' : '挑戰');
+      const setName = SANCTUM_GEAR[s.heroClass].prefixes[sc.order - 1];
+      return h('div', { class: `beast-row sanctum-row${open ? '' : ' locked'}${cleared ? ' done' : ''}` }, [
+        h('span', { class: 'beast-ico' }, open ? sc.icon : '❔'),
+        h('div', { class: 'beast-info' }, [
+          h('b', {}, open ? sc.name : `第 ${sc.order} 神域`),
+          h('small', {}, open ? `Lv.${mythicLevel(sc.floor)}・首領 ${bossOf(id)?.name ?? '—'}${cleared ? '・✓ 已制霸' : `・首次 +${sc.firstGems}💎`}` : `擊敗${zoneLabel(z.sanctum!.unlockAfter)}後開放`),
+          open ? h('small', { class: 'beast-sub' }, `專屬「${setName}套裝」收集 ${have}/6・穿著 ${pieces}/6`) : null,
+          open
+            ? h('small', { class: `sanctum-curse${c.blessed ? ' blessed' : ''}` }, c.blessed ? `✨ 祝福：造成傷害 ${pct(c.dealtMul)}、受到傷害 ${pct(c.takenMul)}` : `${sc.curse.icon} 詛咒「${sc.curse.name}」：造成傷害 ${pct(c.dealtMul)}、受到傷害 ${pct(c.takenMul)}`)
+            : null,
+        ]),
+        action,
+      ]);
+    });
+    return h('div', { class: 'card beast-card sanctum-card' }, [
+      h('h4', {}, ['✦ 神域副本', h('small', {}, `已制霸 ${done} / ${SANCTUM_ORDER.length}`)]),
+      h('p', {}, '眾神的領域，打倒第 30 層後依序開放。敵人是固定強度、首領不會自動調整。每個神域只掉自己的專屬套裝；神域裡有詛咒，身上每穿 1 件這裡的套裝詛咒減輕 1/6，6 件全滿變成祝福。'),
+      h('div', { class: 'beast-list' }, rows),
+    ]);
   }
 
   /** 神獸討伐卡片（v1.86）：10 隻魔王，隨主線開放 */

@@ -650,7 +650,7 @@ export class Hud {
     const zone = this.currentZone;
     this.els.lv.textContent = `Lv.${s.level}`;
     this.els.title.textContent = s.rebirth?.count ? `${s.playerName}・${rebirthLabel(s.rebirth.count)}` : s.playerName;
-    this.els.zoneName.textContent = zone ? (this.mythic ? `🔥神話・${zone.name}` : zone.kind === 'dungeon' ? zone.name : zone.subtitle.split('・')[0]) : '';
+    this.els.zoneName.textContent = zone ? (this.mythic ? `🔥神話・${zone.name}` : zone.kind === 'dungeon' || zone.sanctum ? zone.name : zone.subtitle.split('・')[0]) : '';
     this.root.classList.toggle('mythic', this.mythic > 0);
     this.refreshBars();
     // v1.76 滿級後：經驗條改顯示神格等級進度（紫色）

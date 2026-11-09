@@ -41,6 +41,12 @@ export const DIVINE_PALETTES: Record<number, DivinePalette> = {
   6: { name: '緋紅', hue: 352, sat: 1.0, light: 0.95, glow: 0xff7a8a, accent: 0xffc0a0 },
   7: { name: '黃金', hue: 42, sat: 1.0, light: 1.0, glow: 0xffd86a, accent: 0xfff0b0 },
   8: { name: '神輝', hue: 225, sat: 1.0, light: 1.0, glow: 0xffe9a0, accent: 0xffd36b },
+  // v1.101 神域套裝（全身同一個神域的套裝時，主要套裝是神域裝就用這幾組；key = 8 + 神域編號）
+  9: { name: '神鍛赤金', hue: 12, sat: 1.0, light: 0.95, glow: 0xff9a4a, accent: 0xffd36b },
+  10: { name: '海神蒼瀾', hue: 188, sat: 1.0, light: 0.95, glow: 0x6ae8ff, accent: 0xb8f4ff },
+  11: { name: '月神銀輝', hue: 230, sat: 0.3, light: 1.15, glow: 0xe0ecff, accent: 0xc8d8ff },
+  12: { name: '冥王幽紫', hue: 285, sat: 0.9, light: 0.8, glow: 0xb06aff, accent: 0x6affc0 },
+  13: { name: '雷霆天穹', hue: 50, sat: 1.0, light: 1.05, glow: 0x9ae8ff, accent: 0xffe14a },
 };
 
 export type OrnamentKind = 'runeRing' | 'wings' | 'halo' | 'flameCrown' | 'soulWisps' | 'floatingSwords' | 'spiritMoon' | 'shadowShuriken';
@@ -82,7 +88,7 @@ export function divineFormOf(equipment: Partial<Record<EquipSlot, { base: string
   if (mythicPieces(equipment) < SLOTS.length) return null;
   const top = equippedSets(equipment)[0];
   if (!top) return null;
-  const tier = Math.max(1, Math.min(8, top.set.tier));
+  const tier = top.set.sanctum ? 8 + top.set.sanctum : Math.max(1, Math.min(8, top.set.tier));
   const full = top.count >= SLOTS.length;
   return { setId: top.set.id, setName: top.set.name, tier, full, palette: DIVINE_PALETTES[tier], key: `${tier}:${full ? 1 : 0}` };
 }

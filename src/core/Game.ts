@@ -16,7 +16,7 @@ import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
 import type { ZoneId } from '@/data/types';
 import { ambienceFor } from '@/audio/Ambience';
-import { ZONES, DUNGEON_ORDER, SIDE_ORDER, BEAST_ORDER, lootTierOf, rollZoneTier, floorLabel } from '@/data/zones';
+import { ZONES, DUNGEON_ORDER, SIDE_ORDER, BEAST_ORDER, SANCTUM_ORDER, lootTierOf, rollZoneTier, floorLabel } from '@/data/zones';
 import { beastBonus, beastsDone } from '@/systems/BeastHunt';
 import { Player } from '@/entities/Player';
 import { CameraRig } from '@/camera/CameraRig';
@@ -36,6 +36,9 @@ import type { AiContext } from '@/systems/EnemyAI';
 import type { Enemy } from '@/entities/Enemy';
 import { openCompanionView, openItemsView } from '@/ui/InventoryTabs';
 import { DIVINE_ORNAMENTS, divineFormOf, setLabel } from '@/data/divineForm';
+import { SANCTUMS, SANCTUM_DROP, curseFor, rollSanctumPiece, rollSanctumRarity, sanctumFirstGems, sanctumOf, sanctumPieces, type CurseNow } from '@/data/sanctum';
+import { setOutgoingMul } from '@/systems/Damage';
+import type { Rarity } from '@/data/types';
 import { AutoBattle, AUTO_CHEST_GIVEUP, AUTO_CHEST_RANGE, AUTO_HP_POTION } from '@/systems/AutoBattle';
 import { addExp, expForKill, rollGold } from '@/systems/Progression';
 import { computeStats } from '@/systems/Inventory';
@@ -276,7 +279,8 @@ export class Game {
       () => (this.towerRun ? tierForLevel(this.towerRun.level) : this.mythicFloorNow || this.weeklyRun ? MAX_TIER : this.zones.current ? rollZoneTier(this.zones.current.def.id) : 1),
       () => this.onInventoryChanged(),
       (x, z) => this.zones.current?.heightAt(x, z) ?? 0,
-      () => (this.mythicFloorNow ? MYTHIC.bossExtraDrops : 0),
+      () => (this.mythicFloorNow || this.sanctumNow ? MYTHIC.bossExtraDrops : 0),
+      (kind) => this.sanctumDrop(kind),
     );
     this.auto = new AutoBattle({
       minions: this.minions,
@@ -894,7 +898,7 @@ export class Game {
     if (eb && !this.bossFight && !this.towerRun && !this.weeklyRun) {
       this.bossFight = { zoneId: this.state.zoneId, start: this.state.stats.playTime, skillHits: 0, hits: 0, itemsAtStart: this.itemCount() };
       // 神話難度的首領不自動調整強度（跟試煉塔一樣）
-      if (!this.mythicFloorNow) this.scaleBoss(eb);
+      if (!this.mythicFloorNow && !this.sanctumNow) this.scaleBoss(eb);
     } else if (!eb && this.bossFight && !this.clearSeq) this.bossFight = null;
     // 首領強度自動調整：每秒依實際輸出調整生命（目標 180 秒、最快 150 秒）
     if (eb?.scaler) {
@@ -1538,7 +1542,38 @@ export class Game {
     p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
     p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));
     this.updateDivineForm();
+    this.updateCurse(false);
     bus.emit('player:changed');
+  }
+
+  /** v1.101 神域詛咒（不在神域時 null）；造成傷害的倍率交給 Damage.setOutgoingMul，受到傷害在 hitPlayer() 套用 */
+  private sanctumNow = 0;
+  private curse: CurseNow | null = null;
+  private updateCurse(entering: boolean) {
+    const k = this.sanctumNow;
+    const prev = this.curse;
+    this.curse = k ? curseFor(k, sanctumPieces(this.state.heroClass, k, this.state.equipment)) : null;
+    setOutgoingMul(this.curse?.dealtMul ?? 1);
+    if (!k || !this.curse) return;
+    const sc = SANCTUMS[k - 1];
+    const c = this.curse;
+    const pct = (v: number) => `${v > 1 ? '+' : '−'}${Math.round(Math.abs(v - 1) * 100)}%`;
+    if (entering || !prev || prev.pieces !== c.pieces) {
+      const text = c.blessed
+        ? `✨ ${sc.name}的祝福（套裝 6/6）：造成傷害 ${pct(c.dealtMul)}、受到傷害 ${pct(c.takenMul)}`
+        : `${sc.curse.icon} 神域詛咒「${sc.curse.name}」（套裝 ${c.pieces}/6）：造成傷害 ${pct(c.dealtMul)}、受到傷害 ${pct(c.takenMul)}`;
+      bus.emit('toast', { text, duration: 4 });
+    }
+  }
+
+  /** v1.101 神域掉落：小怪機率掉、首領必掉這個神域的專屬套裝（偏向還沒有的部位） */
+  private sanctumDrop(kind: 'mob' | 'boss' | 'chest'): { base: string; rarity: Rarity } | null {
+    const k = this.sanctumNow;
+    if (!k) return null;
+    if (kind !== 'boss' && Math.random() >= (kind === 'mob' ? SANCTUM_DROP.mob : SANCTUM_DROP.chest)) return null;
+    const s = this.state;
+    const owned = new Set<string>([...s.inventory.map((i) => i.base), ...Object.values(s.equipment).map((i) => i!.base)]);
+    return { base: rollSanctumPiece(s.heroClass, k, owned), rarity: rollSanctumRarity(kind === 'boss') };
   }
 
   /** v1.99 神裝形態：全身★神話裝時換外觀；剛變身時放特效＋提示（讀檔進遊戲時不放） */
@@ -1710,6 +1745,10 @@ export class Game {
     if (p.wildRoarT > 0) out.push({ icon: '🦁', label: '野性咆哮', t: p.wildRoarT });
     if (p.ninjaCloneT > 0) out.push({ icon: '👥', label: '影分身', t: p.ninjaCloneT });
     if (p.invulnerable > 0.4) out.push({ icon: '✨', label: '無敵', t: p.invulnerable });
+    if (this.curse) {
+      const sc = SANCTUMS[this.sanctumNow - 1];
+      out.push(this.curse.blessed ? { icon: '✨', label: '神域祝福', kind: 'good' } : { icon: sc.curse.icon, label: `詛咒 ${this.curse.pieces}/6`, kind: 'bad' });
+    }
     const BUFF_ICON: Record<BuffStat, [string, string]> = {
       atk: ['⚔️', '攻擊'], def: ['🫒', '減傷'], speed: ['💨', '移速'], crit: ['🎯', '爆擊'],
       pen: ['🔱', '穿透'], critDmg: ['💥', '爆傷'], cdr: ['⏳', '冷卻'], leech: ['🍇', '吸血'],
@@ -1980,12 +2019,13 @@ export class Game {
         if (bondUp) this.onBondUp(comp.id);
       }
     }
-    const sideUnlocked = first ? [...SIDE_ORDER.filter((id) => ZONES[id].side!.unlockAfter === zoneId), ...BEAST_ORDER.filter((id) => ZONES[id].beast!.unlockAfter === zoneId)] : [];
+    const sideUnlocked = first ? [...SIDE_ORDER.filter((id) => ZONES[id].side!.unlockAfter === zoneId), ...BEAST_ORDER.filter((id) => ZONES[id].beast!.unlockAfter === zoneId), ...SANCTUM_ORDER.filter((id) => ZONES[id].sanctum!.unlockAfter === zoneId)] : [];
     // v1.86 神獸討伐：第一次打倒額外鑽石
-    const beastGems = first ? beastBonus(zoneId) : 0;
+    const beastGems = first ? beastBonus(zoneId) + sanctumFirstGems(zoneId) : 0;
     if (beastGems) {
       s.gems += beastGems;
-      bus.emit('toast', { text: `⚔ 第一次討伐${name}：+${beastGems}💎（神獸討伐 ${beastsDone(s.bossesDefeated)} / ${BEAST_ORDER.length}）`, duration: 3.5, kind: 'reward' });
+      const sc = sanctumOf(zoneId);
+      bus.emit('toast', { text: sc ? `${sc.icon} 第一次制霸${sc.name}：+${beastGems}💎（神域 ${SANCTUM_ORDER.filter((id) => s.bossesDefeated.includes(id)).length} / ${SANCTUM_ORDER.length}）` : `⚔ 第一次討伐${name}：+${beastGems}💎（神獸討伐 ${beastsDone(s.bossesDefeated)} / ${BEAST_ORDER.length}）`, duration: 3.5, kind: 'reward' });
     }
     bus.emit('banner', { text: `擊敗${name}！` });
     bus.emit('boss:defeated', { zoneId, first });
@@ -2044,6 +2084,7 @@ export class Game {
     const res = calcDamage({ atk: e.def.stats.atk * e.atkMul, pen: 0, critRate: 0.05, critDmg: 1.5 }, power, p.stats.def);
     // 道具「雅典娜橄欖油」：減傷 25%
     if (this.cbuff.def) res.amount = Math.max(1, Math.round(res.amount * (1 - this.cbuff.def.v)));
+    if (this.curse) res.amount = Math.max(1, Math.round(res.amount * this.curse.takenMul));
     // 道具護盾先吸收
     if (this.shield.hp > 0) {
       const absorbed = Math.min(this.shield.hp, res.amount - 1);
@@ -2266,7 +2307,11 @@ export class Game {
     // v1.77 神話難度：開著、是主線副本、這層已開放 → 敵人換算到 Lv.110＋層數
     const mf = mythicFloor(id);
     this.mythicFloorNow = this.state.mythic.on && mythicOpen(this.state.bossesDefeated) && mf > 0 && mythicUnlocked(this.state.mythic, mf) ? mf : 0;
-    this.enemies.spawnForZone(zone.def, this.mythicFloorNow ? (ed) => this.mythicSpawn(ed, this.mythicFloorNow) : undefined);
+    // v1.101 神域副本：敵人借用神話換算（固定強度），詛咒依身上的專屬套裝件數
+    const sc = sanctumOf(id);
+    this.sanctumNow = sc?.order ?? 0;
+    const spawnFloor = this.mythicFloorNow || sc?.floor || 0;
+    this.enemies.spawnForZone(zone.def, spawnFloor ? (ed) => this.mythicSpawn(ed, spawnFloor) : undefined);
     if (zone.def.safe && this.auto?.on) this.setAuto(false);
     this.state.zoneId = id;
     this.player.groundY = zone.heightAt(at.x, at.z);
@@ -2276,11 +2321,12 @@ export class Game {
     this.hud.currentZone = zone.def;
     this.hud.mythic = this.mythicFloorNow;
     if (this.mythicFloorNow) bus.emit('toast', { text: `🔥 神話難度・第 ${this.mythicFloorNow} 層：敵人 Lv.${mythicLevel(this.mythicFloorNow)}，首領不會自動調整強度`, duration: 3.5 });
+    this.updateCurse(true);
     this.labelDodger.setRoot(zone.group);
     this.hud.setZone(zone.def);
     const def = zone.def;
-    const range = this.mythicFloorNow ? `（🔥神話 Lv.${mythicLevel(this.mythicFloorNow)}）` : def.levelRange ? `（Lv.${def.levelRange[0]}-${def.levelRange[1]}）` : '';
-    const name = def.dungeon ? `${floorLabel(def.dungeon!.floor)}・${def.name}` : def.subtitle.split('・')[0];
+    const range = this.mythicFloorNow ? `（🔥神話 Lv.${mythicLevel(this.mythicFloorNow)}）` : def.levelRange ? (def.levelRange[0] === def.levelRange[1] ? `（Lv.${def.levelRange[0]}）` : `（Lv.${def.levelRange[0]}-${def.levelRange[1]}）`) : '';
+    const name = def.dungeon ? `${floorLabel(def.dungeon!.floor)}・${def.name}` : def.sanctum ? `✦ ${def.name}` : def.subtitle.split('・')[0];
     bus.emit('banner', { text: def.kind === 'town' ? `回到${name}` : `進入 ${name}${range}` });
     bus.emit('zone:enter', { zoneId: id });
   }

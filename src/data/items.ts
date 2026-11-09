@@ -1,6 +1,7 @@
 import type { EquipSlot, Rarity, Stats } from './types';
 import { CLASSES, type HeroClass } from './classes';
 import { CLASS_GEAR, MAX_TIER, NAMED_TIERS, TIERS, type GearProfile, type Tier } from './gear';
+import { SANCTUM_GEAR, SANCTUMS, sanctumIndex } from './sanctum';
 
 /**
  * 裝備資料
@@ -22,6 +23,8 @@ export interface ItemBase {
   cls?: HeroClass;
   named?: boolean;
   profile?: GearProfile;
+  /** v1.101 神域裝：第幾個神域的專屬套裝（只在那個神域掉落） */
+  sanctum?: number;
 }
 
 /**
@@ -125,7 +128,7 @@ function roundStat(k: keyof Stats, v: number): number {
   return PCT_KEYS.includes(k) ? Math.round(v * 1000) / 1000 : Math.max(1, Math.round(v));
 }
 
-function namedStats(slot: EquipSlot, tier: Tier, profile: GearProfile): Partial<Stats> {
+function namedStats(slot: EquipSlot, tier: Tier, profile: GearProfile, budget = NAMED_BUDGET): Partial<Stats> {
   const std = scaled(slot, tier);
   const p = PROFILES[profile];
   // 主屬性（標準裝的屬性 × k）與額外屬性（依階級成長）分開算
@@ -138,7 +141,7 @@ function namedStats(slot: EquipSlot, tier: Tier, profile: GearProfile): Partial<
   }
   // v1.55：百分比的額外屬性（爆擊、爆傷、穿透、移速）照原值給，不參與「補到預算」的放大
   // （以前爆傷在評分裡很便宜，後期會被放大好幾倍）；剩下的預算放大主屬性與平坦的額外屬性
-  const total = statScore(std) * NAMED_BUDGET;
+  const total = statScore(std) * budget;
   const pctExtra: Partial<Stats> = {};
   const scalable: Partial<Stats> = { ...main };
   for (const [k, v] of Object.entries(extra) as [keyof Stats, number][]) {
@@ -187,6 +190,20 @@ for (const [cls, g] of Object.entries(CLASS_GEAR) as [HeroClass, (typeof CLASS_G
       const key = `${cls}|${slot}|${tier}`;
       NAMED_INDEX.set(key, [...(NAMED_INDEX.get(key) ?? []), id]);
     });
+  }
+}
+// v1.101 神域裝：每個職業 × 5 個神域 × 6 個欄位，編號 21～25、第 8 階、預算比一般神話裝高；
+// 不放進 NAMED_INDEX（只在對應的神域掉落，見 data/sanctum.ts）
+for (const [cls, sg] of Object.entries(SANCTUM_GEAR) as [HeroClass, (typeof SANCTUM_GEAR)[HeroClass]][]) {
+  const g = CLASS_GEAR[cls];
+  for (const sc of SANCTUMS) {
+    const prefix = sg.prefixes[sc.order - 1];
+    const profile = sg.profiles[sc.order - 1];
+    for (const slot of SLOT_ORDER) {
+      const id = `${cls}_${slot}_${sanctumIndex(sc.order)}`;
+      const stats = namedStats(slot, MAX_TIER as Tier, profile, sc.budget);
+      ITEM_BASES[id] = { id, slot, tier: MAX_TIER as Tier, name: `${prefix}${g.slotNames[slot]}`, icon: g.icons[slot], stats: CLASSES[cls].resource === 'rage' ? mpToHp(stats) : stats, cls, named: true, profile, sanctum: sc.order };
+    }
   }
 }
 

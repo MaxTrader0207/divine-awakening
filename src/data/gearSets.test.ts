@@ -7,8 +7,8 @@ import { computeStats } from '@/systems/Inventory';
 import { GEM_SHOP, buyGemItem, goldBag, setToComplete } from '@/systems/GemShop';
 
 describe('套裝效果', () => {
-  it('每個職業 20 套，每套 6 件都存在、同一階', () => {
-    expect(GEAR_SETS.size).toBe(CLASS_LIST.length * 20);
+  it('每個職業 20 套神話裝＋5 套神域裝（v1.101），每套 6 件都存在、同一階', () => {
+    expect(GEAR_SETS.size).toBe(CLASS_LIST.length * 25);
     for (const set of GEAR_SETS.values()) {
       for (const slot of SLOT_ORDER) {
         const b = ITEM_BASES[set.pieces[slot]];

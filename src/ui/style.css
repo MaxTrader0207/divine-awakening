@@ -1284,3 +1284,11 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
 .divine-card .dv-pips i { width: 14px; height: 14px; border-radius: 4px; background: rgba(255, 255, 255, .12); }
 .divine-card .dv-pips i.on { background: var(--dv, #ffd86a); box-shadow: 0 0 6px var(--dv, #ffd86a); }
 .divine-card.on { border-color: color-mix(in srgb, var(--dv, #ffd86a) 70%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--dv, #ffd86a) 30%, transparent); }
+
+/* v1.101 神域副本卡片 */
+.sanctum-card { border-color: rgba(255, 216, 106, 0.6); background: linear-gradient(135deg, rgba(90, 70, 20, 0.32), var(--panel-2)); }
+.sanctum-card h4 small { color: #ffe39a; }
+.sanctum-row .beast-ico { background: rgba(255, 216, 106, 0.16); }
+.sanctum-curse { color: #ff9a9a; }
+.sanctum-curse.blessed { color: #ffe39a; }
+.sanctum-row .beast-info small { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }

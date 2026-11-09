@@ -15,9 +15,16 @@ export interface DamageSource {
   element?: Element;
 }
 
+/** v1.101 神域詛咒 / 祝福：玩家這一方（本人、召喚物、夥伴）造成傷害的倍率，Game 進入神域與換裝時設定 */
+let outgoingMul = 1;
+export function setOutgoingMul(v: number) {
+  outgoingMul = v;
+}
+
 export function damageEnemy(e: Enemy, attacker: AttackerStats, power: number, source?: DamageSource): DamageResult | null {
   if (!e.alive) return null;
   const res = calcDamage(attacker, power, e.defense);
+  if (outgoingMul !== 1) res.amount = Math.max(1, Math.round(res.amount * outgoingMul));
   if (source?.element) res.amount = Math.max(1, Math.round(res.amount * elementMul(source.element, e.def.element)));
   const killed = e.takeDamage(res.amount, source);
   // 首領的神力擋下超量傷害時，顯示實際扣掉的量

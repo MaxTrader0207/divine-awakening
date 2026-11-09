@@ -799,6 +799,93 @@ export const BOSS_SKILLS = {
     pattern: 'leap', name: '吞噬眾神', desc: '泰坦之王躍起，砸落在玩家位置',
     windup: 1.5, power: 2.1, color: 0xd8f0ff, discColor: 0x2a3a6a, radius: 4.8,
   },
+
+  /* ==== 神域副本（v1.101，scratchpad gen/gen_sanctum.py 產生） ==== */
+  /* ---- 神域1・神鍛守衛刻德利翁 ---- */
+  sanct1_anvil: {
+    pattern: 'leap', name: '神砧重擊', desc: '跳起來把整個人當鐵鎚砸下',
+    windup: 1.4, power: 2.0, color: 0xffb06a, discColor: 0x6a2a10, radius: 4.6,
+  },
+  sanct1_sparks: {
+    pattern: 'rain', name: '鍛造火花', desc: '鐵鎚敲出的火花落滿四周（狂暴時更多）',
+    windup: 1.3, power: 1.6, color: 0xff8a3a, pillarColor: 0xffd08a, count: 8, countEnraged: 12, radius: 2.0, spread: 8, stagger: 0.07,
+  },
+  sanct1_bellows: {
+    pattern: 'cone', name: '風箱烈焰', desc: '往前方扇形噴出熔爐火焰（狂暴時更寬）',
+    windup: 1.0, power: 1.9, color: 0xff6a1a, range: 8, angle: 80, angleEnraged: 130,
+  },
+  sanct1_quench: {
+    pattern: 'nova', name: '淬火爆裂', desc: '把燒紅的身體浸進水裡，蒸氣往四周炸開（狂暴時範圍更大）',
+    windup: 1.2, power: 1.9, color: 0xffe0b0, discColor: 0x8a3a1a, radius: 6, radiusEnraged: 7.5,
+  },
+  /* ---- 神域2・海神之子特里同 ---- */
+  sanct2_conch: {
+    pattern: 'nova', name: '海螺號角', desc: '吹響海螺，聲浪往四周震開（狂暴時範圍更大）',
+    windup: 1.2, power: 1.8, color: 0x9af0ff, discColor: 0x1a4a6a, radius: 6, radiusEnraged: 7.5,
+  },
+  sanct2_trident: {
+    pattern: 'multiLine', name: '三叉戟突刺', desc: '往前方三個方向刺出水柱（狂暴時五道）',
+    windup: 1.0, power: 1.7, color: 0x6ae0ff, angles: [-22, 0, 22], anglesEnraged: [-40, -20, 0, 20, 40], count: 7, start: 2, spacing: 2.1, radius: 1.5, stagger: 0.06,
+  },
+  sanct2_tide: {
+    pattern: 'rain', name: '深海漩流', desc: '腳下的海水捲成漩渦（狂暴時更多）',
+    windup: 1.4, power: 1.6, color: 0x4fb8ff, pillarColor: 0xb8f4ff, count: 8, countEnraged: 12, radius: 2.2, spread: 8, stagger: 0.08,
+  },
+  sanct2_surge: {
+    pattern: 'dash', name: '怒濤衝鋒', desc: '化成一道浪直線沖過去',
+    windup: 1.0, power: 2.0, color: 0xb8f4ff, length: 16, width: 3,
+  },
+  /* ---- 神域3・月神獵犬萊拉普斯 ---- */
+  sanct3_hunt: {
+    pattern: 'dash', name: '必中的追獵', desc: '命中註定抓得到一切的獵犬，直線撲向玩家',
+    windup: 0.9, power: 2.0, color: 0xe8f0ff, length: 18, width: 2.8,
+  },
+  sanct3_moonfang: {
+    pattern: 'spokes', name: '月牙咬擊', desc: '往四周咬出月牙，月牙之間是安全區（狂暴時更多）',
+    windup: 1.1, power: 1.7, color: 0xc8d8ff, count: 7, countEnraged: 10, range: 10, angle: 16,
+  },
+  sanct3_eclipse: {
+    pattern: 'rain', name: '月蝕', desc: '月光變成光柱落下（狂暴時更多）',
+    windup: 1.4, power: 1.6, color: 0xe0ecff, pillarColor: 0xffffff, count: 8, countEnraged: 12, radius: 2.1, spread: 8, stagger: 0.08,
+  },
+  sanct3_pounce: {
+    pattern: 'leap', name: '獵犬撲殺', desc: '高高躍起撲向玩家',
+    windup: 1.3, power: 2.0, color: 0xe8f0ff, discColor: 0x3a4a6a, radius: 4.2,
+  },
+  /* ---- 神域4・冥府判官米諾斯 ---- */
+  sanct4_verdict: {
+    pattern: 'cone', name: '最終判決', desc: '判官的權杖往前方掃過（狂暴時更寬）',
+    windup: 1.1, power: 2.1, color: 0xb06aff, range: 8, angle: 110, angleEnraged: 160,
+  },
+  sanct4_souls: {
+    pattern: 'spokes', name: '亡魂行列', desc: '亡魂排成行列往四周走去，行列之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.8, color: 0x8affc8, count: 9, countEnraged: 13, range: 11, angle: 13,
+  },
+  sanct4_wither: {
+    pattern: 'rain', name: '凋零之雨', desc: '冥府的灰燼落下（狂暴時更多）',
+    windup: 1.5, power: 1.7, color: 0xb06aff, pillarColor: 0xe0c8ff, count: 9, countEnraged: 13, radius: 2.2, spread: 8, stagger: 0.08,
+  },
+  sanct4_gavel: {
+    pattern: 'leap', name: '審判之槌', desc: '躍起砸在玩家位置',
+    windup: 1.5, power: 2.2, color: 0xe0c8ff, discColor: 0x2a1a3a, radius: 4.8,
+  },
+  /* ---- 神域5・天罰神鷹埃托斯 ---- */
+  sanct5_bolts: {
+    pattern: 'rain', name: '天罰雷霆', desc: '宙斯的雷霆一道道劈下（狂暴時更多）',
+    windup: 1.4, power: 1.8, color: 0x9ae8ff, pillarColor: 0xffffff, count: 10, countEnraged: 14, radius: 2.0, spread: 9, stagger: 0.06,
+  },
+  sanct5_stoop: {
+    pattern: 'leap', name: '神鷹俯衝', desc: '飛到高空再俯衝砸向玩家',
+    windup: 1.4, power: 2.2, color: 0xffe14a, discColor: 0x3a4a8a, radius: 4.6,
+  },
+  sanct5_feathers: {
+    pattern: 'multiLine', name: '雷羽齊射', desc: '往前方射出好幾排帶電的羽毛（狂暴時更多）',
+    windup: 1.1, power: 1.7, color: 0xffe14a, angles: [-30, -10, 10, 30], anglesEnraged: [-45, -27, -9, 9, 27, 45], count: 8, start: 2, spacing: 2.0, radius: 1.4, stagger: 0.05,
+  },
+  sanct5_storm: {
+    pattern: 'spokes', name: '雷暴之翼', desc: '展開雙翼，雷光往四周掃出，雷光之間是安全區（狂暴時更多）',
+    windup: 1.2, power: 1.9, color: 0x9ae8ff, count: 10, countEnraged: 14, range: 11, angle: 12,
+  },
 } satisfies Record<string, BossSkillDef>;
 
 export type BossSkillId = keyof typeof BOSS_SKILLS;
