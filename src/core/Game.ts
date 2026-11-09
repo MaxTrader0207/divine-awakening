@@ -1803,6 +1803,7 @@ export class Game {
     if (!this.state.daily) return;
     const done = progressQuests(this.state.daily, ev);
     this.state.stats.questsDone += done.length;
+    if (done.length) this.tutorial({ type: 'quest' });
     for (const q of done) bus.emit('toast', { text: `📋 每日任務完成：${questText(q)}`, duration: 3, kind: 'reward' });
     bus.emit('quests:changed');
   }
@@ -1852,6 +1853,7 @@ export class Game {
       s.stats.goldEarned += gold;
       this.quest({ type: 'gold', amount: gold });
       this.loot.treasure(at.x, at.z, Math.random() < 0.3);
+      this.tutorial({ type: 'chest' });
       bus.emit('float:text', { x: at.x, y: 1.8, z: at.z, text: `+${gold} 金幣`, kind: 'gold' });
       bus.emit('toast', { text: `🎁 打開寶箱！（這張地圖還有 ${tr.count} 個）`, kind: 'reward' });
       this.effects.pillar(at.x, at.z, 0.7, 0xffd36b, 0.9);

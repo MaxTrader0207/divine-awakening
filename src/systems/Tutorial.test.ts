@@ -38,7 +38,7 @@ describe('新手指引', () => {
     const t = newTutorial();
     t.step = TUTORIAL_STEPS.length - 1;
     t.rewarded = TUTORIAL_STEPS.length - 1;
-    const last = tutorialEvent(t, { type: 'boss', zone: 'dungeon_1' }, town);
+    const last = tutorialEvent(t, { type: 'boss', zone: 'dungeon_2' }, town);
     expect(last[0].rewarded).toBe(true);
     expect(t.done).toBe(true);
     restartTutorial(t);
@@ -86,5 +86,27 @@ describe('新手指引', () => {
     const fin = migrate({ version: 11, level: 9, bossesDefeated: ['dungeon_1'], tutorial: { step: 11, progress: 0, skills: [], done: true, hidden: false, rewarded: 11 } } as never)!;
     expect(fin.tutorial.done).toBe(true);
     expect(fin.tutorial.step).toBe(TUTORIAL_STEPS.length);
+  });
+
+  it('v1.100：首領之後還有尋寶、每日任務、第二層首領；完成第二層首領才結束', () => {
+    const ids = TUTORIAL_STEPS.map((s) => s.id);
+    expect(ids.slice(-4)).toEqual(['boss', 'chest', 'quest', 'floor2']);
+    const t = { ...newTutorial(), step: ids.indexOf('chest'), rewarded: ids.indexOf('chest') };
+    const field: TutorialContext = { zoneId: 'grassland', level: 6, bossesDefeated: ['dungeon_1'] };
+    expect(tutorialEvent(t, { type: 'quest' }, field)).toHaveLength(0);
+    expect(tutorialEvent(t, { type: 'chest' }, field).map((d) => d.step.id)).toEqual(['chest']);
+    expect(tutorialEvent(t, { type: 'quest' }, field).map((d) => d.step.id)).toEqual(['quest']);
+    expect(t.done).toBe(false);
+    // 已經打倒第二層首領的話，輪到時直接完成
+    const done = tutorialEvent(t, null, { ...field, bossesDefeated: ['dungeon_1', 'dungeon_2'] });
+    expect(done.map((d) => d.step.id)).toEqual(['floor2']);
+    expect(t.done).toBe(true);
+  });
+
+  it('每一步的 HUD 目標文字夠短、說明不空白', () => {
+    for (const s of TUTORIAL_STEPS) {
+      expect(s.text.length).toBeLessThanOrEqual(22);
+      expect(s.hint.length).toBeGreaterThan(20);
+    }
   });
 });

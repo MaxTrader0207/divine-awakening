@@ -33,7 +33,9 @@ export type TutorialEvent =
   | { type: 'equip' }
   | { type: 'buy' }
   | { type: 'enhance' }
-  | { type: 'boss'; zone: ZoneId };
+  | { type: 'boss'; zone: ZoneId }
+  | { type: 'chest' }
+  | { type: 'quest' };
 
 /** 檢查狀態型目標需要的玩家資料 */
 export interface TutorialContext {
@@ -115,6 +117,8 @@ function matches(s: TutorialStep, t: TutorialState, ev: TutorialEvent): boolean 
     case 'buy':
     case 'enhance':
     case 'item':
+    case 'chest':
+    case 'quest':
       return ev.type === g.type;
   }
 }
