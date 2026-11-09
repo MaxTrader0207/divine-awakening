@@ -1292,3 +1292,84 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
 .sanctum-curse { color: #ff9a9a; }
 .sanctum-curse.blessed { color: #ffe39a; }
 .sanctum-row .beast-info small { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }
+
+/* ---- v1.102 湊齊整套：狀態框換成職業專屬花紋（顏色跟著套裝配色 --dv / --dv2）---- */
+.hud.set-full .status-card {
+  --pat: transparent; --glyph: '✦';
+  position: relative; overflow: hidden; isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--dv2, #fff0b0) 80%, transparent);
+  background:
+    var(--pat),
+    linear-gradient(115deg, color-mix(in srgb, var(--dv, #ffd86a) 34%, rgba(14, 16, 28, 0.9)) 0%, rgba(14, 16, 28, 0.88) 58%, color-mix(in srgb, var(--dv2, #fff0b0) 18%, rgba(14, 16, 28, 0.9)) 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dv, #ffd86a) 45%, transparent), 0 0 18px color-mix(in srgb, var(--dv, #ffd86a) 55%, transparent), inset 0 0 18px color-mix(in srgb, var(--dv, #ffd86a) 22%, transparent), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.hud.set-full .status-card > * { position: relative; z-index: 1; }
+/* 掃過的光 */
+.hud.set-full .status-card::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--dv2, #fff0b0) 30%, transparent) 50%, transparent 65%);
+  background-size: 260% 100%; animation: setSheen 4.5s ease-in-out infinite;
+}
+/* 職業徽記（右側淡淡的大圖示）＋套裝名稱 */
+.hud.set-full .status-card::after {
+  content: var(--glyph); position: absolute; right: -4px; top: 50%; transform: translateY(-50%) rotate(-8deg); z-index: 0; pointer-events: none;
+  font-size: 70px; line-height: 1; font-weight: 900; color: color-mix(in srgb, var(--dv2, #fff0b0) 34%, transparent);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--dv, #ffd86a) 40%, transparent);
+}
+.hud.set-full .status-title { letter-spacing: 0.5px; }
+@keyframes setSheen { 0% { background-position: 130% 0; } 55%, 100% { background-position: -130% 0; } }
+@media (prefers-reduced-motion: reduce) { .hud.set-full .status-card::before { animation: none; opacity: 0.5; } }
+
+/* 法師：符文同心環 */
+.hud.set-full[data-set-cls='mage'] .status-card { --glyph: '✷';
+  --pat: repeating-radial-gradient(circle at 82% 50%, transparent 0 9px, color-mix(in srgb, var(--dv2) 42%, transparent) 9px 10px, transparent 10px 15px, color-mix(in srgb, var(--dv) 26%, transparent) 15px 17px); }
+/* 弓手：斜飛的羽痕 */
+.hud.set-full[data-set-cls='archer'] .status-card { --glyph: '➹';
+  --pat: repeating-linear-gradient(118deg, transparent 0 13px, color-mix(in srgb, var(--dv2) 35%, transparent) 13px 14px, transparent 14px 18px, color-mix(in srgb, var(--dv) 22%, transparent) 18px 19px); }
+/* 騎士：盾紋菱格 */
+.hud.set-full[data-set-cls='knight'] .status-card { --glyph: '⛨';
+  --pat: linear-gradient(45deg, color-mix(in srgb, var(--dv) 22%, transparent) 25%, transparent 25% 75%, color-mix(in srgb, var(--dv) 22%, transparent) 75%) 0 0 / 18px 18px,
+         linear-gradient(-45deg, color-mix(in srgb, var(--dv2) 16%, transparent) 25%, transparent 25% 75%, color-mix(in srgb, var(--dv2) 16%, transparent) 75%) 0 0 / 18px 18px; }
+/* 狂戰士：底部竄起的火焰 */
+.hud.set-full[data-set-cls='berserker'] .status-card { --glyph: '♨';
+  --pat: radial-gradient(ellipse 22px 40px at 20% 115%, color-mix(in srgb, var(--dv) 72%, transparent), transparent 70%),
+         radial-gradient(ellipse 26px 52px at 48% 120%, color-mix(in srgb, var(--dv2) 61%, transparent), transparent 70%),
+         radial-gradient(ellipse 20px 38px at 72% 115%, color-mix(in srgb, var(--dv) 67%, transparent), transparent 70%),
+         radial-gradient(ellipse 24px 46px at 94% 118%, color-mix(in srgb, var(--dv2) 54%, transparent), transparent 70%); }
+/* 召喚師：飄浮的魂火 */
+.hud.set-full[data-set-cls='summoner'] .status-card { --glyph: '☠';
+  --pat: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--dv2) 72%, transparent) 0 2px, transparent 3px),
+         radial-gradient(circle at 58% 78%, color-mix(in srgb, var(--dv) 72%, transparent) 0 2.5px, transparent 4px),
+         radial-gradient(circle at 76% 30%, color-mix(in srgb, var(--dv2) 64%, transparent) 0 2px, transparent 3px),
+         radial-gradient(circle at 90% 70%, color-mix(in srgb, var(--dv) 56%, transparent) 0 3px, transparent 6px),
+         radial-gradient(ellipse at 80% 50%, color-mix(in srgb, var(--dv) 32%, transparent), transparent 60%); }
+/* 劍俠：交錯的劍氣 */
+.hud.set-full[data-set-cls='swordsman'] .status-card { --glyph: '⚔';
+  --pat: repeating-linear-gradient(-62deg, transparent 0 22px, color-mix(in srgb, var(--dv2) 48%, transparent) 22px 23px, transparent 23px 34px),
+         linear-gradient(28deg, transparent 46%, color-mix(in srgb, var(--dv) 48%, transparent) 49% 51%, transparent 54%); }
+/* 訓獸師：三道爪痕 */
+.hud.set-full[data-set-cls='tamer'] .status-card { --glyph: '✥';
+  --pat: linear-gradient(68deg, transparent 62%, color-mix(in srgb, var(--dv2) 51%, transparent) 63% 64.5%, transparent 65.5%),
+         linear-gradient(68deg, transparent 72%, color-mix(in srgb, var(--dv2) 51%, transparent) 73% 74.5%, transparent 75.5%),
+         linear-gradient(68deg, transparent 82%, color-mix(in srgb, var(--dv2) 51%, transparent) 83% 84.5%, transparent 85.5%),
+         radial-gradient(ellipse at 85% 60%, color-mix(in srgb, var(--dv) 35%, transparent), transparent 60%); }
+/* 忍者：夜空的星點＋手裏劍 */
+.hud.set-full[data-set-cls='ninja'] .status-card { --glyph: '✢';
+  --pat: radial-gradient(circle at 12% 30%, color-mix(in srgb, var(--dv2) 80%, transparent) 0 1px, transparent 1.5px) 0 0 / 23px 19px,
+         radial-gradient(circle at 60% 70%, color-mix(in srgb, var(--dv) 80%, transparent) 0 1px, transparent 1.5px) 0 0 / 31px 23px,
+         linear-gradient(180deg, rgba(0, 0, 0, 0.25), transparent); }
+
+/* 等級徽章與頭像外圈也換成套裝配色＋職業徽記 */
+.hud.set-full .avatar-lv {
+  background: linear-gradient(180deg, var(--dv2, #fff0b0), var(--dv, #ffd86a)); color: #1a1430;
+  border: 1px solid rgba(255, 255, 255, 0.75); padding: 1px 7px 1px 5px;
+  box-shadow: 0 0 8px var(--dv, #ffd86a), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.hud.set-full .avatar-lv::before { content: var(--glyph); margin-right: 2px; font-size: 10px; }
+.hud.set-full .avatar::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%; pointer-events: none;
+  border: 2px dashed color-mix(in srgb, var(--dv2, #fff0b0) 85%, transparent);
+  animation: setRing 14s linear infinite;
+}
+@keyframes setRing { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hud.set-full .avatar::after { animation: none; } }

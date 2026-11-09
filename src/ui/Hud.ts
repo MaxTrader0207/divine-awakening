@@ -1,4 +1,4 @@
-import { divineFormOf } from '@/data/divineForm';
+import { divineFormOf, setLabel } from '@/data/divineForm';
 import { LANDSCAPE, onLandscapeChange } from './landscape';
 import { ELEMENTS, type Element as Elem } from '@/data/elements';
 import { CONSUMABLE_MAP } from '@/data/consumables';
@@ -663,6 +663,16 @@ export class Hud {
     if (df) {
       this.root.style.setProperty('--dv', `#${df.palette.glow.toString(16).padStart(6, '0')}`);
       this.root.style.setProperty('--dv2', `#${df.palette.accent.toString(16).padStart(6, '0')}`);
+    }
+    // v1.102 湊齊整套（6 件同一套）：狀態框換成職業專屬的花紋背景＋套裝徽記（.hud.set-full[data-set-cls]）
+    const full = !!df?.full;
+    this.root.classList.toggle('set-full', full);
+    if (full) {
+      this.root.dataset.setCls = s.heroClass;
+      this.els.avatar.closest('.status-card')?.setAttribute('data-set', setLabel(df!.setName));
+    } else {
+      delete this.root.dataset.setCls;
+      this.els.avatar.closest('.status-card')?.removeAttribute('data-set');
     }
     this.els.expTag.textContent = div ? '神格' : 'EXP';
     this.els.avatar.style.setProperty('--exp', String(expR));
