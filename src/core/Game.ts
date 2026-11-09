@@ -10,7 +10,7 @@ import { COMPANIONS, companionOfGuardian, pityLeft, tryCapture } from '@/data/co
 import { LocalSave } from './SaveSystem';
 import { skipTitleOnce } from '@/ui/TitleScreen';
 import { PauseScreen, type PauseStatus } from '@/ui/PauseScreen';
-import { CONSUMABLE_MAP } from '@/data/consumables';
+import { CONSUMABLE_MAP, cdGroup, cdSeconds } from '@/data/consumables';
 import { MinionManager } from '@/systems/MinionManager';
 import type { Minion } from '@/entities/Minion';
 import { zoneLabel } from '@/data/zones';
@@ -116,6 +116,8 @@ export class Game {
   private guideLast = { x: 0, z: 0 };
   /** 道具的暫時增益（剩餘秒數）與持續回復 */
   private cbuff: Partial<Record<BuffStat, { t: number; v: number }>> = {};
+  /** v1.106 各類道具的冷卻（秒，群組見 data/consumables.ts 的 cdGroup；不存檔、倒下也不清除） */
+  private itemCd: Record<string, number> = {};
   /** 護盾（埃阿斯塔盾護符）：剩餘吸收量與時間 */
   private shield = { hp: 0, t: 0 };
   private hot = { t: 0, rate: 0 };
@@ -305,6 +307,7 @@ export class Game {
       level: () => this.state.level,
     });
     this.hud = new Hud(uiRoot, this.state, this.player, this.input, this.skills);
+    this.hud.itemCd = (id) => this.itemCdFrac(id);
     this.hud.treasureSpots = () => this.zones.current?.treasures?.remaining() ?? [];
     this.watchNetwork(uiRoot);
     // v1.79 設定「畫面方向」（HUD 建好之後套用，切換時 HUD 會跟著搬元件）
@@ -872,6 +875,7 @@ export class Game {
     const collision = this.zones.current!.collision;
     const pushOut = (pos: { x: number; z: number }, r: number) => this.enemies.pushOut(pos, r);
     this.skills.update(dt * (1 + (this.cbuff.cdr?.v ?? 0))); // 道具「冷卻快 30%」
+    for (const k in this.itemCd) if ((this.itemCd[k] -= dt) <= 0) delete this.itemCd[k]; // v1.106 道具冷卻（冷卻縮減不影響道具）
     this.counterTimer = Math.max(0, this.counterTimer - dt);
     if (this.deathTimer > 0) {
       this.deathTimer -= dt;
@@ -1497,6 +1501,16 @@ export class Game {
   }
 
   /** 快捷道具欄（左下第 3、4 格；電腦 3、4）：空格或用完 → 打開「裝備 → 道具」去設定 / 購買 */
+  /** v1.106 道具剩下的冷卻比例（0～1，HUD 快捷欄與道具清單用）；回復類看藥水冷卻 */
+  itemCdFrac(id: string): number {
+    const def = CONSUMABLE_MAP[id];
+    if (!def) return 0;
+    if (def.sharesPotionCd) return Math.min(1, this.skills.potionCd / POTION_COOLDOWN);
+    const g = cdGroup(def);
+    const total = cdSeconds(def);
+    return g && total ? Math.min(1, (this.itemCd[g] ?? 0) / total) : 0;
+  }
+
   private useQuickSlot(i: number) {
     const id = this.state.quickSlots[i];
     if (!id) {
@@ -1705,6 +1719,8 @@ export class Game {
       mpFull: p.mp >= p.stats.maxMp,
       potionCd: this.skills.potionCd > 0,
       alive: p.alive,
+      itemCd: this.itemCd,
+      activeBuffs: (Object.keys(this.cbuff) as BuffStat[]).filter((k) => (this.cbuff[k]?.t ?? 0) > 0),
     };
     const why = cannotUse(s, id, ctx);
     if (why) {
@@ -1713,6 +1729,8 @@ export class Game {
     }
     const def = consume(s, id, ctx)!;
     s.stats.itemsUsed++;
+    const cdG = cdGroup(def);
+    if (cdG) this.itemCd[cdG] = cdSeconds(def);
     const e = def.effect;
     switch (e.type) {
       case 'heal':

@@ -465,3 +465,51 @@ export function rollConsumable(rng: () => number = Math.random, cls?: HeroClass)
   }
   return pool[0].id;
 }
+
+/* ======================= 道具冷卻（v1.106） ======================= */
+
+/**
+ * 以前只有回復類有冷卻，快捷欄放兩瓶無敵藥水輪流按就能一直無敵、攻擊藥水一直續。
+ * v1.106：每一類道具各自一個冷卻（同類共用，換一種同類道具也要等）：
+ * - 回復（heal）沿用藥水冷卻；持續回復 regen 20 秒
+ * - 無敵 invuln 90 秒、技能冷卻重置 cdReset 90 秒、護盾 shield 45 秒、召喚 summon 30 秒、咆哮 roar 30 秒、範圍攻擊 nova 12 秒
+ * - 增益 buff：同一種屬性（攻擊、爆擊…）的冷卻 = 持續時間 × BUFF_CD_MUL（60 秒的攻擊藥 → 90 秒才能再喝，最多約 2/3 時間有效），
+ *   而且**同時最多 MAX_ACTIVE_BUFFS 種增益**
+ * - 傳送、長時間加成（經驗 / 金幣）沒有冷卻
+ * 冷卻不存檔（重新整理會清掉），只在戰鬥世界時間裡倒數（暫停、開選單時不動）。
+ */
+export const ITEM_CD: Partial<Record<ConsumableEffect['type'], number>> = {
+  regen: 20,
+  invuln: 90,
+  cdReset: 90,
+  shield: 45,
+  summon: 30,
+  roar: 30,
+  nova: 12,
+};
+export const BUFF_CD_MUL = 1.5;
+export const MAX_ACTIVE_BUFFS = 3;
+
+const CD_NAMES: Partial<Record<string, string>> = {
+  regen: '持續回復', invuln: '無敵', cdReset: '冷卻重置', shield: '護盾', summon: '召喚', roar: '咆哮', nova: '範圍攻擊',
+  'buff:atk': '攻擊增益', 'buff:def': '防禦增益', 'buff:speed': '移速增益', 'buff:crit': '爆擊增益', 'buff:pen': '穿透增益',
+  'buff:critDmg': '爆傷增益', 'buff:cdr': '冷卻縮減', 'buff:leech': '吸血增益',
+};
+
+/** 冷卻群組（同群組共用冷卻）；回復類（走藥水冷卻）與沒有冷卻的回傳 null */
+export function cdGroup(def: ConsumableDef): string | null {
+  const e = def.effect;
+  if (e.type === 'buff') return `buff:${e.stat}`;
+  return ITEM_CD[e.type] ? e.type : null;
+}
+
+/** 用了之後這個群組要冷卻幾秒 */
+export function cdSeconds(def: ConsumableDef): number {
+  const e = def.effect;
+  if (e.type === 'buff') return Math.round(e.duration * BUFF_CD_MUL);
+  return ITEM_CD[e.type] ?? 0;
+}
+
+export function cdGroupName(group: string): string {
+  return CD_NAMES[group] ?? '道具';
+}

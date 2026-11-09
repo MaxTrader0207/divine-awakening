@@ -100,3 +100,25 @@ describe('快捷道具欄', () => {
     expect(q).toEqual(['hestia_bread', null]);
   });
 });
+
+describe('道具冷卻（v1.106）', () => {
+  it('無敵、增益不能連續使用；增益同時最多 3 種', async () => {
+    const { CONSUMABLE_MAP, cdGroup, cdSeconds, ITEM_CD, MAX_ACTIVE_BUFFS } = await import('@/data/consumables');
+    const bag = { consumables: { mage_hades_cap_shard: 5, mage_metis_draught: 5, mage_owl_feather: 5 } } as never;
+    const f = { safe: false, bossFight: true, hpFull: true, mpFull: true, potionCd: false, alive: true };
+    const inv = CONSUMABLE_MAP.mage_hades_cap_shard;
+    expect(cdGroup(inv)).toBe('invuln');
+    expect(cdSeconds(inv)).toBe(ITEM_CD.invuln);
+    expect(cannotUse(bag, 'mage_hades_cap_shard', { ...f, itemCd: {} })).toBeNull();
+    expect(cannotUse(bag, 'mage_hades_cap_shard', { ...f, itemCd: { invuln: 30 } })).toContain('冷卻中');
+    // 增益：同屬性冷卻 = 持續時間 × 1.5
+    const crit = CONSUMABLE_MAP.mage_metis_draught;
+    expect(cdGroup(crit)).toBe('buff:crit');
+    expect(cdSeconds(crit)).toBe(90);
+    expect(cannotUse(bag, 'mage_metis_draught', { ...f, itemCd: { 'buff:crit': 10 } })).toContain('冷卻中');
+    // 已經有 3 種增益時不能再加第 4 種
+    const three = ['atk', 'def', 'pen'].slice(0, MAX_ACTIVE_BUFFS);
+    expect(cannotUse(bag, 'mage_owl_feather', { ...f, itemCd: {}, activeBuffs: three })).toContain('同時最多');
+    expect(cannotUse(bag, 'mage_owl_feather', { ...f, itemCd: {}, activeBuffs: ['atk', 'critDmg', 'pen'] })).toBeNull();
+  });
+});

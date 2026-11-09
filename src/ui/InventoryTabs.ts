@@ -1,3 +1,4 @@
+import { BUFF_CD_MUL, ITEM_CD, MAX_ACTIVE_BUFFS, cdSeconds } from '@/data/consumables';
 import { BLESSING, SANCTUMS } from '@/data/sanctum';
 import { DIVINE_ORNAMENTS, divineFormOf, mythicPieces, setLabel } from '@/data/divineForm';
 import type { GameState } from '@/core/GameState';
@@ -57,7 +58,7 @@ function consumableCards(ctx: InvContext): HTMLElement[] {
   const row = (c: ConsumableDef) =>
     h('div', { class: 'shop-row' }, [
       h('span', { class: 'shop-ico' }, c.icon),
-      h('div', { class: 'shop-main' }, [h('b', {}, `${c.name} ×${s.consumables[c.id]}`), h('small', {}, c.desc)]),
+      h('div', { class: 'shop-main' }, [h('b', {}, `${c.name} ×${s.consumables[c.id]}`), h('small', {}, cdSeconds(c) ? `${c.desc}・冷卻 ${cdSeconds(c)} 秒` : c.desc)]),
       // 快捷欄③④：按了放進去（已在另一格就交換、同一格再按就取下）
       h('div', { class: 'quick-pick' }, [0, 1].map((i) =>
         h('button', {
@@ -74,7 +75,7 @@ function consumableCards(ctx: InvContext): HTMLElement[] {
   if (!mine.length && !shared.length) out.push(h('div', { class: 'card' }, [h('p', {}, '還沒有道具。可以在商城購買，打倒怪物也有機會掉落（首領必掉）。每種最多 99 個。')]));
   if (mine.length) out.push(h('div', { class: 'card' }, [h('h4', {}, `${CLASSES[s.heroClass].icon} ${CLASSES[s.heroClass].name}專屬`), ...mine.map(row)]));
   if (shared.length) out.push(h('div', { class: 'card' }, [h('h4', {}, '通用道具'), ...shared.map(row)]));
-  out.push(h('p', { class: 'empty-note' }, `按「③」「④」把道具放進左下快捷欄（電腦按 3、4 使用）。每種道具最多 ${MAX_STACK} 個，不佔裝備背包的格子。`));
+  out.push(h('p', { class: 'empty-note' }, `按「③」「④」把道具放進左下快捷欄（電腦按 3、4 使用）。每種道具最多 ${MAX_STACK} 個，不佔裝備背包的格子。同類道具共用冷卻（無敵 ${ITEM_CD.invuln} 秒、冷卻重置 ${ITEM_CD.cdReset} 秒、護盾 ${ITEM_CD.shield} 秒…；增益藥冷卻是持續時間的 ${BUFF_CD_MUL} 倍），道具增益同時最多 ${MAX_ACTIVE_BUFFS} 種。`));
   return out;
 }
 

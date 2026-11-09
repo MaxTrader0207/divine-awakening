@@ -1,4 +1,4 @@
-import { CONSUMABLE_MAP, MAX_STACK, type ConsumableDef } from '@/data/consumables';
+import { CONSUMABLE_MAP, MAX_ACTIVE_BUFFS, MAX_STACK, cdGroup, cdGroupName, type ConsumableDef } from '@/data/consumables';
 
 /**
  * 道具使用的判斷與扣數量（純邏輯，可單元測試）。效果由 Game 套用。
@@ -17,6 +17,10 @@ export interface UseContext {
   /** 藥水冷卻中 */
   potionCd: boolean;
   alive: boolean;
+  /** v1.106 各類道具剩下的冷卻秒數（群組見 cdGroup） */
+  itemCd?: Record<string, number>;
+  /** v1.106 目前生效中的道具增益（屬性） */
+  activeBuffs?: string[];
 }
 
 /** 回傳 null = 可以用；否則是不能用的原因 */
@@ -33,6 +37,11 @@ export function cannotUse(bag: ConsumableBag, id: string, ctx: UseContext): stri
     if (hpUseless && mpUseless) return e.hp && e.mp ? 'HP 和 MP 都是滿的' : e.hp ? 'HP 已滿' : e.rage && !e.mp ? '怒氣已滿' : 'MP 已滿';
   }
   if (e.type === 'nova' && ctx.safe) return '城裡沒有敵人';
+  // v1.106 每類道具各自冷卻；增益同時最多 MAX_ACTIVE_BUFFS 種
+  const g = cdGroup(def);
+  const left = g ? (ctx.itemCd?.[g] ?? 0) : 0;
+  if (g && left > 0) return `⏳ ${cdGroupName(g)}類道具冷卻中（${Math.ceil(left)} 秒）`;
+  if (e.type === 'buff' && ctx.activeBuffs && !ctx.activeBuffs.includes(e.stat) && ctx.activeBuffs.length >= MAX_ACTIVE_BUFFS) return `同時最多 ${MAX_ACTIVE_BUFFS} 種道具增益`;
   if (e.type === 'town') {
     if (ctx.safe) return '已經在城裡了';
     if (ctx.bossFight) return '首領戰中不能傳送';

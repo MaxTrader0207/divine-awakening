@@ -78,6 +78,8 @@ export class Hud {
   private fpsAcc = { frames: 0, time: 0 };
   private skillBtns = new Map<SkillSlot, { btn: HTMLElement; cd: HTMLElement; num: HTMLElement; wasCd: boolean }>();
   private potionCds: HTMLElement[] = [];
+  /** v1.106 道具冷卻比例（0～1），Game 設定 */
+  itemCd: (id: string) => number = () => 0;
   /** 快捷道具欄（key：上次畫的內容，沒變就不動 DOM） */
   private quick: { btn: HTMLElement; ico: Element; count: HTMLElement; cd: HTMLElement; key: string }[] = [];
   /** 夥伴按鈕（v1.58；沒有夥伴時隱藏） */
@@ -620,9 +622,9 @@ export class Hud {
         q.btn.classList.toggle('out', !!def && n <= 0);
         q.btn.title = def ? `${def.name}：${def.desc}` : '空的快捷欄：點一下到「裝備 → 道具」設定';
       }
-      const showCd = !!def?.sharesPotionCd && potionCd > 0;
-      q.cd.style.setProperty('--p', String(showCd ? potionCd : 0));
-      q.cd.style.opacity = showCd ? '1' : '0';
+      const frac = id && def ? (def.sharesPotionCd ? potionCd : this.itemCd(id)) : 0;
+      q.cd.style.setProperty('--p', String(frac));
+      q.cd.style.opacity = frac > 0 ? '1' : '0';
     }
   }
 
