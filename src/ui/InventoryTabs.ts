@@ -3,7 +3,7 @@ import { DIVINE_ORNAMENTS, divineFormOf, mythicPieces, setLabel } from '@/data/d
 import type { GameState } from '@/core/GameState';
 import type { EquipSlot, Stats } from '@/data/types';
 import {
-  ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, POTION_PRICE, RARITY, SLOT_NAMES, SLOT_ORDER,
+  ENHANCE_CAP, ENHANCE_GEM_COST, ENHANCE_NAMED_BONUS, ENHANCE_RATES, PCT_STAT_KEYS, RARITY_ORDER, enhanceCap, ITEM_BASES, POTION_PRICE, RARITY, SLOT_NAMES, SLOT_ORDER,
   STAT_LABELS, enhanceCost, formatStat, sellPrice, shopPrice,
 } from '@/data/items';
 import {
@@ -512,20 +512,21 @@ export function renderEnhance(ctx: InvContext): HTMLElement[] {
 
   const out: HTMLElement[] = [
     h('div', { class: 'card' }, [
-      h('p', {}, `每強化 +1，裝備全屬性 +8%。失敗只會扣金幣，不會降級。使用 ${ENHANCE_GEM_COST} 鑽石可保證成功。`),
+      h('p', {}, `每強化 +1，攻擊、防禦、生命、魔力 +8%（爆擊、爆傷、穿透、移速不受強化影響）。強化上限依稀有度：${RARITY_ORDER.map((r) => `${RARITY[r].name} +${ENHANCE_CAP[r]}`).join('、')}，★神話裝再 +${ENHANCE_NAMED_BONUS}。失敗只會扣金幣，不會降級。使用 ${ENHANCE_GEM_COST} 鑽石可保證成功。`),
       h('div', { class: 'wallet-line' }, [h('span', { class: 'coin' }), h('b', {}, String(s.gold)), h('span', { class: 'gem' }), h('b', {}, String(s.gems))]),
     ]),
   ];
   if (!list.length) out.push(h('p', { class: 'empty-note' }, '身上沒有裝備可以強化。'));
   for (const it of list) {
     const base = ITEM_BASES[it.base];
-    const maxed = it.plus >= ENHANCE_MAX;
+    const cap = enhanceCap(it);
+    const maxed = it.plus >= cap;
     const cost = enhanceCost(base.tier, it.plus);
     const rate = ENHANCE_RATES[it.plus] ?? 0;
-    const next: ItemInstance = { ...it, plus: Math.min(ENHANCE_MAX, it.plus + 1) };
+    const next: ItemInstance = { ...it, plus: Math.min(cap, it.plus + 1) };
     const now = itemStats(it);
     const after = itemStats(next);
-    const preview = (Object.keys(now) as (keyof Stats)[]).map((k) => `${STAT_LABELS[k]} ${formatStat(k, now[k] ?? 0)} → ${formatStat(k, after[k] ?? 0)}`).join('　');
+    const preview = (Object.keys(now) as (keyof Stats)[]).filter((k) => !PCT_STAT_KEYS.includes(k)).map((k) => `${STAT_LABELS[k]} ${formatStat(k, now[k] ?? 0)} → ${formatStat(k, after[k] ?? 0)}`).join('　') + `　（上限 +${cap}）`;
     const doIt = (gems: boolean) => {
       const r = enhance(s, it.uid, gems);
       const msg = { success: `強化成功！${itemName(it)}`, fail: '強化失敗…（裝備沒有降級）', max: '已達最高強化', 'no-gold': '金幣不足', 'no-gems': '鑽石不足', missing: '找不到裝備' }[r];
@@ -537,7 +538,7 @@ export function renderEnhance(ctx: InvContext): HTMLElement[] {
     };
     out.push(
       h('div', { class: 'card enh', style: `--rc:${RARITY[it.rarity].color}` }, [
-        h('div', { class: 'detail-head' }, [h('span', { class: 'big-ico' }, base.icon), h('div', {}, [h('h4', {}, itemName(it)), h('p', {}, maxed ? '已達 +10' : preview)])]),
+        h('div', { class: 'detail-head' }, [h('span', { class: 'big-ico' }, base.icon), h('div', {}, [h('h4', {}, itemName(it)), h('p', {}, maxed ? `已達這件的強化上限 +${cap}${ITEM_BASES[it.base]?.named || it.rarity === 'epic' ? '' : '（稀有度更高的裝備可以強化得更高）'}` : preview)])]),
         maxed
           ? h('span', { class: 'pill' }, 'MAX')
           : h('div', { class: 'card-row' }, [

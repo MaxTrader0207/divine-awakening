@@ -31,6 +31,12 @@ export interface DamageResult {
 
 export type Rng = () => number;
 
+/**
+ * v1.105 敵人防禦的實際比例：以前穿透很容易堆到 90%，防禦幾乎沒作用、關卡數值是照那樣調的；
+ * 穿透改成不吃強化、上限 50% 後，敵人防禦整體 × 0.5，讓一般玩家的傷害大致維持原本的水準。
+ */
+export const ENEMY_DEF_SCALE = 0.5;
+
 export function calcDamage(attacker: AttackerStats, power: number, targetDef: number, rng: Rng = Math.random): DamageResult {
   const raw = attacker.atk * power;
   const pen = clamp(attacker.pen, 0, 1);

@@ -6,7 +6,7 @@ import { ZONES, DUNGEON_ORDER, FIELD_ORDER, SIDE_ORDER, BEAST_ORDER, SANCTUM_ORD
 import { BLESSING, SANCTUMS, SANCTUM_DROP } from './sanctum';
 import { mythicLevel } from '@/systems/Mythic';
 import { beastFirstGems } from '@/systems/BeastHunt';
-import { CRIT_DMG_MAX, CRIT_RATE_MAX, ENHANCE_GEM_COST, ENHANCE_MAX, POTION_PRICE, RARITY, RARITY_ORDER } from './items';
+import { CRIT_DMG_MAX, CRIT_RATE_MAX, ENHANCE_CAP, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_NAMED_BONUS, PEN_MAX, POTION_PRICE, RARITY, RARITY_ORDER } from './items';
 import { BOSS_PACE } from '@/systems/BossScaling';
 import { TACTICS } from '@/systems/BossTactics';
 import { CAPTURE, COMPANION_LIST } from './companions';
@@ -128,7 +128,7 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         '地上出現**紅色範圍**是攻擊預警，趕快走出去！首領的大招都有預警。',
         '離開戰鬥 5 秒後會慢慢回血；在雅典城裡回得很快。',
         '**自動補血**：HP 低於 70% 會自動喝紅藥水（不用開 AUTO；「選單 → 設定 → 自動補血」可以改成 50% / 85% 或關閉，主城不會喝）。',
-        `**爆擊**：爆擊時傷害乘上爆擊傷害倍率。爆擊率最高 ${Math.round(CRIT_RATE_MAX * 100)}%、爆擊傷害最高 ×${CRIT_DMG_MAX}（含道具）；劍俠、弓手、狂戰士天生比較容易爆擊。`,
+        `**爆擊**：爆擊時傷害乘上爆擊傷害倍率。爆擊率最高 ${Math.round(CRIT_RATE_MAX * 100)}%、爆擊傷害最高 ×${CRIT_DMG_MAX}、穿透最高 ${Math.round(PEN_MAX * 100)}%（裝備、套裝、神格、道具、技能全部加起來）。這三項只看稀有度、不吃強化，想堆滿要靠★神話裝的能力偏向（爆擊型、穿透型、爆傷型）、套裝效果與神格；劍俠、弓手、狂戰士天生比較容易爆擊。`,
         `血量歸零後可以選：**原地復活**（每天第一次免費，之後 ${REVIVE.gemBase}💎 起、同一張地圖越用越貴，最多 ${REVIVE.gemMax}💎；不扣金幣、${REVIVE.invuln} 秒無敵，等你選的時候戰場是停住的，首領保留血量）、**在入口復活**或**回主城**（都損失 10% 金幣）。AUTO 開著時 ${REVIVE.autoSecs} 秒後自動在入口復活。試煉塔、每週首領倒下直接結算。`,
       ],
     },
@@ -172,7 +172,7 @@ export function manualSections(heroClass: HeroClass): ManualSection[] {
         '6 個欄位：武器、帽子、衣服、手套、鞋子、戒指（名稱依職業不同）。怪物掉落的裝備走過去就會撿起來（背包 100 格，可以依欄位或「★神話」篩選）。',
         `稀有度（屬性倍率）：${rarities}。名字顏色白 → 綠 → 藍 → 紫。`,
         '背包裡比身上好的裝備會標上 ▲；點裝備可以穿上、強化或賣出，背包上方的「一鍵賣出較差裝備」可以選普通 / 精良以下 / 稀有以下，按鈕上會顯示要賣幾件。「設定 → 撿到時自動賣出」預設是「普通」：比身上差的普通裝備撿起來就直接換成金幣，可以改成精良 / 稀有以下或關閉（★神話裝、強化過的、身上沒穿東西的部位都不會賣）。',
-        `**強化**：在強化屋或「選單 → 強化」，每級屬性 +8%，最高 +${ENHANCE_MAX}。+2 之後有失敗機率，失敗只扣金幣、裝備不會壞；花 ${ENHANCE_GEM_COST} 顆鑽石可以保證成功。`,
+        `**強化**：在強化屋或「選單 → 強化」，每級攻擊、防禦、生命、魔力 +8%（爆擊、爆傷、穿透、移速不受強化影響）。上限依稀有度：${RARITY_ORDER.map((r) => `${RARITY[r].name} +${ENHANCE_CAP[r]}`).join('、')}，★神話裝再 +${ENHANCE_NAMED_BONUS}（最高 +${ENHANCE_MAX}）。+2 之後有失敗機率，失敗只扣金幣、裝備不會壞；花 ${ENHANCE_GEM_COST} 顆鑽石可以保證成功。`,
         '裝備共 8 階，越後面的副本掉落越高階（阿卡迪亞 → 波賽頓 → 赫菲斯托斯 → 奧林帕斯 → 泰坦 → 卡俄斯 → 堤豐 → 神格）：第一～三層是 1~3 階，第四～六層 4 階、第七～九層 5 階、第十～十二層 6 階、第十三～十七層 7 階、第十八～三十層 8 階。',
         '**★神話裝**：每個職業、每個欄位各有 20 件以神話人物命名的專屬裝備，只會從怪物身上掉落（首領機率更高）。比同階標準裝略強，並偏重某種能力，例如爆擊、穿透、防禦、生命或移速。',
         `**套裝效果**：同一個編號的★神話裝 6 個欄位是同一套（例如法師的「烏拉諾斯」系列），同時穿著 2 件觸發這套的專長加成（例如爆擊率 +4%、穿透 +5%），4 件 ${SET_4.text}，6 件再 ${SET_6.text}。點★神話裝可以看它屬於哪一套、穿了幾件；「選單 → 裝備」上方顯示目前生效的套裝。`,

@@ -1,3 +1,4 @@
+import { ITEM_BASES, enhanceCap, enhanceCost } from '@/data/items';
 import { newGameState, SAVE_VERSION, type GameState } from './GameState';
 import { COMPANIONS, newCompanionState } from '@/data/companions';
 import { autoQuickSlots } from '@/systems/Consumables';
@@ -310,6 +311,24 @@ export function migrate(data: Partial<GameState>): GameState | null {
   if ((data.version ?? 0) < 28 && !merged.bossesDefeated.includes('dungeon_30')) merged.endingSeen = false;
   // v28 → v29（v1.98）：撿到時自動賣出改成預設「普通」，舊存檔關著的也打開一次（之後關掉就會保持關閉）
   if ((data.version ?? 0) < 29 && merged.settings.autoSell === 'off') merged.settings.autoSell = 'common';
-  // 未來版本：if ((data.version ?? 0) < 30) { ... }
+  // v29 → v30（v1.105）：強化上限改成依稀有度（普通 +4、精良 +6、稀有 +8、史詩 +10、★神話再 +2），
+  // 超過上限的強化等級降回上限，花掉的強化金幣全額退還
+  if ((data.version ?? 0) < 30) {
+    let refund = 0;
+    for (const it of [...merged.inventory, ...Object.values(merged.equipment)]) {
+      if (!it) continue;
+      const cap = enhanceCap(it);
+      const tier = ITEM_BASES[it.base]?.tier ?? 1;
+      while (it.plus > cap) {
+        it.plus--;
+        refund += enhanceCost(tier, it.plus);
+      }
+    }
+    if (refund > 0) {
+      merged.gold += refund;
+      merged.enhanceRefund = refund;
+    }
+  }
+  // 未來版本：if ((data.version ?? 0) < 31) { ... }
   return merged;
 }

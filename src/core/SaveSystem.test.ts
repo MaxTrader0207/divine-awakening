@@ -106,3 +106,25 @@ describe('存檔 v6 / v7', () => {
     expect(old.settings.zoom).toBe(1.3);
   });
 });
+
+describe('v29 → v30 強化上限（v1.105）', () => {
+  it('超過稀有度上限的強化降回上限並退還金幣，★神話裝可到 +12', () => {
+    const st = newGameState('swordsman');
+    const old = {
+      ...st,
+      version: 29,
+      gold: 100,
+      inventory: [
+        { uid: 1, base: 'weapon_t8', rarity: 'common', plus: 10 },
+        { uid: 2, base: 'swordsman_ring_20', rarity: 'epic', plus: 10 },
+      ],
+      equipment: { gloves: { uid: 3, base: 'gloves_t8', rarity: 'rare', plus: 10 } },
+    };
+    const m = migrate(old as never)!;
+    expect(m.inventory[0].plus).toBe(4);
+    expect(m.inventory[1].plus).toBe(10);
+    expect(m.equipment.gloves!.plus).toBe(8);
+    expect(m.gold).toBeGreaterThan(100);
+    expect(m.enhanceRefund).toBe(m.gold - 100);
+  });
+});

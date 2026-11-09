@@ -7,7 +7,7 @@ import { CODEX_ENTRIES, CODEX_MAX_POINTS, codexFound, codexPoints } from './code
 import { COMPANION_LIST } from './companions';
 import { GROWTH, bondLevel, teamOf } from './companionGrowth';
 import { equippedSets } from './gearSets';
-import { ENHANCE_MAX, RARITY_ORDER } from './items';
+import { RARITY_ORDER } from './items';
 
 /**
  * 成就（v1.64）
@@ -119,7 +119,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'myth50', cat: 'collect', icon: '🌌', name: '傳說之庫', desc: '撿到 50 件★神話裝', gems: 30, progress: stat('mythics', 50) },
   { id: 'enh10', cat: 'collect', icon: '🔨', name: '鍛造學徒', desc: '強化成功 10 次', gems: 5, progress: stat('enhanceOk', 10) },
   { id: 'enh50', cat: 'collect', icon: '⚒', name: '赫菲斯托斯的弟子', desc: '強化成功 50 次', gems: 15, progress: stat('enhanceOk', 50) },
-  { id: 'enhMax', cat: 'collect', icon: '💎', name: '神匠', desc: `擁有一件 +${ENHANCE_MAX} 裝備`, gems: 20, progress: (s) => [Math.min(Math.max(0, ...allGear(s).map((i) => i!.plus)), ENHANCE_MAX), ENHANCE_MAX] },
+  { id: 'enhMax', cat: 'collect', icon: '💎', name: '神匠', desc: '擁有一件 +10 裝備', gems: 20, progress: (s) => [Math.min(Math.max(0, ...allGear(s).map((i) => i!.plus)), 10), 10] },
   { id: 'epicSet', cat: 'collect', icon: '🟣', name: '史詩全身', desc: '6 個欄位同時穿著史詩裝備', gems: 15, progress: (s) => [Object.values(s.equipment).filter((i) => i && i.rarity === RARITY_ORDER[RARITY_ORDER.length - 1]).length, 6] },
   { id: 'item20', cat: 'collect', icon: '🧪', name: '善用道具', desc: '使用道具 20 次', gems: 5, progress: stat('itemsUsed', 20) },
   { id: 'item100', cat: 'collect', icon: '⚗', name: '鍊金術士', desc: '使用道具 100 次', gems: 10, progress: stat('itemsUsed', 100) },

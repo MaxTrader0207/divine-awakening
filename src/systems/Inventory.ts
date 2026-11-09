@@ -1,7 +1,7 @@
 import { applyDivinity } from './Divinity';
 import { equipBlock, rebirthStatMul } from './Rebirth';
 import type { EquipSlot, Rarity, Stats } from '@/data/types';
-import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_MAX, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore , CRIT_KEYS, CRIT_RARITY_DAMP, CRIT_RATE_MAX, CRIT_DMG_MAX } from '@/data/items';
+import { ENHANCE_BONUS_PER_LEVEL, ENHANCE_GEM_COST, ENHANCE_RATES, ITEM_BASES, RARITY, RARITY_ORDER, SLOT_ORDER, enhanceCost, sellPrice, statScore , PCT_STAT_KEYS, CRIT_RARITY_DAMP, CRIT_RATE_MAX, CRIT_DMG_MAX, PEN_MAX, enhanceCap } from '@/data/items';
 import { statsForLevel } from '@/data/player';
 import { CLASSES, RAGE } from '@/data/classes';
 import { codexBonus } from '@/data/codex';
@@ -46,11 +46,12 @@ export function itemName(it: ItemInstance): string {
 export function itemStats(it: ItemInstance): Partial<Stats> {
   const b = ITEM_BASES[it.base];
   if (!b) return {};
-  const mul = RARITY[it.rarity].mul * (1 + it.plus * ENHANCE_BONUS_PER_LEVEL);
-  // 爆擊率 / 爆傷只吃倍率超過 1 的部分的 40%（v1.55）
-  const critMul = 1 + (mul - 1) * CRIT_RARITY_DAMP;
+  const plus = Math.min(it.plus, enhanceCap(it));
+  const mul = RARITY[it.rarity].mul * (1 + plus * ENHANCE_BONUS_PER_LEVEL);
+  // v1.105：百分比屬性（爆擊、爆傷、穿透、移速）不吃強化，稀有度只吃超過 1 的部分的 40%
+  const pctMul = 1 + (RARITY[it.rarity].mul - 1) * CRIT_RARITY_DAMP;
   const out: Partial<Stats> = {};
-  for (const [k, v] of Object.entries(b.stats) as [keyof Stats, number][]) out[k] = v * (CRIT_KEYS.includes(k) ? critMul : mul);
+  for (const [k, v] of Object.entries(b.stats) as [keyof Stats, number][]) out[k] = v * (PCT_STAT_KEYS.includes(k) ? pctMul : mul);
   return out;
 }
 
@@ -85,7 +86,7 @@ export function computeStats(s: InventoryState): Stats {
   if (CLASSES[s.heroClass ?? 'mage']?.resource === 'rage') st.maxMp = RAGE.max;
   st.atk = Math.round(st.atk);
   st.def = Math.round(st.def * 10) / 10;
-  st.pen = Math.min(0.9, st.pen);
+  st.pen = Math.min(PEN_MAX, st.pen);
   st.critRate = Math.min(CRIT_RATE_MAX, st.critRate);
   st.critDmg = Math.min(CRIT_DMG_MAX, st.critDmg);
   return st;
@@ -98,7 +99,7 @@ export function itemScore(it: ItemInstance): number {
 
 export function addItem(s: InventoryState, base: string, rarity: Rarity, plus = 0): ItemInstance | null {
   if (s.inventory.length >= INVENTORY_SIZE) return null;
-  const it: ItemInstance = { uid: s.nextUid++, base, rarity, plus };
+  const it: ItemInstance = { uid: s.nextUid++, base, rarity, plus: Math.min(plus, enhanceCap({ base, rarity })) };
   s.inventory.push(it);
   return it;
 }
@@ -186,7 +187,7 @@ export type EnhanceResult = 'success' | 'fail' | 'max' | 'no-gold' | 'no-gems' |
 export function enhance(s: InventoryState, uid: number, useGems = false, rng: () => number = Math.random): EnhanceResult {
   const it = findItem(s, uid);
   if (!it) return 'missing';
-  if (it.plus >= ENHANCE_MAX) return 'max';
+  if (it.plus >= enhanceCap(it)) return 'max';
   const tier = ITEM_BASES[it.base]?.tier ?? 1;
   const cost = enhanceCost(tier, it.plus);
   if (s.gold < cost) return 'no-gold';

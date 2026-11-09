@@ -1,4 +1,6 @@
-import { ITEM_BASES } from '@/data/items';
+import { CRIT_DMG_MAX, CRIT_RATE_MAX, ENHANCE_CAP, ENHANCE_NAMED_BONUS, ITEM_BASES, PEN_MAX, SLOT_ORDER } from '@/data/items';
+import type { Rarity } from '@/data/types';
+import { CLASS_LIST } from '@/data/classes';
 import { describe, expect, it } from 'vitest';
 import { addItem, autoSellPrice, computeStats, enhance, equip, itemName, itemStats, junkItems, sell, sellJunk, unequip, INVENTORY_SIZE, type InventoryState } from './Inventory';
 import { rollDrop } from './LootTable';
@@ -86,12 +88,39 @@ describe('Inventory', () => {
 
   it('強化成功 / 失敗 / 鑽石保證', () => {
     const s = fresh();
-    const it = addItem(s, 'gloves_t1', 'common', 9)!;
+    const it = addItem(s, 'gloves_t1', 'epic', 9)!;
     expect(enhance(s, it.uid, false, () => 0.99)).toBe('fail');
     expect(it.plus).toBe(9);
     expect(enhance(s, it.uid, true, () => 0.99)).toBe('success');
     expect(it.plus).toBe(10);
     expect(enhance(s, it.uid)).toBe('max');
+  });
+
+  it('v1.105 強化上限依稀有度，★神話裝多 2 級', () => {
+    const s = fresh();
+    s.gold = 1e9;
+    for (const [r, cap] of Object.entries(ENHANCE_CAP) as [Rarity, number][]) {
+      const it = addItem(s, 'weapon_t3', r, 99)!;
+      expect(it.plus).toBe(cap); // 加進背包時就夾在上限
+      expect(enhance(s, it.uid, true)).toBe('max');
+    }
+    const named = addItem(s, 'mage_weapon_20', 'epic', 99)!;
+    expect(named.plus).toBe(ENHANCE_CAP.epic + ENHANCE_NAMED_BONUS);
+  });
+
+  it('v1.105 百分比屬性不吃強化；標準裝怎麼堆都碰不到上限', () => {
+    const a = itemStats({ uid: 1, base: 'ring_t8', rarity: 'epic', plus: 0 });
+    const b = itemStats({ uid: 2, base: 'ring_t8', rarity: 'epic', plus: 10 });
+    expect(b.pen).toBeCloseTo(a.pen!);
+    expect(b.critDmg).toBeCloseTo(a.critDmg!);
+    for (const cls of CLASS_LIST) {
+      const s = { ...fresh(), heroClass: cls, level: 150 };
+      for (const sl of SLOT_ORDER) s.equipment[sl] = { uid: 100, base: `${sl}_t8`, rarity: 'epic', plus: 10 };
+      const st = computeStats(s);
+      expect(st.critRate, cls).toBeLessThan(CRIT_RATE_MAX);
+      expect(st.critDmg, cls).toBeLessThan(CRIT_DMG_MAX);
+      expect(st.pen, cls).toBeLessThan(PEN_MAX);
+    }
   });
 
   it('金幣不足不能強化', () => {

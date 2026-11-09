@@ -1,7 +1,7 @@
 import { BossScaler, bossAtkMul, bossInitialHpMul } from '@/systems/BossScaling';
 import { setDressingDetail } from '@/world/Dressing';
 import { setTreasureLog } from '@/world/Zone';
-import { CRIT_DMG_MAX, CRIT_RATE_MAX, SLOT_ORDER } from '@/data/items';
+import { CRIT_DMG_MAX, CRIT_RATE_MAX, PEN_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
 import { bus } from './EventBus';
 import { isZoneUnlocked, newGameState, type GameState } from './GameState';
@@ -192,6 +192,11 @@ export class Game {
   constructor(private canvas: HTMLCanvasElement, private container: HTMLElement, uiRoot: HTMLElement, initialClass: HeroClass = 'mage') {
     this.state = this.save.load() ?? newGameState(initialClass);
     // 離線收益：一定要在第一次存檔（會改 updatedAt）之前算
+    if (this.state.enhanceRefund) {
+      const g = this.state.enhanceRefund;
+      delete this.state.enhanceRefund;
+      setTimeout(() => bus.emit('toast', { text: `⚒ 強化上限改為依稀有度，超過上限的強化已降回並退還 ${g.toLocaleString()} 金幣`, kind: 'reward', duration: 6 }), 2500);
+    }
     this.offlinePending = offlineReward(this.state.level, Date.now() - (this.state.updatedAt || Date.now()), { cls: this.state.heroClass, rebirth: this.state.rebirth?.count ?? 0 });
     const cls = CLASSES[this.state.heroClass] ?? CLASSES.mage;
     applyClassGear(CLASSES[this.state.heroClass] ? this.state.heroClass : 'mage'); // 裝備名稱、圖示、欄位名稱依職業改寫
@@ -1588,7 +1593,7 @@ export class Game {
     if (cb.atk) p.stats.atk = Math.round(p.stats.atk * (1 + cb.atk.v));
     if (cb.speed) p.stats.moveSpeed *= 1 + cb.speed.v;
     if (cb.crit) p.stats.critRate = Math.min(CRIT_RATE_MAX, p.stats.critRate + cb.crit.v);
-    if (cb.pen) p.stats.pen = Math.min(0.9, p.stats.pen + cb.pen.v);
+    if (cb.pen) p.stats.pen = Math.min(PEN_MAX, p.stats.pen + cb.pen.v);
     if (cb.critDmg) p.stats.critDmg = Math.min(CRIT_DMG_MAX, p.stats.critDmg + cb.critDmg.v);
     p.hp = Math.min(p.stats.maxHp, Math.round(p.stats.maxHp * hpR));
     p.mp = Math.min(p.stats.maxMp, Math.round(p.stats.maxMp * mpR));

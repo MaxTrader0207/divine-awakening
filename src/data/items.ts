@@ -87,19 +87,29 @@ const T1: Record<EquipSlot, Partial<Stats>> = {
 
 /** 平坦數值與百分比數值的 tier 成長不同，避免百分比爆掉 */
 const FLAT_SCALE = [1, 2.2, 3.6, 5.4, 7.6, 10.2, 13.2, 16.6];
-const PCT_SCALE = [1, 1.6, 2.2, 2.8, 3.4, 4.0, 4.6, 5.2];
+// v1.105：百分比屬性（爆擊、爆傷、穿透、移速）的階級成長放緩（以前第 8 階 ×5.2，一件標準裝就能把穿透堆到上限）
+const PCT_SCALE = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75];
 const PCT_KEYS: (keyof Stats)[] = ['pen', 'critRate', 'critDmg', 'moveSpeed'];
 
 /**
- * 爆擊平衡（v1.55）
+ * 百分比屬性平衡（v1.105，取代 v1.55 只壓爆擊的做法）
+ * - 爆擊率、爆擊傷害、穿透、移速統稱「百分比屬性」（PCT_STAT_KEYS）：
+ *   **不吃強化**，稀有度也只吃超過 1 的部分的 CRIT_RARITY_DAMP（40%）。強化只加攻擊、防禦、生命、魔力。
+ * - 總和上限：爆擊率 50%、爆擊傷害 ×2.5、穿透 50%（裝備、套裝、神格、道具、技能增益全部加起來）。
+ * - 標準裝第 8 階史詩全身大約：爆擊率 +12%、爆傷 +0.4、穿透 +37%；要碰到上限得靠★神話裝的能力偏向、套裝、神格或增益。
+ *
+ * 舊說明（v1.55）
  * - 爆擊率、爆擊傷害不再完整吃「稀有度 × 強化」倍率：只吃超過 1 的部分的 CRIT_RARITY_DAMP（40%）。
  *   例：史詩 +10 的倍率 3.96 → 爆擊屬性只 ×2.18（原本 ×3.96，後期一身爆擊裝期望傷害可到 ×10）。
  * - 上限：爆擊率 60%、爆擊傷害 ×3.0（含道具增益）。
  */
 export const CRIT_KEYS: (keyof Stats)[] = ['critRate', 'critDmg'];
+/** v1.105：不吃強化、稀有度打折的百分比屬性 */
+export const PCT_STAT_KEYS: (keyof Stats)[] = ['critRate', 'critDmg', 'pen', 'moveSpeed'];
 export const CRIT_RARITY_DAMP = 0.4;
-export const CRIT_RATE_MAX = 0.6;
-export const CRIT_DMG_MAX = 3.0;
+export const CRIT_RATE_MAX = 0.5;
+export const CRIT_DMG_MAX = 2.5;
+export const PEN_MAX = 0.5;
 
 const ICONS: Record<EquipSlot, string> = { ...CLASS_GEAR.mage.icons };
 
@@ -221,10 +231,18 @@ export function tierForLevel(level: number): Tier {
   return 8;
 }
 
-/** 強化：每 +1 全屬性 +8%；成功率與費用 */
-export const ENHANCE_MAX = 10;
+/**
+ * 強化：每 +1 攻擊 / 防禦 / 生命 / 魔力 +8%（百分比屬性不受強化影響，v1.105）
+ * 強化上限依稀有度（v1.105）：普通 +4、精良 +6、稀有 +8、史詩 +10；★神話裝（含神域裝）再多 +2（最高 +12）。
+ */
+export const ENHANCE_MAX = 12;
+export const ENHANCE_CAP: Record<Rarity, number> = { common: 4, fine: 6, rare: 8, epic: 10 };
+export const ENHANCE_NAMED_BONUS = 2;
+export function enhanceCap(it: { base: string; rarity: Rarity }): number {
+  return ENHANCE_CAP[it.rarity] + (ITEM_BASES[it.base]?.named ? ENHANCE_NAMED_BONUS : 0);
+}
 export const ENHANCE_BONUS_PER_LEVEL = 0.08;
-export const ENHANCE_RATES = [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.25];
+export const ENHANCE_RATES = [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.25, 0.2, 0.15];
 export const ENHANCE_GEM_COST = 5;
 export function enhanceCost(tier: number, plus: number): number {
   return Math.round(40 * tier * tier * (plus + 1) * (1 + plus * 0.25));

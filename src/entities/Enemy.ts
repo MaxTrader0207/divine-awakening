@@ -1,3 +1,4 @@
+import { ENEMY_DEF_SCALE } from '@/systems/Combat';
 import type { BossScaler } from '@/systems/BossScaling';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -137,7 +138,7 @@ export class Enemy {
     this.spawn = spawn;
     this.pos = { x: spawn.x, z: spawn.z };
     this.home = { x: spawn.x, z: spawn.z };
-    this.defense = spawn.def ?? def.stats.def;
+    this.defense = (spawn.def ?? def.stats.def) * ENEMY_DEF_SCALE;
     this.displayName = spawn.tag ? `${def.name}・${spawn.tag}` : def.boss ? `首領・${def.name}` : `Lv.${this.level} ${def.name}`;
     this.radius = def.radius * def.scale;
     this.maxHp = def.stats.maxHp;

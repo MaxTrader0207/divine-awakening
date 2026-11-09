@@ -1,3 +1,4 @@
+import { CRIT_DMG_MAX, CRIT_RATE_MAX } from '@/data/items';
 import * as THREE from 'three';
 import { bus } from '@/core/EventBus';
 import type { GameState } from '@/core/GameState';
@@ -777,7 +778,7 @@ export class SkillSystem {
   /** 人劍合一中：爆擊率、爆擊傷害提高 */
   private swordStats() {
     const p = this.ctx.player;
-    return p.swordIntentT > 0 ? { ...p.stats, critRate: p.stats.critRate + SWORD.intentCrit, critDmg: p.stats.critDmg + SWORD.intentCritDmg } : p.stats;
+    return p.swordIntentT > 0 ? { ...p.stats, critRate: Math.min(CRIT_RATE_MAX, p.stats.critRate + SWORD.intentCrit), critDmg: Math.min(CRIT_DMG_MAX, p.stats.critDmg + SWORD.intentCritDmg) } : p.stats;
   }
 
   /** 一道會貫穿的劍氣（劍氣斬、人劍合一的普攻附帶） */
@@ -911,7 +912,7 @@ export class SkillSystem {
   /** 影分身中：爆擊率提高 */
   private ninjaStats() {
     const p = this.ctx.player;
-    return p.ninjaCloneT > 0 ? { ...p.stats, critRate: p.stats.critRate + NINJA.cloneCrit } : p.stats;
+    return p.ninjaCloneT > 0 ? { ...p.stats, critRate: Math.min(CRIT_RATE_MAX, p.stats.critRate + NINJA.cloneCrit) } : p.stats;
   }
 
   /** 影分身在旁邊現身（左右各一個紫色殘影） */

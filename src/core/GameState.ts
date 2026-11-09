@@ -21,7 +21,7 @@ import { newRebirthState, type RebirthState } from '@/systems/Rebirth';
  * - 只放可序列化的純資料（不放 Three.js 物件）。
  * - 欄位變更時，必須把 SAVE_VERSION +1 並在 SaveSystem.migrate() 補遷移。
  */
-export const SAVE_VERSION = 29;
+export const SAVE_VERSION = 30;
 
 export interface Settings {
   zoom: number; // 攝影機縮放 0.8 ~ 1.5
@@ -46,6 +46,8 @@ export interface Settings {
 
 export interface GameState {
   version: number;
+  /** v1.105 遷移時退還的強化金幣（讀檔後提示一次就刪掉，不存檔） */
+  enhanceRefund?: number;
   createdAt: number;
   updatedAt: number;
   playerName: string;
