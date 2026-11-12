@@ -1,4 +1,12 @@
 import * as THREE from 'three';
+import { patchWater } from './Atmosphere';
+
+/** v1.107 水面：流動亮紋與反光 */
+function waterMat(color: number) {
+  const m = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.92 });
+  patchWater(m);
+  return m;
+}
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { PlatformDef, PortalDef, ZoneDef } from '@/data/types';
 
@@ -74,7 +82,7 @@ export class Zone {
       if (themed && !p.water) return;
       const m = new THREE.Mesh(
         themed && p.water ? roundedRect(p.w, p.d, Math.min(p.w, p.d) * 0.35) : new THREE.PlaneGeometry(p.w, p.d),
-        p.water ? new THREE.MeshLambertMaterial({ color: p.color, transparent: true, opacity: 0.92 }) : mat(p.color),
+        p.water ? waterMat(p.color) : mat(p.color),
       );
       m.rotation.x = -Math.PI / 2;
       m.position.set(p.x, 0.01 + i * 0.004, p.z);

@@ -3,6 +3,8 @@ import { setDressingDetail } from '@/world/Dressing';
 import { setTreasureLog } from '@/world/Zone';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, PEN_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
+import { SCENE_LOOK, setAtmosphere, updateAtmosphere } from '@/world/Atmosphere';
+import { themeIdFor } from '@/data/mapThemes';
 import { bus } from './EventBus';
 import { isZoneUnlocked, newGameState, type GameState } from './GameState';
 import { ELEMENTS, elementMul } from '@/data/elements';
@@ -144,6 +146,7 @@ export class Game {
   private save = new LocalSave();
   private sun: THREE.DirectionalLight;
   private hemi!: THREE.HemisphereLight;
+  private vignette!: HTMLDivElement;
   private timer = new THREE.Timer();
   private saveTimer = 0;
   private transitioning = false;
@@ -210,6 +213,13 @@ export class Game {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    // v1.107 色調映射：Neutral 保留原本色相、亮部不會一片死白（雪地、沙地更有層次）
+    this.renderer.toneMapping = THREE.NeutralToneMapping;
+    this.renderer.toneMappingExposure = SCENE_LOOK.exposure;
+    // v1.107 畫面四周的暗角與頂光（純 CSS，不吃 GPU），顏色依地圖主題
+    this.vignette = document.createElement('div');
+    this.vignette.className = 'scene-vignette';
+    canvas.after(this.vignette);
 
     // ---- Lights ----
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x8a9a6a, 1.6);
@@ -856,6 +866,7 @@ export class Game {
    * 與 render 分開，讓自動化測試可以用 debugAdvance() 快轉，不受裝置 FPS 影響。
    */
   private tick(dt: number) {
+    updateAtmosphere(dt);
     this.input.update();
 
     if (this.input.consume('menu')) this.menu.toggle();
@@ -2370,9 +2381,14 @@ export class Game {
     const L = zone.dressing?.theme.light ?? { sky: 0xffffff, ground: 0x8a9a6a, hemi: 1.6, sun: 0xfff4e0, sunI: 2.2 };
     this.hemi.color.setHex(L.sky);
     this.hemi.groundColor.setHex(L.ground);
-    this.hemi.intensity = L.hemi;
+    // v1.107 環境光少一點、太陽多一點：立體感與陰影更明顯
+    this.hemi.intensity = L.hemi * SCENE_LOOK.hemiMul;
     this.sun.color.setHex(L.sun);
-    this.sun.intensity = L.sunI;
+    this.sun.intensity = L.sunI * SCENE_LOOK.sunMul;
+    const themeId = zone.def.kind === 'town' ? 'town' : themeIdFor(zone.def);
+    this.vignette.dataset.theme = themeId;
+    // v1.107 風、雲影、水面依主題；低畫質關掉風與雲影
+    setAtmosphere(themeId, this.quality.current !== 'low');
     const h = (x: number, z: number) => zone.heightAt(x, z);
     this.enemies.heightAt = h;
     this.effects.heightAt = h;

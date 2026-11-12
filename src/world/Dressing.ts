@@ -1,3 +1,4 @@
+import { patchCloud, patchWind } from './Atmosphere';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { PatchDef, ZoneDef } from '@/data/types';
@@ -186,7 +187,9 @@ export class Dressing {
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
-    const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+    const gm = new THREE.MeshLambertMaterial({ vertexColors: true });
+    patchCloud(gm); // v1.107 雲影
+    const m = new THREE.Mesh(geo, gm);
     m.receiveShadow = true;
     m.name = 'ground';
     return m;
@@ -284,6 +287,10 @@ export class Dressing {
       const material = glow
         ? new THREE.MeshBasicMaterial({ color: 0xffffff })
         : new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: sd.kind === 'shard' ? new THREE.Color(sd.colors[0]).multiplyScalar(0.35) : 0x000000 });
+      // v1.107 草、蘆葦、花隨風擺動；全部散佈物都有雲影
+      const sway = WIND_KINDS[sd.kind];
+      if (sway) patchWind(material, sway.amp, sway.h);
+      if (!glow) patchCloud(material);
       const im = new THREE.InstancedMesh(part.geo, material, pts.length);
       pts.forEach((p, i) => {
         q.setFromAxisAngle(up, p.r);
@@ -527,6 +534,13 @@ const LAVA_GLOW = new THREE.MeshBasicMaterial({ color: 0xff7a2a });
 LAVA_GLOW.userData.shared = true;
 
 /* ---------------- 散佈裝飾的幾何 ---------------- */
+
+/** 會隨風擺的散佈物：擺幅倍率、高度（本地座標最高點） */
+const WIND_KINDS: Partial<Record<ScatterKind, { amp: number; h: number }>> = {
+  grass: { amp: 1, h: 0.6 },
+  reed: { amp: 0.9, h: 1.0 },
+  flower: { amp: 0.7, h: 0.36 },
+};
 
 function scatterParts(kind: ScatterKind): { geo: THREE.BufferGeometry; color?: number }[] {
   const m = (geos: THREE.BufferGeometry[]) => {

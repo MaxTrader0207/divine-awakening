@@ -207,6 +207,12 @@ export function autoTheme(def: Pick<ZoneDef, 'music' | 'groundColor' | 'kind' | 
   return def.kind === 'dungeon' && !def.music ? 'cave' : 'mountain';
 }
 
+/** 主題 id（v1.107 風 / 雲影強度用） */
+export function themeIdFor(def: ZoneDef): ThemeId {
+  const o = def.theme || undefined;
+  return typeof o === 'string' ? o : (o?.base ?? autoTheme(def));
+}
+
 export function themeFor(def: ZoneDef): MapTheme {
   const o = def.theme || undefined;
   const baseId: ThemeId = typeof o === 'string' ? o : (o?.base ?? autoTheme(def));

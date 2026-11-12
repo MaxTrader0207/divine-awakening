@@ -1,3 +1,4 @@
+import { patchCloud } from './Atmosphere';
 import * as THREE from 'three';
 import type { PropDef } from '@/data/types';
 import { makeLabelSprite } from './Label';
@@ -91,6 +92,7 @@ export function mat(color: number): THREE.MeshLambertMaterial {
   let m = matCache.get(color);
   if (!m) {
     m = new THREE.MeshLambertMaterial({ color, flatShading: true });
+    patchCloud(m); // v1.107 雲影也飄過建築與地面色塊
     m.userData.shared = true; // 共用材質：切換區域時不 dispose
     matCache.set(color, m);
   }

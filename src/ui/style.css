@@ -1415,3 +1415,22 @@ html.landscape .equip-split > .col-a > .item-detail { order: -1; }
   linear-gradient(180deg, rgba(8, 4, 20, 0.45), rgba(8, 4, 20, 0.2)); }
 @media (prefers-reduced-motion: reduce) { .hud.set-full::before { animation: none; } }
 @keyframes setEdge { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+
+/* ---- v1.107 場景暗角與頂光（依地圖主題）：只疊在 3D 畫面上、在 HUD 下面 ---- */
+.scene-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  --vg: rgba(10, 14, 28, 0.34); --top: rgba(255, 244, 214, 0.10); --tint: transparent;
+  background:
+    radial-gradient(ellipse 85% 70% at 50% 46%, transparent 52%, var(--vg) 100%),
+    linear-gradient(180deg, var(--top) 0%, transparent 34%, transparent 70%, var(--tint) 100%);
+}
+.scene-vignette[data-theme='meadow'], .scene-vignette[data-theme='town'] { --top: rgba(255, 246, 214, 0.12); --tint: rgba(40, 70, 30, 0.10); }
+.scene-vignette[data-theme='forest'] { --vg: rgba(6, 20, 12, 0.42); --top: rgba(220, 255, 200, 0.10); --tint: rgba(10, 40, 20, 0.14); }
+.scene-vignette[data-theme='coast'] { --top: rgba(230, 248, 255, 0.14); --tint: rgba(20, 80, 120, 0.12); }
+.scene-vignette[data-theme='desert'] { --vg: rgba(60, 30, 10, 0.32); --top: rgba(255, 230, 170, 0.16); --tint: rgba(140, 70, 20, 0.12); }
+.scene-vignette[data-theme='mountain'] { --vg: rgba(20, 24, 34, 0.40); --top: rgba(230, 240, 255, 0.12); }
+.scene-vignette[data-theme='snow'] { --vg: rgba(30, 50, 90, 0.36); --top: rgba(235, 245, 255, 0.10); --tint: rgba(60, 100, 160, 0.14); }
+.scene-vignette[data-theme='swamp'] { --vg: rgba(14, 24, 10, 0.48); --top: rgba(200, 230, 160, 0.08); --tint: rgba(40, 60, 20, 0.18); }
+.scene-vignette[data-theme='volcanic'] { --vg: rgba(40, 6, 0, 0.50); --top: rgba(255, 140, 60, 0.10); --tint: rgba(255, 80, 20, 0.16); }
+.scene-vignette[data-theme='underworld'] { --vg: rgba(10, 0, 24, 0.55); --top: rgba(160, 120, 255, 0.08); --tint: rgba(80, 30, 140, 0.16); }
+.scene-vignette[data-theme='cave'] { --vg: rgba(0, 0, 0, 0.58); --top: rgba(160, 200, 255, 0.06); --tint: rgba(20, 30, 60, 0.16); }
