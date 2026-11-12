@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Cape } from './Cape';
 import type { Stats } from '@/data/types';
 import { statsForLevel } from '@/data/player';
 import type { CollisionWorld } from '@/world/Collision';
@@ -209,6 +210,11 @@ export class Player {
         bone.add(w);
       }
     }
+    // v1.110 隨動披風 / 圍巾：掛在胸口骨頭後方，世界座標模擬（網格在 update 時掛到場景上）
+    for (const c of this.capes) c.dispose();
+    this.capes = [];
+    const chest = inst.root.getObjectByName('chest');
+    if (chest) for (const cd of this.anims.capes ?? []) this.capes.push(new Cape(cd, chest));
     // 忍者面罩：頭骨上掛一圈遮住口鼻的布（待機姿勢下讓它在世界座標保持水平）
     const mask = this.anims.mask;
     const head = mask ? inst.root.getObjectByName('head') : null;
@@ -270,6 +276,8 @@ export class Player {
     return c[this.comboIdx];
   }
 
+  /** v1.110 隨動披風 / 圍巾 */
+  private capes: Cape[] = [];
   private prevFacing = 0;
   private bank = 0;
   private pitch = 0;
@@ -465,6 +473,7 @@ export class Player {
       this.aura.dispose();
       this.aura = null;
     }
+    for (const c of this.capes) c.setColor(form ? new THREE.Color(form.palette.glow).multiplyScalar(0.62).getHex() : null);
     if (!form) return false;
     const pal = form.palette;
     for (const [m, b] of this.baseLook) {
@@ -565,6 +574,11 @@ export class Player {
       this.bank += (THREE.MathUtils.clamp(-turn * 0.035, -0.22, 0.22) * lean - this.bank) * Math.min(1, dt * 8);
       this.pitch += (0.1 * lean - this.pitch) * Math.min(1, dt * 6);
       this.body.rotation.set(this.pitch, 0, this.bank);
+      const scene = this.object.parent;
+      for (const c of this.capes) {
+        if (scene && c.mesh.parent !== scene) scene.add(c.mesh);
+        c.update(dt, this.facing, speedNow, this.object.visible && this.alive);
+      }
       return;
     }
     // 走路：上下彈跳＋前傾；待機：呼吸
