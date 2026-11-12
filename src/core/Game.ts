@@ -3,6 +3,7 @@ import { setDressingDetail } from '@/world/Dressing';
 import { setTreasureLog } from '@/world/Zone';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, PEN_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
+import { Sparks } from '@/systems/Sparks';
 import { SCENE_LOOK, setAtmosphere, updateAtmosphere } from '@/world/Atmosphere';
 import { themeIdFor } from '@/data/mapThemes';
 import { bus } from './EventBus';
@@ -133,6 +134,13 @@ export class Game {
   readonly targets: TargetSelector;
   readonly damageNumbers: DamageNumbers;
   readonly effects: Effects;
+  /** v1.109 粒子：命中火花、腳步揚塵、施法光點 */
+  readonly sparks: Sparks;
+  /** v1.109 命中停頓剩餘秒數（真實時間）與冷卻 */
+  private hitStop = 0;
+  private hitStopCd = 0;
+  private stepDist = 0;
+  private dustColor = 0xbbb4a0;
   readonly skills: SkillSystem;
   readonly auto: AutoBattle;
   readonly loot: LootSystem;
@@ -249,6 +257,7 @@ export class Game {
     this.damageNumbers = new DamageNumbers(uiRoot, container);
     this.labelDodger = new LabelDodger(container);
     this.effects = new Effects(this.scene);
+    this.sparks = new Sparks(this.scene);
     this.telegraphs = new Telegraphs(this.scene);
     this.audio = new AudioSystem(this.state.settings);
     this.audio.setListener(() => this.player.pos);
@@ -541,6 +550,29 @@ export class Game {
     bus.on('loot:picked', ({ base }) => base && ITEM_BASES[base]?.named && this.state.stats.mythics++);
 
     // ---- 怒氣（狂戰士）與嗜血 ----
+    // v1.109 打擊感：命中火花、爆擊停頓與小震動、被重擊頓一下
+    bus.on('combat:hit', (hit) => {
+      const p = this.player;
+      if (hit.targetIsPlayer) {
+        this.sparks.hit(hit.x, 1.1, hit.z, 0xff5a4a, 5, 0.7);
+        if (hit.amount > p.stats.maxHp * 0.15) this.doHitStop(0.07);
+        return;
+      }
+      const dx = hit.x - p.pos.x;
+      const dz = hit.z - p.pos.z;
+      const d = Math.hypot(dx, dz) || 1;
+      this.sparks.hit(hit.x, Math.min(2, hit.y * 0.6 + 0.5), hit.z, hit.crit ? 0xffd36b : this.classColor, hit.crit ? 12 : 6, hit.crit ? 1.3 : 0.9, dx / d, dz / d);
+      if (hit.crit && d < 12) {
+        this.doHitStop(0.05);
+        if (this.hitStopCd <= 0.3) bus.emit('camera:shake', { power: 0.06 });
+      }
+    });
+    bus.on('skill:cast', ({ slot, id }) => {
+      if (slot === 'potion' || slot === 'impact') return;
+      const sk = CLASSES[this.state.heroClass]?.skills.find((s) => s.id === id);
+      const tip = this.player.staffTipWorld(new THREE.Vector3());
+      this.sparks.glowAt(tip.x, tip.y, tip.z, sk?.color ?? 0xffe9a0, slot === 'basic' ? 4 : 10, slot === 'basic' ? 0.14 : 0.22);
+    });
     bus.on('combat:hit', (hit) => {
       const p = this.player;
       if (!hit.targetIsPlayer && p.bloodlustT > 0 && p.alive) {
@@ -682,8 +714,13 @@ export class Game {
       }
     } else if (this.clearScreen.open || this.endingScreen.visible) {
       this.showcaseFrame(Math.min(0.05, realDt));
+    } else if (this.hitStop > 0) {
+      // v1.109 命中停頓：爆擊 / 重擊的瞬間世界幾乎停住一下
+      this.hitStop -= realDt;
+      this.tick(Math.min(0.05, realDt) * 0.06);
     } else {
       this.quality.sample(realDt);
+      this.hitStopCd = Math.max(0, this.hitStopCd - realDt);
       this.tick(Math.min(0.05, realDt));
     }
     this.renderer.render(this.scene, this.rig.camera);
@@ -708,6 +745,34 @@ export class Game {
       if (ready) this.pauseScreen.setMode('pause');
     }
     this.pauseScreen.setVisible(v && !this.menu.isOpen);
+  }
+
+  /** v1.109 命中停頓（同一段時間內只停一次，連打不會卡卡的） */
+  private doHitStop(sec: number) {
+    if (this.hitStopCd > 0 || this.clearSeq) return;
+    this.hitStop = sec;
+    this.hitStopCd = 0.35;
+  }
+
+  /** 職業代表色（命中火花用普攻的顏色） */
+  private get classColor(): number {
+    return CLASSES[this.state.heroClass]?.skills.find((s) => s.slot === 'basic')?.color ?? 0xffffff;
+  }
+
+  /** v1.109 跑步時每一步揚起一點灰塵（地面顏色） */
+  private footsteps(dt: number) {
+    const p = this.player;
+    if (!p.alive) return;
+    const v = Math.hypot(p.vel.x, p.vel.z);
+    if (v < 2) {
+      this.stepDist = 0;
+      return;
+    }
+    this.stepDist += v * dt;
+    if (this.stepDist < 1.15) return;
+    this.stepDist = 0;
+    const side = Math.random() < 0.5 ? -0.18 : 0.18;
+    this.sparks.footDust(p.pos.x + Math.cos(p.facing) * side, this.zones.current?.heightAt(p.pos.x, p.pos.z) ?? 0, p.pos.z - Math.sin(p.facing) * side, this.dustColor, 3);
   }
 
   private absorbNoted = false;
@@ -797,6 +862,7 @@ export class Game {
     }
     this.player.update(dt, { x: 0, z: 0 }, this.zones.current!.collision);
     this.effects.update(dt);
+    this.sparks.update(dt);
     this.rig.update(dt, this.player.pos.x, this.player.pos.z, this.player.groundY);
   }
 
@@ -867,6 +933,7 @@ export class Game {
    */
   private tick(dt: number) {
     updateAtmosphere(dt);
+    this.footsteps(dt);
     this.input.update();
 
     if (this.input.consume('menu')) this.menu.toggle();
@@ -937,6 +1004,7 @@ export class Game {
     if (this.player.alive) this.bosses.update(dt, this.enemies.enemies);
     this.telegraphs.update(dt);
     this.effects.update(dt);
+    this.sparks.update(dt);
     this.loot.update(dt);
     this.state.stats.playTime += dt;
     this.achCheck -= dt;
@@ -2367,6 +2435,10 @@ export class Game {
     }
     this.projectiles.clear();
     this.effects.clear();
+    this.sparks.clear();
+    // 腳步揚塵用地面顏色（往灰白偏一點）
+    this.dustColor = new THREE.Color(ZONES[id].groundColor).lerp(new THREE.Color(0xd8d2c4), 0.45).getHex();
+    this.sparks.density = this.quality.current === 'low' ? 0.5 : 1;
     this.telegraphs?.clear();
     this.loot?.clear();
     this.damageNumbers.clear();
@@ -2438,6 +2510,7 @@ export class Game {
     this.canvas.style.width = `${w}px`;
     this.canvas.style.height = `${hgt}px`;
     this.rig.resize(w / hgt);
+    this.sparks?.resize(hgt * this.renderer.getPixelRatio(), this.rig.camera.fov);
   }
 }
 

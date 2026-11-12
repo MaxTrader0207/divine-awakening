@@ -17,6 +17,9 @@ interface Fx {
   from: number;
   to: number;
   opacity: number;
+  /** 刀光：起始角度與掃過的角度（v1.109） */
+  rot0?: number;
+  sweep?: number;
 }
 
 const RING_POOL = 32;
@@ -45,6 +48,7 @@ export const ARC_ANGLE = 2.1;
 
 export class Effects {
   private fx: Fx[] = [];
+  private sweepDir = 1;
   private lobs: Lob[] = [];
   /** 地面高度（高台上的技能特效要墊高） */
   heightAt: (x: number, z: number) => number = () => 0;
@@ -122,7 +126,13 @@ export class Effects {
   arc(x: number, z: number, facing: number, from: number, to: number, color: number, life = 0.22, y = 0.9) {
     const f = this.spawn('arc', x, y, z, from, to, color, life, 0.85);
     // 平面先繞 x 轉 -90°，本地角度 θ 對應世界方向 (cosθ, -sinθ)；要對準 (sin a, cos a) → θ = a - π/2
-    if (f) f.mesh.rotation.z = facing - Math.PI / 2;
+    if (f) {
+      // v1.109 刀光會「掃過去」，左右交替（連段時一刀往左、一刀往右）
+      this.sweepDir = -this.sweepDir;
+      f.rot0 = facing - Math.PI / 2;
+      f.sweep = 0.75 * this.sweepDir;
+      f.mesh.rotation.z = f.rot0 - f.sweep / 2;
+    }
   }
 
   clear() {
@@ -186,6 +196,7 @@ export class Effects {
     const r = f.from + (f.to - f.from) * e;
     if (f.kind === 'pillar') f.mesh.scale.set(r, 1 - k * 0.3, r);
     else f.mesh.scale.set(r, r, 1);
+    if (f.kind === 'arc' && f.sweep) f.mesh.rotation.z = (f.rot0 ?? 0) - f.sweep / 2 + f.sweep * Math.min(1, e * 1.4);
     (f.mesh.material as THREE.MeshBasicMaterial).opacity = f.opacity * (1 - k);
   }
 }

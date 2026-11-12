@@ -55,7 +55,7 @@ export class Player {
   /** 0~1，目前移動強度（給動畫用） */
   private moveAmount = 0;
   /** 目前速度（公尺 / 秒）：起步、停下有很短的加減速，動作比較順 */
-  private vel = { x: 0, z: 0 };
+  readonly vel = { x: 0, z: 0 };
   private bobT = 0;
   private body: THREE.Group;
   private staffTip: THREE.Mesh;
