@@ -27,6 +27,16 @@ const HERO_HEIGHT = 2.9;
  *   模型沒載入時退回程式產生的低多邊形法師（帽子＋法袍＋法杖）。
  * - 只負責移動、朝向、動畫；戰鬥由各 system 處理。
  */
+/** v1.108 普攻連段的間隔上限（秒）、出手後維持戰鬥姿勢的秒數 */
+const COMBO_WINDOW = 1.2;
+const COMBAT_STANCE = 4;
+
+function wrapAngle(a: number): number {
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
 export class Player {
   readonly object = new THREE.Group();
   readonly radius = 0.55;
@@ -243,9 +253,29 @@ export class Player {
   /** 大招施法（烈焰爆發）、閃避、歡呼：只有模型時有動作 */
   /** 播指定動畫（近戰技能用）；動畫不存在時改播 cast */
   act(anim: string | undefined, timeScale = 1.6) {
-    this.rig?.playOnce(anim ?? this.anims.cast, { timeScale });
-    this.echo(anim ?? this.anims.cast, timeScale);
+    const a = this.comboAnim(anim ?? this.anims.cast);
+    this.combatT = COMBAT_STANCE;
+    this.rig?.playOnce(a, { timeScale });
+    this.echo(a, timeScale);
   }
+
+  /** v1.108 普攻連段：這個動作是連段第一段（或 cast）時，1.2 秒內連續出手就依序換下一段 */
+  private comboIdx = 0;
+  private comboT = 0;
+  private comboAnim(anim: string): string {
+    const c = this.anims.combo;
+    if (!c || c.length < 2 || (anim !== c[0] && anim !== this.anims.cast)) return anim;
+    this.comboIdx = this.comboT > 0 ? (this.comboIdx + 1) % c.length : 0;
+    this.comboT = COMBO_WINDOW;
+    return c[this.comboIdx];
+  }
+
+  private prevFacing = 0;
+  private bank = 0;
+  private pitch = 0;
+  /** v1.108 戰鬥姿勢剩餘秒數（出手 / 受傷後一段時間待機改成 combatIdle） */
+  combatT = 0;
+  private hitFlip = false;
 
   /** 守護剩餘秒數：期間受到的傷害降低 GUARD_REDUCTION */
   guardT = 0;
@@ -371,8 +401,14 @@ export class Player {
     this.hp = Math.max(0, this.hp - amount);
     this.sinceHurt = 0;
     this.hurtT = 0.3;
-    if (this.hp <= 0) this.rig?.die(this.anims.death);
-    else if (this.rig && !this.rig.busy) this.rig.playOnce(this.anims.hit, { priority: false, timeScale: 1.3 });
+    this.combatT = COMBAT_STANCE;
+    if (this.hp <= 0) this.rig?.die(this.anims.death2 && Math.random() < 0.5 ? this.anims.death2 : this.anims.death);
+    else if (this.rig && !this.rig.busy) {
+      // v1.108 受擊兩套輪流，重擊（扣超過 12% 血）頓一下更明顯
+      this.hitFlip = !this.hitFlip;
+      const heavy = amount > this.stats.maxHp * 0.12;
+      this.rig.playOnce(this.hitFlip && this.anims.hit2 ? this.anims.hit2 : this.anims.hit, { priority: false, timeScale: heavy ? 1.05 : 1.35 });
+    }
     return amount;
   }
 
@@ -452,7 +488,8 @@ export class Player {
     this.lockFacing = Math.atan2(dirX, dirZ);
     this.lockTimer = 0.35;
     this.castT = 0.22;
-    this.rig?.playOnce(this.anims.cast, { timeScale: 2.2 });
+    this.combatT = COMBAT_STANCE;
+    this.rig?.playOnce(this.comboAnim(this.anims.cast), { timeScale: 2.2 });
   }
 
   /** 法杖頂端的世界座標（投射物出生點） */
@@ -515,9 +552,19 @@ export class Player {
       const ratio = Math.min(1, speedNow / Math.max(0.1, this.stats.moveSpeed));
       const running = this.moveAmount > 0.3 && speedNow > 0.4;
       const speed = full * (0.55 + 0.45 * ratio);
+      this.comboT = Math.max(0, this.comboT - dt);
+      this.combatT = Math.max(0, this.combatT - dt);
+      const idle = this.combatT > 0 && this.anims.combatIdle ? this.anims.combatIdle : this.anims.idle;
       if (running) this.rig.setLoop(this.anims.run, 0.18, speed);
-      else this.rig.setLoop(this.anims.idle, 0.22);
-      this.updateClones(dt, running ? this.anims.run : this.anims.idle, running ? 0.18 : 0.22, running ? speed : 1);
+      else this.rig.setLoop(idle, 0.3);
+      this.updateClones(dt, running ? this.anims.run : idle, running ? 0.18 : 0.3, running ? speed : 1);
+      // v1.108 跑步時身體前傾、轉彎時往內側傾（有重量感）；停下時慢慢回正
+      const turn = wrapAngle(this.facing - this.prevFacing) / Math.max(dt, 1e-3);
+      this.prevFacing = this.facing;
+      const lean = Math.min(1, ratio) * this.moveAmount;
+      this.bank += (THREE.MathUtils.clamp(-turn * 0.035, -0.22, 0.22) * lean - this.bank) * Math.min(1, dt * 8);
+      this.pitch += (0.1 * lean - this.pitch) * Math.min(1, dt * 6);
+      this.body.rotation.set(this.pitch, 0, this.bank);
       return;
     }
     // 走路：上下彈跳＋前傾；待機：呼吸

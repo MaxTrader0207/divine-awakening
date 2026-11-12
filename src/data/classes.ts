@@ -32,6 +32,15 @@ export interface HeroAnimSet {
   mask?: { color: number; y: number; r: number; h: number; z?: number };
   /** 平滑著色的摺角（度）：夾角小於此值的相鄰面法線平均（預設 60，0＝維持原本的平面著色） */
   smooth?: number;
+  /**
+   * v1.108 職業專屬動作：
+   * combo＝普攻連段（1.2 秒內連續普攻依序換動作；沒有就一直用 cast / 技能的 anim）、
+   * combatIdle＝戰鬥中（剛出手 / 被打 4 秒內）的待機姿勢、hit2 / death2＝輪流 / 隨機的第二套受擊與倒下。
+   */
+  combo?: string[];
+  combatIdle?: string;
+  hit2?: string;
+  death2?: string;
 }
 
 export interface ClassDef {
@@ -76,7 +85,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'flame_burst', name: '烈焰爆發', slot: 'E', mpCost: 30, cooldown: 10, power: 3.2, range: 8, shape: 'circle', radius: 3, icon: '☄', color: 0xff9a3c, auto: 'target-aoe' },
       { id: 'blink', name: '閃現', slot: 'R', mpCost: 15, cooldown: 8, power: 0, range: 6, shape: 'dash', icon: '➶', color: 0xb48cff, auto: 'none' },
     ],
-    anims: { model: 'mage', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
+    anims: { model: 'mage', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', combo: ['Spellcast_Shoot', '1H_Ranged_Shoot'], combatIdle: 'Spellcasting', hit2: 'Hit_B', death2: 'Death_B' },
   },
   archer: {
     id: 'archer',
@@ -92,7 +101,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'arrow_rain', name: '箭雨', slot: 'E', mpCost: 30, cooldown: 10, power: 1.25, range: 10, shape: 'circle', radius: 3.6, waves: 3, icon: '☔', color: 0x9fd4ff, auto: 'target-aoe' },
       { id: 'backstep', name: '後跳', slot: 'R', mpCost: 12, cooldown: 7, power: 0, range: 6, shape: 'dash', icon: '↶', color: 0x8fe8c0, auto: 'none' },
     ],
-    anims: { model: 'rogue', idle: 'Idle', run: 'Running_A', cast: '2H_Ranged_Shoot', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Backward', cheer: 'Cheer' },
+    anims: { model: 'rogue', idle: 'Idle', run: 'Running_B', cast: '2H_Ranged_Shoot', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Backward', cheer: 'Cheer', combo: ['2H_Ranged_Shoot'], combatIdle: '2H_Ranged_Aiming', hit2: 'Hit_B', death2: 'Death_B' },
   },
   knight: {
     id: 'knight',
@@ -108,7 +117,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'whirlwind', name: '旋風斬', slot: 'E', mpCost: 26, cooldown: 9, power: 1.4, range: 0, shape: 'circle', radius: 3.6, waves: 3, icon: '🌀', color: 0xffe9a0, auto: 'self-aoe', anim: '2H_Melee_Attack_Spin' },
       { id: 'charge', name: '衝鋒', slot: 'R', mpCost: 12, cooldown: 7, power: 1.8, range: 7, shape: 'dash', icon: '➤', color: 0xffb36b, auto: 'gap', anim: 'Dodge_Forward' },
     ],
-    anims: { model: 'knight', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Horizontal', castBig: '1H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
+    anims: { model: 'knight', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Horizontal', castBig: '1H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', combo: ['1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Chop'], combatIdle: 'Blocking', hit2: 'Hit_B', death2: 'Death_B' },
   },
   berserker: {
     id: 'berserker',
@@ -125,7 +134,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'execute', name: '斬殺', slot: 'E', mpCost: 40, cooldown: 7, power: 3.2, range: 3.2, shape: 'cone', arc: 1.4, icon: '💀', color: 0xff3a2a, auto: 'single', anim: '2H_Melee_Attack_Chop' },
       { id: 'berserk', name: '狂暴', slot: 'R', mpCost: 0, cooldown: 30, power: 0, range: 0, shape: 'circle', duration: 8, icon: '🔥', color: 0xff5a2a, auto: 'burst', anim: 'Cheer' },
     ],
-    anims: { model: 'barbarian', idle: '2H_Melee_Idle', run: 'Running_A', cast: '2H_Melee_Attack_Slice', castBig: '2H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer' },
+    anims: { model: 'barbarian', idle: '2H_Melee_Idle', run: 'Running_A', cast: '2H_Melee_Attack_Slice', castBig: '2H_Melee_Attack_Chop', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', combo: ['2H_Melee_Attack_Slice', '2H_Melee_Attack_Stab', '2H_Melee_Attack_Chop'], hit2: 'Hit_B', death2: 'Death_B' },
   },
   summoner: {
     id: 'summoner',
@@ -141,7 +150,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'raise_guard', name: '埃阿斯亡靈', slot: 'E', mpCost: 32, cooldown: 14, power: 0, range: 0, shape: 'circle', summon: 'skeleton_warrior', count: 1, icon: '🛡', color: 0x9a7aff, auto: 'summon', anim: 'Spellcast_Long' },
       { id: 'bone_burst', name: '冥府骨爆', slot: 'R', mpCost: 10, cooldown: 10, power: 1.8, range: 0, shape: 'circle', radius: 2.6, icon: '💥', color: 0xd8c8ff, auto: 'detonate', anim: 'Spellcast_Shoot' },
     ],
-    anims: { model: 'summoner', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 275, light: 0.8 }, prop: { id: 'skel_staff', length: 1.9, hand: 'r' } },
+    anims: { model: 'summoner', idle: 'Idle', run: 'Running_A', cast: 'Spellcast_Shoot', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', combo: ['Spellcast_Shoot', 'Spellcast_Raise'], combatIdle: 'Spellcasting', hit2: 'Hit_B', death2: 'Death_B', recolor: { from: 70, to: 200, hue: 275, light: 0.8 }, prop: { id: 'skel_staff', length: 1.9, hand: 'r' } },
   },
   swordsman: {
     id: 'swordsman',
@@ -157,7 +166,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'sword_rain', name: '萬劍歸宗', slot: 'E', mpCost: 32, cooldown: 11, power: 1.0, range: 9, shape: 'circle', radius: 3.6, waves: 4, icon: '⚔', color: 0x6ad8ff, auto: 'target-aoe', anim: '2H_Melee_Attack_Spinning' },
       { id: 'sword_intent', name: '人劍合一', slot: 'R', mpCost: 25, cooldown: 30, power: 0, range: 0, shape: 'circle', duration: 8, icon: '☯', color: 0xffe9a0, auto: 'burst', anim: 'Cheer' },
     ],
-    anims: { model: 'swordsman', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.8, hand: 'r', thin: 0.45, grip: 0.22 } },
+    anims: { model: 'swordsman', idle: 'Idle', run: 'Running_B', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: '1H_Melee_Attack_Stab', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', hit2: 'Hit_B', death2: 'Death_B', recolor: { from: 90, to: 200, hue: 212, light: 0.95 }, prop: { id: 'sword_1h', length: 1.8, hand: 'r', thin: 0.45, grip: 0.22 } },
   },
   tamer: {
     id: 'tamer',
@@ -173,7 +182,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'call_bear', name: '卡呂冬巨熊', slot: 'E', mpCost: 30, cooldown: 15, power: 0, range: 0, shape: 'circle', summon: 'bear', count: 1, icon: '🐻', color: 0xd8a060, auto: 'summon', anim: 'Spellcast_Long' },
       { id: 'wild_roar', name: '野性咆哮', slot: 'R', mpCost: 25, cooldown: 24, power: 0, range: 0, shape: 'circle', radius: 14, duration: 8, icon: '🦁', color: 0xff9a3c, auto: 'burst', anim: 'Cheer' },
     ],
-    anims: { model: 'tamer', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 5, to: 20.5, hue: 118, light: 0.85, maxL: 0.56 }, prop: { id: 'whip', length: 1.6, hand: 'r' } },
+    anims: { model: 'tamer', idle: 'Idle', run: 'Running_A', cast: '1H_Melee_Attack_Slice_Diagonal', castBig: 'Spellcast_Long', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', combo: ['1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Chop'], hit2: 'Hit_B', death2: 'Death_B', recolor: { from: 5, to: 20.5, hue: 118, light: 0.85, maxL: 0.56 }, prop: { id: 'whip', length: 1.6, hand: 'r' } },
   },
   ninja: {
     id: 'ninja',
@@ -189,7 +198,7 @@ export const CLASSES: Record<HeroClass, ClassDef> = {
       { id: 'smoke_bomb', name: '煙玉・爆遁', slot: 'E', mpCost: 26, cooldown: 10, power: 1.4, range: 0, shape: 'circle', radius: 4.2, waves: 2, icon: '💨', color: 0xb0a8c8, auto: 'self-aoe', anim: 'Dodge_Backward' },
       { id: 'shadow_clone', name: '影分身之術', slot: 'R', mpCost: 25, cooldown: 28, power: 0, range: 0, shape: 'circle', duration: 8, icon: '👥', color: 0x8a6aff, auto: 'burst', anim: '2H_Melee_Attack_Spinning' },
     ],
-    anims: { model: 'ninja', idle: 'Idle', run: 'Running_A', cast: 'Dualwield_Melee_Attack_Slice', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', recolor: { from: 70, to: 200, hue: 250, light: 0.42, sat: 0.35 }, mask: { color: 0x1a1824, y: 0.17, r: 0.72, h: 0.34, z: 0.01 }, shadowClone: { color: 0x4a3a78, glow: 0x150c30, rim: 0xb090ff } },
+    anims: { model: 'ninja', idle: 'Idle', run: 'Running_B', cast: 'Dualwield_Melee_Attack_Slice', castBig: 'Throw', hit: 'Hit_A', death: 'Death_A', dodge: 'Dodge_Forward', cheer: 'Cheer', hit2: 'Hit_B', death2: 'Death_B', recolor: { from: 70, to: 200, hue: 250, light: 0.42, sat: 0.35 }, mask: { color: 0x1a1824, y: 0.17, r: 0.72, h: 0.34, z: 0.01 }, shadowClone: { color: 0x4a3a78, glow: 0x150c30, rim: 0xb090ff } },
   },
 };
 

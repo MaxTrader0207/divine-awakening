@@ -44,14 +44,15 @@ function find(dir, name) {
   return null;
 }
 
-const MAGE_ANIMS = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Spellcast_Long', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
-const ROGUE_ANIMS = ['Idle', 'Running_A', '2H_Ranged_Shoot', 'Throw', 'Hit_A', 'Death_A', 'Dodge_Backward', 'Cheer'];
-const KNIGHT_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Chop', 'Block_Attack', '2H_Melee_Attack_Spin', 'Blocking', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
-const BARB_ANIMS = ['2H_Melee_Idle', 'Running_A', '2H_Melee_Attack_Slice', '2H_Melee_Attack_Chop', 'Jump_Full_Short', 'Cheer', 'Hit_A', 'Death_A', 'Dodge_Forward'];
-const SUMMONER_ANIMS = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Spellcast_Raise', 'Spellcast_Long', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
-const SWORDSMAN_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Stab', '2H_Melee_Attack_Spinning', 'Dodge_Forward', 'Jump_Full_Short', 'Hit_A', 'Death_A', 'Cheer'];
-const TAMER_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Diagonal', 'Spellcast_Raise', 'Spellcast_Long', 'Hit_A', 'Death_A', 'Dodge_Forward', 'Cheer'];
-const NINJA_ANIMS = ['Idle', 'Running_A', 'Dualwield_Melee_Attack_Slice', 'Dualwield_Melee_Attack_Chop', 'Dualwield_Melee_Attack_Stab', 'Throw', '2H_Melee_Attack_Spinning', 'Dodge_Forward', 'Dodge_Backward', 'Hit_A', 'Death_A', 'Cheer'];
+// v1.108 每個職業多帶幾段動作：Hit_B / Death_B 輪流、連段、戰鬥待機、敏捷職業用 Running_B
+const MAGE_ANIMS = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Spellcast_Long', '1H_Ranged_Shoot', 'Spellcasting', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Dodge_Forward', 'Cheer'];
+const ROGUE_ANIMS = ['Idle', 'Running_A', 'Running_B', '2H_Ranged_Shoot', '2H_Ranged_Aiming', 'Throw', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Dodge_Backward', 'Cheer'];
+const KNIGHT_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Chop', 'Block_Attack', '2H_Melee_Attack_Spin', 'Blocking', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Dodge_Forward', 'Cheer'];
+const BARB_ANIMS = ['2H_Melee_Idle', 'Running_A', '2H_Melee_Attack_Slice', '2H_Melee_Attack_Stab', '2H_Melee_Attack_Chop', 'Jump_Full_Short', 'Cheer', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Dodge_Forward'];
+const SUMMONER_ANIMS = ['Idle', 'Running_A', 'Spellcast_Shoot', 'Spellcast_Raise', 'Spellcast_Long', 'Spellcasting', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Dodge_Forward', 'Cheer'];
+const SWORDSMAN_ANIMS = ['Idle', 'Running_A', 'Running_B', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Stab', '2H_Melee_Attack_Spinning', 'Dodge_Forward', 'Jump_Full_Short', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Cheer'];
+const TAMER_ANIMS = ['Idle', 'Running_A', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Chop', 'Spellcast_Raise', 'Spellcast_Long', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Dodge_Forward', 'Cheer'];
+const NINJA_ANIMS = ['Idle', 'Running_A', 'Running_B', 'Dualwield_Melee_Attack_Slice', 'Dualwield_Melee_Attack_Chop', 'Dualwield_Melee_Attack_Stab', 'Throw', '2H_Melee_Attack_Spinning', 'Dodge_Forward', 'Dodge_Backward', 'Hit_A', 'Hit_B', 'Death_A', 'Death_B', 'Cheer'];
 const SKEL_ANIMS = ['Idle', 'Walking_D_Skeletons', '1H_Melee_Attack_Chop', 'Hit_A', 'Death_C_Skeletons'];
 const SKEL_MAGE_ANIMS = [...SKEL_ANIMS, 'Spellcast_Shoot'];
 
