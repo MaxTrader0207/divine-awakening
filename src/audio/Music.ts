@@ -10,8 +10,15 @@
  * - 同一套引擎也能用 OfflineAudioContext 離線輸出（試聽、測音量用）。
  */
 import { SONGS, type DrumPat, type Inst, type TrackDef } from './songs';
+import { generatedSong } from './bossSongs';
 
-export type TrackId = keyof typeof SONGS;
+/** 曲子 id：songs.ts 手寫的曲子，或 v1.111 首領專屬戰曲 `boss:<種子>`（bossSongs.ts 產生） */
+export type TrackId = keyof typeof SONGS | `boss:${string}`;
+
+/** 依 id 取曲譜（手寫曲或產生的首領戰曲） */
+export function songOf(id: TrackId): TrackDef {
+  return (SONGS as Record<string, TrackDef>)[id] ?? generatedSong(id) ?? SONGS.boss;
+}
 
 interface NoteEv {
   midi: number;
@@ -246,7 +253,7 @@ export class MusicPlayer {
   private get(id: TrackId): Compiled {
     let c = this.compiled.get(id);
     if (!c) {
-      c = compile(SONGS[id]);
+      c = compile(songOf(id));
       this.compiled.set(id, c);
     }
     return c;
@@ -309,7 +316,7 @@ export class MusicPlayer {
   private switchTo(id: TrackId) {
     const ctx = this.ctx;
     const t = Math.max(ctx.currentTime, 0);
-    const toBoss = SONGS[id].bossFight === true || id === 'victory';
+    const toBoss = songOf(id).bossFight === true || id === 'victory';
     const fade = toBoss ? 0.25 : 0.7;
     if (this.mix) {
       const old = this.mix;
@@ -324,7 +331,7 @@ export class MusicPlayer {
         old.dly.disconnect();
       }, (fade + 4) * 1000);
     }
-    const def = SONGS[id];
+    const def = songOf(id);
     const mix = this.makeMix(def);
     const lvl = def.level ?? 1;
     for (const g of [mix.fader, mix.rev, mix.dly]) {

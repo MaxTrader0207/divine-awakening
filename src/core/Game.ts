@@ -4,6 +4,7 @@ import { setTreasureLog } from '@/world/Zone';
 import { CRIT_DMG_MAX, CRIT_RATE_MAX, PEN_MAX, SLOT_ORDER } from '@/data/items';
 import * as THREE from 'three';
 import { Sparks } from '@/systems/Sparks';
+import { ensureBossSong } from '@/audio/bossSongs';
 import { SCENE_LOOK, setAtmosphere, updateAtmosphere } from '@/world/Atmosphere';
 import { themeIdFor } from '@/data/mapThemes';
 import { bus } from './EventBus';
@@ -775,6 +776,15 @@ export class Game {
     this.sparks.footDust(p.pos.x + Math.cos(p.facing) * side, this.zones.current?.heightAt(p.pos.x, p.pos.z) ?? 0, p.pos.z - Math.sin(p.facing) * side, this.dustColor, 3);
   }
 
+  /**
+   * v1.111 每一隻首領都有自己的戰曲：最終首領用手寫的「final」，其他依關卡（試煉塔 / 每週挑戰依首領）當種子自動作曲
+   */
+  private bossSongFor(def: { id: string }, boss: Enemy): string {
+    if (def.id === DUNGEON_ORDER[DUNGEON_ORDER.length - 1]) return 'final';
+    const seed = this.towerRun || this.weeklyRun ? `${boss.def.id}` : def.id;
+    return ensureBossSong(seed, { name: boss.def.name, element: boss.def.element });
+  }
+
   private absorbNoted = false;
   /** 夥伴召喚冷卻（秒，不存檔） */
   private companionCd = 0;
@@ -1023,7 +1033,7 @@ export class Game {
     const boss = this.enemies.engagedBoss();
     this.hud.setBoss(boss);
     if (boss) {
-      this.audio.setMusic(zoneNow.def.bossMusic ?? 'boss');
+      this.audio.setMusic(this.bossSongFor(zoneNow.def, boss));
       this.audio.setBossIntensity(boss.hp < boss.maxHp * 0.5 ? 1 : 0);
     } else this.audio.setMusic(zoneNow.def.music ?? ({ town: 'town', field: 'grassland', dungeon: 'dungeon' } as const)[zoneNow.def.kind]);
     this.audio.setAmbience(ambienceFor(zoneNow.def));

@@ -1,3 +1,5 @@
+import { ensureBossSong } from './audio/bossSongs';
+import { STAGES } from './data/stages';
 import './ui/style.css';
 import './ui/landscape';
 import { Game } from './core/Game';
@@ -90,5 +92,12 @@ if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) {
   (window as unknown as { __assets: typeof Assets }).__assets = Assets;
   // 離線輸出背景音樂（試聽、音量檢查）：await __renderMusic('boss', 30, 1)
   (window as unknown as { __renderMusic: typeof renderTrack }).__renderMusic = renderTrack;
+  // v1.111 首領專屬戰曲：await __renderBoss('dungeon_5', 40, 1)（先產生 boss:<關卡> 再輸出）
+  (window as unknown as { __renderBoss: unknown }).__renderBoss = (zone: string, secs = 40, intensity = 0) => {
+    const st = STAGES.find((s) => s.zone.id === zone);
+    const b = st && Object.values(st.enemies).find((e) => e.boss);
+    const id = ensureBossSong(zone, { name: b?.name ?? zone, element: b?.element });
+    return renderTrack(id as never, secs, intensity);
+  };
   (window as unknown as { __renderSfx: unknown }).__renderSfx = (ids: string[], gap?: number, amb?: string, secs?: number) => game['audio'].renderSfx(ids as never, gap, amb as never, secs);
 }

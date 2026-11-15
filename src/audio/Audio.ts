@@ -1,7 +1,8 @@
 import { bus } from '@/core/EventBus';
 import type { Settings } from '@/core/GameState';
 import type { ZoneKind } from '@/data/types';
-import { MusicPlayer, toWav, type TrackId } from './Music';
+import { MusicPlayer, songOf, toWav, type TrackId } from './Music';
+import { generatedSong } from './bossSongs';
 import { SONGS } from './songs';
 import { Ambience, type AmbienceId } from './Ambience';
 
@@ -168,7 +169,7 @@ export class AudioSystem {
 
   /** 指定曲子（區域音樂 / 魔王戰）；同一首重複呼叫不會重播 */
   setMusic(id: string) {
-    const tid = (id in SONGS ? id : 'town') as TrackId;
+    const tid = (id in SONGS || generatedSong(id) ? id : 'town') as TrackId;
     this.wantSong = tid;
     this.music?.setTrack(tid);
   }
@@ -194,7 +195,7 @@ export class AudioSystem {
   /** 目前播放的曲名（設定頁顯示） */
   get nowPlaying(): string {
     const id = this.music?.playing ?? this.wantSong;
-    return SONGS[id].name;
+    return songOf(id).name;
   }
 
   /** 大事件時把音樂壓低一下（depth 0~1，hold 秒後慢慢回來） */
