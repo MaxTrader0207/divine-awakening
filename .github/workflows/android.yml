@@ -1,5 +1,5 @@
 # 建置 Android App Bundle（.aab）——不用在自己電腦裝 Android Studio
-# 觸發：推 v 開頭的標籤（例如 v1.112.0），或在 GitHub → Actions → Build Android → Run workflow 手動執行
+# 觸發：推 v 開頭的標籤（例如 v1.112.0）、開合併請求，或在 GitHub → Actions → Build Android → Run workflow 手動執行
 #
 # 第一次使用先設定簽章金鑰（docs/APP.md「簽章金鑰」），Repo → Settings → Secrets and variables → Actions：
 #   ANDROID_KEYSTORE_BASE64   金鑰庫檔案轉成的 base64 文字
@@ -12,6 +12,9 @@ name: Build Android
 on:
   push:
     tags: ['v*']
+  # 合併請求也建置一次：合併前就能確認 .aab 建得起來（不會部署網頁版）
+  pull_request:
+    paths: ['android/**', 'src/**', 'package.json', 'package-lock.json', 'capacitor.config.ts', '.github/workflows/android.yml']
   workflow_dispatch:
     inputs:
       version_code:
