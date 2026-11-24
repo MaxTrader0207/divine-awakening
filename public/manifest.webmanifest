@@ -1,12 +1,12 @@
 {
   "name": "神格覺醒 Divine Awakening",
   "short_name": "神格覺醒",
-  "description": "手機直式 3D 動作 RPG — Wei Studio",
+  "description": "手機橫式 3D 動作 RPG — Wei Studio",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "background_color": "#0e131c",
   "theme_color": "#1b2433",
   "icons": [

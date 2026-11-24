@@ -75,7 +75,7 @@ import { EndingScreen, type EndingInfo } from '@/ui/EndingScreen';
 import { DeathScreen } from '@/ui/DeathScreen';
 import { REVIVE, payRevive, reviveCost } from '@/systems/Revive';
 import { applyRebirth, rebirthBlocked, rebirthExpMul } from '@/systems/Rebirth';
-import { setOrientationPref } from '@/ui/landscape';
+import { onUprightChange } from '@/ui/landscape';
 import { WeeklyScreen, type WeeklyResult } from '@/ui/WeeklyScreen';
 import { WEEKLY, WEEKLY_DIFF_MAP, ensureWeeklyWeek, recordWeeklyWin, weeklyAffixMods, weeklyPick, type WeeklyDiff } from '@/systems/WeeklyBoss';
 import { rollMythic } from '@/systems/GemShop';
@@ -331,7 +331,8 @@ export class Game {
     this.hud.treasureSpots = () => this.zones.current?.treasures?.remaining() ?? [];
     this.watchNetwork(uiRoot);
     // v1.79 設定「畫面方向」（HUD 建好之後套用，切換時 HUD 會跟著搬元件）
-    setOrientationPref(this.state.settings.orientation ?? 'auto');
+    // v1.113 只有橫式：畫面被轉成直的（顯示「請橫放」遮罩）時暫停，轉回來由玩家自己按繼續
+    onUprightChange((up) => up && this.setPaused(true));
     this.menu = new Menu(uiRoot, this.state, {
       onResetSave: () => {
         this.resetting = true; // 避免 pagehide 時又把舊進度存回去
@@ -725,6 +726,25 @@ export class Game {
       this.tick(Math.min(0.05, realDt));
     }
     this.renderer.render(this.scene, this.rig.camera);
+  }
+
+  /**
+   * App 版的返回鍵 / 返回手勢（v1.112，`platform/native.ts` 呼叫）：
+   * 選單開著 → 關選單；遊戲進行中 → 暫停；已經暫停（或倒地、換地圖中不能暫停）→ 回傳 false，App 縮到背景。
+   */
+  handleBack(): boolean {
+    if (this.menu.isOpen) {
+      this.menu.close();
+      return true;
+    }
+    if (this.paused) return false;
+    this.setPaused(true);
+    return this.paused;
+  }
+
+  /** 立刻存檔（App 被切到背景時） */
+  saveNow() {
+    this.persist();
   }
 
   /** 暫停 / 繼續。暫停時遊戲世界完全停住（敵人、冷卻、AUTO、計時、存檔計時） */
@@ -1759,7 +1779,7 @@ export class Game {
 
   /** v1.85 離線遊玩：畫面上方的「離線中」標籤、斷線 / 連線提示、連線後補傳雲端存檔與成績 */
   private watchNetwork(uiRoot: HTMLElement) {
-    // 標籤掛在金幣 / 鑽石那一列最後面（直式、橫式都跟著走，不會蓋到其他元件）
+    // 標籤掛在金幣 / 鑽石那一列最後面（不會蓋到其他元件）
     const chip = document.createElement('span');
     chip.className = 'net-off';
     chip.textContent = '📴 離線';

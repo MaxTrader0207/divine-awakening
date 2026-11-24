@@ -9,6 +9,7 @@ import { Assets } from './assets/Assets';
 import { SaveSlots } from './core/SaveSystem';
 import { shouldShowTitle, showTitleScreen } from './ui/TitleScreen';
 import { CLASSES, CLASS_LIST, type HeroClass } from './data/classes';
+import { IS_NATIVE, initNative, setNativeHooks } from './platform/native';
 
 /**
  * 進入點：只負責找 DOM、建立 Game、啟動。
@@ -17,6 +18,9 @@ import { CLASSES, CLASS_LIST, type HeroClass } from './data/classes';
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
 const app = document.getElementById('app') as HTMLElement;
 const uiRoot = document.getElementById('ui-root') as HTMLElement;
+
+// 原生 App（Android App Bundle）：全螢幕、返回鍵、切到背景存檔（網頁版略過）
+initNative();
 
 // 防止手機上雙擊縮放、長按選字、下拉重新整理
 document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -46,6 +50,7 @@ let heroClass: HeroClass = 'mage';
 if (!slots.load(slots.active)) heroClass = await pickClass();
 game = new Game(canvas, app, uiRoot, heroClass);
 game.start();
+setNativeHooks({ onBack: () => game.handleBack(), onBackground: () => game.saveNow() });
 
 function pickClass(): Promise<HeroClass> {
   const forced = new URLSearchParams(location.search).get('class');
@@ -73,6 +78,7 @@ function pickClass(): Promise<HeroClass> {
 }
 
 // PWA：正式版、https（或 localhost）、不在 iframe 內時註冊離線快取
+// App 版（Capacitor，來源是 https://localhost）不註冊：檔案已經包在 App 裡，快取反而會讓更新後還跑舊版
 const inFrame = (() => {
   try {
     return window.self !== window.top;
@@ -80,7 +86,7 @@ const inFrame = (() => {
     return true;
   }
 })();
-if (import.meta.env.PROD && 'serviceWorker' in navigator && !inFrame && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+if (import.meta.env.PROD && !IS_NATIVE && 'serviceWorker' in navigator && !inFrame && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('./sw.js').catch(() => {
     /* 不支援或被封鎖時照常遊玩 */
   });

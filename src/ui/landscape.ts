@@ -1,64 +1,61 @@
 /**
- * 橫式版面（v1.74）：參考 MOBA（英雄聯盟 / 激鬥峽谷）——左上小地圖、右上錢包與選單、
- * 下方中央角色狀態＋道具列、左下搖桿、右下技能扇形。
- *
- * 什麼時候是橫式（v1.75 起自動切換）：
- * - 手機 / 平板（觸控為主）橫著拿 → 橫式；轉回直的 → 直式（不用重新整理）。
- * - 網址帶 ?landscape 強制橫式（電腦測試用）、?portrait 強制直式。
- * - 電腦預設維持直式畫框。
- * - 設定「畫面方向」（v1.79）：自動（手機 / 平板橫拿）、橫式（寬螢幕都用，含電腦）、直式（一律直式畫框）；網址參數優先。
+ * 橫式版面（v1.74 試作 → v1.113 起是唯一的版面，直式已移除）
+ * ------------------------------------------------------------
+ * 參考 MOBA：左上小地圖、右上錢包與選單、下方中央角色狀態＋道具列、左下搖桿、右下技能扇形。
+ * - `<html class="landscape">` 永遠掛著（style.css 的橫式規則都靠它）；`LANDSCAPE` 永遠是 true。
+ * - App 版由 AndroidManifest 鎖 `sensorLandscape`（左右橫放都可以）；PWA 由 manifest 的 `orientation: landscape` 鎖。
+ * - 一般瀏覽器鎖不了方向：畫面是直的（高 > 寬）時顯示「請把裝置橫放」遮罩，轉橫就消失（遊戲在遮罩底下照常，Game 會先暫停）。
  */
-const params = (() => {
-  try {
-    return new URLSearchParams(location.search);
-  } catch {
-    return new URLSearchParams();
-  }
-})();
-const forced: boolean | null = params.has('landscape') ? true : params.has('portrait') ? false : null;
+export const LANDSCAPE = true;
 
-let pref: 'auto' | 'portrait' | 'landscape' = 'auto';
+document.documentElement.classList.add('landscape');
 
-function want(): boolean {
-  if (forced !== null) return forced;
-  if (pref === 'portrait') return false;
-  // 「橫式」：螢幕是寬的就用（電腦、平板也算）；畫面是直的時候橫式版面沒辦法用，所以還是直式
-  if (pref === 'landscape') return window.innerWidth > window.innerHeight;
-  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  return touch && window.innerWidth > window.innerHeight;
-}
+const isUpright = () => window.innerHeight > window.innerWidth;
+const listeners: ((upright: boolean) => void)[] = [];
+let upright = isUpright();
 
-/** 目前是不是橫式（會隨手機轉向改變） */
-export let LANDSCAPE = want();
-const listeners: ((on: boolean) => void)[] = [];
-
-function apply() {
-  document.documentElement.classList.toggle('landscape', LANDSCAPE);
-}
-apply();
-
-/** 橫 / 直切換時通知（Hud 搬動元件用） */
-export function onLandscapeChange(cb: (on: boolean) => void) {
+/** 目前畫面是不是直的（顯示著「請橫放」遮罩） */
+export const isRotatePromptOn = () => upright;
+/** 直 ↔ 橫改變時通知（Game：變直的時候暫停） */
+export function onUprightChange(cb: (upright: boolean) => void) {
   listeners.push(cb);
 }
 
-function check() {
-  const on = want();
-  if (on === LANDSCAPE) return;
-  LANDSCAPE = on;
-  apply();
-  for (const cb of listeners) cb(on);
-}
-/** 設定「畫面方向」（Game 讀檔後、設定頁切換時呼叫） */
-export function setOrientationPref(p: 'auto' | 'portrait' | 'landscape') {
-  pref = p;
-  const before = LANDSCAPE;
-  check();
-  // 寬度變了，讓 Game 重新量畫面
-  if (before !== LANDSCAPE) window.dispatchEvent(new Event('resize'));
+let prompt: HTMLElement | null = null;
+function render() {
+  document.documentElement.classList.toggle('upright', upright);
+  if (upright && !prompt) {
+    prompt = document.createElement('div');
+    prompt.className = 'rotate-prompt';
+    const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    prompt.innerHTML = `<div class="rp-box"><i class="rp-phone"></i><b>請把${touch ? '裝置橫放' : '視窗拉寬'}</b><span>神格覺醒是橫式遊戲${touch ? '（記得關閉手機的「直向鎖定」）' : ''}</span></div>`;
+    document.body.appendChild(prompt);
+  } else if (!upright && prompt) {
+    prompt.remove();
+    prompt = null;
+  }
 }
 
-// 這個模組比 Game 先載入，所以 resize 時會先切好 #app 寬度，Game 的 resize 再量尺寸
+function check() {
+  const now = isUpright();
+  if (now === upright) return;
+  upright = now;
+  render();
+  for (const cb of listeners) cb(upright);
+}
+
+// 能鎖就鎖（已安裝的 PWA、全螢幕時有效；一般分頁會被拒絕，忽略即可）
+try {
+  const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+  void o?.lock?.('landscape')?.catch(() => {});
+} catch {
+  /* 不支援 */
+}
+
+if (document.body) render();
+else document.addEventListener('DOMContentLoaded', render);
+
+// 這個模組比 Game 先載入，所以 resize 時會先更新遮罩，Game 的 resize 再量尺寸
 window.addEventListener('resize', check);
 window.addEventListener('orientationchange', () => {
   check();

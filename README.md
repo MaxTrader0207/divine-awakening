@@ -2,12 +2,12 @@
 
 **立即遊玩：https://maxtrader0207.github.io/divine-awakening/**
 
-手機直式、3D 低多邊形、俯視角的單機動作 RPG（古希臘神話主題）。
+手機橫式、3D 低多邊形、俯視角的單機動作 RPG（古希臘神話主題）。
 雅典城 → 阿卡迪亞草原、多多納聖林 → 十二層副本（Lv.1-60，擊敗首領解鎖下一層），搖桿 + Q/W/E/R 技能 + AUTO 自動戰鬥，
 掉寶、裝備、強化、商店、首領紅色預警、每日任務、雲端存檔與排行榜。五個職業：法師、弓手、騎士、狂戰士、召喚師。
 
 - 引擎：**Three.js**（WebGL）＋ **TypeScript** ＋ **Vite**
-- 平台：手機瀏覽器（直式），桌機會以手機比例置中顯示
+- 平台：手機橫式（瀏覽器 / Android App），桌機全視窗；畫面是直的時候會提示「請把裝置橫放」（v1.113 起移除直式）
 - 部署：GitHub Pages（推到 `main` 自動部署，網址 https://maxtrader0207.github.io/divine-awakening/ ；GitHub 專案 `MaxTrader0207/divine-awakening`，v1.36 前叫 `little-mage`）；支援 PWA（加到主畫面、離線）
 - 開發商：Wei Studio
 
@@ -21,6 +21,7 @@ npm run build:single # 建置成單一 HTML（dist-single/index.html），方便
 npm run preview      # 預覽 dist/
 npm test             # 單元測試（Vitest）
 npm run app:sync     # 建置並同步到 Android 專案（見 docs/APP.md）
+npm run app:aab      # 產生上架用的 Android App Bundle（.aab）
 ```
 
 網址參數：`?debug`（主控台 `__game`）、`?quality=high|medium|low`、`?class=mage|archer`（略過選職業）、`?api=<網址>`（指定雲端 API）。
@@ -38,7 +39,7 @@ npm run app:sync     # 建置並同步到 Android 專案（見 docs/APP.md）
 | AUTO | AUTO 按鈕 | T |
 | 選單 | 右上「選單」 | M |
 | 暫停 / 繼續 | 右上「暫停」 | Esc |
-| 鏡頭縮放 | 右上 + / − | — |
+| 鏡頭縮放 | 雙指開合 | 滑鼠滾輪 |
 
 ## 文件
 
@@ -48,7 +49,7 @@ npm run app:sync     # 建置並同步到 Android 專案（見 docs/APP.md）
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | 程式規範、命名、座標系、新增內容的步驟 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 10 週 MVP 進度表、MVP 之後的建議 |
 | [docs/BALANCE.md](docs/BALANCE.md) | 數值表、首領戰與全流程模擬結果 |
-| [docs/APP.md](docs/APP.md) | 打包成 Android / iOS App |
+| [docs/APP.md](docs/APP.md) | 打包成 Android App Bundle（.aab）/ iOS App、上架檢查表 |
 | [server/README.md](server/README.md) | 雲端 API 部署與測試 |
 | [CREDITS.md](CREDITS.md) | 美術素材來源（KayKit CC0）與重新產生模型 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本紀錄 |
