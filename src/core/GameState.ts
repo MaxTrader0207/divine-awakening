@@ -38,8 +38,6 @@ export interface Settings {
   vibration: boolean;
   /** v10：HP 低於這個比例自動喝紅藥水（0＝關閉，預設 0.7） */
   autoPotionAt: number;
-  /** v22：畫面方向（auto＝手機橫拿就切橫式、portrait 固定直式、landscape 固定橫式） */
-  orientation: 'auto' | 'portrait' | 'landscape';
   /** v23：撿到時自動賣出這個稀有度以下、比身上差的裝備（off＝關閉；★神話裝永遠不賣） */
   autoSell: 'off' | 'common' | 'fine' | 'rare';
 }
@@ -163,7 +161,7 @@ export function newGameState(heroClass: HeroClass = 'mage'): GameState {
     merchant: { day: '', bought: {} },
     rebirth: newRebirthState(),
     stats: { kills: 0, deaths: 0, playTime: 0, bossKills: 0, enhanceOk: 0, itemsUsed: 0, questsDone: 0, mythics: 0, goldEarned: 0 },
-    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7, orientation: 'auto', autoSell: 'common' },
+    settings: { zoom: 1.1, showFps: false, musicVolume: 0.5, sfxVolume: 0.8, quality: 'auto', leftHanded: false, uiScale: 1, vibration: true, autoPotionAt: 0.7, autoSell: 'common' },
   };
 }
 

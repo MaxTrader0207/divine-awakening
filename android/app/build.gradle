@@ -1,26 +1,61 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.application'
 
+// ---- 版本號：直接讀 package.json（v1.112），不用手動改 ----
+// versionName = "1.112.0"；versionCode = 主*1000000 + 次*1000 + 修 = 1112000（每次發版一定變大）
+// 同一版要重新上傳（Play 不接受重複的 versionCode）：改 package.json 的修訂號，或 -PversionCodeOverride=數字
+def pkg = new JsonSlurper().parse(new File(rootDir, '../package.json'))
+def (vMajor, vMinor, vPatch) = pkg.version.tokenize('.-').take(3).collect { it as int }
+def appVersionCode = project.hasProperty('versionCodeOverride')
+        ? (project.property('versionCodeOverride') as int)
+        : vMajor * 1000000 + vMinor * 1000 + vPatch
+
+// ---- 簽章：android/keystore.properties（本機）或環境變數（GitHub Actions），都沒有就產生未簽章的 .aab ----
+def ksProps = new Properties()
+def ksFile = new File(rootDir, 'keystore.properties')
+if (ksFile.exists()) ksFile.withInputStream { ksProps.load(it) }
+def ksGet = { String key, String env -> ksProps.getProperty(key) ?: System.getenv(env) }
+def ksStore = ksGet('storeFile', 'ANDROID_KEYSTORE_FILE')
+def hasSigning = ksStore && new File(rootDir, ksStore).exists()
+
 android {
-    namespace "com.weistudio.littlemage"
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace = "com.weistudio.divineawakening"
+    compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.weistudio.littlemage"
+        applicationId = "com.weistudio.divineawakening"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        versionCode = appVersionCode
+        versionName = pkg.version
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (hasSigning) {
+                storeFile = new File(rootDir, ksStore)
+                storePassword = ksGet('storePassword', 'ANDROID_KEYSTORE_PASSWORD')
+                keyAlias = ksGet('keyAlias', 'ANDROID_KEY_ALIAS')
+                keyPassword = ksGet('keyPassword', 'ANDROID_KEY_PASSWORD')
+            }
         }
     }
     buildTypes {
         release {
-            minifyEnabled false
+            // 遊戲本體是 WebView 裡的 JS（Vite 已經壓縮），Java 只有一個 Activity，不需要 R8
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasSigning) signingConfig = signingConfigs.release
         }
+    }
+    bundle {
+        // 語言不拆包（介面只有繁體中文，資源很小）；螢幕密度與 CPU 架構照常由 Play 拆
+        language { enableSplit = false }
     }
 }
 

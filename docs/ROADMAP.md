@@ -12,7 +12,7 @@
 ## ✅ 第 1 週：專案骨架與移動（v0.1）
 - [x] Vite + TypeScript + Three.js 專案、資料夾結構、路徑別名
 - [x] 規範文件（ARCHITECTURE / CONVENTIONS / ROADMAP / CLAUDE.md）
-- [x] 直式畫框（桌機置中為手機比例）、safe-area 支援
+- [x] 直式畫框（桌機置中為手機比例）、safe-area 支援（v1.113 起改為只有橫式）
 - [x] 型別化 EventBus、GameState、LocalSave（含版本遷移）
 - [x] 虛擬搖桿 + 鍵盤輸入
 - [x] 斜俯視跟隨攝影機、縮放 80~150%

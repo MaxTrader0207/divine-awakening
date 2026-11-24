@@ -65,8 +65,8 @@ export class CameraRig {
 
   resize(aspect: number) {
     this.camera.aspect = aspect;
-    // 直式畫面視野較窄，稍微拉大 FOV
-    this.camera.fov = aspect < 0.75 ? 50 : aspect > 1.4 ? 46 : 42;
+    // 寬螢幕視野拉大一點（v1.113 只有橫式；接近正方形的視窗、摺疊機展開時用 42）
+    this.camera.fov = aspect > 1.4 ? 46 : 42;
     // 橫式（v1.74）：下方中央有角色面板，畫面往上推 6%，角色站低一點、前方看得比較遠
     this.landOffset(true);
     this.camera.updateProjectionMatrix();
@@ -75,7 +75,7 @@ export class CameraRig {
   private lastOffset = '';
   /**
    * 橫式的畫面偏移：平常上推 6%（下方有角色面板）；破關特寫時往左移 20%、往下移 20%（v1.79：破關卡片在右邊，角色站在左邊、整個人入鏡）。
-   * 直式不偏移。
+   * 接近正方形（寬高比 ≤ 1.4）不偏移。
    */
   private landOffset(force = false) {
     const aspect = this.camera.aspect;

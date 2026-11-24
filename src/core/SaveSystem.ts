@@ -299,8 +299,8 @@ export function migrate(data: Partial<GameState>): GameState | null {
   merged.mythic = normalizeMythic(data.mythic);
   // v20 → v21：每週首領挑戰
   merged.weekly = normalizeWeekly(data.weekly);
-  // v21 → v22：設定新增 orientation（settings 合併時補預設值 'auto'）
-  if (!['auto', 'portrait', 'landscape'].includes(merged.settings.orientation)) merged.settings.orientation = 'auto';
+  // v1.113：直式移除，舊存檔的「畫面方向」設定（v22 加的）丟掉；不升存檔版本（少一個設定欄位，舊版讀回去也會自己補預設）
+  delete (merged.settings as { orientation?: unknown }).orientation;
   // v22 → v23：設定新增 autoSell（預設關閉）
   if (!['off', 'common', 'fine', 'rare'].includes(merged.settings.autoSell)) merged.settings.autoSell = 'off';
   // v23 → v24：倒下後原地復活的免費次數

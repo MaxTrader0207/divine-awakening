@@ -1,0 +1,81 @@
+# 建置 Android App Bundle（.aab）——不用在自己電腦裝 Android Studio
+# 觸發：推 v 開頭的標籤（例如 v1.112.0）、開合併請求，或在 GitHub → Actions → Build Android → Run workflow 手動執行
+#
+# 第一次使用先設定簽章金鑰（docs/APP.md「簽章金鑰」），Repo → Settings → Secrets and variables → Actions：
+#   ANDROID_KEYSTORE_BASE64   金鑰庫檔案轉成的 base64 文字
+#   ANDROID_KEYSTORE_PASSWORD 金鑰庫密碼
+#   ANDROID_KEY_ALIAS         金鑰別名（例如 upload）
+#   ANDROID_KEY_PASSWORD      金鑰密碼
+# 沒設定也會建置，但產生的是「未簽章」的 .aab（不能上傳 Google Play，只能確認建置沒壞）
+name: Build Android
+
+on:
+  push:
+    tags: ['v*']
+  # 合併請求也建置一次：合併前就能確認 .aab 建得起來（不會部署網頁版）
+  pull_request:
+    paths: ['android/**', 'src/**', 'package.json', 'package-lock.json', 'capacitor.config.ts', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'versionCode（留空＝依 package.json 版本自動算；同一版要重傳時填更大的數字）'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+      - run: npm test
+      - name: 建置網頁版並同步到 android/
+        run: npm run app:sync
+
+      - name: 還原簽章金鑰
+        if: env.HAS_KEYSTORE == 'true'
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/upload-keystore.jks
+
+      - name: 建置 .aab（release）與測試用 .apk（debug）
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ env.HAS_KEYSTORE == 'true' && 'upload-keystore.jks' || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          EXTRA=""
+          if [ -n "${{ inputs.version_code }}" ]; then EXTRA="-PversionCodeOverride=${{ inputs.version_code }}"; fi
+          ./gradlew --no-daemon bundleRelease assembleDebug $EXTRA
+
+      - name: 提醒：未簽章
+        if: env.HAS_KEYSTORE != 'true'
+        run: echo "::warning::沒有設定 ANDROID_KEYSTORE_BASE64，這個 .aab 未簽章，不能上傳 Google Play（見 docs/APP.md）"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: divine-awakening-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: divine-awakening-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk

@@ -1,5 +1,4 @@
 import { divineFormOf, setLabel } from '@/data/divineForm';
-import { LANDSCAPE, onLandscapeChange } from './landscape';
 import { ELEMENTS, type Element as Elem } from '@/data/elements';
 import { CONSUMABLE_MAP } from '@/data/consumables';
 import { bus } from '@/core/EventBus';
@@ -86,8 +85,6 @@ export class Hud {
   private comp!: { btn: HTMLElement; ico: Element; cd: HTMLElement; num: HTMLElement; sub: HTMLElement; key: string; wasCd: boolean };
   private hudTimer = 0;
   private notes: Note[] = [];
-  /** 切換橫式 / 直式版面（v1.75） */
-  private setLand: (on: boolean) => void = () => {};
   private noteQueue: { text: string; duration: number }[] = [];
   /** 戰鬥中（剛受傷或剛攻擊）：不輪播提示 */
   private combatT = 99;
@@ -189,30 +186,14 @@ export class Hud {
       potions.appendChild(btn);
       this.quick.push({ btn, ico: btn.querySelector('.ico')!, count, cd, key: '' });
     });
-    this.root.appendChild(potions);
 
-    // ---- 橫式版面（v1.74）：小地圖移到左上、狀態框＋道具列移到下方中央；手機轉向時自動切換（v1.75） ----
+    // ---- 橫式版面（v1.74；v1.113 起是唯一的版面）：小地圖在左上、狀態框＋道具列在下方中央 ----
     const topLeft = this.root.querySelector('.top-left') as HTMLElement;
-    const trRow = topRight.querySelector('.tr-row') as HTMLElement;
-    const side = h('div', { class: 'land-side' });
-    const dock = h('div', { class: 'land-dock' });
-    this.setLand = (on: boolean) => {
-      this.root.classList.toggle('land', on);
-      if (on) {
-        side.replaceChildren(this.els.buffs, this.els.guide);
-        topLeft.replaceChildren(mapBox, side);
-        dock.replaceChildren(potions, status);
-        if (!dock.parentElement) this.root.appendChild(dock);
-      } else {
-        topLeft.replaceChildren(status, this.els.buffs, this.els.guide);
-        trRow.appendChild(mapBox);
-        this.root.insertBefore(potions, dock.parentElement ? dock : null);
-        dock.remove();
-      }
-      requestAnimationFrame(() => this.fitQuick());
-    };
-    if (LANDSCAPE) this.setLand(true);
-    onLandscapeChange((on) => this.setLand(on));
+    const side = h('div', { class: 'land-side' }, [this.els.buffs, this.els.guide]);
+    const dock = h('div', { class: 'land-dock' }, [potions, status]);
+    this.root.classList.add('land');
+    topLeft.replaceChildren(mapBox, side);
+    this.root.appendChild(dock);
 
     // ---- 右下技能 ----
     const skillArea = h('div', { class: 'skills' });
@@ -264,7 +245,6 @@ export class Hud {
     bus.on('skill:cast', () => (this.combatT = 0));
     bus.on('wallet:changed', () => this.refresh());
     bus.on('tutorial:changed', () => this.refreshGuide());
-    window.addEventListener('resize', () => requestAnimationFrame(() => this.fitQuick()));
     bus.on('settings:changed', () => this.applyLayout());
     bus.on('player:levelup', () => {
       const a = this.els.avatar;
@@ -282,36 +262,7 @@ export class Hud {
     this.root.classList.toggle('lefty', !!s.leftHanded);
     document.documentElement.classList.toggle('lefty', !!s.leftHanded);
     document.documentElement.style.setProperty('--ui', String(s.uiScale || 1));
-    requestAnimationFrame(() => this.fitQuick());
   }
-
-  /**
-   * 快捷道具欄排版：預設跟藥水排成一列；螢幕窄、介面放大或左手模式時
-   * 若會壓到技能 / AUTO 按鈕，就改成 2×2（③④ 疊在藥水上面）。
-   */
-  private fitQuick() {
-    if (LANDSCAPE) {
-      this.quick[0]?.btn.parentElement?.classList.remove('stack');
-      return;
-    }
-    const box = this.quick[0]?.btn.parentElement;
-    if (!box) return;
-    const others = [...this.root.querySelectorAll('.skills .act, .skills .auto-btn, .top-left > *, .top-right > *')]
-      .filter((e) => !(e as HTMLElement).classList.contains('hide'))
-      .map((e) => e.getBoundingClientRect())
-      .filter((r) => r.width > 0);
-    const hits = () =>
-      this.quick.reduce((n, { btn }) => {
-        const r = btn.getBoundingClientRect();
-        return n + others.filter((o) => r.left < o.right + 4 && r.right > o.left - 4 && r.top < o.bottom + 4 && r.bottom > o.top - 4).length;
-      }, 0);
-    box.classList.remove('stack');
-    const row = hits();
-    if (row === 0) return;
-    box.classList.add('stack');
-    if (hits() >= row) box.classList.remove('stack'); // 疊起來也沒比較好（很矮的視窗）→ 維持一列
-  }
-
 
   private guideStep = -1;
   /** 新手指引：一行（步驟編號＋目標＋進度）；完成、隱藏或首領戰時不顯示；換步驟時閃一下 */
@@ -472,8 +423,7 @@ export class Hud {
       c.sub.textContent = subIcon ?? '';
       c.sub.style.display = subIcon ? '' : 'none';
       c.btn.title = `召喚夥伴：${name}${IS_DESKTOP ? '（G）' : ''}`;
-      requestAnimationFrame(() => this.fitQuick());
-    }
+      }
     if (!icon) return;
     const r = cdMax > 0 ? Math.min(1, cd / cdMax) : 0;
     c.cd.style.setProperty('--p', String(r));
